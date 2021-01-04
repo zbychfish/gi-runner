@@ -1,0 +1,27 @@
+apiVersion: v1
+baseDomain: {{ base_domain.msg }}
+proxy:
+  httpProxy: http://{{ proxy }} 
+  httpsProxy: http://{{ proxy }} 
+  noProxy: .{{ base_domain.msg }},172.30.0.0/16,{{ cluster_network }},192.168.0.0/16
+compute:
+- hyperthreading: Enabled
+  name: worker
+  replicas: 0
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  replicas: 1
+metadata:
+  name: {{ ocp_domain.msg }}
+networking:
+  clusterNetwork:
+  - cidr: {{ cluster_network }}
+    hostPrefix: {{ cluster_network_subnet }}
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+ none: {}
+fips: false
+sshKey: {{ ssh_key }}
