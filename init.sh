@@ -458,7 +458,7 @@ then
 		done
 	fi
 else
-	while [[ $m_number != "${#node_ip[@]}" ]]
+	while [[ $m_number != ${#node_ip[@]} ]]
 	do
 		if [ ! -z "$GI_NODE_IP" ]
 		then
