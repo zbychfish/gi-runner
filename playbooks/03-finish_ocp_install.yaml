@@ -70,6 +70,8 @@
       cmd: sudo shutdown -h +1
     delegate_to: "{{ boot_name }}.{{ domain }}"
     remote_user: core
+    args:
+      warn: false
     when: boot_availability.rc != 2 and boot_availability.rc != 1
 
   - name: Wait for boostrap shutdown
