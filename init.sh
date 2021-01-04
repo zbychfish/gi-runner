@@ -463,7 +463,7 @@ do
 	fi
 	echo ${node_ip[@]}
 done
-echo export GI_NODE_IP=\("${node_ip[@]}"\) >> $file
+declare -p node_ip >> $file
 if [[ "$is_onenode" == 'Y' && ! -z "$GI_NODE_MAC_ADDRESS" ]]
 then
         read -p "Current cluster node MAC address is set to [$GI_NODE_MAC_ADDRESS] - insert new or confirm existing one <ENTER>: " new_node_mac
