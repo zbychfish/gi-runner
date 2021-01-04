@@ -1,0 +1,343 @@
+- hosts: bastion
+  vars:
+    bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
+    boot_ip:  "{{ lookup('env','GI_BOOTSTRAP_IP') }}"
+    node_ip:  "{{ lookup('env','GI_NODE_IP') }}"
+    domain:  "{{ lookup('env','GI_DOMAIN') }}"
+    ocadmin:  "{{ lookup('env','GI_OCADMIN') }}"
+    ocp_password:  "{{ lookup('env','GI_OCADMIN_PWD') }}"
+    boot_name: "{{ lookup('env','GI_BOOTSTRAP_NAME') }}"
+    node_name: "{{ lookup('env','GI_NODE_NAME') }}"
+    repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
+    repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
+    is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
+
+  tasks:
+
+  - set_fact:
+      image: "rook/ceph:v1.1.7"
+    when: is_air_gapped == 'N'
+
+  - set_fact:
+      image: "registry.{{ domain }}:5000/ocp4/rook-ceph:rook-ceph-v1.1.7"
+    when: is_air_gapped == 'Y'
+
+  - name: Check configuration parameters for air-gapped installation
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == "" and is_air_gapped == 'Y'
+    loop:
+      - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
+      - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+
+  - name: Import rook-ceph image to local repository
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - podman load -i ../download/rook/rook.tar docker.io/rook/ceph:rook-ceph-v1.1.7
+      - podman load -i ../download/rook/cephcsi-1.2.0.tar docker.io/rook/ceph:cephcsi-1.2.0
+      - podman load -i ../download/rook/csi-attacher-1.2.0.tar docker.io/rook/csi-attacher-1.2.0
+      - podman load -i ../download/rook/csi-node-driver-registrar_v1.1.0 docker.io/rook/csi-node-driver-registrar-v1.1.0
+      - podman load -i ../download/rook/csi-provisioner-v1.3.0.tar docker.io/rook/csi-provisioner:v1.3.0
+      - podman load -i ../download/rook/csi-snapshotter-1.2.0.tar docker.io/rook/csi-snapshotter-1.2.0
+    when: is_air_gapped == 'Y'
+
+  - name: Push rook-ceph image to bastion image registry
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} f10be59eaf82 docker://registry.{{ domain }}:5000/ocp4/rook-ceph:rook-ceph-v1.1.7"
+      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} 4ed9912287b5 docker://registry.{{ domain }}:5000/ocp4/rook-ceph:cephcsi-1.2.0"
+      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} eef7a9550ede docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-attacher-1.2.0"
+      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} a93898755322 docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-node-driver-registrar-v1.1.0"
+      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} 2422aa77f05f docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-provisioner-v1.3.0"
+      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} 571ae7354c50 docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-snapshotter-1.2.0"
+    when: is_air_gapped == 'Y'
+
+  - name: Waiting for OCP cluster deployment (it takes 15-40 minutes)
+    command: openshift-install --dir=../ocp wait-for bootstrap-complete
+
+  - name: Check bootstrap availability
+    command:
+      cmd: "ping -c 1 {{ boot_name }}.{{ domain }}"
+    register: boot_availability
+    ignore_errors: yes
+
+  - debug:
+        var: boot_availability.rc
+
+  - name: Stop bootstrap
+    shell:
+      cmd: sudo shutdown -h +1
+    delegate_to: "{{ boot_name }}.{{ domain }}"
+    remote_user: core
+    when: boot_availability.rc != 2 and boot_availability.rc != 1
+
+  - name: Wait for boostrap shutdown
+    pause:
+      minutes: 1
+    when: boot_availability.rc != 2 and boot_availability.rc != 1
+
+  - name: Reconfigure DNS records
+    lineinfile:
+      path: /etc/dnsmasq.conf
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    with_items:
+      - { regexp: "^address=/api.{{ domain }}/{{ bas_ip }}", line: "address=/api.{{ domain }}/{{ node_ip }}" }
+      - { regexp: "^address=/api-int.{{ domain }}/{{ bas_ip }}", line: "address=/api-int.{{ domain }}/{{ node_ip }}" }
+
+  - name: Remove DNS records
+    lineinfile:
+      path: /etc/dnsmasq.conf
+      regexp: "{{ item.regexp }}"
+      state: absent
+    with_items:
+      - { regexp: "^address=/matchbox." }
+      - { regexp: "^address=/boot." }
+      - { regexp: "^#TFTP" }
+      - { regexp: "^tftp-" }
+      - { regexp: "^enable-tftp" }
+      - { regexp: "^dhcp-match" }
+      - { regexp: "^dhcp-boot" }
+      - { regexp: "^dhcp-userclass" }
+
+  - name: Restart dnsmasq
+    service:
+      name: dnsmasq
+      state: restarted
+      enabled: yes
+
+  - name: Stop unused services
+    service:
+      name: "{{ item.name }}"
+      state: stopped
+      enabled: no
+    with_items:
+      - { name: "haproxy" }
+      - { name: "matchbox" }
+
+  - name: Wait - cluster stabilization
+    pause:
+      minutes: 5
+    when: boot_availability.rc != 2
+
+  - name: Wait for cluster operators
+    shell:
+      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3 }'|grep -v True|wc -l"
+    register: co_status
+    until: "co_status.stdout == \"0\""
+    retries: 60
+    delay: 10
+    when: true
+
+  - name: Unmanage machine-config operator (part 1)
+    shell:
+      cmd: "{{ item.cmd }}"
+    with_items:
+      - { cmd: "oc patch clusterversion/version --type='merge' --config ../ocp/auth/kubeconfig -p \"$(cat ../scripts/machine_config.yaml)\"" }
+      - { cmd: "oc scale --replicas=1 deployment/etcd-quorum-guard -n openshift-machine-config-operator --config ../ocp/auth/kubeconfig" }
+
+  - name: Wait for cluster operators
+    shell:
+      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3 }'|grep -v True|wc -l"
+    register: co_status
+    until: "co_status.stdout == \"0\""
+    retries: 60
+    delay: 10
+    when: true
+
+
+  - name: Unmanage machine-config operator (part 2)
+    shell:
+      cmd: "{{ item.cmd }}"
+    with_items:
+      - { cmd: "oc scale --replicas=1 ingresscontroller/default -n openshift-ingress-operator --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc scale --replicas=1 deployment.apps/console -n openshift-console --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc scale --replicas=1 deployment.apps/downloads -n openshift-console --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc scale --replicas=1 deployment.apps/oauth-openshift -n openshift-authentication --config ../ocp/auth/kubeconfig" }
+
+  - name: Wait for cluster operators
+    shell:
+      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3 }'|grep -v True|wc -l"
+    register: co_status
+    until: "co_status.stdout == \"0\""
+    retries: 60
+    delay: 10
+    when: true
+
+  - name: Unmanage lifecycle-manager operator (part 3)
+    shell:
+      cmd: "{{ item.cmd }}"
+    with_items:
+      - { cmd: "oc scale --replicas=1 deployment.apps/packageserver -n openshift-operator-lifecycle-manager --config ../ocp/auth/kubeconfig" }
+
+  - name: Wait for cluster operators
+    shell:
+      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3 }'|grep -v True|wc -l"
+    register: co_status
+    until: "co_status.stdout == \"0\""
+    retries: 60
+    delay: 10
+    when:  true
+
+  - name: Unmanage machine-config operator (part 4)
+    shell:
+      cmd: "{{ item.cmd }}"
+    with_items:
+      - { cmd: "oc scale --replicas=1 deployment.apps/prometheus-adapter -n openshift-monitoring --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc scale --replicas=1 deployment.apps/thanos-querier -n openshift-monitoring --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc scale --replicas=1 statefulset.apps/prometheus-k8s -n openshift-monitoring --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc scale --replicas=1 statefulset.apps/alertmanager-main -n openshift-monitoring --config ../ocp/auth/kubeconfig" }
+    when: true
+
+  - name: Create htpasswd file
+    htpasswd:
+      path: ../download/ocadmin.htpasswd
+      name: "{{ ocadmin }}"
+      password: "{{ ocp_password }}"
+
+  - name: Register htpasswd file in OCP
+    shell:
+      cmd: "{{ item.cmd }}"
+    with_items:
+      - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../download/ocadmin.htpasswd -n openshift-config --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc apply -f ../scripts/oauth_provider.yaml --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocadmin }} --config ../ocp/auth/kubeconfig" }
+    when: true
+    ignore_errors: yes #if htpasswd has been imported before
+
+  - name: Remove htpasswd file
+    file:
+      path: "../download/ocadmin.htpasswd"
+      state: absent
+
+  - name: Configure rook-ceph
+    shell:
+      cmd: "{{ item.cmd }}"
+    with_items:
+      - { cmd: "oc label node {{ node_name }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true" }
+      - { cmd: "oc apply -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig" }
+
+  - name: Prepare ceph yaml's for local images
+    vars:
+      image: "{{ image }}"
+    template:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+    with_items:
+      - { src: "rook-operator.j2", dest: "../scripts/rook-operator.yaml" }
+      - { src: "rook-cluster.j2", dest: "../scripts/rook-cluster.yaml" }
+
+  - name: Add CEPH image variables for air-gapp installation
+    lineinfile:
+      path: ../scripts/rook-operator.yaml
+      insertbefore: "# To disable RBAC, uncomment the following:"
+      line: "{{ item }}"
+    loop:
+      - '        - name: ROOK_CSI_PROVISIONER_IMAGE'
+      - '          value: "registry.{{ domain }}:5000/ocp4/rook-ceph:csi-provisioner-v1.3.0"'
+      - '        - name: ROOK_CSI_REGISTRAR_IMAGE'
+      - '          value: "registry.{{ domain }}:5000/ocp4/rook-ceph:csi-node-driver-registrar-v1.1.0"'
+      - '        - name: ROOK_CSI_ATTACHER_IMAGE'
+      - '          value: "registry.{{ domain }}:5000/ocp4/rook-ceph:csi-attacher-1.2.0"'
+      - '        - name: ROOK_CSI_CEPH_IMAGE'
+      - '          value: "registry.{{ domain }}:5000/ocp4/rook-ceph:cephcsi-1.2.0"'
+      - '        - name: ROOK_CSI_SNAPSHOTTER_IMAGE'
+      - '          value: "registry.{{ domain }}:5000/ocp4/rook-ceph:csi-snapshotter-1.2.0"'
+    when: is_air_gapped == 'Y'
+
+  - name: Configure rook operator
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - oc apply -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig
+      - oc apply -f ../scripts/rook-filesystem.yaml --config ../ocp/auth/kubeconfig
+
+  - name: Wait for Rook operator
+    shell:
+      cmd: "oc get pods -n rook-ceph --config=../ocp/auth/kubeconfig --selector app=rook-ceph-operator --no-headers -o custom-columns=STATUS:.status.phase"
+    register: rook_operator_status
+    until: "rook_operator_status.stdout == \"Running\""
+    retries: 20
+    delay: 10
+    when: true
+
+  - name: Deploy rook-ceph cluster
+    shell:
+      cmd: "{{ item.cmd }}"
+    with_items:
+      - { cmd: "oc apply -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
+
+  - name: Wait for correct Rook Ceph cluster deployment
+    shell:
+      cmd: "oc get cephcluster -n rook-ceph --config ../ocp/auth/kubeconfig --no-headers -o custom-columns=HEALTH:.status.ceph.health"
+    register: ceph_installation_status
+    until: "ceph_installation_status.stdout == \"HEALTH_OK\" or ceph_installation_status.stdout == \"HEALTH_WARN\""
+    retries: 50
+    delay: 10
+
+  - name: Configure storage classes
+    shell:
+      cmd: "{{ item.cmd }}"
+    with_items:
+      - { cmd: "oc apply -f ../scripts/rook-storage_class_rbd.yaml --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc patch storageclass rook-ceph-block --config ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io\/is-default-class\":\"true\"}}}'" }
+    when: true
+  
+  - name: Create PVC for registry storage
+    shell:
+      cmd: oc apply -f ../scripts/ocp_registry_pvc.yaml --config ../ocp/auth/kubeconfig
+
+  - name: Wait for PVC
+    shell:
+      cmd: "oc get pvc -n openshift-image-registry --config=../ocp/auth/kubeconfig registry --no-headers -o custom-columns=STATUS:.status.phase"
+    register: image_pvc_status
+    until: "image_pvc_status.stdout == \"Bound\""
+    retries: 30
+    delay: 10
+
+  - name: Configure OCP registry with PVC
+    shell:
+      cmd: "{{ item.cmd }}"
+    with_items:
+      - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\":{\"storage\":{\"pvc\":{\"claim\": \"registry\"}}}}'" }
+      - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\": {\"managementState\": \"Managed\"}}'" }
+    when: true
+
+  - pause:
+      seconds: 30
+
+  - name: Wait for Image registry successful reconfiguration
+    shell:
+      cmd: "oc get clusteroperators image-registry --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
+    register: image_registry_status
+    until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
+    retries: 20
+    delay: 10
+    when: true
+
+  - name: Set public route for image registry
+    shell:
+      cmd: oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge --config ../ocp/auth/kubeconfig
+      
+  - pause:
+      seconds: 30
+
+  - name: Wait for API server successful reconfiguration
+    shell:
+      cmd: "oc get clusteroperators kube-apiserver --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
+    register: image_registry_status
+    until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
+    retries: 40
+    delay: 10
+    when: true
+
+  - debug:
+        msg:
+          - OpenShift 4.3 one node installation finished 
+          - Add to hosts on your web browser workstation this line
+          - "{{ node_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} icp-console.apps.{{ domain }} insights.apps.{{ domain }}"
+          - "Login to OCP console as {{ ocadmin }} user - https://console-openshift-console.apps.{{ domain }}"
+          - "To install IBM Common services start playbook 'ansible-playbook playbooks/04-install-ics.yaml'"
+        

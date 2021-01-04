@@ -486,6 +486,8 @@
     - name: Remove temporary files
       command:
         cmd: rm -rf ../download/tmp
+      args:
+        warn: false
 
     - name: Define base domain
       debug:
