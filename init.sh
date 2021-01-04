@@ -59,7 +59,7 @@ then
                 printf "How many workers nodes will you deploy? (\e[4m3\e[0m)/4: "
                 read w_number
                 w_number=${w_number:-3}
-                if ! [[ $w_number == 3 || $w_number == 6 ]]
+                if ! [[ $w_number == 3 || $w_number == 4 ]]
                 then
                         echo "Incorrect value"
                 fi
@@ -485,6 +485,13 @@ then
         echo export GI_BOOTSTRAP_NAME=$GI_BOOTSTRAP_NAME >> $file
 else
         echo export GI_BOOTSTRAP_NAME=$boot_name >> $file
+fi
+if [[ "$is_onenode" != 'Y' && -z "$GI_NODE_IP"]]
+then
+	for i in $(seq 1 $m_number)
+	do
+		IFS=',' read -r -p "Insert IP addresses of master nodes (comma separated): " new_node_ip
+	done
 fi
 if [[ ! -z "$GI_NODE_NAME" ]]
 then
