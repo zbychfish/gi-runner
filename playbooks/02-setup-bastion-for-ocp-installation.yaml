@@ -152,6 +152,8 @@
     - name: Unzip matchbox
       command:
         cmd: tar zxf ../download/matchbox-v0.8.3-linux-amd64.tar.gz -C ../download
+      args:
+        warn: false
       when: true
 
     - name: Copy matchbox to bin
