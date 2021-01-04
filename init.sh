@@ -447,23 +447,25 @@ else
         echo export GI_BOOTSTRAP_MAC_ADDRESS=$boot_mac >> $file
 fi
 echo $m_number
-while [[ $m_number != ${#node_ip[@]} ]]
+declare -a node_ip_arr
+while [[ $m_number != ${#node_ip_arr[@]} ]]
 do
 	if [ ! -z "$GI_NODE_IP" ]
 	then
-		IFS=',' read -p "Current list of master nodes IP is [$GI_NODE_IP] - insert new $m_number IP's (comma separated) or confirm existing: " -r -a new_node_ip
+		read -p "Current list of master nodes IP is [$GI_NODE_IP] - insert new $m_number IP's (comma separated) or confirm existing: " new_node_ip
 		if [[ $new_node_ip != '' ]]
 		then
-			node_ip=("${new_node_ip[@]}")
+			node_ip=new_node_ip
 		else
-			node_ip=("${GI_NODE_IP[@]}")
+			node_ip=$GI_NODE_IP
 		fi
 	else
-       		IFS=',' read -p "Insert $m_number IP addresses of master nodes (comma separated): " -r -a node_ip
+       		read -p "Insert $m_number IP addresses of master nodes (comma separated): " node_ip
 	fi
-	echo ${node_ip[@]}
+	IFS=',' read -r -a node_ip_arr <<< $node_ip
+	echo ${node_ip_arr[@]}
 done
-declare -p node_ip >> $file
+echo export GI_NODE_IP=$node_ip >> $file
 if [[ "$is_onenode" == 'Y' && ! -z "$GI_NODE_MAC_ADDRESS" ]]
 then
         read -p "Current cluster node MAC address is set to [$GI_NODE_MAC_ADDRESS] - insert new or confirm existing one <ENTER>: " new_node_mac
