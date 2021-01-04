@@ -446,7 +446,6 @@ then
 else
         echo export GI_BOOTSTRAP_MAC_ADDRESS=$boot_mac >> $file
 fi
-i=0
 echo $m_number
 while [[ $m_number != ${#node_ip[@]} ]]
 do
@@ -456,17 +455,15 @@ do
 		if [[ $new_node_ip != '' ]]
 		then
 			node_ip=("${new_node_ip[@]}")
+		else
+			node_ip=("${GI_NODE_IP[@]}")
 		fi
 	else
        		IFS=',' read -p "Insert $m_number IP addresses of master nodes (comma separated): " -r -a node_ip
 	fi
 	echo ${node_ip[@]}
 done
-if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
-then
-	echo export GI_NODE_IP=("${GI_NODE_IP[@]}") >> $file
-else
-	echo export GI_NODE_IP=("${node_ip[@]}") >> $file
+echo export GI_NODE_IP=\("${node_ip[@]}"\) >> $file
 fi
 if [[ "$is_onenode" == 'Y' && ! -z "$GI_NODE_MAC_ADDRESS" ]]
 then
