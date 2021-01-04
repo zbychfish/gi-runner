@@ -458,8 +458,19 @@ then
 		done
 	fi
 else
-        IFS=',' read -p "Insert IP addresses of master nodes (comma separated): " -r -a new_node_ip
-	echo ${new_node_ip[0]}
+	while [[ $m_number != "${node_ip[@]}"
+	do
+		if [ ! -z "$GI_NODE_IP" ]
+		then
+			IFS=',' read -p "Current list of master nodes IP is [$GI_NODE_IP] - insert new $m_number IP's (comma separated) or confirm existing: " -r -a new_node_ip
+			if [[ $new_node_ip != '' ]]
+			then
+				node_ip=$new_node_ip
+			fi
+		else
+        		IFS=',' read -p "Insert $m_number IP addresses of master nodes (comma separated): " -r -a node_ip
+		fi
+i	done
 fi
 if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
 then
