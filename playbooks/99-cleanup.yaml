@@ -1,4 +1,6 @@
 - hosts: all
+  vars:
+    bas_int:  "{{ lookup('env','GI_BASTION_INTERFACE') }}"
   tasks:
 
     - name: Stop services
