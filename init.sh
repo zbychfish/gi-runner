@@ -448,8 +448,7 @@ else
 fi
 i=0
 echo $m_number
-echo $i
-while [[ $m_number != ${#node_ip[@]} && $i -eq 0 ]]
+while [[ $m_number != ${#node_ip[@]} ]]
 do
 	if [ ! -z "$GI_NODE_IP" ]
 	then
@@ -461,7 +460,6 @@ do
 	else
        		IFS=',' read -p "Insert $m_number IP addresses of master nodes (comma separated): " -r -a node_ip
 	fi
-	((i=i+1))
 	echo ${node_ip[@]}
 done
 if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
