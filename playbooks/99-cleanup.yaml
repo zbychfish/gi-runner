@@ -34,9 +34,9 @@
         dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
 
     - name: Restart Network Manager
-        service:
-          name: NetworkManager
-          state: restarted
+      service:
+        name: NetworkManager
+        state: restarted
         
     - name: Close ports on bastion
       firewalld:
