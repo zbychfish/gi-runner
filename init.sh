@@ -464,11 +464,11 @@ do
 	((i=i+1))
 	echo ${node_ip[@]}
 done
-if [[ $is_onenode" == 'Y' && -z $node_ip ]]
+if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
 then
-	echo export GI_NODE_IP=("${GI_NODE_IP[0]}") >> $file
+	echo export GI_NODE_IP=("${GI_NODE_IP[@]}") >> $file
 else
-	echo export GI_NODE_IP=("${node_ip[0]}") >> $file
+	echo export GI_NODE_IP=("${node_ip[@]}") >> $file
 fi
 if [[ "$is_onenode" == 'Y' && ! -z "$GI_NODE_MAC_ADDRESS" ]]
 then
