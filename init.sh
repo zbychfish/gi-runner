@@ -39,6 +39,10 @@ else
 	m_number=3
 	is_onenode='N'
 fi
+if [ $is_onenode == 'Y' ]
+then
+	m_number=1
+fi
 if [ $is_onenode == 'N' ]
 then
 	while ! [[ $m_number == 1 || $m_number == '3' ]]
@@ -442,42 +446,27 @@ then
 else
         echo export GI_BOOTSTRAP_MAC_ADDRESS=$boot_mac >> $file
 fi
-if [ $is_onenode == 'Y' ]
-then
+i=0
+while [[ $m_number != ${#node_ip[@]} && $i -gt 0 ]]
+do
 	if [ ! -z "$GI_NODE_IP" ]
 	then
-        	read -p "Current cluster IP is set to [$GI_NODE_IP] - insert new or confirm existing one <ENTER>: " new_node_ip
-	        if [[ $new_node_ip != '' ]]
+		IFS=',' read -p "Current list of master nodes IP is [$GI_NODE_IP] - insert new $m_number IP's (comma separated) or confirm existing: " -r -a new_node_ip
+		if [[ $new_node_ip != '' ]]
 		then
-			node_ip=$new_node_ip
+			node_ip=("${new_node_ip[@]}")
 		fi
 	else
-		while [[ $node_ip == '' ]]
-		do
-			read -p "Insert OCP cluster node IP: " node_ip
-		done
+       		IFS=',' read -p "Insert $m_number IP addresses of master nodes (comma separated): " -r -a node_ip
 	fi
-else
-	while [[ $m_number != ${#node_ip[@]} ]]
-	do
-		if [ ! -z "$GI_NODE_IP" ]
-		then
-			IFS=',' read -p "Current list of master nodes IP is [$GI_NODE_IP] - insert new $m_number IP's (comma separated) or confirm existing: " -r -a new_node_ip
-			if [[ $new_node_ip != '' ]]
-			then
-				node_ip=("${new_node_ip[@]}")
-			fi
-		else
-        		IFS=',' read -p "Insert $m_number IP addresses of master nodes (comma separated): " -r -a node_ip
-		fi
-		echo ${node_ip[@]}
-	done
-fi
-if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
+	((i=i+1))
+	echo ${node_ip[@]}
+done
+if [[ $is_onenode" == 'Y' && -z $node_ip ]]
 then
-	echo export GI_NODE_IP=$GI_NODE_IP >> $file
+	echo export GI_NODE_IP=("${GI_NODE_IP[0]}") >> $file
 else
-	echo export GI_NODE_IP=$node_ip >> $file
+	echo export GI_NODE_IP=("${node_ip[0]}") >> $file
 fi
 if [[ "$is_onenode" == 'Y' && ! -z "$GI_NODE_MAC_ADDRESS" ]]
 then
