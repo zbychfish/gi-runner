@@ -458,7 +458,7 @@ then
 		done
 	fi
 else
-	while [[ $m_number != "${node_ip[@]}"
+	while [[ $m_number != "${node_ip[@]}" ]]
 	do
 		if [ ! -z "$GI_NODE_IP" ]
 		then
@@ -470,7 +470,7 @@ else
 		else
         		IFS=',' read -p "Insert $m_number IP addresses of master nodes (comma separated): " -r -a node_ip
 		fi
-i	done
+	done
 fi
 if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
 then
