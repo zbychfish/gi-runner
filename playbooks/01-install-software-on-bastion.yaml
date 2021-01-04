@@ -1,0 +1,218 @@
+- hosts: bastion
+  vars:
+    is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
+    bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
+    bas_name:  "{{ lookup('env','GI_BASTION_NAME') }}"
+    domain:  "{{ lookup('env','GI_DOMAIN') }}"
+    repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
+    repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
+
+
+  tasks:
+    - name: Check configuration parameters
+      fail: msg="Variable {{ item.name }} is not set"
+      when: item.value == ""
+      loop:
+        - { name: "GI_AIR_GAPPED", value: "{{ is_air_gapped }}" }
+
+    - name: Check configuration parameters for air-gapped installation
+      fail: msg="Variable {{ item.name }} is not set"
+      when: item.value == "" and is_air_gapped == 'Y'
+      loop:
+        - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
+        - { name: "GI_BASTION_NAME", value: "{{ bas_name }}" }
+        - { name: "GI_DOMAIN", value: "{{ domain }}" }
+        - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
+        - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+
+    - name: Upgrade system
+      dnf:
+        name: "*"
+        state: latest 
+      register: dnf_updates
+      when: is_air_gapped == 'N'
+
+    - name: Check for reboot hint.
+      shell: LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then echo 'reboot'; else echo 'no'; fi
+      ignore_errors: true
+      register: reboot_hint
+      when: is_air_gapped == 'N'
+    
+
+    - name: Install software packages
+      dnf:
+        name:
+          - "python3"
+          - "tar"
+          - "unzip"
+          - "dnsmasq"
+          - "bind-utils"
+          - "ipxe-bootimgs"
+          - "tar"
+          - "policycoreutils-python-utils"
+          - "haproxy"
+          - "git"
+          - "podman"
+          - "podman-docker"
+          - "chrony"
+        state: latest
+      when: is_air_gapped == 'N'
+
+    - name: Install Python modules
+      pip:
+        name: 
+          - "dnspython"
+          - "passlib"
+      when: is_air_gapped == 'N'
+
+    - name: Create registry directories
+      file:
+        path: "{{ item.path }}"
+        state: directory
+      with_items:
+        - { path: "/opt/registry/auth" }
+        - { path: "/opt/registry/certs" }
+        - { path: "/opt/registry/data" }
+        - { path: "../ssl/csr" }
+      when: is_air_gapped == 'Y'
+
+    - name: Create private key
+      community.crypto.openssl_privatekey:
+        path: /opt/registry/certs/bastion.repo.pem
+        force: yes
+      when: is_air_gapped == 'Y' and false
+
+    - name: Generate an OpenSSL Certificate Signing Request
+      community.crypto.openssl_csr:
+        path: "../ssl/csr/{{ bas_name }}.{{ domain }}.csr"
+        privatekey_path: /opt/registry/certs/bastion.repo.pem
+        country_name: PL
+        organization_name: "GI TEST"
+        organizational_unit_name: "GI Lab"
+        email_address: user@localhost
+        locality_name: Miedzyrzecz
+        common_name: "registry.{{ domain }}"
+        force: yes
+      when: is_air_gapped == 'Y' and false
+
+    - name: Create repository self-signed-certificate
+      community.crypto.x509_certificate:
+        path: /opt/registry/certs/bastion.repo.crt
+        privatekey_path: /opt/registry/certs/bastion.repo.pem
+        csr_path: "../ssl/csr/{{ bas_name }}.{{ domain }}.csr"
+        provider: selfsigned
+        force: yes
+      when: is_air_gapped == 'Y' and false
+
+    - name: Create certificate using OpenSSL
+      shell:
+        cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ domain }}\""
+      when: is_air_gapped == 'Y'
+
+    - name: Copy CA cert to Centos PKI
+      copy:
+        src: /opt/registry/certs/bastion.repo.crt
+        dest: /etc/pki/ca-trust/source/anchors/
+      when: is_air_gapped == 'Y'
+
+    - name: Register self-signed CA
+      shell:
+        cmd: update-ca-trust extract
+      when: is_air_gapped == 'Y'
+
+    - name: Cleanup httpasswd file
+      file:
+        path: /opt/registry/auth/bastion.repo.htpasswd
+        state: absent
+      when: is_air_gapped == 'Y'
+
+    - name: Create htpasswd file
+      htpasswd:
+        path: /opt/registry/auth/bastion.repo.htpasswd
+        name: "{{ repo_user }}"
+        crypt_scheme: bcrypt
+        password: "{{ repo_user_password }}"
+      when: is_air_gapped == 'Y'
+
+    - name: Start firewall
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+
+    - name: Open ports on bastion 1
+      ansible.posix.firewalld:
+        port: "{{ item.port }}/{{ item.type }}"
+        permanent: yes
+        immediate: yes
+        state: enabled
+      with_items:
+        - { port: "5000", type: "tcp" }
+      when: is_air_gapped == 'Y'
+
+    - name: Open ports on bastion 2
+      ansible.posix.firewalld:
+        service: http
+        permanent: yes
+        state: enabled
+      when: is_air_gapped == 'Y'
+
+    - name: Load image registry image into local repository
+      shell:
+        cmd: podman load -i ../download/air-gap/oc-registry.tar
+      when: is_air_gapped == 'Y'
+
+    - name: Extract OpenShift 4.33 registry
+      unarchive:
+        src: ../download/air-gap/oc-registry-4.33.tar
+        dest: /opt/registry
+      when: is_air_gapped == 'Y'
+
+    - name: Check image repository existence
+      shell:
+        cmd: podman ps -a|grep bastion-registry|wc -l
+      register: is_repo_available
+      when: is_air_gapped == 'Y'
+      
+    - name: Remove existing bastion image registry
+      shell:
+        cmd: "{{ item }}"
+      loop:
+        - podman stop bastion-registry
+        - podman container prune
+      when: is_air_gapped == 'Y' and is_repo_available.stdout == '1'
+
+    - name: Setup image registry
+      shell:
+        cmd: 'podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/bastion.repo.htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2'
+        chdir: /opt/registry
+      when: is_air_gapped == 'Y' and true
+
+    - name: Set SELINUX permissive access for NetworkManager
+      shell:
+        cmd: semanage permissive -a NetworkManager_t
+
+    - debug:
+        msg:
+          - "Reboot required for updated kernel."
+          - "Press ENTER to restart machine."
+          - "Then re-login to bastion and read variables: '. scripts/variables.sh'"
+          - "Continue installation by executing: 'ansible-playbook playbooks/02-setup-OCP-installation.yaml'"
+      when: is_air_gapped == 'N' and reboot_hint.stdout.find("reboot") != -1
+
+    - pause:
+        echo: no    
+      when: is_air_gapped == 'N' and reboot_hint.stdout.find("reboot") != -1
+
+    - name: Rebooting ...
+      command: shutdown -r now "Reboot required for updated kernel"
+      async: 0
+      poll: 0
+      ignore_errors: true
+      when: is_air_gapped == 'N' and reboot_hint.stdout.find("reboot") != -1
+
+
+    - debug:
+        msg:
+          - "Execute 'ansible-playbook playbooks/02-setup-OCP-installation.yaml' to configure bastion for OCP installation"
+
