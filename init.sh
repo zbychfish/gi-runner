@@ -447,6 +447,8 @@ else
         echo export GI_BOOTSTRAP_MAC_ADDRESS=$boot_mac >> $file
 fi
 i=0
+echo $m_number
+echo $i
 while [[ $m_number != ${#node_ip[@]} && $i -eq 0 ]]
 do
 	if [ ! -z "$GI_NODE_IP" ]
