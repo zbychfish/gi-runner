@@ -443,18 +443,26 @@ else
         echo export GI_BOOTSTRAP_MAC_ADDRESS=$boot_mac >> $file
 fi
 echo $is_onenode
-if [[ "$is_onenode" == 'Y' && ! -z "$GI_NODE_IP" ]]
+if [ $is_onenode == 'Y' ]
 then
-        read -p "Current cluster IP is set to [$GI_NODE_IP] - insert new or confirm existing one <ENTER>: " new_node_ip
-        if [[ $new_node_ip != '' ]]
+	if [ ! -z "$GI_NODE_IP" ]
 	then
-		node_ip=$new_node_ip
+        	read -p "Current cluster IP is set to [$GI_NODE_IP] - insert new or confirm existing one <ENTER>: " new_node_ip
+	        if [[ $new_node_ip != '' ]]
+		then
+			node_ip=$new_node_ip
+		fi
+	else
+		while [[ $node_ip == '' ]]
+		do
+			read -p "Insert OCP cluster node IP: " node_ip
+		done
 	fi
 else
-	while [[ $node_ip == '' ]]
-	do
-		read -p "Insert OCP cluster node IP: " node_ip
-	done
+	for i in $(seq 1 $m_number)
+        do
+                IFS=',' read -r -p "Insert IP addresses of master nodes (comma separated): " new_node_ip
+        done
 fi
 if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
 then
@@ -486,13 +494,6 @@ then
         echo export GI_BOOTSTRAP_NAME=$GI_BOOTSTRAP_NAME >> $file
 else
         echo export GI_BOOTSTRAP_NAME=$boot_name >> $file
-fi
-if [[ "$is_onenode" != 'Y' && -z "$GI_NODE_IP"]]
-then
-	for i in $(seq 1 $m_number)
-	do
-		IFS=',' read -r -p "Insert IP addresses of master nodes (comma separated): " new_node_ip
-	done
 fi
 if [[ ! -z "$GI_NODE_NAME" ]]
 then
