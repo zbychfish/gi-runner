@@ -312,8 +312,8 @@
 
     - name: Copy original dnsmasq config file
       copy:
-        src: /etc/dnsmasq.cfg
-        dest: /etc/dnsmasq.cfg.orig
+        src: /etc/dnsmasq.conf
+        dest: /etc/dnsmasq.conf.orig
 
     - name: Modify dnsmasq.conf file
       lineinfile:

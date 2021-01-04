@@ -214,5 +214,5 @@
 
     - debug:
         msg:
-          - "Execute 'ansible-playbook playbooks/02-setup-OCP-installation.yaml' to configure bastion for OCP installation"
+          - "Execute 'ansible-playbook playbooks/02-setup-bastion-for-ocp-installation.yaml' to configure bastion for OCP installation"
 
