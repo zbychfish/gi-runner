@@ -53,10 +53,10 @@ then
 	done
 	echo "Define number of workers"
 	echo "3 - simple installation, OCS storage installed on all workers, ICP installed on one worker"
-	echo "6 - GI installed on 3 workers, additional 3 workers used for OCS and ICP"
-	while ! [[ $w_number == 6 || $w_number == '3' ]]
+	echo "4 - simple installation, OCS storage installed on all workers, DB2 node tainted, OCP spread on not-tainted nodes"
+	while ! [[ $w_number == 4 || $w_number == '3' ]]
         do
-                printf "How many workers nodes will you deploy? (\e[4m3\e[0m)/6: "
+                printf "How many workers nodes will you deploy? (\e[4m3\e[0m)/4: "
                 read w_number
                 w_number=${w_number:-3}
                 if ! [[ $w_number == 3 || $w_number == 6 ]]
