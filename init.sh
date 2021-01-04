@@ -458,7 +458,7 @@ then
 		done
 	fi
 else
-        IFS=',' read -r -a new_node_ip -p "Insert IP addresses of master nodes (comma separated): "
+        IFS=',' read -p "Insert IP addresses of master nodes (comma separated): " -r -a new_node_ip
 	echo ${new_node_ip[0]}
 fi
 if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
