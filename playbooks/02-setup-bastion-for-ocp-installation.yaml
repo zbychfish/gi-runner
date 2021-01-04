@@ -19,13 +19,11 @@
     ocp_password:  "{{ lookup('env','GI_OCADMIN_PWD') }}"
     ibm_key: "{{ lookup('env','GI_IBMCLOUD_KEY') }}"
     ics_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
-    #nfs_dev: "{{ lookup('env','GI_NFS_DISK') }}"
     proxy: "{{ lookup('env','GI_PROXY_URL') }}"
     boot_name: "{{ lookup('env','GI_BOOTSTRAP_NAME') }}"
     node_name: "{{ lookup('env','GI_NODE_NAME') }}"
     bas_name: "{{ lookup('env','GI_BASTION_NAME') }}"
     ocadmin: "{{ lookup('env','GI_OCADMIN') }}"
-    #icsadmin: "{{ lookup('env','GI_ICSADMIN') }}"
     use_proxy: "{{ 'no' if proxy == 'NO_PROXY' else 'yes' }}"
     noproxy_net: "{{ lookup('env','GI_NOPROXY_NET') }}"
     repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
@@ -56,7 +54,6 @@
         - { name: "GI_BOOT_DEVICE", value: "{{ boot_disk }}" }
         - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
         - { name: "GI_OCADMIN_PWD", value: "{{ ocp_password }}" }
-        #- { name: "GI_NFS_DISK", value: "{{ nfs_dev }}" }
         - { name: "GI_PROXY_URL", value: "{{ proxy }}" }
         - { name: "GI_BOOTSTRAP_NAME", value: "{{ boot_name }}" }
         - { name: "GI_NODE_NAME", value: "{{ node_name }}" }
@@ -86,6 +83,11 @@
       when: item.value == "" and proxy == "yes"
       loop:
         - { name: "GI_NOPROXY_NET", value: "{{ noproxy_net }}" }
+
+    - name: Copy original NIC config file
+      copy:
+        src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
+        dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
 
     - name: Switch off peer DNS configuration
       lineinfile:
@@ -182,10 +184,10 @@
         enabled: yes
       when: true
 
-    - name: Cleanup matchbox files
-      file:
-        path: ../download/matchbox-v0.8.3-linux-amd64
-        state: absent
+    - name: Copy original chrony config file
+      copy:
+        src: /etc/chrony.conf
+        dest: /etc/chrony.conf.orig
 
     - name: Modify chrony.conf
       lineinfile:
@@ -307,6 +309,11 @@
     - debug:
         var: boot_ptr.stdout
       when: false
+
+    - name: Copy original dnsmasq config file
+      copy:
+        src: /etc/dnsmasq.cfg
+        dest: /etc/dnsmasq.cfg.orig
 
     - name: Modify dnsmasq.conf file
       lineinfile:
@@ -525,7 +532,6 @@
         cmd: "cat ../scripts/pull_secret.tmp >> ../ocp/install-config.yaml"
       when: is_air_gapped == 'N'
 
-
     - name: Copy install.yaml to root
       copy:
         src: "../ocp/install-config.yaml"
@@ -551,6 +557,11 @@
       with_items:
         - { src: "../ocp/bootstrap.ign", dest: "/var/lib/matchbox/ignition/" }
         - { src: "../ocp/master.ign", dest: "/var/lib/matchbox/ignition/" }
+
+    - name: Copy original HA proxy config file
+      copy:
+        src: /etc/haproxy/haproxy.cfg
+        dest: /etc/haproxy/haproxy.cfg.orig
 
     - name: Create HA Proxy config file
       template:

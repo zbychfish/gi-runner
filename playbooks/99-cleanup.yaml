@@ -1,0 +1,94 @@
+- hosts: all
+  tasks:
+
+  - name: Stop services
+    service:
+      name: "{{ item.name }}"
+      state: stopped
+      enabled: no
+    with_items:
+      - { name: "matchbox" }
+      - { name: "dnsmasq" }
+      - { name: "haproxy" }
+      - { name: "chronyd" }
+    ignore_errors: true
+
+  - name: Restore original HA Proxy config
+    copy:
+      src: /etc/haproxy/haproxy.cfg.orig
+      dest: /etc/haproxy/haproxy.cfg
+
+  - name: Restore original dnsmasq config
+    copy:
+      src: /etc/dnsmasq.cfg.orig
+      dest: /etc/dnsmasq.cfg
+
+  - name: Restore original chrony config
+    copy:
+      src: /etc/chrony.conf.orig
+      dest: /etc/chrony.conf
+
+  - name: Restore original NIC config
+    copy:
+      src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
+      dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
+
+  - name: Restart Network Manager
+      service:
+        name: NetworkManager
+        state: restarted
+        
+  - name: Close ports on bastion
+    firewalld:
+      port: "{{ item.port }}/{{ item.type }}"
+      permanent: yes
+      immediate: yes
+      state: disabled
+    with_items:
+      - { port: "67-69", type: "udp" } #dhcp, bootp, tftp
+      - { port: "8080", type: "tcp" } #matchbox
+      - { port: "53", type: "udp" } #dns
+      - { port: "6443", type: "tcp" } #cluster API
+      - { port: "22623", type: "tcp" } #cluster API
+      - { port: "80", type: "tcp" } #cluster app access
+      - { port: "443", type: "tcp" } #cluster app access
+      - { port: "123", type: "udp" } #ntpd
+
+  - name: Remove configuration and local files
+    file:
+      path: "{{ item.path }}"
+      state: absent
+    with_items:
+      - { path: "/etc/systemd/system/matchbox.service" }
+      - { path: "/usr/local/bin/matchbox" }
+      - { path: "/var/lib/matchbox" }
+      - { path: "/var/lib/tftp" }
+      - { path: "ocp" }
+      - { path: "/etc/haproxy/haproxy.cfg" }
+
+  - name: Remove matchbox user
+    user:
+      name: matchbox
+      state: absent
+
+  - name: Uninstall Python libraries
+    pip:
+      name: "dnspython"
+      state: "absent"
+    when: true
+
+  - name: Remove software packages
+    dnf:
+      name:
+        - "git"
+        - "haproxy"
+        - "policycoreutils-python-utils"
+        - "tar"
+        - "unzip"
+        - "ipxe-bootimgs"
+        - "bind_utils"
+        - "dnsmasq"
+      state: "absent"
+      autoremove: yes
+    when: true
+
