@@ -465,12 +465,12 @@ else
 			IFS=',' read -p "Current list of master nodes IP is [$GI_NODE_IP] - insert new $m_number IP's (comma separated) or confirm existing: " -r -a new_node_ip
 			if [[ $new_node_ip != '' ]]
 			then
-				node_ip=$new_node_ip
+				node_ip=("${new_node_ip[@]}")
 			fi
 		else
         		IFS=',' read -p "Insert $m_number IP addresses of master nodes (comma separated): " -r -a node_ip
 		fi
-		echo $node_ip
+		echo ${node_ip[@]}
 	done
 fi
 if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
