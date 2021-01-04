@@ -470,6 +470,7 @@ else
 		else
         		IFS=',' read -p "Insert $m_number IP addresses of master nodes (comma separated): " -r -a node_ip
 		fi
+		echo $node_ip
 	done
 fi
 if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
