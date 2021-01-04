@@ -442,6 +442,7 @@ then
 else
         echo export GI_BOOTSTRAP_MAC_ADDRESS=$boot_mac >> $file
 fi
+echo $is_onenode
 if [[ "$is_onenode" == 'Y' && ! -z "$GI_NODE_IP" ]]
 then
         read -p "Current cluster IP is set to [$GI_NODE_IP] - insert new or confirm existing one <ENTER>: " new_node_ip
