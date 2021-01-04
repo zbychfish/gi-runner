@@ -442,7 +442,6 @@ then
 else
         echo export GI_BOOTSTRAP_MAC_ADDRESS=$boot_mac >> $file
 fi
-echo $is_onenode
 if [ $is_onenode == 'Y' ]
 then
 	if [ ! -z "$GI_NODE_IP" ]
@@ -459,10 +458,8 @@ then
 		done
 	fi
 else
-	for i in $(seq 1 $m_number)
-        do
-                IFS=',' read -r -p "Insert IP addresses of master nodes (comma separated): " new_node_ip
-        done
+        IFS=',' read -r -p "Insert IP addresses of master nodes (comma separated): " new_node_ip
+	echo $new_node_ip[0]
 fi
 if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
 then
