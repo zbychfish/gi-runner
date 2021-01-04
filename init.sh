@@ -459,7 +459,7 @@ then
 	fi
 else
         IFS=',' read -r -p "Insert IP addresses of master nodes (comma separated): " new_node_ip
-	echo $new_node_ip[0]
+	echo ${new_node_ip[0]}
 fi
 if [[ "$is_onenode" == 'Y' && -z $node_ip ]]
 then
