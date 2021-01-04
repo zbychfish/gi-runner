@@ -226,13 +226,13 @@ echo "*** Add a new RSA SSH key ***"
 ssh-keygen -N '' -f /root/.ssh/id_rsa -q <<< y > /dev/null
 echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > /root/.ssh/config 
 cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
-if [[ $use_air_gap == 'N' ]]
-then
-	echo "*** Download playbooks ***"
-	mkdir -p download
-	ansible -i /etc/ansible/hosts bastion -m get_url -a "url=https://ibm.box.com/shared/static/nqjdv31pt9chna37729gwwpq39dz0rcm dest=./files.tar use_proxy=yes" > /dev/null
-fi
-tar xvf files.tar > /dev/null
+#if [[ $use_air_gap == 'N' ]]
+#then
+#	echo "*** Download playbooks ***"
+#	mkdir -p download
+#	ansible -i /etc/ansible/hosts bastion -m get_url -a "url=https://ibm.box.com/shared/static/nqjdv31pt9chna37729gwwpq39dz0rcm dest=./files.tar use_proxy=yes" > /dev/null
+#fi
+#tar xvf files.tar > /dev/null
 #rm -f files.tar
 if [[ $use_air_gap == 'N' ]]
 then
