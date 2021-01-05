@@ -455,7 +455,7 @@ do
 		read -p "Current list of master nodes IP is [$GI_NODE_IP] - insert new $m_number IP's (comma separated) or confirm existing: " new_node_ip
 		if [[ $new_node_ip != '' ]]
 		then
-			node_ip=new_node_ip
+			node_ip=$new_node_ip
 		else
 			node_ip=$GI_NODE_IP
 		fi
