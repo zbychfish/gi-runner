@@ -408,6 +408,12 @@ else
                 boot_name=${boot_name:-boot}
         done
 fi
+if [[ -z $boot_name ]]
+then
+        echo export GI_BOOTSTRAP_NAME=$GI_BOOTSTRAP_NAME >> $file
+else
+        echo export GI_BOOTSTRAP_NAME=$boot_name >> $file
+fi
 if [[ ! -z "$GI_BOOTSTRAP_IP" ]]
 then
         read -p "Current Bootstrap IP is set to [$GI_BOOTSTRAP_IP] - insert new or confirm existing one <ENTER>: " new_boot_ip
@@ -446,13 +452,12 @@ then
 else
         echo export GI_BOOTSTRAP_MAC_ADDRESS=$boot_mac >> $file
 fi
-echo $m_number
 declare -a node_ip_arr
 while [[ $m_number != ${#node_ip_arr[@]} ]]
 do
 	if [ ! -z "$GI_NODE_IP" ]
 	then
-		read -p "Current list of master nodes IP is [$GI_NODE_IP] - insert new $m_number IP's (comma separated) or confirm existing: " new_node_ip
+		read -p "Current list of master node(s) IP is [$GI_NODE_IP] - insert $m_number IP's (comma separated) or confirm existing <ENTER>: " new_node_ip
 		if [[ $new_node_ip != '' ]]
 		then
 			node_ip=$new_node_ip
@@ -460,57 +465,115 @@ do
 			node_ip=$GI_NODE_IP
 		fi
 	else
-       		read -p "Insert $m_number IP addresses of master nodes (comma separated): " node_ip
+		read -p "Insert $m_number IP address(es) of master node(s) (comma separated): " node_ip
 	fi
 	IFS=',' read -r -a node_ip_arr <<< $node_ip
 	GI_NODE_IP=$node_ip
-	echo ${node_ip_arr[@]}
 done
 echo export GI_NODE_IP=$node_ip >> $file
-if [[ "$is_onenode" == 'Y' && ! -z "$GI_NODE_MAC_ADDRESS" ]]
-then
-        read -p "Current cluster node MAC address is set to [$GI_NODE_MAC_ADDRESS] - insert new or confirm existing one <ENTER>: " new_node_mac
-        if [[ $new_node_mac != '' ]]
+declare -a node_mac_arr
+while [[ $m_number != ${#node_mac_arr[@]} ]]
+do
+	if [ ! -z "$GI_NODE_MAC_ADDRESS" ]
 	then
-		node_mac=$new_node_mac
+		read -p "Current master node MAC address list is set to [$GI_NODE_MAC_ADDRESS] - insert $m_number MAC address(es) or confirm existing one <ENTER>: " new_node_mac
+	        if [[ $new_node_mac != '' ]]
+		then
+			node_mac=$new_node_mac
+		else
+			node_mac=$GI_NODE_MAC_ADDRESS
+		fi
+	else
+		read -p "Insert $m_number MAC address(es) of master node(s): " node_mac
 	fi
-else
-	while [[ $node_mac == '' ]]
+	IFS=',' read -r -a node_mac_arr <<< $node_mac
+	GI_NODE_MAC_ADDRESS=$node_mac
+done
+echo export GI_NODE_MAC_ADDRESS=$node_mac >> $file
+declare -a node_name_arr
+while [[ $m_number != ${#node_name_arr[@]} ]]
+do
+	if [ ! -z "$GI_NODE_NAME" ]
+	then
+		read -p "Current master node name list is set to [$GI_NODE_NAME] - insert $m_number master name(s) or confirm existing one <ENTER>: " new_node_name
+	        if [[ $new_node_name != '' ]]
+	        then
+	                node_name=$new_node_name
+		else
+			node_name=$GI_NODE_NAME
+	        fi
+	else
+		read -p "Insert $m_number master node name(s): " node_name
+	fi
+	IFS=',' read -r -a node_name_arr <<< $node_name
+	GI_NODE_NAME=$node_name
+done
+echo export GI_NODE_NAME=$node_name >> $file
+if [ $is_onenode == 'N' ]
+then
+	declare -a worker_ip_arr
+	while [[ $w_number != ${#worker_ip_arr[@]} ]]
 	do
-		read -p "Insert OCP cluster node MAC address: " node_mac
+		if [ ! -z "$GI_WORKER_IP" ]
+		then
+			read -p "Current list of worker nodes IP list is set to [$GI_NODE_IP] - insert $w_number IP's (comma separated) or confirm existing <ENTER>: " new_worker_ip
+			if [[ $new_worker_ip != '' ]]
+                	then
+                        	worker_ip=$new_worker_ip
+	                else
+        	                worker_ip=$GI_WORKER_IP
+	                fi
+		else
+			read -p "Insert $w_number IP addresses of worker nodes (comma separated): " worker_ip
+		fi
+		IFS=',' read -r -a worker_ip_arr <<< $worker_ip
+	        GI_WORKER_IP=$worker_ip
 	done
+	echo export GI_WORKER_IP=$worker_ip >> $file
 fi
-if [[ "$is_onenode" == 'Y' && -z "$node_mac" ]]
+if [ $is_onenode == 'N' ]
 then
-	echo export GI_NODE_MAC_ADDRESS=$GI_NODE_MAC_ADDRESS >> $file
-else
-	echo export GI_NODE_MAC_ADDRESS=$node_mac >> $file
+	declare -a worker_mac_arr	
+	while [[ $w_number != ${#worker_mac_arr[@]} ]]
+	do
+		if [ ! -z "$GI_WORKER_MAC_ADDRESS" ]
+		then
+			read -p "Current worker node MAC address list is set to [$GI_WORKER_MAC_ADDRESS] - insert $w_number MAC addresses or confirm existing one <ENTER>: " new_worker_mac
+			if [[ $new_worker_mac != '' ]]
+	                then
+        	                worker_mac=$new_worker_mac
+                	else
+                        	worker_mac=$GI_WORKER_MAC_ADDRESS
+	                fi
+		else
+			read -p "Insert $w_number MAC addresses of worker nodes: " worker_mac
+		fi
+		IFS=',' read -r -a worker_mac_arr <<< $worker_mac
+	        GI_WORKER_MAC_ADDRESS=$worker_mac
+	done
+	echo export GI_WORKER_MAC_ADDRESS=$worker_mac >> $file
 fi
-if [[ -z $boot_name ]]
+if [ $is_onenode == 'N' ]
 then
-        echo export GI_BOOTSTRAP_NAME=$GI_BOOTSTRAP_NAME >> $file
-else
-        echo export GI_BOOTSTRAP_NAME=$boot_name >> $file
-fi
-if [[ ! -z "$GI_NODE_NAME" ]]
-then
-        read -p "Current cluster node name is set to [$GI_NODE_NAME] - insert new or confirm existing one <ENTER>: " new_node_name
-        if [[ $new_node_name != '' ]]
-        then
-                node_name=$new_node_name
-        fi
-else
-        while [[ $node_name == '' ]]
-        do
-                read -p "Insert OCP cluster node name [allinone]: " node_name
-	        node_name=${node_name:-allinone}
-        done
-fi
-if [[ -z $node_name ]]
-then
-        echo export GI_NODE_NAME=$GI_NODE_NAME >> $file
-else
-        echo export GI_NODE_NAME=$node_name >> $file
+	declare -a worker_name_arr
+	while [[ $w_number != ${#worker_name_arr[@]} ]]
+	do
+		if [ ! -z "$GI_WORKER_NAME" ]
+		then
+			read -p "Current worker node name list is set to [$GI_WORKER_NAME] - insert $w_number worker names or confirm existing one <ENTER>: " new_worker_name
+	                if [[ $new_worker_name != '' ]]
+	                then
+        	                worker_name=$new_worker_name
+                	else
+                        	worker_name=$GI_WORKER_NAME
+	                fi
+		else
+			read -p "Insert $w_number worker node names: " worker_name
+		fi
+		IFS=',' read -r -a worker_name_arr <<< $worker_name
+	        GI_WORKER_NAME=$worker_name
+	done
+	echo export GI_WORKER_NAME=$worker_name >> $file
 fi
 if [[ ! -z "$GI_DHCP_RANGE_START" ]]
 then
