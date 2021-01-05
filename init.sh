@@ -463,6 +463,7 @@ do
        		read -p "Insert $m_number IP addresses of master nodes (comma separated): " node_ip
 	fi
 	IFS=',' read -r -a node_ip_arr <<< $node_ip
+	GI_NODE_IP=$node_ip
 	echo ${node_ip_arr[@]}
 done
 echo export GI_NODE_IP=$node_ip >> $file
