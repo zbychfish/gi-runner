@@ -426,7 +426,7 @@
         line: "ptr-record={{ item.stdout }}"
       with_items:
         #- { ptr: '{{ node_ptr.results }}', name: '{{ node_ip|list + worker_ip|list }}' }
-        - {{ node_ptr.results }}
+        - { node_ptr.results }
 
     - name: Stop execution
       meta: end_play
