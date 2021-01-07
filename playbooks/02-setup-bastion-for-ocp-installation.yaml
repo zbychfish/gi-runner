@@ -89,7 +89,7 @@
     - name: Iterates
       debug: msg={{ item }}
       with_subelements:
-        - "gi_node"
+        - "{{ gi_node }}"
 
  
     - name: Stop execution
