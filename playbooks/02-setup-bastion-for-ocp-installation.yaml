@@ -37,6 +37,11 @@
         node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
         node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
 
+
+    - name: Stop if matchbox not uploaded for air-gapped installation
+      debug:
+        msg: "{{ node_ip }}"
+
     - name: Check masters parameters
       fail: msg="Variable {{ item.name }} is not set"
       when: item.value == ""
