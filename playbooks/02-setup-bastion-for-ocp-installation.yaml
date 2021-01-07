@@ -96,10 +96,6 @@
       with_items:
         - "{{ node_ip|list }}"
 
- 
-    - name: Stop execution
-      meta: end_play
-
     - name: Check configuration parameters for non air-gapped installation
       fail: msg="Variable {{ item.name }} is not set"
       when: item.value == "" and is_air_gapped == 'N'
