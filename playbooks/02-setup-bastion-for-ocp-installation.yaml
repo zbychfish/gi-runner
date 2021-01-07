@@ -94,7 +94,7 @@
     - name: Iterates
       debug: msg={{ item }}
       with_subelements:
-        - "{{ gi_node }}"
+        - "{{ node_ip }}"
 
  
     - name: Stop execution
