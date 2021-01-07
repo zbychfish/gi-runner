@@ -86,6 +86,15 @@
         - { name: "GI_NTP_SRV", value: "{{ ntp_server }}" }
         - { name: "GI_HS_SIZE", value: "{{ hs_size }}" }
 
+    - name: Iterates
+      debug: msg={{ item }}
+      with_subelements:
+        - "gi_node"
+
+ 
+    - name: Stop execution
+      meta: end_play
+
     - name: Check configuration parameters for non air-gapped installation
       fail: msg="Variable {{ item.name }} is not set"
       when: item.value == "" and is_air_gapped == 'N'
