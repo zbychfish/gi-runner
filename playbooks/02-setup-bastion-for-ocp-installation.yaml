@@ -357,7 +357,8 @@
       when: true
 
     - debug:
-        msg: "{{ node_ptr }}"
+        msg: "{{ item.stdout }}"
+      with_items: "{{ node_ptr.results }}"
       when: true
 
     - name: Copy original dnsmasq config file
