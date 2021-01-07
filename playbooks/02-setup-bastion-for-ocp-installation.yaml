@@ -323,10 +323,8 @@
         dest: "/var/lib/matchbox/groups/{{ item.id }}.json"
       with_items:
         - { id: "master", name: "OCP master", profile: "master", mac: "{{ node_mac|list }}" }
+        - { id: "worker", name: "OCP worker", profile: "worker", mac: "{{ worker_mac|list }}" }
       when: true
-
-    - name: Stop execution
-      meta: end_play
 
     - name: Matchbox profiles files
       vars:
@@ -339,7 +337,8 @@
         dest: "/var/lib/matchbox/profiles/{{ item.id }}.json"
       with_items:
         - { id: "bootstrap", name: "Bootstrap node", ign_file: "bootstrap.ign", dom: "{{ domain }}" }
-        - { id: "node", name: "OCP node", ign_file: "master.ign", dom: "{{ domain }}" }
+        - { id: "master", name: "OCP master", ign_file: "master.ign", dom: "{{ domain }}" }
+        - { id: "worker", name: "OCP worker", ign_file: "worker.ign", dom: "{{ domain }}" }
       when: true
 
     - name: Prepare PTR name for boot
@@ -348,15 +347,21 @@
       register: boot_ptr
       when: true
 
-    - name: Prepare PTR name for node
+    - name: Prepare PTR name for nodes
       shell: >
-        echo "{{ node_ip }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
+        echo "{{ item }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
       register: node_ptr
+      with_items:
+        - "{{ node_ip }}"
+        - "{{ worker_ip }}"
       when: true
 
     - debug:
-        var: boot_ptr.stdout
+        var: node_ptr.stdout
       when: false
+
+    - name: Stop execution
+      meta: end_play
 
     - name: Copy original dnsmasq config file
       copy:
