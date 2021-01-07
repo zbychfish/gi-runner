@@ -422,9 +422,11 @@
     - name: Add  PTR lines to dnsmasq.conf
       lineinfile:
         path: /etc/dnsmasq.conf
-        line: "ptr-record={{ item.ptr.stdout }},{{ item.name }}.{{ domain }}"
+        #line: "ptr-record={{ item.ptr.stdout }},{{ item.name }}.{{ domain }}"
+        line: "ptr-record={{ item.ptr.stdout }}"
       with_items:
-        - { ptr: '{{ node_ptr.results }}', name: '{{ node_ip|list + worker_ip|list }}' }
+        #- { ptr: '{{ node_ptr.results }}', name: '{{ node_ip|list + worker_ip|list }}' }
+        - { ptr: '{{ node_ptr.results }}' }
 
     - name: Stop execution
       meta: end_play
