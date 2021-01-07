@@ -358,7 +358,7 @@
 
     - debug:
         var: node_ptr.stdout
-      when: false
+      when: true
 
     - name: Stop execution
       meta: end_play
