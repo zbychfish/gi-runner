@@ -58,7 +58,7 @@
         - { name: "GI_WORKER_IP", value: "{{ worker_ip }}" }
         - { name: "GI_WORKER_MAC_ADDRESS", value: "{{ worker_mac }}" }
         - { name: "GI_WORKER_NAME", value: "{{ worker_name }}" }
-          when: node_ip|length > 1 and item.value == ""
+       when: node_ip|length > 1 and item.value == ""
 
     - name: Check other configuration parameters
       fail: msg="Variable {{ item.name }} is not set"
