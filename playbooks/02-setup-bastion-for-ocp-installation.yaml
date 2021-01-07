@@ -303,10 +303,7 @@
         - { src: "/usr/share/ipxe/ipxe-x86_64.efi", dest: "/var/lib/tftp" }
       when: true
 
-    - name: Stop execution
-      meta: end_play
-
-    - name: Matchbox groups files
+    - name: Matchbox bootstrap group json
       vars:
         id: "{{ item.id }}"
         name: "{{ item.name }}"
@@ -317,8 +314,23 @@
         dest: "/var/lib/matchbox/groups/{{ item.id }}.json"
       with_items:
         - { id: "bootstrap", name: "Bootstrap node", profile: "bootstrap", mac: "{{ boot_mac }}" }
-        - { id: "node", name: "OCP node", profile: "node", mac: "{{ node_mac }}" }
       when: true
+
+    - name: Matchbox masters group json
+      vars:
+        id: "{{ item.id }}"
+        name: "{{ item.name }}"
+        profile: "{{ item.profile }}"
+        mac: "{{ item.mac }}"
+      template:
+        src: "groups_list.j2"
+        dest: "/var/lib/matchbox/groups/{{ item.id }}.json"
+      with_items:
+        - { id: "master", name: "OCP master", profile: "master", mac: "{{ node_mac|list }}" }
+      when: true
+
+    - name: Stop execution
+      meta: end_play
 
     - name: Matchbox profiles files
       vars:

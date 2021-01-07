@@ -1,0 +1,10 @@
+{
+ "id": "{{ id }}",
+ "name": "{{ name }}",
+ "profile": "{{ profile }}",
+ "selector": {
+{% for mac_address in mac %}
+  "mac": "{{ mac_address }},"
+{% endfor %}
+ }
+}
