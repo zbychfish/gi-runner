@@ -45,7 +45,7 @@
         worker_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
         worker_mac: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
         worker_name: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
-      when: groups["GI_NODE_IP"]|length>1
+      when: groups["node_ip"]|length>1
 
     - name: Check configuration parameters
       fail: msg="Variable {{ item.name }} is not set"
