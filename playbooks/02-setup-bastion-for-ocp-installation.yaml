@@ -360,9 +360,6 @@
         msg: "{{ node_ptr }}"
       when: true
 
-    - name: Stop execution
-      meta: end_play
-
     - name: Copy original dnsmasq config file
       copy:
         src: /etc/dnsmasq.conf
@@ -398,7 +395,7 @@
         - "address=/{{ boot_name }}.{{ domain }}/{{ boot_ip }}"
         - "ptr-record={{ boot_ptr.stdout }},{{ boot_name }}.{{ domain }}"
         - "address=/{{ node_name}}.{{ domain }}/{{ node_ip }}"
-        - "ptr-record={{ node_ptr.stdout }},{{ node_name }}.{{ domain }}"
+          #- "ptr-record={{ node_ptr.stdout }},{{ node_name }}.{{ domain }}"
         - "address=/matchbox.{{ domain }}/{{ bas_ip }}"
         - "address=/api.{{ domain }}/{{ bas_ip }}"
         - "address=/api-int.{{ domain }}/{{ bas_ip }}"
@@ -420,6 +417,16 @@
         - "dhcp-userclass=set:ipxe,iPXE"
         - "dhcp-boot=tag:ipxe,http://matchbox.{{ domain }}:8080/boot.ipxe"
       when: true
+
+    - name: Add  PTR lines to dnsmasq.conf
+      lineinfile:
+        path: /etc/dnsmasq.conf
+        line: "ptr-record={{ item.ptr }},{{ item.name }}.{{ domain }}"
+      with_items:
+        - { ptr: '{{ node_ptr.stdout }}', name: '{{ node_ip + worker_ip }}' }
+
+    - name: Stop execution
+      meta: end_play
 
     - name: Start and enable dnsmasq
       service:
