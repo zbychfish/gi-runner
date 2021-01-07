@@ -357,7 +357,7 @@
       when: true
 
     - debug:
-        msg: "{{ item.stdout.stdout }}"
+        msg: "{{ item.stdout }}"
       with_items: "{{ node_ptr.results }}"
       when: true
 
