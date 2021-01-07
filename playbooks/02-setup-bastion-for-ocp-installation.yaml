@@ -423,7 +423,7 @@
         path: /etc/dnsmasq.conf
         line: "ptr-record={{ item.ptr.stdout }},{{ item.name }}.{{ domain }}"
       with_items:
-        - { ptr: '{{ node_ptr.results }}', name: '{{ node_ip + worker_ip }}' }
+        - { ptr: '{{ node_ptr.results }}', name: '{{ node_ip|list + worker_ip|list }}' }
 
     - name: Stop execution
       meta: end_play
