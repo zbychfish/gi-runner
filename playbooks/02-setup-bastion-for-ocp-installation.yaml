@@ -97,6 +97,9 @@
       loop:
         - { name: "GI_NOPROXY_NET", value: "{{ noproxy_net }}" }
 
+    - name: Stop execution
+      meta: end_play
+
     - name: Copy original NIC config file
       copy:
         src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
