@@ -77,7 +77,7 @@
       pip:
         name: "dnspython"
         state: "absent"
-      when: true
+      when: false
   
     - name: Remove software packages
       dnf:
@@ -92,5 +92,5 @@
           - "dnsmasq"
         state: "absent"
         autoremove: yes
-      when: true
+      when: false
 
