@@ -357,7 +357,7 @@
       when: true
 
     - debug:
-        var: node_ptr.stdout
+        msg: "{{ node_ptr }}"
       when: true
 
     - name: Stop execution
