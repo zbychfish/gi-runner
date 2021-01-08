@@ -639,7 +639,7 @@
         dest: ../ocp/install-config.yaml
       vars:
         n_workers: "{{ worker_ip|length }}"
-        n_masters: "{{ master_ip|length }}"
+        n_masters: "{{ node_ip|length }}"
       when: proxy == "NO_PROXY" and is_air_gapped == 'N'
 
     - name: Stop execution
