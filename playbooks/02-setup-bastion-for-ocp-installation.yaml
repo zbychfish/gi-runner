@@ -315,13 +315,14 @@
     - name: Matchbox masters group json
       template:
         src: "groups_list.j2"
-        dest: "/var/lib/matchbox/groups/{{ item.id }}.{{ item.mac }}.json"
+        dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
       vars:
         id: "master"
         name: "OCP master"
         profile: "master"
+        mac: "{{ item }}"
       with_items:
-        - { mac: "{{ node_mac|list }}" }
+        - "{{ node_mac|list }}"
         #- { id: "worker", name: "OCP worker", profile: "worker", mac: "{{ worker_mac|list }}" }
 
     - name: Matchbox profiles files
