@@ -425,7 +425,7 @@
         #line: "ptr-record={{ item.ptr.stdout }},{{ item.name }}.{{ domain }}"
         line: "ptr-record={{ item.1 }},{{ item.2 }}.{{ domain }}"
       with_nested:
-        - "{{ node_ptr.results.stdout }}"
+        - "{{ node_ptr.results }}"
         - "{{ node_name + worker_name }}"
 
     - name: Stop execution
