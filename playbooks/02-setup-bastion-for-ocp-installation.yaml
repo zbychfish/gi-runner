@@ -315,7 +315,7 @@
     - name: Matchbox masters group json
       template:
         src: "groups_list.j2"
-        dest: "/var/lib/matchbox/groups/{{ item.id }}.{{ mac }}.json"
+        dest: "/var/lib/matchbox/groups/{{ item.id }}.{{ item.mac }}.json"
       vars:
         id: "master"
         name: "OCP master"
