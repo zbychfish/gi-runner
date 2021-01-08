@@ -328,7 +328,6 @@
       with_items:
         - { mac: "{{ node_mac|list }}" }
         #- { id: "worker", name: "OCP worker", profile: "worker", mac: "{{ worker_mac|list }}" }
-          when: true
 
     - name: Matchbox profiles files
       vars:
