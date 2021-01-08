@@ -96,6 +96,18 @@
       with_items:
         - "{{ node_ip|list }}"
 
+    - name: Prepare PTR name for nodes
+      shell: >
+        echo "{{ item }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
+      register: node_ptr
+      with_items:
+        - "{{ node_ip+worker_ip }}"
+      when: true
+
+    - name: Stop execution
+      meta: end_play
+
+
     - name: Check configuration parameters for non air-gapped installation
       fail: msg="Variable {{ item.name }} is not set"
       when: item.value == "" and is_air_gapped == 'N'
