@@ -313,11 +313,6 @@
       when: true
 
     - name: Matchbox masters group json
-      vars:
-        id: "{{ item.id }}"
-        name: "{{ item.name }}"
-        profile: "{{ item.profile }}"
-        mac: "{{ item.mac }}"
       template:
         src: "groups_list.j2"
         dest: "/var/lib/matchbox/groups/{{ item.id }}.{{ mac }}.json"
