@@ -423,7 +423,7 @@
       lineinfile:
         path: /etc/dnsmasq.conf
         #line: "ptr-record={{ item.ptr.stdout }},{{ item.name }}.{{ domain }}"
-        line: "ptr-record={{ item.stdout }}"
+        line: "ptr-record={{ item.item.stdout }}"
       with_items:
         #- { ptr: '{{ node_ptr.results }}', name: '{{ node_ip|list + worker_ip|list }}' }
         - { node_ptr.results }
