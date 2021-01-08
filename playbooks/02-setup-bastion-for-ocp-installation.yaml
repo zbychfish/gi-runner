@@ -323,7 +323,18 @@
         mac: "{{ item }}"
       with_items:
         - "{{ node_mac|list }}"
-        #- { id: "worker", name: "OCP worker", profile: "worker", mac: "{{ worker_mac|list }}" }
+
+    - name: Matchbox worker group json
+      template:
+        src: "groups.j2"
+        dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
+      vars:
+        id: "worker"
+        name: "OCP worker"
+        profile: "worker"
+        mac: "{{ item }}"
+      with_items:
+        - "{{ worker_mac|list }}"
 
     - name: Matchbox profiles files
       vars:
