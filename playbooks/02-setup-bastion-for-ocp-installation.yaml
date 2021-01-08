@@ -635,20 +635,15 @@
 
     - name: Create OCP config for standard deployment
       template:
-        src: install-config-standard.js
+        src: install-config.js
         dest: ../ocp/install-config.yaml
       vars:
         n_workers: "{{ worker_ip|length }}"
         n_masters: "{{ master_ip|length }}"
+      when: proxy == "NO_PROXY" and is_air_gapped == 'N'
 
     - name: Stop execution
       meta: end_play
-
-    - name: Create OCP config file without proxy
-      template:
-        src: install-config.j2
-        dest: ../ocp/install-config.yaml
-      when: proxy == "NO_PROXY" and is_air_gapped == 'N'
 
     - name: Create OCP config file with proxy
       template:
