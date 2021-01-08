@@ -395,7 +395,7 @@
 
     - name: Prepare SRV entries for master nodes
       shell: >
-        echo "srv-host=/_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
+        echo "srv-host=_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
       register: srv_dns
       with_together:
         - [ "etcd-0", "etcd-1", "etcd-2" ]
