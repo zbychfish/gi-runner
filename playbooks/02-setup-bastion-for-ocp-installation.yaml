@@ -96,24 +96,6 @@
       with_items:
         - "{{ node_ip|list }}"
 
-    - name: Prepare PTR name for nodes
-      shell: >
-        echo "ptr="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`
-      register: node_ptr
-      with_together:
-        - "{{ node_ip+worker_ip }}"
-        - "{{ node_name+worker_name }}"
-      when: true
-
-    - name: Stop if matchbox not uploaded for air-gapped installation
-      debug:
-        msg: "{{ node_ptr }}"
-
-
-    - name: Stop execution
-      meta: end_play
-
-
     - name: Check configuration parameters for non air-gapped installation
       fail: msg="Variable {{ item.name }} is not set"
       when: item.value == "" and is_air_gapped == 'N'
@@ -367,11 +349,11 @@
 
     - name: Prepare PTR name for nodes
       shell: >
-        echo "{{ item }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
+        echo "ptr_record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ node_name}}.{{ domain }}"
       register: node_ptr
-      with_items:
-        - "{{ node_ip }}"
-        - "{{ worker_ip }}"
+      with_together:
+        - "{{ node_ip+worker_ip }}"
+        - "{{ node_name+worker_name }}"
       when: true
 
     - debug:
@@ -441,10 +423,8 @@
       lineinfile:
         path: /etc/dnsmasq.conf
         #line: "ptr-record={{ item.ptr.stdout }},{{ item.name }}.{{ domain }}"
-        line: "ptr-record={{ item.0 }},.{{ domain }}"
-      loop: "{{ node_ptr.results.stdout }}|zip(node_name + worker_name)|list }}"
-      #- { : "{{ node_ptr.results }}" }
-        #- "{{ node_name + worker_name }}"
+        line: "{{ item }}"
+      with_items: "{{ node_ptr }}"
 
     - name: Stop execution
       meta: end_play
