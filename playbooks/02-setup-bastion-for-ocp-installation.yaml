@@ -66,9 +66,9 @@
         - { name: "GI_WORKER_NAME", value: "{{ worker_name }}" }
 
     - name: Copy original HA proxy config file
-      copy:
-        src: /etc/haproxy/haproxy.cfg
-        dest: /etc/haproxy/haproxy.cfg.orig
+      template:
+        src: haproxy.j2
+        dest: /etc/haproxy/haproxy.cfg
       vars:
         machines: node_name|zip(node_ip)
 
@@ -697,6 +697,7 @@
       copy:
         src: /etc/haproxy/haproxy.cfg
         dest: /etc/haproxy/haproxy.cfg.orig
+      when: false
 
     - name: Create HA Proxy config file
       template:
