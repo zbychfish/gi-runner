@@ -425,7 +425,7 @@
         #line: "ptr-record={{ item.ptr.stdout }},{{ item.name }}.{{ domain }}"
         line: "ptr-record={{ item.0 }},.{{ domain }}"
       loop: "{{ node_ptr.results }}|zip(node_name + worker_name)|list }}"
-        - { : "{{ node_ptr.results }}" }
+      #- { : "{{ node_ptr.results }}" }
         #- "{{ node_name + worker_name }}"
 
     - name: Stop execution
