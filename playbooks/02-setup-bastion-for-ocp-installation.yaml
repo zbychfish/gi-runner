@@ -436,7 +436,7 @@
         - "address=/api.{{ domain }}/{{ bas_ip }}"
         - "address=/api-int.{{ domain }}/{{ bas_ip }}"
           #- "address=/etcd-0.{{ domain }}/{{ node_ip }}"
-        - "address=/.apps.{{ domain }}/{{ boot_ip }}"
+        - "address=/.apps.{{ domain }}/{{ bas_ip }}"
           #- "srv-host=_etcd-server-ssl._tcp,etcd-0.{{ domain }},2380"
         - "#TFTP"
         - "enable-tftp"
@@ -483,9 +483,6 @@
         path: /etc/dnsmasq.conf
         line: "{{ item.stdout }}"
       with_items: "{{ srv_dns.results }}"
-
-    - name: Stop execution
-      meta: end_play
 
     - name: Start and enable dnsmasq
       service:
@@ -635,6 +632,17 @@
         src: install-config-air-gapped.j2
         dest: ../ocp/install-config.yaml
       when: is_air_gapped == 'Y'
+
+    - name: Create OCP config for standard deployment
+      template:
+        src: install-config-standard.js
+        dest: ../ocp/install-config.yaml
+      vars:
+        n_workers: "{{ worker_ip|length }}"
+        n_masters: "{{ master_ip|length }}"
+
+    - name: Stop execution
+      meta: end_play
 
     - name: Create OCP config file without proxy
       template:
