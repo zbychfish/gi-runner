@@ -30,7 +30,9 @@ backend openshift-api-server
  balance source
  mode tcp
  server m0 {{ boot_ip }}:6443 check
- server m1 {{ node_ip }}:6443 check
+{% for name, ip in machines %}
+ server {{ name }} {{ ip }}:6443 check
+{% endfor %}
 frontend machine-config-server
  bind *:22623
  default_backend machine-config-server
