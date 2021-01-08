@@ -380,7 +380,7 @@
       register: etcd_dns
       with_together:
         - "etcd-0,etcd-1,etcd-2"
-        - "{{ _ip }}"
+        - "{{ node_ip }}"
       when: true
 
     - debug:
