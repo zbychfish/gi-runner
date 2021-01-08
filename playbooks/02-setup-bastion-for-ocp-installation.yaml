@@ -635,7 +635,7 @@
 
     - name: Create OCP config for standard deployment
       template:
-        src: install-config.js
+        src: install-config.j2
         dest: ../ocp/install-config.yaml
       vars:
         n_workers: "{{ worker_ip|length }}"
