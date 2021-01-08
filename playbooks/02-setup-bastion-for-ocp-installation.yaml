@@ -70,7 +70,8 @@
         src: haproxy.j2
         dest: /etc/haproxy/haproxy.cfg
       vars:
-        machines: "{{ node_name|zip(node_ip)|list }}"
+        masters: "{{ node_name|zip(node_ip)|list }}"
+        workers: "{{ worker_name|zip(worker_ip)|list }}"
 
     - name: Stop execution
       meta: end_play
