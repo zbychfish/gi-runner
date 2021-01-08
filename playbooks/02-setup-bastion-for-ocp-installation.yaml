@@ -320,11 +320,15 @@
         mac: "{{ item.mac }}"
       template:
         src: "groups_list.j2"
-        dest: "/var/lib/matchbox/groups/{{ item.id }}.json"
+        dest: "/var/lib/matchbox/groups/{{ item.id }}.{{ mac }}.json"
+      vars:
+        id: "master"
+        name: "OCP master"
+        profile: "master"
       with_items:
-        - { id: "master", name: "OCP master", profile: "master", mac: "{{ node_mac|list }}" }
-        - { id: "worker", name: "OCP worker", profile: "worker", mac: "{{ worker_mac|list }}" }
-      when: true
+        - { mac: "{{ node_mac|list }}" }
+        #- { id: "worker", name: "OCP worker", profile: "worker", mac: "{{ worker_mac|list }}" }
+          when: true
 
     - name: Matchbox profiles files
       vars:
@@ -349,7 +353,7 @@
 
     - name: Prepare PTR name for nodes
       shell: >
-        echo "ptr_record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ item.1 }}.{{ domain }}"
+        echo "ptr-record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ item.1 }}.{{ domain }}"
       register: node_ptr
       with_together:
         - "{{ node_ip+worker_ip }}"
@@ -385,7 +389,7 @@
 
     - name: Prepare SRV entries for master nodes
       shell: >
-        echo "srv_host=/_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
+        echo "srv-host=/_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
       register: srv_dns
       with_together:
         - [ "etcd-0", "etcd-1", "etcd-2" ]
@@ -472,13 +476,13 @@
         line: "{{ item.stdout }}"
       with_items: "{{ node_dns.results }}"
 
-    - name: Add DNS lines to dnsmasq.conf
+    - name: Add ETCD lines to dnsmasq.conf
       lineinfile:
         path: /etc/dnsmasq.conf
         line: "{{ item.stdout }}"
       with_items: "{{ etcd_dns.results }}"
 
-    - name: Add DNS lines to dnsmasq.conf
+    - name: Add SRV lines to dnsmasq.conf
       lineinfile:
         path: /etc/dnsmasq.conf
         line: "{{ item.stdout }}"
