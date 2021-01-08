@@ -374,6 +374,15 @@
         - "{{ node_ip+worker_ip }}"
       when: true
 
+    - name: Prepare ETCD entries for master nodes
+      shell: >
+        echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
+      register: etcd_dns
+      with_together:
+        - "etcd-0,etcd-1,etcd-2"
+        - "{{ _ip }}"
+      when: true
+
     - debug:
         msg: "{{ item.stdout }}"
       with_items: "{{ node_ptr.results }}"
@@ -418,7 +427,7 @@
         - "address=/matchbox.{{ domain }}/{{ bas_ip }}"
         - "address=/api.{{ domain }}/{{ bas_ip }}"
         - "address=/api-int.{{ domain }}/{{ bas_ip }}"
-        - "address=/etcd-0.{{ domain }}/{{ node_ip }}"
+          #- "address=/etcd-0.{{ domain }}/{{ node_ip }}"
         - "address=/.apps.{{ domain }}/{{ node_ip }}"
         - "srv-host=_etcd-server-ssl._tcp,etcd-0.{{ domain }},2380"
         - "#TFTP"
@@ -447,13 +456,19 @@
       lineinfile:
         path: /etc/dnsmasq.conf
         line: "{{ item.stdout }}"
-      with_items: "{{ dhcp_host.results }}"
+      with_items: "{{ node_dhcp.results }}"
 
     - name: Add DNS lines to dnsmasq.conf
       lineinfile:
         path: /etc/dnsmasq.conf
         line: "{{ item.stdout }}"
       with_items: "{{ node_dns.results }}"
+
+    - name: Add DNS lines to dnsmasq.conf
+      lineinfile:
+        path: /etc/dnsmasq.conf
+        line: "{{ item.stdout }}"
+      with_items: "{{ etcd_dns.results }}"
 
     - name: Stop execution
       meta: end_play
