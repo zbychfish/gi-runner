@@ -105,6 +105,11 @@
         - "{{ node_name+worker_name }}"
       when: true
 
+    - name: Stop if matchbox not uploaded for air-gapped installation
+      debug:
+        msg: "{{ node_ptr }}"
+
+
     - name: Stop execution
       meta: end_play
 
