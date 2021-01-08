@@ -387,7 +387,7 @@
       shell: >
         echo "srv_host=/_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
       register: srv_dns
-      with_items:
+      with_together:
         - [ "etcd-0", "etcd-1", "etcd-2" ]
       when: true
 
@@ -508,7 +508,7 @@
           - "Resolve IP of SRV record _etcd-server-ssl._tcp.{{ domain }} - {{ lookup('dig', '_etcd-server-ssl._tcp.{{ domain }}./SRV', '@127.0.0.1') }}"
           - "Resolve name from IP for {{ boot_ip }} - {{ lookup('dig', '{{ boot_ptr.stdout }}./PTR', '@127.0.0.1') }}"
           - "Resolve name from IP for {{ node_ip }} - {{ lookup('dig', '{{ node_ptr.stdout }}./PTR', '@127.0.0.1') }}"
-      when: true
+      when: false
 
     - name: Set SELINUX for dnsmasq
       shell:
