@@ -379,7 +379,7 @@
         echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
       register: etcd_dns
       with_together:
-        - "etcd-0,etcd-1,etcd-2"
+        - [ "etcd-0", "etcd-1", "etcd-2" ]
         - "{{ node_ip }}"
       when: true
 
