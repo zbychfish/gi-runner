@@ -65,6 +65,16 @@
         - { name: "GI_WORKER_MAC_ADDRESS", value: "{{ worker_mac }}" }
         - { name: "GI_WORKER_NAME", value: "{{ worker_name }}" }
 
+    - name: Copy original HA proxy config file
+      copy:
+        src: /etc/haproxy/haproxy.cfg
+        dest: /etc/haproxy/haproxy.cfg.orig
+      vars:
+        machines: node_name|zip(node_ip)
+
+    - name: Stop execution
+      meta: end_play
+
     - name: Check other configuration parameters
       fail: msg="Variable {{ item.name }} is not set"
       when: item.value == "" 
@@ -642,9 +652,6 @@
         n_masters: "{{ node_ip|length }}"
       when: proxy == "NO_PROXY" and is_air_gapped == 'N'
 
-    - name: Stop execution
-      meta: end_play
-
     - name: Create OCP config file with proxy
       template:
         src: install-config-proxy.j2
@@ -681,6 +688,10 @@
       with_items:
         - { src: "../ocp/bootstrap.ign", dest: "/var/lib/matchbox/ignition/" }
         - { src: "../ocp/master.ign", dest: "/var/lib/matchbox/ignition/" }
+        - { src: "../ocp/worker.ign", dest: "/var/lib/matchbox/ignition/" }
+
+    - name: Stop execution
+      meta: end_play
 
     - name: Copy original HA proxy config file
       copy:
