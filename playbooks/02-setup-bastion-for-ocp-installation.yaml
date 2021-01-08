@@ -356,6 +356,24 @@
         - "{{ node_name+worker_name }}"
       when: true
 
+    - name: Prepare DHCP entries for nodes
+      shell: >
+        echo "dhcp-host={{ item.0 }},{{ item.1 }},12h"
+      register: node_dhcp
+      with_together:
+        - "{{ node_mac+worker_mac }}"
+        - "{{ node_ip+worker_ip }}"
+      when: true
+
+    - name: Prepare DNS entries for nodes
+      shell: >
+        echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
+      register: node_dns
+      with_together:
+        - "{{ node_name+worker_name }}"
+        - "{{ node_ip+worker_ip }}"
+      when: true
+
     - debug:
         msg: "{{ item.stdout }}"
       with_items: "{{ node_ptr.results }}"
@@ -388,14 +406,14 @@
         - "dhcp-option=6,{{ bas_ip }}"
         - "dhcp-range={{ dhcp_range_start }},{{ dhcp_range_stop }},12h"
         - "dhcp-host={{ boot_mac }},{{ boot_ip }},12h"
-        - "dhcp-host={{ node_mac }},{{ node_ip }},12h"
+          #- "dhcp-host={{ node_mac }},{{ node_ip }},12h"
         - "domain={{ domain }}"
         - "#Static DNS"
         - "address=/{{ bas_name }}.{{ domain }}/{{ bas_ip }}"
         - "address=/registry.{{ domain }}/{{ bas_ip }}"
         - "address=/{{ boot_name }}.{{ domain }}/{{ boot_ip }}"
         - "ptr-record={{ boot_ptr.stdout }},{{ boot_name }}.{{ domain }}"
-        - "address=/{{ node_name}}.{{ domain }}/{{ node_ip }}"
+          #- "address=/{{ node_name}}.{{ domain }}/{{ node_ip }}"
           #- "ptr-record={{ node_ptr.stdout }},{{ node_name }}.{{ domain }}"
         - "address=/matchbox.{{ domain }}/{{ bas_ip }}"
         - "address=/api.{{ domain }}/{{ bas_ip }}"
@@ -422,9 +440,20 @@
     - name: Add  PTR lines to dnsmasq.conf
       lineinfile:
         path: /etc/dnsmasq.conf
-        #line: "ptr-record={{ item.ptr.stdout }},{{ item.name }}.{{ domain }}"
         line: "{{ item.stdout }}"
       with_items: "{{ node_ptr.results }}"
+
+    - name: Add DHCP lines to dnsmasq.conf
+      lineinfile:
+        path: /etc/dnsmasq.conf
+        line: "{{ item.stdout }}"
+      with_items: "{{ dhcp_host.results }}"
+
+    - name: Add DNS lines to dnsmasq.conf
+      lineinfile:
+        path: /etc/dnsmasq.conf
+        line: "{{ item.stdout }}"
+      with_items: "{{ node_dns.results }}"
 
     - name: Stop execution
       meta: end_play
