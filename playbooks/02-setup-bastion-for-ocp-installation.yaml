@@ -423,8 +423,8 @@
       lineinfile:
         path: /etc/dnsmasq.conf
         #line: "ptr-record={{ item.ptr.stdout }},{{ item.name }}.{{ domain }}"
-        line: "{{ item }}"
-      with_items: "{{ node_ptr }}"
+        line: "{{ item.stdout }}"
+      with_items: "{{ node_ptr.results }}"
 
     - name: Stop execution
       meta: end_play
