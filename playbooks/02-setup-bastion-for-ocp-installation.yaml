@@ -314,7 +314,7 @@
 
     - name: Matchbox masters group json
       template:
-        src: "groups_list.j2"
+        src: "groups.j2"
         dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
       vars:
         id: "master"
