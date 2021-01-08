@@ -65,17 +65,6 @@
         - { name: "GI_WORKER_MAC_ADDRESS", value: "{{ worker_mac }}" }
         - { name: "GI_WORKER_NAME", value: "{{ worker_name }}" }
 
-    - name: Copy original HA proxy config file
-      template:
-        src: haproxy.j2
-        dest: /etc/haproxy/haproxy.cfg
-      vars:
-        masters: "{{ node_name|zip(node_ip)|list }}"
-        workers: "{{ worker_name|zip(worker_ip)|list }}"
-
-    - name: Stop execution
-      meta: end_play
-
     - name: Check other configuration parameters
       fail: msg="Variable {{ item.name }} is not set"
       when: item.value == "" 
@@ -704,7 +693,13 @@
       template:
         src: haproxy.j2
         dest: /etc/haproxy/haproxy.cfg
-      when: true
+      vars:
+        masters: "{{ node_name|zip(node_ip)|list }}"
+        workers: "{{ worker_name|zip(worker_ip)|list }}"
+
+    - name: Stop execution
+      meta: end_play
+      when: false
 
     - name: Set SELinux for HA Proxy
       command:
