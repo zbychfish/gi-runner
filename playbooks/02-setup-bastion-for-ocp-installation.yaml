@@ -383,6 +383,14 @@
         - "{{ node_ip }}"
       when: true
 
+    - name: Prepare SRV entries for master nodes
+      shell: >
+        echo "srv_host=/_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
+      register: srv_dns
+      with_items:
+        - [ "etcd-0", "etcd-1", "etcd-2" ]
+      when: true
+
     - debug:
         msg: "{{ item.stdout }}"
       with_items: "{{ node_ptr.results }}"
@@ -428,8 +436,8 @@
         - "address=/api.{{ domain }}/{{ bas_ip }}"
         - "address=/api-int.{{ domain }}/{{ bas_ip }}"
           #- "address=/etcd-0.{{ domain }}/{{ node_ip }}"
-        - "address=/.apps.{{ domain }}/{{ node_ip }}"
-        - "srv-host=_etcd-server-ssl._tcp,etcd-0.{{ domain }},2380"
+        - "address=/.apps.{{ domain }}/{{ boot_ip }}"
+          #- "srv-host=_etcd-server-ssl._tcp,etcd-0.{{ domain }},2380"
         - "#TFTP"
         - "enable-tftp"
         - "tftp-root=/var/lib/tftp"
@@ -469,6 +477,12 @@
         path: /etc/dnsmasq.conf
         line: "{{ item.stdout }}"
       with_items: "{{ etcd_dns.results }}"
+
+    - name: Add DNS lines to dnsmasq.conf
+      lineinfile:
+        path: /etc/dnsmasq.conf
+        line: "{{ item.stdout }}"
+      with_items: "{{ srv_dns.results }}"
 
     - name: Stop execution
       meta: end_play
