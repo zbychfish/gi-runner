@@ -680,9 +680,6 @@
         - { src: "../ocp/master.ign", dest: "/var/lib/matchbox/ignition/" }
         - { src: "../ocp/worker.ign", dest: "/var/lib/matchbox/ignition/" }
 
-    - name: Stop execution
-      meta: end_play
-
     - name: Copy original HA proxy config file
       copy:
         src: /etc/haproxy/haproxy.cfg
