@@ -100,8 +100,9 @@
       shell: >
         echo "{{ item }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
       register: node_ptr
-      with_items:
+      with_nested:
         - "{{ node_ip+worker_ip }}"
+        - "{{ node_name+worker_name }}"
       when: true
 
     - name: Stop execution
