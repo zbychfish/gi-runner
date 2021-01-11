@@ -335,9 +335,6 @@
     with_items:
       - { cmd: "oc apply -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
 
-  - name: Stop playbook
-    meta: end_play
-
   - name: Wait for correct Rook Ceph cluster deployment
     shell:
       cmd: "oc get cephcluster -n rook-ceph --config ../ocp/auth/kubeconfig --no-headers -o custom-columns=HEALTH:.status.ceph.health"
@@ -366,6 +363,9 @@
     until: "image_pvc_status.stdout == \"Bound\""
     retries: 30
     delay: 10
+
+  - name: Stop playbook
+    meta: end_play
 
   - name: Configure OCP registry with PVC
     shell:
