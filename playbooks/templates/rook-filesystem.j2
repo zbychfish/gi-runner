@@ -6,16 +6,16 @@ metadata:
 spec:
   metadataPool:
     replicated:
-      size: 1
+      size: {{ replica_number }}
       requireSafeReplicaSize: false
   dataPools:
     - failureDomain: osd
       replicated:
-        size: 1
+        size: {{ replica_number }}
         requireSafeReplicaSize: false
       compressionMode: none
   preservePoolsOnDelete: false
   metadataServer:
-    activeCount: 1
+    activeCount: {{ replica_number }}
     activeStandby: true
 

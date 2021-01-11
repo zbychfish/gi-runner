@@ -275,9 +275,12 @@
     vars:
       replica_number: "{{ '3' if storage_type == 'rook' else '1' }}"
     template:
-      src: "rook-operator.j2"
-      dest: "../scripts/rook-operator.yaml"
+      src: "{{ item.src }} "
+      dest: "../scripts/{{ item.dest }}"
     when: storage_type != "ocs"
+    with_items:
+      - { src: "rook-operator.j2", dest: "rook-operator.yaml" } 
+      - { src: "rook-filesystem.j2", dest: "rook-filesystem.yaml" } 
 
   - name: Configure rook-ceph cluster file
     vars:
@@ -312,17 +315,17 @@
       - oc apply -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig
       - oc apply -f ../scripts/rook-filesystem.yaml --config ../ocp/auth/kubeconfig
 
-  - name: Stop playbook
-    meta: end_play
-
   - name: Wait for Rook operator
     shell:
-      cmd: "oc get pods -n rook-ceph --config=../ocp/auth/kubeconfig --selector app=rook-ceph-operator --no-headers -o custom-columns=STATUS:.status.phase"
+      cmd: "oc get pods -n rook-ceph --config=../ocp/auth/kubeconfig --selector app=rook-ceph-operator --no-headers -o custom-columns=STATUS:.status.phase|grep -v Running|wc -l"
     register: rook_operator_status
-    until: "rook_operator_status.stdout == \"Running\""
+    until: "rook_operator_status.stdout == \"0\""
     retries: 20
     delay: 10
     when: true
+
+  - name: Stop playbook
+    meta: end_play
 
   - name: Deploy rook-ceph cluster
     shell:
