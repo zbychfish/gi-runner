@@ -329,14 +329,14 @@
     delay: 10
     when: true
 
-  - name: Stop playbook
-    meta: end_play
-
   - name: Deploy rook-ceph cluster
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
       - { cmd: "oc apply -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
+
+  - name: Stop playbook
+    meta: end_play
 
   - name: Wait for correct Rook Ceph cluster deployment
     shell:
