@@ -264,16 +264,16 @@
     shell:
       cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
     with_items: "{{ worker_name|list }}"
-    when: cluster_storeage == "rook"
+    when: storage_type == "rook"
 
   - name: Configure common rook settings
     shell:
       cmd: "oc apply -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig"
-    when: cluster_storeage == "rook"
+    when: storage_type == "rook"
 
   - name: Configure rook-ceph
     vars:
-      replica_number: "{{ '3' if cluster_storage == 'rook' else '1' }}"
+      replica_number: "{{ '3' if storage_type == 'rook' else '1' }}"
     template:
       src: "rook-operator.j2"
       dest: "../scripts/rook-operator.yaml"
