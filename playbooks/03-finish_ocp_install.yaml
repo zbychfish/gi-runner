@@ -25,6 +25,11 @@
 
   - name: test
     shell: ../scripts/check_cluster_health.sh
+    register: cluster_health
+
+  - name: debug
+    debug:
+      var: cluster_health
 
   - name: Stop playbook
     meta: end_play
