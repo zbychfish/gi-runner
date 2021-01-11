@@ -277,10 +277,10 @@
     template:
       src: "{{ item.src }} "
       dest: "../scripts/{{ item.dest }}"
-    when: storage_type != "ocs"
     with_items:
       - { src: "rook-operator.j2", dest: "rook-operator.yaml" } 
       - { src: "rook-filesystem.j2", dest: "rook-filesystem.yaml" } 
+    when: storage_type != "ocs"
 
   - name: Configure rook-ceph cluster file
     vars:
