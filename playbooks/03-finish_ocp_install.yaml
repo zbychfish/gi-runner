@@ -273,7 +273,7 @@
 
   - name: Configure rook-ceph
     vars:
-      replica_number: {{ "3" if cluster_storage == "rook" else "1"
+      replica_number: {{ "3" if cluster_storage == "rook" else "1" }}
     template:
       src: "rook-operator.j2"
       dest: "../scripts/rook-operator.yaml"
