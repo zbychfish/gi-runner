@@ -24,16 +24,16 @@
     when: is_air_gapped == 'Y'
 
   - name: test
-    shell: |
+    shell: >
       if [[ `oc get csr -o name | wc -l` -ne "0" ]]
       then
-      #if [[ `oc get csr --no-headers -o custom-columns=CONDITION\:.status.conditions[0].type | grep -v Approved | wc -l` -ne "0" ]]
-      #then
       echo "OK"
-      #oc get csr -o go-template='{{range .items}}{{if not .status}}{{.metadata.name}}{{"\n"}}{{end}}{{end}}' | xargs oc adm certificate approve
-      #fi
       fi
 
+      #if [[ `oc get csr --no-headers -o custom-columns=CONDITION\:.status.conditions[0].type | grep -v Approved | wc -l` -ne "0" ]]
+      #then
+      #oc get csr -o go-template='{{range .items}}{{if not .status}}{{.metadata.name}}{{"\n"}}{{end}}{{end}}' | xargs oc adm certificate approve
+      #fi
   - name: Stop playbook
     meta: end_play
 
