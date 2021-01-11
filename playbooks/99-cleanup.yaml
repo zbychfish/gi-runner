@@ -65,7 +65,7 @@
         - { path: "/usr/local/bin/matchbox" }
         - { path: "/var/lib/matchbox" }
         - { path: "/var/lib/tftp" }
-        - { path: "ocp" }
+        - { path: "../ocp" }
         - { path: "/etc/haproxy/haproxy.cfg" }
 
     - name: Remove matchbox user

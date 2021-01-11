@@ -87,6 +87,7 @@
     with_items:
       - { regexp: "^address=/api.{{ domain }}/{{ bas_ip }}", line: "address=/api.{{ domain }}/{{ node_ip }}" }
       - { regexp: "^address=/api-int.{{ domain }}/{{ bas_ip }}", line: "address=/api-int.{{ domain }}/{{ node_ip }}" }
+    when: false
 
   - name: Remove DNS records
     lineinfile:
@@ -115,8 +116,25 @@
       state: stopped
       enabled: no
     with_items:
-      - { name: "haproxy" }
+      #- { name: "haproxy" }
       - { name: "matchbox" }
+
+  - name: Reconfigure HA Proxy
+    lineinfile:
+      path: /etc/haproxy.cfg
+      regexp: "{{ item.regexp }}"
+      state: absent
+    with_items:
+      - { regexp: "^ server m0" }
+
+  - name: Restart HA Proxy
+    service:
+      name: haproxy
+      state: restarted
+      enabled: yes
+
+  - name: Stop playbook
+    meta: end_play
 
   - name: Wait - cluster stabilization
     pause:
