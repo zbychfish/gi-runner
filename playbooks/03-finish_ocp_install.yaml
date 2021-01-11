@@ -3,6 +3,7 @@
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
     boot_ip:  "{{ lookup('env','GI_BOOTSTRAP_IP') }}"
     node_ip:  "{{ lookup('env','GI_NODE_IP') }}"
+    worker_ip:  "{{ lookup('env','GI_WORKER_IP') }}"
     domain:  "{{ lookup('env','GI_DOMAIN') }}"
     ocadmin:  "{{ lookup('env','GI_OCADMIN') }}"
     ocp_password:  "{{ lookup('env','GI_OCADMIN_PWD') }}"
@@ -134,11 +135,8 @@
       enabled: yes
 
   - name: Wait for cluster deployment
-    shell: |
-      oc get csr -o go-template='{{range .items}}{{if not .status}}{{.metadata.name}}{{"\n"}}{{end}}{{end}}' | xargs oc adm certificate approve
-      echo $(( `oc get csr --no-headers -o custom-columns=CONDITION:.status.conditions[0].type | grep -v Approved | wc -l`+`oc get nodes --no-headers | awk '{print $2}'| grep -v '^Ready$'|wc -l` ))
-    register: cluster_status
-    until: cluster_status.stdout == "0"
+    include_tasks: check_cluster_status.yaml
+    until: 1 == 2
     retries: 5
     delay: 1
 
