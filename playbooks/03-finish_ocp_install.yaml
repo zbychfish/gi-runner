@@ -134,7 +134,9 @@
       enabled: yes
 
   - name: Wait for cluster deployment
-    shell: echo $(( `oc get csr --no-headers -o custom-columns=CONDITION:.status.conditions[0].type | grep -v Approved | wc -l`+`oc get nodes --no-headers | awk '{print $2}'| grep -v '^Ready$'|wc -l` ))
+    shell: |
+      oc get csr -o go-template='{{range .items}}{{if not .status}}{{.metadata.name}}{{"\n"}}{{end}}{{end}}' | xargs oc adm certificate approve
+      echo $(( `oc get csr --no-headers -o custom-columns=CONDITION:.status.conditions[0].type | grep -v Approved | wc -l`+`oc get nodes --no-headers | awk '{print $2}'| grep -v '^Ready$'|wc -l` ))
     register: cluster_status
     until: cluster_status.stdout == "0"
     retries: 5
