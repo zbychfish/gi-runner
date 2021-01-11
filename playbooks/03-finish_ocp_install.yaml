@@ -260,18 +260,24 @@
       path: "../download/ocadmin.htpasswd"
       state: absent
 
-  - name: Configure rook-ceph
-    shell:
-      cmd: "{{ item.cmd }}"
-    with_items:
-      - { cmd: "oc label node {{ node_name }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true" }
-      - { cmd: "oc apply -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig" }
-    when: false
-
   - name: Configure rook-ceph nodes
     shell:
       cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
     with_items: "{{ worker_name|list }}"
+    when: cluster_storeage == "rook"
+
+  - name: Configure common rook settings
+    shell:
+      cmd: "oc apply -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig"
+    when: cluster_storeage == "rook"
+
+  - name: Configure rook-ceph
+    vars:
+      replica_number: {{ "3" if cluster_storage == "rook" else "1"
+    template:
+      src: "rook-operator.j2"
+      dest: "../scripts/rook-operator.yaml"
+    when: cluster_storage != "ocs"
 
   - name: Stop playbook
     meta: end_play
@@ -283,7 +289,6 @@
       src: "{{ item.src }}"
       dest: "{{ item.dest }}"
     with_items:
-      - { src: "rook-operator.j2", dest: "../scripts/rook-operator.yaml" }
       - { src: "rook-cluster.j2", dest: "../scripts/rook-cluster.yaml" }
 
   - name: Add CEPH image variables for air-gapp installation

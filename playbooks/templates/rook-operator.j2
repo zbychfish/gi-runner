@@ -102,7 +102,7 @@ spec:
   selector:
     matchLabels:
       app: rook-ceph-operator
-  replicas: 1
+  replicas: {{ replica_number }}
   template:
     metadata:
       labels:
