@@ -279,6 +279,14 @@
       dest: "../scripts/rook-operator.yaml"
     when: storage_type != "ocs"
 
+  - name: Configure rook-ceph filesystem file
+    vars:
+      replica_number: "{{ '3' if storage_type == 'rook' else '1' }}"
+    template:
+      src: "rook-filesystem.j2"
+      dest: "../scripts/rook-filesystem.yaml"
+    when: storage_type != "ocs"
+
   - name: Configure rook-ceph cluster file
     vars:
       multiple_per_node: "{{ 'false' if storage_type == 'rook' else 'true' }}"
