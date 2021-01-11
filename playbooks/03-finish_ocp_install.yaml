@@ -271,7 +271,7 @@
       cmd: "oc apply -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig"
     when: storage_type == "rook"
 
-  - name: Configure rook-ceph
+  - name: Configure rook-ceph operator file
     vars:
       replica_number: "{{ '3' if storage_type == 'rook' else '1' }}"
     template:
@@ -279,17 +279,13 @@
       dest: "../scripts/rook-operator.yaml"
     when: storage_type != "ocs"
 
-  - name: Stop playbook
-    meta: end_play
-
-  - name: Prepare ceph yaml's for local images
+  - name: Configure rook-ceph cluster file
     vars:
-      image: "{{ image }}"
+      multiple_per_node: "{{ 'false' if storage_type == 'rook' else 'true' }}"
     template:
-      src: "{{ item.src }}"
-      dest: "{{ item.dest }}"
-    with_items:
-      - { src: "rook-cluster.j2", dest: "../scripts/rook-cluster.yaml" }
+      src: "rook-cluster.j2"
+      dest: "../scripts/rook-cluster.yaml"
+    when: storage_type != "ocs"
 
   - name: Add CEPH image variables for air-gapp installation
     lineinfile:
@@ -315,6 +311,9 @@
     loop:
       - oc apply -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig
       - oc apply -f ../scripts/rook-filesystem.yaml --config ../ocp/auth/kubeconfig
+
+  - name: Stop playbook
+    meta: end_play
 
   - name: Wait for Rook operator
     shell:
