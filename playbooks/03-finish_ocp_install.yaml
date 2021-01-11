@@ -29,8 +29,8 @@
 
   - name: debug
     debug:
-      var:
-        - cluster_health
+      msg:
+        - "{{ cluster_health }}"
         - "{{ node_ip|length }}"
 
   - name: Stop playbook
