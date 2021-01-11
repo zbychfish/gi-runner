@@ -35,7 +35,7 @@
     debug:
       msg:
         - "{{ cluster_health }}"
-        - "{{ node_ip|length }}"
+        - "{{ node_ip+worker_ip|length }}"
 
   - name: Stop playbook
     meta: end_play
