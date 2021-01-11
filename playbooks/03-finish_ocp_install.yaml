@@ -29,7 +29,9 @@
 
   - name: debug
     debug:
-      var: cluster_health
+      var:
+        - cluster_health
+        - {{ node_ip|length }}
 
   - name: Stop playbook
     meta: end_play
