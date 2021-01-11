@@ -24,11 +24,7 @@
     when: is_air_gapped == 'Y'
 
   - name: test
-    shell: >
-      if [[ `oc get csr -o name | wc -l` -ne "0" ]]
-      then
-      echo "OK"
-      fi
+    shell: ../scripts/check_cluster_health.sh
 
   - name: Stop playbook
     meta: end_play
