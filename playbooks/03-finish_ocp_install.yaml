@@ -277,7 +277,7 @@
     template:
       src: "rook-operator.j2"
       dest: "../scripts/rook-operator.yaml"
-    when: cluster_storage != "ocs"
+    when: storage_type != "ocs"
 
   - name: Stop playbook
     meta: end_play
