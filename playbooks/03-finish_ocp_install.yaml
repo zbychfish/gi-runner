@@ -23,6 +23,13 @@
       image: "registry.{{ domain }}:5000/ocp4/rook-ceph:rook-ceph-v1.1.7"
     when: is_air_gapped == 'Y'
 
+  - name: test
+    shell: |
+      oc get csr -o go-template='{{range .items}}{{if not .status}}{{.metadata.name}}{{"\n"}}{{end}}{{end}}' | xargs oc adm certificate approve
+
+  - name: Stop playbook
+    meta: end_play
+
   - name: Check configuration parameters for air-gapped installation
     fail: msg="Variable {{ item.name }} is not set"
     when: item.value == "" and is_air_gapped == 'Y'
@@ -133,18 +140,6 @@
       name: haproxy
       state: restarted
       enabled: yes
-
-  - name: Wait for cluster deployment
-    include_tasks: "check_cluster_status.yaml"
-    until: 1 == 2
-    retries: 5
-
-  - name: display
-    debug:
-      msg: "{{ cluster_status }}"
-
-  - name: Stop playbook
-    meta: end_play
 
   - name: Wait - cluster stabilization
     pause:
