@@ -3,6 +3,54 @@
     bas_int:  "{{ lookup('env','GI_BASTION_INTERFACE') }}"
   tasks:
 
+    - name: Remove image registry default route
+      shell:
+        cmd: oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":false}}' --type=merge --config ../ocp/auth/kubeconfig
+
+    - name: Wait for API server successful reconfiguration
+      shell:
+        cmd: "oc get clusteroperators kube-apiserver --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
+      register: image_registry_status
+      until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
+      retries: 40
+      delay: 10
+      when: true
+
+    - name: Configure OCP registry with PVC
+      shell:
+        cmd: "{{ item.cmd }}"
+      with_items:
+        - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\": {\"managementState\": \"Unmanaged\"}}'" }
+        - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\":{\"storage\":{}}}'" }
+      when: true
+
+    - pause:
+      seconds: 30
+
+    - name: Wait for Image registry successful reconfiguration
+      shell:
+        cmd: "oc get clusteroperators image-registry --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
+      register: image_registry_status
+      until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
+      retries: 20
+      delay: 10
+      when: true
+
+    - name: Delete PVC for registry storage
+      shell:
+        cmd: oc delete -f ../scripts/ocp_registry_pvc.yaml --config ../ocp/auth/kubeconfig
+
+    - name: Delete rook-ceph cluster
+      shell:
+        cmd: "{{ item.cmd }}"
+      with_items:
+        - { cmd: "oc delete -f ../scripts/rook-storage_class_cephfs.yaml --config ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/rook-storage_class_rbd.yaml --config ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/rook-filesystem.yaml --config ../ocp/auth/kubeconfig" }
+
+
     - name: Stop services
       service:
         name: "{{ item.name }}"
