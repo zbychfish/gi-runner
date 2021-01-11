@@ -14,6 +14,10 @@
     is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
 
   tasks:
+  - name: Set arrays
+    set_fact:
+      node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
+      worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
 
   - set_fact:
       image: "rook/ceph:v1.1.7"
@@ -31,7 +35,7 @@
     debug:
       msg:
         - "{{ cluster_health }}"
-        - "{{ node_ip|list|length }}"
+        - "{{ node_ip|length }}"
 
   - name: Stop playbook
     meta: end_play
