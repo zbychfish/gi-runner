@@ -3,7 +3,6 @@
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
     boot_ip:  "{{ lookup('env','GI_BOOTSTRAP_IP') }}"
     node_ip:  "{{ lookup('env','GI_NODE_IP') }}"
-    worker_ip:  "{{ lookup('env','GI_WORKER_IP') }}"
     domain:  "{{ lookup('env','GI_DOMAIN') }}"
     ocadmin:  "{{ lookup('env','GI_OCADMIN') }}"
     ocp_password:  "{{ lookup('env','GI_OCADMIN_PWD') }}"
@@ -12,12 +11,14 @@
     repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
     repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
     is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
+    storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
 
   tasks:
   - name: Set arrays
     set_fact:
       node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
       worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
+      worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
 
   - set_fact:
       image: "rook/ceph:v1.1.7"
@@ -259,15 +260,21 @@
       path: "../download/ocadmin.htpasswd"
       state: absent
 
-  - name: Stop playbook
-    meta: end_play
-
   - name: Configure rook-ceph
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
       - { cmd: "oc label node {{ node_name }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true" }
       - { cmd: "oc apply -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig" }
+    when: false
+
+  - name: Configure rook-ceph nodes
+    shell:
+      cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
+    with_items: worker_name|list
+
+  - name: Stop playbook
+    meta: end_play
 
   - name: Prepare ceph yaml's for local images
     vars:
