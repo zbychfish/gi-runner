@@ -29,7 +29,7 @@
 
   - name: test
     vars:
-      node_number = "{{ node_ip|length+worker_ip|length }}"
+      node_number: "{{ node_ip|length+worker_ip|length }}"
     shell: ../scripts/check_cluster_health.sh
     register: cluster_health
     until: node_number == cluster_health.stdout
