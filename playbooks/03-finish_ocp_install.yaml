@@ -275,11 +275,8 @@
     vars:
       replica_number: "{{ '3' if storage_type == 'rook' else '1' }}"
     template:
-      src: "{{ item.src }} "
-      dest: "../scripts/{{ item.dest }}"
-    with_items:
-      - { src: "rook-operator.j2", dest: "rook-operator.yaml" } 
-      - { src: "rook-filesystem.j2", dest: "rook-filesystem.yaml" } 
+      src: "rook-operator.j2"
+      dest: "../scripts/rook-operator.yaml"
     when: storage_type != "ocs"
 
   - name: Configure rook-ceph cluster file
