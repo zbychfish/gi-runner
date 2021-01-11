@@ -133,6 +133,19 @@
       state: restarted
       enabled: yes
 
+  - name: Wait for cluster deployment
+    shell:
+      - oc get csr --no-headers -o custom-columns=CONDITION:.status.conditions[0].type | grep -v Approved | wc -l
+      - oc get nodes --no-headers | awk '{print $2}'| grep -v '^Ready$'|wc -l
+    register: cluster_status
+    until: 1 != 1
+    retries: 5
+    delay: 1
+
+  - name: display
+    debug:
+      msg: "{{ cluster_status }}"
+
   - name: Stop playbook
     meta: end_play
 
