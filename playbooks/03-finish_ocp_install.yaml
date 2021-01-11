@@ -135,7 +135,7 @@
       enabled: yes
 
   - name: Wait for cluster deployment
-    include_tasks: check_cluster_status.yaml
+    include_tasks: "check_cluster_status.yaml"
     until: 1 == 2
     retries: 5
     delay: 1
