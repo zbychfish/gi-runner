@@ -271,7 +271,7 @@
   - name: Configure rook-ceph nodes
     shell:
       cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
-    with_items: worker_name|list
+    with_items: "{{ worker_name|list }}"
 
   - name: Stop playbook
     meta: end_play
