@@ -27,22 +27,6 @@
       image: "registry.{{ domain }}:5000/ocp4/rook-ceph:rook-ceph-v1.1.7"
     when: is_air_gapped == 'Y'
 
-  - name: test
-    vars:
-      node_number: "{{ node_ip|length+worker_ip|length }}"
-    shell: ../scripts/check_cluster_health.sh
-    register: cluster_health
-    until: node_number == cluster_health.stdout
-
-  - name: debug
-    debug:
-      msg:
-        - "{{ cluster_health }}"
-        - "{{ node_ip|length+worker_ip|length }}"
-
-  - name: Stop playbook
-    meta: end_play
-
   - name: Check configuration parameters for air-gapped installation
     fail: msg="Variable {{ item.name }} is not set"
     when: item.value == "" and is_air_gapped == 'Y'
@@ -154,10 +138,37 @@
       state: restarted
       enabled: yes
 
+  - name: test
+    vars:
+      node_number: "{{ node_ip|length+worker_ip|length }}"
+    shell: ../scripts/check_cluster_health.sh
+    register: cluster_health
+    until: node_number == cluster_health.stdout
+    retries: 30
+    delay: 60
+
+  - name: debug
+    debug:
+      msg:
+        - "{{ cluster_health }}"
+        - "{{ node_ip|length+worker_ip|length }}"
+
+  - name: Wait for cluster operators
+    shell:
+      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
+    register: co_status
+    until: "co_status.stdout == \"0\""
+    retries: 60
+    delay: 10
+    when: true
+
+  - name: Stop playbook
+    meta: end_play
+
   - name: Wait - cluster stabilization
     pause:
       minutes: 5
-    when: boot_availability.rc != 2
+    when: boot_availability.rc != 2 and false
 
   - name: Wait for cluster operators
     shell:
@@ -166,7 +177,7 @@
     until: "co_status.stdout == \"0\""
     retries: 60
     delay: 10
-    when: true
+    when: false
 
   - name: Unmanage machine-config operator (part 1)
     shell:
@@ -174,6 +185,7 @@
     with_items:
       - { cmd: "oc patch clusterversion/version --type='merge' --config ../ocp/auth/kubeconfig -p \"$(cat ../scripts/machine_config.yaml)\"" }
       - { cmd: "oc scale --replicas=1 deployment/etcd-quorum-guard -n openshift-machine-config-operator --config ../ocp/auth/kubeconfig" }
+    when: false
 
   - name: Wait for cluster operators
     shell:
@@ -182,8 +194,7 @@
     until: "co_status.stdout == \"0\""
     retries: 60
     delay: 10
-    when: true
-
+    when: false
 
   - name: Unmanage machine-config operator (part 2)
     shell:
@@ -193,6 +204,7 @@
       - { cmd: "oc scale --replicas=1 deployment.apps/console -n openshift-console --config ../ocp/auth/kubeconfig" }
       - { cmd: "oc scale --replicas=1 deployment.apps/downloads -n openshift-console --config ../ocp/auth/kubeconfig" }
       - { cmd: "oc scale --replicas=1 deployment.apps/oauth-openshift -n openshift-authentication --config ../ocp/auth/kubeconfig" }
+    when: false
 
   - name: Wait for cluster operators
     shell:
@@ -201,13 +213,14 @@
     until: "co_status.stdout == \"0\""
     retries: 60
     delay: 10
-    when: true
+    when: false
 
   - name: Unmanage lifecycle-manager operator (part 3)
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
       - { cmd: "oc scale --replicas=1 deployment.apps/packageserver -n openshift-operator-lifecycle-manager --config ../ocp/auth/kubeconfig" }
+    when: false
 
   - name: Wait for cluster operators
     shell:
@@ -216,7 +229,7 @@
     until: "co_status.stdout == \"0\""
     retries: 60
     delay: 10
-    when:  true
+    when: false
 
   - name: Unmanage machine-config operator (part 4)
     shell:
@@ -226,7 +239,7 @@
       - { cmd: "oc scale --replicas=1 deployment.apps/thanos-querier -n openshift-monitoring --config ../ocp/auth/kubeconfig" }
       - { cmd: "oc scale --replicas=1 statefulset.apps/prometheus-k8s -n openshift-monitoring --config ../ocp/auth/kubeconfig" }
       - { cmd: "oc scale --replicas=1 statefulset.apps/alertmanager-main -n openshift-monitoring --config ../ocp/auth/kubeconfig" }
-    when: true
+    when: false
 
   - name: Create htpasswd file
     htpasswd:
