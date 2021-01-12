@@ -1,6 +1,8 @@
 - hosts: all
   vars:
     bas_int:  "{{ lookup('env','GI_BASTION_INTERFACE') }}"
+    worker_name:  "{{ lookup('env','GI_WORKER_NAME') }}"
+
   tasks:
 
     - name: Remove image registry default route
@@ -28,7 +30,7 @@
         seconds: 30
 
     - name: Wait for Image registry successful reconfiguration
-      shell:
+      shell:1G
         cmd: "oc get clusteroperators image-registry --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
       register: image_registry_status
       until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
@@ -53,6 +55,16 @@
         - { cmd: "oc delete -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete namespace rook-ceph" }
       ignore_errors: yes
+
+    - name: remove rook files
+      shell:
+        cmd: sudo rm -rf /var/lib/rook
+      delegate_to: "{{ item }}.{{ domain }}"
+      remote_user: core
+      args:
+        warn: false
+      with_items: "{{ worker_name|list }}"
+
     
     - name: Stop play
       meta: end_play
