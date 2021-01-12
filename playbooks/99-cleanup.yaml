@@ -39,6 +39,7 @@
     - name: Delete PVC for registry storage
       shell:
         cmd: oc delete -f ../scripts/ocp_registry_pvc.yaml --config ../ocp/auth/kubeconfig
+      ignore_errors: yes
 
     - name: Delete rook-ceph cluster
       shell:
