@@ -25,7 +25,7 @@
       when: true
 
     - pause:
-      seconds: 30
+        seconds: 30
 
     - name: Wait for Image registry successful reconfiguration
       shell:
