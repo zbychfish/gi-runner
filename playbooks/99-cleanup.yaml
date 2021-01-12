@@ -64,7 +64,7 @@
       remote_user: core
       args:
         warn: false
-      with_items: "{{ worker_name|list }}"
+      with_items: "{{ worker_name }}"
 
     
     - name: Stop play
