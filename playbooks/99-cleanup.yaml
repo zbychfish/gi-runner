@@ -30,7 +30,7 @@
         seconds: 30
 
     - name: Wait for Image registry successful reconfiguration
-      shell:1G
+      shell:
         cmd: "oc get clusteroperators image-registry --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
       register: image_registry_status
       until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
