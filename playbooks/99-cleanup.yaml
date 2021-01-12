@@ -39,6 +39,14 @@
       delay: 10
       when: true
 
+    - name: Delete PVC for registry storage
+      shell:
+        cmd: nohup oc delete -f ../scripts/ocp_registry_pvc.yaml --config ../ocp/auth/kubeconfig
+      ignore_errors: yes
+
+    - pause:
+        seconds: 15
+
     - name: Cleanup finalizer for registry PVC
       shell:
         cmd: "{{ item.cmd }}"
@@ -46,10 +54,6 @@
         - { cmd: "oc patch pvc registry -n openshift-image-registry --config ../ocp/auth/kubeconfig --type=merge --patch '{\"metadata\": {\"finalizers\":[]}}'" }
       when: true
 
-    - name: Delete PVC for registry storage
-      shell:
-        cmd: oc delete -f ../scripts/ocp_registry_pvc.yaml --config ../ocp/auth/kubeconfig
-      ignore_errors: yes
 
     - name: Delete rook-ceph cluster
       shell:
