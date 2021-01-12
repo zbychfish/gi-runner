@@ -49,7 +49,9 @@
         - { cmd: "oc delete -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete -f ../scripts/rook-filesystem.yaml --config ../ocp/auth/kubeconfig" }
-
+    
+    - name: Stop play
+      meta: end_play
 
     - name: Stop services
       service:
