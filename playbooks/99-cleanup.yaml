@@ -39,6 +39,13 @@
       delay: 10
       when: true
 
+    - name: Cleanup finalizer for registry PVC
+      shell:
+        cmd: "{{ item.cmd }}"
+      with_items:
+        - { cmd: "oc patch pvc registry -n openshift-image-registry --config ../ocp/auth/kubeconfig --type=merge --patch '{\"metadata\": {\"finalizers\":{}}}'" }
+      when: true
+
     - name: Delete PVC for registry storage
       shell:
         cmd: oc delete -f ../scripts/ocp_registry_pvc.yaml --config ../ocp/auth/kubeconfig
