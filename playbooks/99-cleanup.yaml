@@ -21,7 +21,7 @@
         cmd: "{{ item.cmd }}"
       with_items:
         - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\": {\"managementState\": \"Unmanaged\"}}'" }
-        - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\":{\"storage\":\"\"}}'" }
+        - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\":{\"storage\":}}'" }
       when: true
 
     - pause:
@@ -47,8 +47,8 @@
         - { cmd: "oc delete -f ../scripts/rook-storage_class_cephfs.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete -f ../scripts/rook-storage_class_rbd.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
-        - { cmd: "oc delete -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete -f ../scripts/rook-filesystem.yaml --config ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig" }
     
     - name: Stop play
       meta: end_play
