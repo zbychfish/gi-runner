@@ -2,6 +2,7 @@
   vars:
     bas_int:  "{{ lookup('env','GI_BASTION_INTERFACE') }}"
     worker_name:  "{{ lookup('env','GI_WORKER_NAME') }}"
+    domain: "{{ lookup('env','GI_DOMAIN') }}"
 
   tasks:
 
