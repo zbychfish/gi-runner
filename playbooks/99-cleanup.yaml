@@ -50,6 +50,9 @@
         - { cmd: "oc delete -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete -f ../scripts/rook-filesystem.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete namespace rook-ceph" }
+      ignore_errors: yes
     
     - name: Stop play
       meta: end_play
