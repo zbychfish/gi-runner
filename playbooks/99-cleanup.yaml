@@ -18,6 +18,7 @@
       retries: 40
       delay: 10
       when: true
+      ignore_errors: yes
 
     - name: Configure OCP registry with PVC
       shell:
