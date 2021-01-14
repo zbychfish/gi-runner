@@ -42,6 +42,8 @@
     - name: Delete PVC for registry storage
       shell:
         cmd: nohup oc delete -f ../scripts/ocp_registry_pvc.yaml --config ../ocp/auth/kubeconfig
+      async: 100
+      poll: 0
       ignore_errors: yes
 
     - pause:
