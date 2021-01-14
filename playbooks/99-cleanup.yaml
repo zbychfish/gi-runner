@@ -87,10 +87,6 @@
       ignore_errors: yes
 
     
-    - name: Stop play
-      meta: end_play
-      when: false
-
     - name: Stop services
       service:
         name: "{{ item.name }}"
