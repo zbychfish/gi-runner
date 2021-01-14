@@ -18,7 +18,7 @@
       until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
       retries: 40
       delay: 10
-      when: true
+      when: false
       ignore_errors: yes
 
     - name: Configure OCP registry with PVC
@@ -40,7 +40,7 @@
       until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
       retries: 20
       delay: 10
-      when: true
+      when: false
       ignore_errors: yes
 
     - name: Delete PVC for registry storage
@@ -85,8 +85,8 @@
       with_items: 
         - "{{ worker_name|list }}"
       ignore_errors: yes
+      when: false
 
-    
     - name: Stop services
       service:
         name: "{{ item.name }}"
