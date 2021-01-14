@@ -26,6 +26,7 @@
         - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\": {\"managementState\": \"Unmanaged\"}}'" }
         - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\":{\"storage\":{}}}'" }
       when: true
+      ignore_errors: yes
 
     - pause:
         seconds: 30
@@ -38,6 +39,7 @@
       retries: 20
       delay: 10
       when: true
+      ignore_errors: yes
 
     - name: Delete PVC for registry storage
       shell:
@@ -80,10 +82,12 @@
         warn: false
       with_items: 
         - "{{ worker_name|list }}"
+      ignore_errors: yes
 
     
     - name: Stop play
       meta: end_play
+      when: false
 
     - name: Stop services
       service:
