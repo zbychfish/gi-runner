@@ -52,6 +52,7 @@
         cmd: "{{ item.cmd }}"
       with_items:
         - { cmd: "oc patch pvc registry -n openshift-image-registry --config ../ocp/auth/kubeconfig --type=merge --patch '{\"metadata\": {\"finalizers\":[]}}'" }
+      ignore_errors: yes
       when: true
 
 
