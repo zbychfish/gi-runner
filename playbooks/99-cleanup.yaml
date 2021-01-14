@@ -9,6 +9,7 @@
     - name: Remove image registry default route
       shell:
         cmd: oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":false}}' --type=merge --config ../ocp/auth/kubeconfig
+      ignore_errors: yes
 
     - name: Wait for API server successful reconfiguration
       shell:
