@@ -260,6 +260,9 @@
       path: "../download/ocadmin.htpasswd"
       state: absent
 
+  - name: Stop execution
+    meta: end_play
+
   - name: Configure rook-ceph nodes
     shell:
       cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
