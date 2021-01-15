@@ -103,6 +103,7 @@
       copy:
         src: /etc/haproxy/haproxy.cfg.orig
         dest: /etc/haproxy/haproxy.cfg
+      when: false
 
     - name: Restore original dnsmasq config
       copy:
