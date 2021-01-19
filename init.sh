@@ -476,7 +476,6 @@ else
         echo export GI_BOOTSTRAP_NAME=$boot_name >> $file
 fi
 declare -a node_ip_arr
-echo $m_number
 while [[ $m_number != ${#node_ip_arr[@]} ]]
 do
         if [ ! -z "$GI_NODE_IP" ]
@@ -737,6 +736,7 @@ then
 	        GI_WORKER_NAME=$worker_name
 	done
 	echo export GI_WORKER_NAME=$worker_name >> $file
+fi
 if [[ ! -z "$GI_DHCP_RANGE_START" ]]
 then
         read -p "First DHCP lease address is set to [$GI_DHCP_RANGE_START] - insert new or confirm existing one <ENTER>: " new_dhcp_start
