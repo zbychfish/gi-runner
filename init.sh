@@ -619,7 +619,7 @@ then
 	        done
         	echo export GI_OCS_IP=$ocs_ip >> $file
 	        declare -a ocs_mac_arr
-	        while [[ ${#db2_mac_arr[@]} -ne 3 ]]
+	        while [[ ${#ocs_mac_arr[@]} -ne 3 ]]
         	do
                 	if [ ! -z "$GI_OCS_MAC_ADDRESS" ]
                 	then
