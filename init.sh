@@ -672,9 +672,9 @@ then
 	while ! [[ $w_number -ge $m_worker_number ]]
         do
 		
-                printf "How many workers nodes will you deploy [$m_worker_number]?: "
+                printf "How many workers the additional workers will you deploy [$m_worker_number]?: "
                 read w_number
-                w_number=${w_number:$m_worker_number}
+                w_number=${w_number:-$m_worker_number}
                 if ! [[ $w_number -ge $m_worker_number ]]
                 then
                         echo "Incorrect value"
