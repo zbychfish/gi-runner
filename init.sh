@@ -534,7 +534,7 @@ done
 echo export GI_NODE_NAME=$node_name >> $file
 if [ $is_onenode == 'N' ]
 then
-	if [[ db2_ha == 'Y' ]]
+	if [[ $db2_ha == 'Y' ]]
 	then
 		d_number=2
 	else
@@ -597,7 +597,7 @@ then
                 GI_DB2_NAME=$DB2_name
         done
         echo export GI_DB2_NAME=$db2_name >> $file
-	if [[ ocs_tainted == 'Y' ]]
+	if [[ $ocs_tainted == 'Y' ]]
 	then
 		declare -a ocs_ip_arr
         	while [[ ${#ocs_ip_arr[@]} -ne 3 ]]
@@ -657,7 +657,7 @@ then
 	        done
 	        echo export GI_DB2_NAME=$db2_name >> $file
 	fi
-	if [[ db2_tainted == 'Y' ]]
+	if [[ $db2_tainted == 'Y' ]]
 	then
 		m_worker_number=3
 	else
@@ -917,25 +917,6 @@ then
 	        echo "export GI_IBMCLOUD_KEY='$cloud_key'" >> $file
 	fi
 fi
-#if [[ ! -z "$GI_NFS_DISK" ]]
-#then
-#	read -p "NFS disk device on bastion is set to [$GI_NFS_DISK] - insert new or confirm existing one <ENTER>: " new_nfs_disk
-#        if [[ $new_nfs_disk != '' ]]
-#        then
-#                nfs_disk=$new_nfs_disk
-#        fi
-#else
-#	while [[ $nfs_disk == '' ]]
-#	do
-#		read -p "Insert disk device used on bastion for NFS (for example sdb or nvme1n1): " nfs_disk
-#	done
-#fi
-#if [[ -z "$nfs_disk" ]]
-#then
-#	echo export GI_NFS_DISK=$GI_NFS_DISK >> $file
-#else
-#        echo export GI_NFS_DISK=$nfs_disk >> $file
-#fi
 if [[ ! -z "$GI_OCADMIN" ]]
 then
 	read -p "OpenShift admin account name is set to [$GI_OCADMIN] - insert new or confirm existing one <ENTER>: " new_ocp_admin
@@ -962,26 +943,6 @@ do
 	echo -e '\n'
 done
 echo "export GI_OCADMIN_PWD='$ocp_password'" >> $file
-#if [[ ! -z "$GI_ICSADMIN" ]]
-#then
-#	read -p "Guardium Insights admin account name is set to [$GI_ICSADMIN] - insert new or confirm existing one <ENTER>: " new_ics_admin
-#        if [[ $new_ics_admin != '' ]]
-#        then
-#                ics_admin=$new_ics_admin
-#        fi
-#else
-#	while [[ $ics_admin = '' ]]
-#	do
-#		read -p "Insert Guardium Insights admin account name [admin]: " ics_admin
-#		ics_admin=${ics_admin:-admin}
-#	done
-#fi
-#if [[ -z "$ics_admin" ]]
-#then
-#	echo export GI_ICSADMIN=$GI_ICSADMIN >> $file
-#else
-#        echo export GI_ICSADMIN=$ics_admin >> $file
-#fi
 while [[ $ics_password == '' ]]
 do
 	read -sp "Insert IBM Common Services admin user password: " ics_password
