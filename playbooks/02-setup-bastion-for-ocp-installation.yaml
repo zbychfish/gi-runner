@@ -55,14 +55,6 @@
         ocs_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
       when: is_ocs_tainted == 'Y'
 
-    - name: Check masters parameters
-      fail: msg="Variable {{ item.name }} is not set"
-      when: item.value == ""
-      loop:
-        - { name: "GI_NODE_IP", value: "{{ node_ip }}" }
-        - { name: "GI_NODE_MAC_ADDRESS", value: "{{ node_mac }}" }
-        - { name: "GI_NODE_NAME", value: "{{ node_name }}" }
-
     - name: Set workers arrays
       set_fact:
         worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
@@ -437,8 +429,8 @@
         echo "ptr-record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ item.1 }}.{{ domain }}"
       register: node_ptr
       with_together:
-        - "{{ node_ip+worker_ip+db_ip+ocs_ip }}"
-        - "{{ node_name+worker_name+db2_name+ocs_name }}"
+        - "{{ node_ip+worker_ip|default(omit)+db_ip|default(omit)+ocs_ip|default(omit) }}"
+        - "{{ node_name+worker_name|default(omit)+db2_name|default(omit)+ocs_name|default(omit) }}"
       when: true
 
     - name: end play
