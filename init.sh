@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# Guardium Insights 2.5 installation automation
-
-
+# Guardium Insights 2.5 installation initialization
 GI_HOME=`pwd`
 file=variables.sh
 echo "# Guardium Insights installation parameters" > $file
@@ -12,6 +10,26 @@ then
 	echo "*** ERROR ***"
         echo "Your bastion machine is not CentOS 8 - please use the supported Operating System"
 	exit 1
+fi
+if [[ ! -z "$GI_DOMAIN" ]]
+then
+        read -p "Cluster domain is set to [$GI_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ocp_domain
+        if [[ $new_ocp_domain != '' ]]
+        then
+                ocp_domain=$new_ocp_domain
+        fi
+else
+	while [[ $ocp_domain == '' ]]
+	do
+		read -p "Insert cluster domain (your private domain name) [ocp.io.priv]: " ocp_domain
+	        ocp_domain=${ocp_domain:-ocp.io.priv}
+	done
+fi
+if [[ -z "$ocp_domain" ]]
+then
+        echo export GI_DOMAIN=$GI_DOMAIN >> $file
+else
+        echo export GI_DOMAIN=$ocp_domain >> $file
 fi
 echo "*** Air-Gapped Setup ***"
 while ! [[ $use_air_gap == 'Y' || $use_air_gap == 'N' ]] # While string is different or empty...
@@ -116,12 +134,7 @@ then
 	do
 		read -p "HTTP Proxy port: " proxy_port
 	done
-	while [[ $ocp_domain == '' ]]
-	do
-		read -p "Cluster domain (your private domain name) [ocp.io.priv]: " ocp_domain
-		ocp_domain=${ocp_domain:-ocp.io.priv}
-	done
-	read -p "Insert comma separated list of CIDRs to be not proxed by cluster (do not need provide here cluster addresses): " no_proxy
+	read -p "Insert comma separated list of CIDRs which should not be proxed (do not need provide here cluster addresses): " no_proxy
 	echo "Your proxy settings are:"
 	echo "Proxy URL: http://$proxy_ip:$proxy_port"
 	echo "OCP domain $ocp_domain"
@@ -814,26 +827,6 @@ then
 else
         echo export GI_BOOT_DEVICE=$machine_disk >> $file
 fi
-if [[ ! -z "$GI_DOMAIN" ]]
-then
-        read -p "Cluster domain is set to [$GI_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ocp_domain
-        if [[ $new_ocp_domain != '' ]]
-        then
-                ocp_domain=$new_ocp_domain
-        fi
-else
-	while [[ $ocp_domain == '' ]]
-	do
-		read -p "Insert cluster domain (your private domain name) [ocp.io.priv]: " ocp_domain
-	        ocp_domain=${ocp_domain:-ocp.io.priv}
-	done
-fi
-if [[ -z "$ocp_domain" ]]
-then
-        echo export GI_DOMAIN=$GI_DOMAIN >> $file
-else
-        echo export GI_DOMAIN=$ocp_domain >> $file
-fi
 if [[ ! -z "$GI_OCP_CIDR" ]]
 then
         read -p "Inter-cluster CIDR is set to [$GI_OCP_CIDR] - insert new or confirm existing one <ENTER>: " new_ocp_cidr
@@ -1031,11 +1024,9 @@ if [[ $use_proxy == 'P' ]]
 then
 	echo "export GI_NOPROXY_NET=$no_proxy" >> $file
 	echo "export GI_PROXY_URL=$proxy_ip:$proxy_port" >> $file
-	echo "import PROXY settings: . /etc/profile"
+	echo "- import PROXY settings: \". /etc/profile\""
 else
 	echo "export GI_PROXY_URL=NO_PROXY" >> $file
-
 fi
-echo "export GI_AIR_GAPPED=$use_air_gap" >> $file
-echo "import variables: . $file"
-echo "start first playbook: ansible-playbook playbooks/01-update-system.yaml"
+echo "- import variables: \". $file\""
+echo "- start first playbook: \"ansible-playbook playbooks/01-install-software-on-bastion.yaml\""
