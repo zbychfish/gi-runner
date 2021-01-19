@@ -5,69 +5,13 @@
 
 GI_HOME=`pwd`
 file=variables.sh
+echo "# Guardium Insights installation parameters" > $file
 echo "*** Checking CentOS version ***"
 if [ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1":"$3}'` != 'CentOS:8' ]
 then
 	echo "*** ERROR ***"
         echo "Your bastion machine is not CentOS 8 - please use the supported Operating System"
 	exit 1
-fi
-echo "*** Openshift cluster architecture ***"
-while ! [[ $is_prod == 'Y' || $is_prod == 'N' ]] # While string is different or empty...
-do
-        printf "Is your installation the production one? (\e[4mN\e[0m)o/(Y)es: "
-        read is_prod
-        is_prod=${is_prod:-N}
-        if ! [[ $is_prod == 'Y' || $is_prod == 'N' ]]
-        then
-                echo "Incorrect value"
-        fi
-done
-if [ $is_prod == 'N' ]
-then
-	while ! [[ $is_onenode == 'Y' || $is_onenode == 'N' ]]
-	do
-		printf "Is your installation the one node (allinone)? (\e[4mY\e[0m)es/(N)o: "
-		read is_onenode
-	        is_onenode=${is_onenode:-Y}
-        	if ! [[ $is_onenode == 'Y' || $is_onenode == 'N' ]]
-	        then
-        	        echo "Incorrect value"
-	        fi
-        done
-else
-	m_number=3
-	is_onenode='N'
-fi
-if [ $is_onenode == 'Y' ]
-then
-	m_number=1
-fi
-if [ $is_onenode == 'N' ]
-then
-	while ! [[ $m_number == 1 || $m_number == '3' ]]
-	do
-		printf "How many master nodes will you deploy? (\e[4m1\e[0m)/3: "
-		read m_number
-		m_number=${m_number:-1}
-		if ! [[ $m_number == 1 || $m_number == 3 ]]
-                then
-                        echo "Incorrect value"
-                fi
-	done
-	echo "Define number of workers"
-	echo "3 - simple installation, OCS storage installed on all workers, ICP installed on one worker"
-	echo "4 - simple installation, OCS storage installed on all workers, DB2 node tainted, OCP spread on not-tainted nodes"
-	while ! [[ $w_number == 4 || $w_number == '3' ]]
-        do
-                printf "How many workers nodes will you deploy? (\e[4m3\e[0m)/4: "
-                read w_number
-                w_number=${w_number:-3}
-                if ! [[ $w_number == 3 || $w_number == 4 ]]
-                then
-                        echo "Incorrect value"
-                fi
-        done
 fi
 echo "*** Air-Gapped Setup ***"
 while ! [[ $use_air_gap == 'Y' || $use_air_gap == 'N' ]] # While string is different or empty...
@@ -80,6 +24,12 @@ do
                 echo "Incorrect value"
         fi
 done
+if [[ -z "$use_air_gap" ]]
+then
+        echo export GI_AIR_GAPPED=$GI_AIR_GAPPED >> $file
+else
+        echo export GI_AIR_GAPPED=$use_air_gap >> $file
+fi
 if [[ $use_air_gap == 'Y' ]]
 then
 	echo "***Installing tar***"
@@ -230,14 +180,6 @@ echo "*** Add a new RSA SSH key ***"
 ssh-keygen -N '' -f /root/.ssh/id_rsa -q <<< y > /dev/null
 echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > /root/.ssh/config 
 cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
-#if [[ $use_air_gap == 'N' ]]
-#then
-#	echo "*** Download playbooks ***"
-#	mkdir -p download
-#	ansible -i /etc/ansible/hosts bastion -m get_url -a "url=https://ibm.box.com/shared/static/nqjdv31pt9chna37729gwwpq39dz0rcm dest=./files.tar use_proxy=yes" > /dev/null
-#fi
-#tar xvf files.tar > /dev/null
-#rm -f files.tar
 if [[ $use_air_gap == 'N' ]]
 then
 	echo "*** Checking CentOS installed environment groups ***"
@@ -249,7 +191,6 @@ then
 	fi
 fi
 echo "*** Setting GI installation parameters**"
-echo "# Guardium Insights installation parameters" > $file
 if [[ $use_air_gap == 'Y' ]]
 then
 	if [[ ! -z "$GI_REPO_USER" ]]
@@ -279,6 +220,100 @@ then
 	done
 	echo "export GI_REPO_USER_PWD='$repo_password'" >> $file
 fi
+echo "*** Openshift cluster architecture ***"
+while ! [[ $is_onenode == 'Y' || $is_onenode == 'N' ]]
+do
+	printf "Is your installation the one node (allinone)? (\e[4mY\e[0m)es/(N)o: "
+	read is_onenode
+        is_onenode=${is_onenode:-Y}
+       	if ! [[ $is_onenode == 'Y' || $is_onenode == 'N' ]]
+        then
+       	        echo "Incorrect value"
+        fi
+done
+echo export GI_ONENODE=$is_onenode >> $file
+if [ $is_onenode='Y' ]
+then
+	m_number=1
+	w_number=0
+else
+	m_number=3
+fi
+#fi
+if [ $is_onenode='N' ]
+then
+	while ! [[ $storage_type == 'R' || $storage_type == 'O' ]]
+	do
+		printf "What type of storage would you like to implement (\e[4mR\e[0m)ook/(O)CS?: "
+                read storage_type
+                storage_type=${storage_type:-R}
+                if ! [[ $storage_type == 'R' || $storage_type == 'O' ]]
+                then
+                        echo "Incorrect value"
+                fi
+        done
+	while ! [[ $db2_ha == "Y" || $db2_ha == "N" ]]
+	do
+		printf "Would you like install DB2 in HA configuration (\e[4mN\e[0m)o/(Y)es?: "
+		read db2_ha
+		db2_ha=${db2_ha:-N}
+		if ! [[ $db2_ha == "Y" || $db2_ha == "N" ]]
+		then
+			echo "Incorrect value, insert Y or N"
+		fi
+	done
+	while ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]	
+	do
+                printf "Would you like isolate (taint) OCS nodes in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
+                read ocs_tainted
+                ocs_tainted=${ocs_tainted:-N}
+                if ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]
+                then
+                        echo "Incorrect value, insert Y or N"
+                fi
+        done
+	if [[ $ocs_tainted == "N" && $storage_type == "O" ]]
+	then
+		echo "DB2 node(s) must be tainted!"
+		db2_tainted="Y"
+	else
+		while ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
+		do
+			printf "Would you like isolate (taint) DB2 node in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
+			read db2_tainted
+			db2_tainted=${db2_tainted:-N}
+			if ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
+			then
+				echo "Incorrect value, insert Y or N"
+			fi
+		done
+	fi
+else
+	storage_type='R'
+	db_ha='N'
+	ocs_tainted='N'
+	db_tainted='N'
+fi
+echo export GI_STORAGE=$storage_type >> $file
+echo export GI_DB2_HA=$db2_ha >> $file
+echo export GI_OCS_TAINTED=$ocs_tainted >> $file
+echo export GI_DB2_TAINTED=$db2_tainted >> $file
+if [ $is_onenode == 'N' ]
+then
+	echo "Define number of workers"
+	echo "3 - simple installation, OCS storage installed on all workers, ICP installed on one worker"
+	echo "4 - simple installation, OCS storage installed on all workers, DB2 node tainted, OCP spread on not-tainted nodes"
+	while ! [[ $w_number == 4 || $w_number == '3' ]]
+        do
+                printf "How many workers nodes will you deploy? (\e[4m3\e[0m)/4: "
+                read w_number
+                w_number=${w_number:-3}
+                if ! [[ $w_number == 3 || $w_number == 4 ]]
+                then
+                        echo "Incorrect value"
+                fi
+        done
+fi
 if [[ ! -z "$GI_BASTION_IP" ]]
 then
 	read -p "Bastion IP is set to [$GI_BASTION_IP] - insert new or confirm existing one <ENTER>: " new_bastion_ip
@@ -287,7 +322,7 @@ then
 		bastion_ip=$new_bastion_ip
 	fi
 else
-	while [[ $bastion_ip = '' ]]
+	while [[ $bastion_ip == '' ]]
 	do
 		read -p "Insert Bastion IP used to communicate with Bootstrap server: " bastion_ip
 	done
