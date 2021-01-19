@@ -666,6 +666,7 @@ then
 			m_worker_number=3
 		else
 			m_worker_number=2
+		fi
 	fi
 	echo "Define number of workers, you must set minimum $m_worker_number of workers."
 	while ! [[ $w_number -ge $m_worker_number ]]
