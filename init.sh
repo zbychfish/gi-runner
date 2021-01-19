@@ -655,7 +655,7 @@ then
 	                IFS=',' read -r -a ocs_name_arr <<< $ocs_name
 	                GI_OCS_NAME=$ocs_name
 	        done
-	        echo export GI_DB2_NAME=$db2_name >> $file
+	        echo export GI_OCS_NAME=$ocs_name >> $file
 	fi
 	if [[ $db2_tainted == 'Y' ]]
 	then
