@@ -232,14 +232,14 @@ do
         fi
 done
 echo export GI_ONENODE=$is_onenode >> $file
-if [ $is_onenode='Y' ]
+if [ $is_onenode=='Y' ]
 then
 	m_number=1
 	w_number=0
 else
 	m_number=3
 fi
-if [ $is_onenode='N' ]
+if [ $is_onenode=='N' ]
 then
 	while ! [[ $storage_type == 'R' || $storage_type == 'O' ]]
 	do
