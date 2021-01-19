@@ -279,7 +279,7 @@ then
 	fi
 	if [[ $ocs_tainted == "N" && $storage_type == "O" ]]
 	then
-		echo "DB2 node(s) must be tainted!"
+		echo "***DB2 node(s) must be tainted!***"
 		db2_tainted="Y"
 	else
 		while ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
@@ -303,22 +303,6 @@ echo export GI_STORAGE=$storage_type >> $file
 echo export GI_DB2_HA=$db2_ha >> $file
 echo export GI_OCS_TAINTED=$ocs_tainted >> $file
 echo export GI_DB2_TAINTED=$db2_tainted >> $file
-if [ $is_onenode == 'N' ]
-then
-	echo "Define number of workers"
-	echo "3 - simple installation, OCS storage installed on all workers, ICP installed on one worker"
-	echo "4 - simple installation, OCS storage installed on all workers, DB2 node tainted, OCP spread on not-tainted nodes"
-	while ! [[ $w_number == 4 || $w_number == '3' ]]
-        do
-                printf "How many workers nodes will you deploy? (\e[4m3\e[0m)/4: "
-                read w_number
-                w_number=${w_number:-3}
-                if ! [[ $w_number == 3 || $w_number == 4 ]]
-                then
-                        echo "Incorrect value"
-                fi
-        done
-fi
 if [[ ! -z "$GI_BASTION_IP" ]]
 then
 	read -p "Bastion IP is set to [$GI_BASTION_IP] - insert new or confirm existing one <ENTER>: " new_bastion_ip
@@ -329,7 +313,7 @@ then
 else
 	while [[ $bastion_ip == '' ]]
 	do
-		read -p "Insert Bastion IP used to communicate with Bootstrap server: " bastion_ip
+		read -p "Insert Bastion IP used to communicate with your OCP cluster: " bastion_ip
 	done
 fi
 if [[ -z "$bastion_ip" ]]
@@ -495,62 +479,207 @@ fi
 declare -a node_ip_arr
 while [[ $m_number != ${#node_ip_arr[@]} ]]
 do
-	if [ ! -z "$GI_NODE_IP" ]
-	then
-		read -p "Current list of master node(s) IP is [$GI_NODE_IP] - insert $m_number IP's (comma separated) or confirm existing <ENTER>: " new_node_ip
-		if [[ $new_node_ip != '' ]]
-		then
-			node_ip=$new_node_ip
-		else
-			node_ip=$GI_NODE_IP
-		fi
-	else
-		read -p "Insert $m_number IP address(es) of master node(s) (comma separated): " node_ip
-	fi
-	IFS=',' read -r -a node_ip_arr <<< $node_ip
-	GI_NODE_IP=$node_ip
+        if [ ! -z "$GI_NODE_IP" ]
+        then
+                read -p "Current list of master node(s) IP is [$GI_NODE_IP] - insert $m_number IP's (comma separated) or confirm existing <ENTER>: " new_node_ip
+                if [[ $new_node_ip != '' ]]
+                then
+                        node_ip=$new_node_ip
+                else
+                        node_ip=$GI_NODE_IP
+                fi
+        else
+                read -p "Insert $m_number IP address(es) of master node(s) (comma separated): " node_ip
+        fi
+        IFS=',' read -r -a node_ip_arr <<< $node_ip
+        GI_NODE_IP=$node_ip
 done
 echo export GI_NODE_IP=$node_ip >> $file
 declare -a node_mac_arr
 while [[ $m_number != ${#node_mac_arr[@]} ]]
 do
-	if [ ! -z "$GI_NODE_MAC_ADDRESS" ]
-	then
-		read -p "Current master node MAC address list is set to [$GI_NODE_MAC_ADDRESS] - insert $m_number MAC address(es) or confirm existing one <ENTER>: " new_node_mac
-	        if [[ $new_node_mac != '' ]]
-		then
-			node_mac=$new_node_mac
-		else
-			node_mac=$GI_NODE_MAC_ADDRESS
-		fi
-	else
-		read -p "Insert $m_number MAC address(es) of master node(s): " node_mac
-	fi
-	IFS=',' read -r -a node_mac_arr <<< $node_mac
-	GI_NODE_MAC_ADDRESS=$node_mac
+        if [ ! -z "$GI_NODE_MAC_ADDRESS" ]
+        then
+                read -p "Current master node MAC address list is set to [$GI_NODE_MAC_ADDRESS] - insert $m_number MAC address(es) or confirm existing one <ENTER>: " new_node_mac
+                if [[ $new_node_mac != '' ]]
+                then
+                        node_mac=$new_node_mac
+                else
+                        node_mac=$GI_NODE_MAC_ADDRESS
+                fi
+        else
+                read -p "Insert $m_number MAC address(es) of master node(s): " node_mac
+        fi
+        IFS=',' read -r -a node_mac_arr <<< $node_mac
+        GI_NODE_MAC_ADDRESS=$node_mac
 done
 echo export GI_NODE_MAC_ADDRESS=$node_mac >> $file
 declare -a node_name_arr
 while [[ $m_number != ${#node_name_arr[@]} ]]
 do
-	if [ ! -z "$GI_NODE_NAME" ]
-	then
-		read -p "Current master node name list is set to [$GI_NODE_NAME] - insert $m_number master name(s) or confirm existing one <ENTER>: " new_node_name
-	        if [[ $new_node_name != '' ]]
-	        then
-	                node_name=$new_node_name
-		else
-			node_name=$GI_NODE_NAME
-	        fi
-	else
-		read -p "Insert $m_number master node name(s): " node_name
-	fi
-	IFS=',' read -r -a node_name_arr <<< $node_name
-	GI_NODE_NAME=$node_name
+        if [ ! -z "$GI_NODE_NAME" ]
+        then
+                read -p "Current master node name list is set to [$GI_NODE_NAME] - insert $m_number master name(s) or confirm existing one <ENTER>: " new_node_name
+                if [[ $new_node_name != '' ]]
+                then
+                        node_name=$new_node_name
+                else
+                        node_name=$GI_NODE_NAME
+                fi
+        else
+                read -p "Insert $m_number master node name(s): " node_name
+        fi
+        IFS=',' read -r -a node_name_arr <<< $node_name
+        GI_NODE_NAME=$node_name
 done
 echo export GI_NODE_NAME=$node_name >> $file
 if [ $is_onenode == 'N' ]
 then
+	if [[ db2_ha == 'Y' ]]
+	then
+		d_number=2
+	else
+		d_number=1
+	fi
+	declare -a db_ip_arr
+	while [[ $d_number != ${#db2_ip_arr[@]} ]]
+	do
+		if [ ! -z "$GI_DB2_IP" ]
+	        then
+        	        read -p "Current list of DB2 node IP list is set to [$GI_DB2_IP] - insert $d_number IP's (comma separated) or confirm existing <ENTER>: " new_db2_ip
+	                if [[ $new_db2_ip != '' ]]
+        	        then
+                	        db2_ip=$new_db2_ip
+	                else
+        	                db2_ip=$GI_DB2_IP
+	                fi
+	        else
+                	read -p "Insert $d_number IP address(es) of master node(s) (comma separated): " db2_ip
+	        fi
+        	IFS=',' read -r -a db2_ip_arr <<< $db2_ip
+	        GI_DB2_IP=$db2_ip
+	done
+	echo export GI_DB2_IP=$db2_ip >> $file
+	declare -a db2_mac_arr
+	while [[ $d_number != ${#db2_mac_arr[@]} ]]
+	do
+        	if [ ! -z "$GI_DB2_MAC_ADDRESS" ]
+	        then
+        	        read -p "Current master DB2 MAC address list is set to [$GI_DB2_MAC_ADDRESS] - insert $d_number MAC address(es) or confirm existing one <ENTER>: " new_db2_mac
+                	if [[ $new_db2_mac != '' ]]
+	                then
+        	                db2_mac=$new_db2_mac
+	                else
+	                        db2_mac=$GI_DB2_MAC_ADDRESS
+        	        fi
+	        else
+        	        read -p "Insert $d_number MAC address(es) of DB2 node(s): " db2_mac
+	        fi
+	        IFS=',' read -r -a db2_mac_arr <<< $db2_mac
+	        GI_DB2_MAC_ADDRESS=$db2_mac
+	done
+	echo export GI_DB2_MAC_ADDRESS=$db2_mac >> $file
+	declare -a db2_name_arr
+        while [[ $d_number != ${#db2_name_arr[@]} ]]
+        do
+                if [ ! -z "$GI_DB2_NAME" ]
+                then
+                        read -p "Current DB2 node name list is set to [$GI_DB2_NAME] - insert $d_number node names or confirm existing one <ENTER>: " new_db2_name
+                        if [[ $new_db2_name != '' ]]
+                        then
+                                db2_name=$new_db2_name
+                        else
+                                db2_name=$GI_DB2_NAME
+                        fi
+                else
+                        read -p "Insert $d_number DB2 node names: " db2_name
+                fi
+                IFS=',' read -r -a db2_name_arr <<< $db2_name
+                GI_DB2_NAME=$DB2_name
+        done
+        echo export GI_DB2_NAME=$db2_name >> $file
+	if [[ ocs_tainted == 'Y' ]]
+	then
+		declare -a ocs_ip_arr
+        	while [[ ${#ocs_ip_arr[@]} -ne 3 ]]
+	        do
+        	        if [ ! -z "$GI_OCS_IP" ]
+	                then
+        	                read -p "Current OCS node IP list is set to [$GI_OCS_IP] - insert 3 IP's (comma separated) or confirm existing <ENTER>: " new_ocs_ip
+	                        if [[ $new_ocs_ip != '' ]]
+        	                then
+                	                ocs_ip=$new_ocs_ip
+	                        else
+        	                        ocs_ip=$GI_OCS_IP
+	                        fi
+        	        else
+                	        read -p "Insert 3 IP addresses of OCS nodes (comma separated): " ocs_ip
+                	fi
+	                IFS=',' read -r -a ocs_ip_arr <<< $ocs_ip
+	                GI_OCS_IP=$ocs_ip
+	        done
+        	echo export GI_OCS_IP=$ocs_ip >> $file
+	        declare -a ocs_mac_arr
+	        while [[ ${#db2_mac_arr[@]} -ne 3 ]]
+        	do
+                	if [ ! -z "$GI_OCS_MAC_ADDRESS" ]
+                	then
+                        	read -p "Current OCS MAC address list is set to [$GI_OCS_MAC_ADDRESS] - insert 3 MAC addresses or confirm existing one <ENTER>: " new_ocs_mac
+	                        if [[ $new_ocs_mac != '' ]]
+                        	then
+                                	ocs_mac=$new_ocs_mac
+	                        else
+        	                        ocs_mac=$GI_OCS_MAC_ADDRESS
+                	        fi
+	                else
+        	                read -p "Insert 3 MAC addresses of OCS nodes (comma separated): " ocs_mac
+	                fi
+        	        IFS=',' read -r -a ocs_mac_arr <<< $ocs_mac
+                	GI_OCS_MAC_ADDRESS=$ocs_mac
+	        done
+        	echo export GI_OCS_MAC_ADDRESS=$ocs_mac >> $file
+	        declare -a ocs_name_arr
+	        while [[ ${#ocs_name_arr[@]} -ne 3 ]]
+	        do
+	                if [ ! -z "$GI_OCS_NAME" ]
+	                then
+	                        read -p "Current OCS node name list is set to [$GI_OCS_NAME] - insert 3 OCS node names or confirm existing one <ENTER>: " new_ocs_name
+	                        if [[ $new_ocs_name != '' ]]
+	                        then
+	                                ocs_name=$new_ocs_name
+	                        else
+	                                ocs_name=$GI_OCS_NAME
+	                        fi
+	                else
+	                        read -p "Insert 3 OCS node names (comma separated): " ocs_name
+	                fi
+	                IFS=',' read -r -a ocs_name_arr <<< $ocs_name
+	                GI_OCS_NAME=$ocs_name
+	        done
+	        echo export GI_DB2_NAME=$db2_name >> $file
+	fi
+	if [[ db2_tainted == 'Y' ]]
+	then
+		m_worker_number=3
+	else
+		if [[ ocs_tainted == 'N' ]]
+		then
+			m_worker_number=3
+		else
+			m_worker_number=2
+	fi
+	echo "Define number of workers, you must set minimum $m_worker_number of workers."
+	while ! [[ $w_number -ge $m_worker_number ]]
+        do
+		
+                printf "How many workers nodes will you deploy [$m_worker_number]?: "
+                read w_number
+                w_number=${w_number:$m_worker_number}
+                if ! [[ $w_number -ge $m_worker_number ]]
+                then
+                        echo "Incorrect value"
+                fi
+        done
 	declare -a worker_ip_arr
 	while [[ $w_number != ${#worker_ip_arr[@]} ]]
 	do
@@ -570,9 +699,6 @@ then
 	        GI_WORKER_IP=$worker_ip
 	done
 	echo export GI_WORKER_IP=$worker_ip >> $file
-fi
-if [ $is_onenode == 'N' ]
-then
 	declare -a worker_mac_arr	
 	while [[ $w_number != ${#worker_mac_arr[@]} ]]
 	do
@@ -592,9 +718,6 @@ then
 	        GI_WORKER_MAC_ADDRESS=$worker_mac
 	done
 	echo export GI_WORKER_MAC_ADDRESS=$worker_mac >> $file
-fi
-if [ $is_onenode == 'N' ]
-then
 	declare -a worker_name_arr
 	while [[ $w_number != ${#worker_name_arr[@]} ]]
 	do
@@ -614,7 +737,6 @@ then
 	        GI_WORKER_NAME=$worker_name
 	done
 	echo export GI_WORKER_NAME=$worker_name >> $file
-fi
 if [[ ! -z "$GI_DHCP_RANGE_START" ]]
 then
         read -p "First DHCP lease address is set to [$GI_DHCP_RANGE_START] - insert new or confirm existing one <ENTER>: " new_dhcp_start
