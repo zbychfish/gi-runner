@@ -433,16 +433,13 @@
         - "{{ node_name+worker_name|default([])+db2_name|default([])+ocs_name|default([]) }}"
       when: true
 
-    - name: end play
-      meta: end_play
-
     - name: Prepare DHCP entries for nodes
       shell: >
         echo "dhcp-host={{ item.0 }},{{ item.1 }},12h"
       register: node_dhcp
       with_together:
-        - "{{ node_mac+worker_mac }}"
-        - "{{ node_ip+worker_ip }}"
+        - "{{ node_mac+worker_mac|default([])+db2_mac|default([])+ocs_mac|default([]) }}"
+        - "{{ node_ip+worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
       when: true
 
     - name: Prepare DNS entries for nodes
@@ -450,18 +447,27 @@
         echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
       register: node_dns
       with_together:
-        - "{{ node_name+worker_name }}"
-        - "{{ node_ip+worker_ip }}"
+        - "{{ node_name+worker_name|default([])+db2_name|default([])+ocs_name|default([]) }}"
+        - "{{ node_ip+worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
       when: true
 
-    - name: Prepare ETCD entries for master nodes
+    - name: Prepare ETCD entries for master nodes in no onenode
       shell: >
         echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
       register: etcd_dns
       with_together:
         - [ "etcd-0", "etcd-1", "etcd-2" ]
         - "{{ node_ip }}"
-      when: true
+      when: is_one_node == 'N'
+
+    - name: Prepare ETCD entries for master nodes in no onenode
+      shell: >
+        echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
+      register: etcd_dns
+      with_together:
+        - [ "etcd-0" ]
+        - "{{ node_ip }}"
+      when: is_one_node == 'Y'
 
     - name: Prepare SRV entries for master nodes
       shell: >
@@ -469,7 +475,15 @@
       register: srv_dns
       with_together:
         - [ "etcd-0", "etcd-1", "etcd-2" ]
-      when: true
+      when: is_one_node == 'N'
+
+    - name: Prepare SRV entries for master nodes
+      shell: >
+        echo "srv-host=_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
+      register: srv_dns
+      with_together:
+        - [ "etcd-0" ]
+      when: is_one_node == 'Y'
 
     - debug:
         msg: "{{ item.stdout }}"
@@ -563,6 +577,9 @@
         path: /etc/dnsmasq.conf
         line: "{{ item.stdout }}"
       with_items: "{{ srv_dns.results }}"
+
+    - name: end play
+      meta: end_play
 
     - name: Start and enable dnsmasq
       service:
