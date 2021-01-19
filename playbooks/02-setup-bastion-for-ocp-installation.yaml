@@ -426,9 +426,6 @@
         - { id: "worker", name: "OCP worker", ign_file: "worker.ign", dom: "{{ domain }}" }
       when: true
 
-    - name: end play
-      meta: end_play
-
     - name: Prepare PTR name for boot
       shell: >
         echo "{{ boot_ip }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
@@ -440,9 +437,12 @@
         echo "ptr-record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ item.1 }}.{{ domain }}"
       register: node_ptr
       with_together:
-        - "{{ node_ip+worker_ip }}"
-        - "{{ node_name+worker_name }}"
+        - "{{ node_ip+worker_ip+db_ip+ocs_ip }}"
+        - "{{ node_name+worker_name+db2_name+ocs_name }}"
       when: true
+
+    - name: end play
+      meta: end_play
 
     - name: Prepare DHCP entries for nodes
       shell: >
