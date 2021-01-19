@@ -262,16 +262,21 @@ then
 			echo "Incorrect value, insert Y or N"
 		fi
 	done
-	while ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]	
-	do
-                printf "Would you like isolate (taint) OCS nodes in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
-                read ocs_tainted
-                ocs_tainted=${ocs_tainted:-N}
-                if ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]
-                then
-                        echo "Incorrect value, insert Y or N"
-                fi
-        done
+	if [ $storage_type == "O" ]
+	then
+		while ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]	
+		do
+	                printf "Would you like isolate (taint) OCS nodes in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
+	                read ocs_tainted
+	                ocs_tainted=${ocs_tainted:-N}
+	                if ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]
+	                then
+	                        echo "Incorrect value, insert Y or N"
+	                fi
+	        done
+	else
+		ocs_tainted="N"
+	fi
 	if [[ $ocs_tainted == "N" && $storage_type == "O" ]]
 	then
 		echo "DB2 node(s) must be tainted!"
