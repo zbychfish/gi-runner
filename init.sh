@@ -1002,7 +1002,7 @@ else
                hs_size=${hs_size:-300}
        done
 fi
-if [[ -z "hs_size" ]]
+if [[ -z $hs_size ]]
 then
        echo export GI_HS_SIZE=$GI_HS_SIZE >> $file
 else
