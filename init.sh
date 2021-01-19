@@ -232,7 +232,8 @@ do
         fi
 done
 echo export GI_ONENODE=$is_onenode >> $file
-if [ $is_onenode=='Y' ]
+echo $is_onenode
+if [ $is_onenode == 'Y' ]
 then
 	m_number=1
 	w_number=0
