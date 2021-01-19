@@ -26,6 +26,10 @@
     repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
     repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
     is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
+    is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
+    is_db2_in_ha:  "{{ lookup('env','GI_DB2_HA') }}"
+    is_db2_tainted:  "{{ lookup('env','GI_DB2_TAINTED') }}"
+    is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
     ntp_server:  "{{ lookup('env','GI_NTP_SRV') }}"
     hs_size:  "{{ lookup('env','GI_HS_SIZE') }}"
 
@@ -37,10 +41,19 @@
         node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
         node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
 
+    - name: Set DB2 array
+      set_fact:
+        db2_ip: "{{ lookup('env', 'GI_DB2_IP').split(',') }}"
+        db2_mac: "{{ lookup('env', 'GI_DB2_MAC_ADDRESS').split(',') }}"
+        db2_name: "{{ lookup('env', 'GI_DB2_NAME').split(',') }}"
+      when: is_one_node == 'Y'
 
-    - name: Stop if matchbox not uploaded for air-gapped installation
-      debug:
-        msg: "{{ node_ip }}"
+    - name: Set OCS array
+      set_fact:
+        ocs_ip: "{{ lookup('env', 'GI_OCS_IP').split(',') }}"
+        ocs_mac: "{{ lookup('env', 'GI_OCS_MAC_ADDRESS').split(',') }}"
+        ocs_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
+      when: is_ocs_tainted == 'Y'
 
     - name: Check masters parameters
       fail: msg="Variable {{ item.name }} is not set"
@@ -55,7 +68,7 @@
         worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
         worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
         worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
-      when: node_ip|length > 1
+      when: is_one_node == 'N'
 
     - name: Check workers parameters
       fail: msg="Variable {{ item.name }} is not set"
@@ -117,10 +130,23 @@
       loop:
         - { name: "GI_NOPROXY_NET", value: "{{ noproxy_net }}" }
 
+    - name: Check original NIC config file existence
+      stat:
+        path: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
+      register: nic_config_presence
+      when: true
+
+    - name: Restore original NIC config file
+      copy:
+        src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
+        dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
+      when: nic_config_presence.stat.exists == false
+
     - name: Copy original NIC config file
       copy:
         src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
         dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
+      when: nic_config_presence.stat.exists == false
 
     - name: Switch off peer DNS configuration
       lineinfile:
@@ -137,6 +163,11 @@
         name: NetworkManager
         state: restarted
 
+    - name: Clean TFTP directory
+      file:
+        path: "/var/lib/tftp"
+        state: absent
+
     - name: Create TFTP directory
       file:
         path: "/var/lib/tftp"
@@ -152,6 +183,11 @@
     - name: Add the user 'matchbox'
       user:
         name: matchbox
+
+    - name: Clean matchbox directory
+      file:
+        path: "/var/lib/matchbox"
+        state: absent
 
     - name: Create Matchbox directories
       file:
@@ -217,10 +253,23 @@
         enabled: yes
       when: true
 
+    - name: Check original chrony config file existence
+      stat:
+        path: "/etc/chrony.conf.orig"
+      register: chrony_config_presence
+      when: true
+
+    - name: Restore original chrony config file
+      copy:
+        dest: /etc/chrony.conf
+        src: /etc/chrony.conf.orig
+      when: chrony_config_presence.stat.exists == true
+
     - name: Copy original chrony config file
       copy:
         src: /etc/chrony.conf
         dest: /etc/chrony.conf.orig
+      when: chrony_config_presence.stat.exists == false
 
     - name: Modify chrony.conf
       lineinfile:
@@ -298,6 +347,9 @@
         - { src: "/usr/share/ipxe/ipxe-i386.efi", dest: "/var/lib/tftp" }
         - { src: "/usr/share/ipxe/ipxe-x86_64.efi", dest: "/var/lib/tftp" }
       when: true
+
+    - name: end play
+      meta: end_play
 
     - name: Matchbox bootstrap group json
       vars:
