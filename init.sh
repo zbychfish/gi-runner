@@ -239,7 +239,6 @@ then
 else
 	m_number=3
 fi
-#fi
 if [ $is_onenode='N' ]
 then
 	while ! [[ $storage_type == 'R' || $storage_type == 'O' ]]
@@ -418,26 +417,6 @@ then
 else
 	echo export GI_DNS_FORWARDER=$dns_forwarding >> $file
 fi
-if [[ ! -z "$GI_BOOTSTRAP_NAME" ]]
-then
-        read -p "Current bootstrap name is set to [$GI_BOOTSTRAP_NAME] - insert new or confirm existing one <ENTER>: " new_boot_name
-        if [[ $new_boot_name != '' ]]
-        then
-                boot_name=$new_boot_name
-        fi
-else
-        while [[ $boot_name == '' ]]
-        do
-                read -p "Insert OCP bootstrap name [boot]: " boot_name
-                boot_name=${boot_name:-boot}
-        done
-fi
-if [[ -z $boot_name ]]
-then
-        echo export GI_BOOTSTRAP_NAME=$GI_BOOTSTRAP_NAME >> $file
-else
-        echo export GI_BOOTSTRAP_NAME=$boot_name >> $file
-fi
 if [[ ! -z "$GI_BOOTSTRAP_IP" ]]
 then
         read -p "Current Bootstrap IP is set to [$GI_BOOTSTRAP_IP] - insert new or confirm existing one <ENTER>: " new_boot_ip
@@ -476,7 +455,28 @@ then
 else
         echo export GI_BOOTSTRAP_MAC_ADDRESS=$boot_mac >> $file
 fi
+if [[ ! -z "$GI_BOOTSTRAP_NAME" ]]
+then
+        read -p "Current bootstrap name is set to [$GI_BOOTSTRAP_NAME] - insert new or confirm existing one <ENTER>: " new_boot_name
+        if [[ $new_boot_name != '' ]]
+        then
+                boot_name=$new_boot_name
+        fi
+else
+        while [[ $boot_name == '' ]]
+        do
+                read -p "Insert OCP bootstrap name [boot]: " boot_name
+                boot_name=${boot_name:-boot}
+        done
+fi
+if [[ -z $boot_name ]]
+then
+        echo export GI_BOOTSTRAP_NAME=$GI_BOOTSTRAP_NAME >> $file
+else
+        echo export GI_BOOTSTRAP_NAME=$boot_name >> $file
+fi
 declare -a node_ip_arr
+echo $m_number
 while [[ $m_number != ${#node_ip_arr[@]} ]]
 do
         if [ ! -z "$GI_NODE_IP" ]
