@@ -735,7 +735,7 @@
       when: is_air_gapped == 'Y'
 
     - name: Define number of infra nodes
-      set_facts:
+      set_fact:
         n_workers: "{{ workers_ip|length + db2_ip|length + ocs_ip|length }}"
 
     - name: Create OCP config file in air-gapped env
