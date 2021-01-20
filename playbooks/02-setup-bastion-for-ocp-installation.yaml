@@ -772,9 +772,6 @@
         group: root
         mode: 0755
 
-    - name: end play
-      meta: end_play
-
     - name: Create Ignition files
       command:
         cmd: "{{ item.cmd }}"
@@ -794,11 +791,23 @@
         - { src: "../ocp/master.ign", dest: "/var/lib/matchbox/ignition/" }
         - { src: "../ocp/worker.ign", dest: "/var/lib/matchbox/ignition/" }
 
+    - name: Check original HA Proxy config file existence
+      stat:
+        path: "/etc/haproxy/haproxy.cfg.orig"
+      register: haproxy_config_presence
+      when: true
+
+    - name: Restore original chrony config file
+      copy:
+        dest: "/etc/haproxy/haproxy.cfg"
+        src: "/etc/haproxy/haproxy.cfg.orig"
+      when: haproxy_config_presence.stat.exists == true
+
     - name: Copy original HA proxy config file
       copy:
         src: /etc/haproxy/haproxy.cfg
         dest: /etc/haproxy/haproxy.cfg.orig
-      when: false
+      when: haproxy_config_presence.stat.exists == false
 
     - name: Create HA Proxy config file
       template:
@@ -807,6 +816,15 @@
       vars:
         masters: "{{ node_name|zip(node_ip)|list }}"
         workers: "{{ worker_name|zip(worker_ip)|list }}"
+      when: is_onenode == 'N'
+
+    - name: Create HA Proxy config file
+      template:
+        src: haproxy.j2
+        dest: /etc/haproxy/haproxy.cfg
+      vars:
+        masters: "{{ node_name|list }}"
+      when: is_onenode == 'Y'
 
     - name: Stop execution
       meta: end_play
