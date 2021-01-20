@@ -46,7 +46,7 @@
         db2_ip: "{{ lookup('env', 'GI_DB2_IP').split(',') }}"
         db2_mac: "{{ lookup('env', 'GI_DB2_MAC_ADDRESS').split(',') }}"
         db2_name: "{{ lookup('env', 'GI_DB2_NAME').split(',') }}"
-      when: is_one_node == 'Y'
+      when: is_one_node == 'N'
 
     - name: Set OCS array
       set_fact:
