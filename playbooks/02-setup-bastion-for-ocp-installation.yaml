@@ -591,9 +591,6 @@
         line: "{{ item.stdout }}"
       with_items: "{{ srv_dns.results }}"
 
-    - name: end play
-      meta: end_play
-
     - name: Start and enable dnsmasq
       service:
         name: dnsmasq
@@ -737,6 +734,10 @@
       register: repo_cert
       when: is_air_gapped == 'Y'
 
+    - name: Define number of infra nodes
+      set_facts:
+        n_workers: "{{ workers_ip|length + db2_ip|length + ocs_ip|length }}"
+
     - name: Create OCP config file in air-gapped env
       template:
         src: install-config-air-gapped.j2
@@ -770,6 +771,9 @@
         owner: root
         group: root
         mode: 0755
+
+    - name: end play
+      meta: end_play
 
     - name: Create Ignition files
       command:
