@@ -500,7 +500,7 @@
       copy:
         src: "/etc/dnsmasq.conf.orig"
         dest: "/etc/dnsmasq.conf"
-      when: dnsmasq_config_presence.stat.exists == false
+      when: dnsmasq_config_presence.stat.exists == true
 
     - name: Copy original NIC config file
       copy:
