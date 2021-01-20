@@ -130,9 +130,9 @@
 
     - name: Restore original NIC config file
       copy:
-        src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
-        dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
-      when: nic_config_presence.stat.exists == false
+        src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
+        dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
+      when: nic_config_presence.stat.exists == true
 
     - name: Copy original NIC config file
       copy:
