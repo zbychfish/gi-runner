@@ -823,7 +823,7 @@
         src: haproxy-onenode.j2
         dest: /etc/haproxy/haproxy.cfg
       vars:
-        masters: "{{ node_name|list }}"
+        masters: "{{ node_name|zip(node_ip)|list }}"
       when: is_one_node == 'Y'
 
     - name: Stop execution
