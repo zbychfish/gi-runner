@@ -195,7 +195,7 @@
         msg:
           - "Reboot required for updated kernel."
           - "Press ENTER to restart machine."
-          - "Then re-login to bastion and read variables: '. scripts/variables.sh'"
+          - "Then re-login to bastion and read variables: '. variables.sh'"
           - "Continue installation by executing: 'ansible-playbook playbooks/02-setup-bastion-for-ocp-installation.yaml'"
       when: is_air_gapped == 'N' and reboot_hint.stdout.find("reboot") != -1
 
