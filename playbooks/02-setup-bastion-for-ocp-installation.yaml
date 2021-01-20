@@ -820,7 +820,7 @@
 
     - name: Create HA Proxy config file
       template:
-        src: haproxy.j2
+        src: haproxy-onenode.j2
         dest: /etc/haproxy/haproxy.cfg
       vars:
         masters: "{{ node_name|list }}"
