@@ -490,10 +490,23 @@
       with_items: "{{ node_ptr.results }}"
       when: true
 
-    - name: Copy original dnsmasq config file
+    - name: Check original dnsmasq config file existence
+      stat:
+        path: "/etc/dnsmasq.conf.orig"
+      register: dnsmasq_config_presence
+      when: true
+
+    - name: Restore original NIC config file
       copy:
-        src: /etc/dnsmasq.conf
-        dest: /etc/dnsmasq.conf.orig
+        src: "/etc/dnsmasq.conf.orig"
+        dest: "/etc/dnsmasq.conf"
+      when: dnsmasq_config_presence.stat.exists == false
+
+    - name: Copy original NIC config file
+      copy:
+        src: "/etc/dnsmasq.conf"
+        dest: "/etc/dnsmasq.conf.orig"
+      when: dnsmasq_config_presence.stat.exists == false
 
     - name: Modify dnsmasq.conf file
       lineinfile:
