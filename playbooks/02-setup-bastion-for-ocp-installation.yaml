@@ -736,7 +736,7 @@
 
     - name: Define number of infra nodes
       set_fact:
-        n_workers: "{{ workers_ip|length + db2_ip|length + ocs_ip|length }}"
+        n_workers: "{{ workers_ip|default([])|length + db2_ip|default([])|length + ocs_ip|default([])|length }}"
 
     - name: Create OCP config file in air-gapped env
       template:
