@@ -816,7 +816,7 @@
       vars:
         masters: "{{ node_name|zip(node_ip)|list }}"
         workers: "{{ worker_name|zip(worker_ip)|list }}"
-      when: is_onenode == 'N'
+      when: is_one_node == 'N'
 
     - name: Create HA Proxy config file
       template:
@@ -824,7 +824,7 @@
         dest: /etc/haproxy/haproxy.cfg
       vars:
         masters: "{{ node_name|list }}"
-      when: is_onenode == 'Y'
+      when: is_one_node == 'Y'
 
     - name: Stop execution
       meta: end_play
