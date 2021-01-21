@@ -335,6 +335,15 @@
       dest: "../scripts/rook-cluster.yaml"
     when: storage_type == "R"
 
+  - name: Configure rook-ceph-rbd-sc file
+    vars:
+      replica_size: "{{ 2 if is_one_node == 'N' else 1 }}"
+      requires_replica: "{{ 'true' if is_one_node == 'N' else 'false' }}"
+    template:
+      src: "rook-storage_class_rbd.j2"
+      dest: "../scripts/rook-storage_class_rbd.yaml"
+    when: storage_type == "R"
+
   - name: Add CEPH image variables for air-gapp installation
     lineinfile:
       path: ../scripts/rook-operator.yaml
@@ -386,8 +395,6 @@
     delay: 10
     when: storage_type == "R"
 
-  - meta: end_play
-
   - name: Configure storage classes
     shell:
       cmd: "{{ item.cmd }}"
@@ -408,6 +415,8 @@
     until: "image_pvc_status.stdout == \"Bound\""
     retries: 30
     delay: 10
+
+  - meta: end_play
 
   - name: Configure OCP registry with PVC
     shell:
