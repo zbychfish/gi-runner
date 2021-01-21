@@ -817,7 +817,7 @@
         dest: /etc/haproxy/haproxy.cfg
       vars:
         masters: "{{ node_name|zip(node_ip)|list }}"
-        workers: "{{ worker_name|zip(worker_ip)|list }}"
+        workers: "{{ worker_name+db2_name|default([])+ocs_name|default([])|zip(worker_ip+db2_ip|default([])+ocs_ip|default([]))|list }}"
       when: is_one_node == 'N'
 
     - name: Create HA Proxy config file
