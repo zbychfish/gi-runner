@@ -308,7 +308,7 @@
 
   - name: Configure common rook settings
     shell:
-      cmd: "oc apply -f ../scripts/{{ rook-common.yaml if is_one_node == 'Y' else rook-common-master.yaml }} --config ../ocp/auth/kubeconfig"
+      cmd: "oc apply -f ../scripts/{{ 'rook-common.yaml' if is_one_node == 'Y' else 'rook-common-master.yaml' }} --config ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
   - name: Configure rook-ceph operator file
