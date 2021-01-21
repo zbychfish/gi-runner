@@ -267,6 +267,7 @@ then
 	while ! [[ $storage_device == '' ]]
         do 
 		if [[ ! -z "$GI_STORAGE_DEVICE" ]]
+		then
                 	read -p "Cluster storage device set to [$GI_STORAGE_DEVICE], insert new cluster storage device specification or confirm existing one <ENTER>: " storage_device
                 fi
         done
