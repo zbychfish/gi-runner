@@ -293,8 +293,10 @@
   - name: Configure rook-ceph nodes
     shell:
       cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
-    with_items: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name|list }}"
+      with_items: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
     when: storage_type == "R" and is_one_node == 'N'
+
+  - meta: end_play
 
   - name: Configure rook-ceph nodes
     shell:
@@ -391,7 +393,7 @@
       cmd: "oc get cephcluster -n rook-ceph --config ../ocp/auth/kubeconfig --no-headers -o custom-columns=HEALTH:.status.ceph.health"
     register: ceph_installation_status
     until: "ceph_installation_status.stdout == \"HEALTH_OK\" or ceph_installation_status.stdout == \"HEALTH_WARN\""
-    retries: 50
+    retries: 60
     delay: 10
     when: storage_type == "R"
 
@@ -448,7 +450,7 @@
       cmd: "oc get clusteroperators kube-apiserver --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
     register: image_registry_status
     until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
-    retries: 40
+    retries: 60
     delay: 10
     when: true
 
