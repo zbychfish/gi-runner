@@ -469,6 +469,9 @@
         - "{{ node_ip }}"
       when: is_one_node == 'Y'
 
+    - name: debug
+      var: etcd_dns
+
     - name: Prepare SRV entries for master nodes
       shell: >
         echo "srv-host=_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
