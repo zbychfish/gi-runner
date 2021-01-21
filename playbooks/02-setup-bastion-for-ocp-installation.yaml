@@ -456,18 +456,17 @@
         echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
       register: etcd_dns
       with_together:
-        - [ "etcd-0", "etcd-1", "etcd-2" ]
+        - "{{ [ 'etcd-0', 'etcd-1', 'etcd-2' ] if is_one_node == 'N' else [ 'etcd-0' ] }}"
         - "{{ node_ip }}"
-      when: is_one_node == 'N'
 
-    - name: Prepare ETCD entries for master nodes in no onenode
-      shell: >
-        echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
-      register: etcd_dns
-      with_together:
-        - [ "etcd-0" ]
-        - "{{ node_ip }}"
-      when: is_one_node == 'Y'
+          #    - name: Prepare ETCD entries for master nodes in no onenode
+          #shell: >
+          #echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
+          #register: etcd_dns
+          #with_together:
+          #- [ "etcd-0" ]
+          #- "{{ node_ip }}"
+          #when: is_one_node == 'Y'
 
     - name: debug
       debug:
@@ -478,16 +477,15 @@
         echo "srv-host=_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
       register: srv_dns
       with_together:
-        - [ "etcd-0", "etcd-1", "etcd-2" ]
-      when: is_one_node == 'N'
+        - "{{ [ 'etcd-0', 'etcd-1', 'etcd-2' ] if is_one_node == 'N' else [ 'etcd-0' ] }}"
 
-    - name: Prepare SRV entries for master nodes
-      shell: >
-        echo "srv-host=_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
-      register: srv_dns
-      with_together:
-        - [ "etcd-0" ]
-      when: is_one_node == 'Y'
+      #- name: Prepare SRV entries for master nodes
+      #shell: >
+      #  echo "srv-host=_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
+      #register: srv_dns
+      #with_together:
+      #  - [ "etcd-0" ]
+      #when: is_one_node == 'Y'
 
     - debug:
         msg: "{{ item.stdout }}"
