@@ -5,6 +5,9 @@ metadata:
   namespace: rook-ceph # namespace:cluster
 spec:
   cephVersion:
+    image: ceph/ceph:v15.2.8
+    allowUnsupported: false
+  dataDirHostPath: /var/lib/rook
   skipUpgradeChecks: false
   continueUpgradeAfterChecksEvenIfNotHealthy: false
   mon:
@@ -35,7 +38,7 @@ spec:
   removeOSDsIfOutAndSafeToRemove: false
   storage: # cluster level storage configuration and selection
     useAllNodes: true
-    useAllDevices: true
+    useAllDevices: false
     deviceFilter: "^{{ storage_device }}"
     config:
   disruptionManagement:
