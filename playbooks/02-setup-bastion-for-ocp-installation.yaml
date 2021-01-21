@@ -55,6 +55,8 @@
         ocs_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
       when: is_ocs_tainted == 'Y'
 
+    - debug:
+        msg: "{{ worker_name+db2_name|default([])+ocs_name|default([])|zip(worker_ip+db2_ip|default([])+ocs_ip|default([]))|list }}"
     - name: Set workers arrays
       set_fact:
         worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
