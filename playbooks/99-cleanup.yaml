@@ -12,6 +12,12 @@
     node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
 
   tasks:
+    - name: Set DB2 array
+      set_fact:
+        db2_ip: "{{ lookup('env', 'GI_DB2_IP').split(',') }}"
+        db2_mac: "{{ lookup('env', 'GI_DB2_MAC_ADDRESS').split(',') }}"
+        db2_name: "{{ lookup('env', 'GI_DB2_NAME').split(',') }}"
+      when: is_one_node == 'N'
 
     - name: Remove image registry default route
       shell:
