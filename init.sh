@@ -264,6 +264,13 @@ then
                         echo "Incorrect value"
                 fi
         done
+	while ! [[ $storage_device == '' ]]
+        do 
+		if [[ ! -z "$GI_STORAGE_DEVICE" ]]
+                	read -p "Cluster storage device set to [$GI_STORAGE_DEVICE], insert new cluster storage device specification or confirm existing one <ENTER>: " storage_device
+                fi
+        done
+	echo export GI_STORAGE_DEVICE=$storage_device >> $file
 	while ! [[ $db2_ha == "Y" || $db2_ha == "N" ]]
 	do
 		printf "Would you like install DB2 in HA configuration (\e[4mN\e[0m)o/(Y)es?: "
