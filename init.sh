@@ -264,7 +264,7 @@ then
                         echo "Incorrect value"
                 fi
         done
-	while ! [[ $storage_device == '' ]]
+	while ! [[ $storage_device == '' || -z "$storage_device" ]]
         do 
 		if [[ ! -z "$GI_STORAGE_DEVICE" ]]
 		then
