@@ -566,7 +566,7 @@ then
         	                db2_ip=$GI_DB2_IP
 	                fi
 	        else
-                	read -p "Insert $d_number IP address(es) of master node(s) (comma separated): " db2_ip
+                	read -p "Insert $d_number IP address(es) of DB2 node(s) (comma separated): " db2_ip
 	        fi
         	IFS=',' read -r -a db2_ip_arr <<< $db2_ip
 	        GI_DB2_IP=$db2_ip
