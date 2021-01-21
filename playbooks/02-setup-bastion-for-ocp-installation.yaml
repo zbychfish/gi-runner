@@ -98,7 +98,7 @@
 
     - name: Iterates
       vars:
-        nodes: "{{ worker_name|default([])+db2_name|default([])+ocs_name|default([])"
+        nodes: "{{ worker_name|default([])+db2_name|default([])+ocs_name|default([]) }}"
         ips: "{{ worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
       debug:
         msg: "{{ nodes|zip(ips)|list }}"
