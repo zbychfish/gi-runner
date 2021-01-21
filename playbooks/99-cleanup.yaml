@@ -106,8 +106,6 @@
         - { name: "chronyd" }
       ignore_errors: true
 
-    - meta: end_play
-
     - name: Restore original HA Proxy config
       copy:
         src: /etc/haproxy/haproxy.cfg.orig
