@@ -105,7 +105,7 @@
       with_items: 
         - "{{ nodes if is_one_node == 'N' else node_name }}"
       ignore_errors: yes
-      when: storage_type == 'R'
+      when: storage_type == 'R' and false
 
     - name: Stop services
       service:
