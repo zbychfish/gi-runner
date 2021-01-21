@@ -431,7 +431,7 @@
         echo "ptr-record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ item.1 }}.{{ domain }}"
       register: node_ptr
       with_together:
-        - "{{ node_ip+worker_ip|default([])+db_ip|default([])+ocs_ip|default([]) }}"
+        - "{{ node_ip+worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
         - "{{ node_name+worker_name|default([])+db2_name|default([])+ocs_name|default([]) }}"
       when: true
 
