@@ -289,12 +289,10 @@
       path: "../download/ocadmin.htpasswd"
       state: absent
 
-  - meta: end_play
-
   - name: Configure rook-ceph nodes
     shell:
       cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
-    with_items: "{{ worker_name|list }}"
+    with_items: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name|list }}"
     when: storage_type == "R" and is_one_node == 'N'
 
   - name: Configure rook-ceph nodes
@@ -302,9 +300,14 @@
       cmd: "oc label node {{ node_name[0] }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
     when: storage_type == "R" and is_one_node == 'Y'
 
+  - name: Configure rook CRD's
+    shell:
+      cmd: "oc apply -f ../scripts/rook-crds.yaml --config ../ocp/auth/kubeconfig"
+    when: storage_type == "R" and is_one_node == 'N'
+
   - name: Configure common rook settings
     shell:
-      cmd: "oc apply -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig"
+      cmd: "oc apply -f ../scripts/{{ rook-common.yaml if is_one_node == 'Y' else rook-common-master.yaml }} --config ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
   - name: Configure rook-ceph operator file
@@ -313,7 +316,7 @@
     template:
       src: "rook-operator.j2"
       dest: "../scripts/rook-operator.yaml"
-    when: storage_type == "R"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Configure rook-ceph filesystem file
     vars:
@@ -321,13 +324,13 @@
     template:
       src: "rook-filesystem.j2"
       dest: "../scripts/rook-filesystem.yaml"
-    when: storage_type == "R"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Configure rook-ceph cluster file
     vars:
       multiple_per_node: "{{ 'false' if is_one_node == 'N' else 'true' }}"
     template:
-      src: "rook-cluster.j2"
+      src: "{{ rook-cluster.j2 if is_one_node == 'Y' else rook-cluster-master.j2 }}"
       dest: "../scripts/rook-cluster.yaml"
     when: storage_type == "R"
 
