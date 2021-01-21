@@ -441,5 +441,5 @@
           - Add to hosts on your web browser workstation this line
           - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} icp-console.apps.{{ domain }} insights.apps.{{ domain }}"
           - "Login to OCP console as {{ ocadmin }} user - https://console-openshift-console.apps.{{ domain }}"
-          - To install IBM Common services start playbook \'ansible-playbook playbooks/04-install-ics.yaml\'
+          - To install IBM Common services start playbook 'ansible-playbook playbooks/04-install-ics.yaml'
         
