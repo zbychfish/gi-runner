@@ -330,11 +330,10 @@
   - name: Configure rook-ceph cluster file
     vars:
       multiple_per_node: "{{ 'false' if is_one_node == 'N' else 'true' }}"
-      script: "{{ 'rook-cluster.j2' if is_one_node == 'Y' else 'rook-cluster-master.j2' }}"
     template:
-      src: "{{ script }}"
+      src: "{{ 'rook-cluster.j2' if is_one_node == 'Y' else 'rook-cluster-master.j2' }}"
       dest: "../scripts/rook-cluster.yaml"
-      when: storage_type == "R"
+    when: storage_type == "R"
 
   - meta: end_play
 
