@@ -717,7 +717,7 @@
         src: install-config-air-gapped.j2
         dest: ../ocp/install-config.yaml
       vars:
-        n_workers: "{{ workers_ip|default([])|length + db2_ip|default([])|length + ocs_ip|default([])|length }}"
+        n_workers: "{{ workers_ip|default([])|length+db2_ip|default([])|length+ocs_ip|default([])|length }}"
         n_masters: "{{ node_ip|length }}"
       when: is_air_gapped == 'Y'
 
@@ -726,7 +726,7 @@
         src: install-config.j2
         dest: ../ocp/install-config.yaml
       vars:
-        n_workers: "{{ workers_ip|default([])|length + db2_ip|default([])|length + ocs_ip|default([])|length }}"
+        n_workers: "{{ workers_ip|default([])|length+db2_ip|default([])|length+ocs_ip|default([])|length }}"
         n_masters: "{{ node_ip|length }}"
       when: proxy == "NO_PROXY" and is_air_gapped == 'N'
 
@@ -735,7 +735,7 @@
         src: install-config-proxy.j2
         dest: ../ocp/install-config.yaml
       vars:
-        n_workers: "{{ workers_ip|default([])|length + db2_ip|default([])|length + ocs_ip|default([])|length }}"
+        n_workers: "{{ workers_ip|default([])|length+db2_ip|default([])|length+ocs_ip|default([])|length }}"
         n_masters: "{{ node_ip|length }}"
       when: proxy != "NO_PROXY" and is_air_gapped == 'N'
 
