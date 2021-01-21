@@ -11,7 +11,7 @@
     repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
     repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
     storage_type: "{{ lookup('env','GI_STORAGE') }}"
-    storage_device: "{{ lookup('env','GI_STORAGEi_DEVICE') }}"
+    storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
     is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
     is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
     is_db2_in_ha:  "{{ lookup('env','GI_DB2_HA') }}"
@@ -335,8 +335,6 @@
       dest: "../scripts/rook-cluster.yaml"
     when: storage_type == "R"
 
-  - meta: end_play
-
   - name: Add CEPH image variables for air-gapp installation
     lineinfile:
       path: ../scripts/rook-operator.yaml
@@ -359,8 +357,8 @@
     shell:
       cmd: "{{ item }}"
     loop:
-      - oc apply -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig
-      - oc apply -f ../scripts/rook-filesystem.yaml --config ../ocp/auth/kubeconfig
+      - "oc apply -f ../scripts/{{ 'rook-operator.yaml' if is_one_node == 'Y' else 'rook-operator-master.yaml' }} --config ../ocp/auth/kubeconfig"
+      - "oc apply -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-filesystem-master.yaml' }} --config ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
   - name: Wait for Rook operator
@@ -387,6 +385,8 @@
     retries: 50
     delay: 10
     when: storage_type == "R"
+
+  - meta: end_play
 
   - name: Configure storage classes
     shell:
