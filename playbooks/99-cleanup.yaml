@@ -90,6 +90,7 @@
     - name: Delete rook CRD's
       shell:
         cmd: "oc delete -f ../scripts/rook-crds.yaml --config ../ocp/auth/kubeconfig"
+      ignore_errors: yes
       when: is_one_node == 'N'
 
     - name: Remove rook files
