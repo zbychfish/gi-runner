@@ -97,8 +97,11 @@
         - { name: "GI_HS_SIZE", value: "{{ hs_size }}" }
 
     - name: Iterates
+      vars:
+        nodes: "{{ worker_name|default([])+db2_name|default([])+ocs_name|default([])"
+        ips: "{{ worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
       debug:
-        msg: "{{ worker_name+db2_name|default([])+ocs_name|default([])|zip(worker_ip+db2_ip|default([])+ocs_ip|default([]))|list }}"
+        msg: "{{ nodes|zip(ips)|list }}"
 
     - name: Check configuration parameters for non air-gapped installation
       fail: msg="Variable {{ item.name }} is not set"
