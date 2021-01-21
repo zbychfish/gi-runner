@@ -3,13 +3,13 @@
     bas_int: "{{ lookup('env','GI_BASTION_INTERFACE') }}"
     worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
     domain: "{{ lookup('env','GI_DOMAIN') }}"
-    is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
     storage_type: "{{ lookup('env','GI_STORAGE') }}"
     is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
     is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
     is_db2_in_ha:  "{{ lookup('env','GI_DB2_HA') }}"
     is_db2_tainted:  "{{ lookup('env','GI_DB2_TAINTED') }}"
     is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
+    node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
 
   tasks:
 
