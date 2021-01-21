@@ -75,22 +75,28 @@
         - { cmd: "oc delete -f ../scripts/rook-storage_class_cephfs.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete -f ../scripts/rook-storage_class_rbd.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
-        - { cmd: "oc delete -f ../scripts/rook-filesystem.yaml --config ../ocp/auth/kubeconfig" }
-        - { cmd: "oc delete -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig" }
-        - { cmd: "oc delete -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig" }
-        - { cmd: "oc delete namespace rook-ceph" }
+        - { cmd: "oc delete -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-filesystem-master.yaml' }} --config ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/{{ 'rook-operator.yaml' if is_one_node == 'Y' else 'rook-operator-master.yaml' }} --config ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/{{ 'rook-common.yaml' if is_one_node == 'Y' else 'rook-common-master.yaml' }} --config ../ocp/auth/kubeconfig" }
       ignore_errors: yes
       when: storage_type == 'R'
+
+    - name: Delete rook CRD's
+      shell:
+        cmd: "oc delete -f ../scripts/rook-crds.yaml --config ../ocp/auth/kubeconfig"
+      when: is_one_node == 'N'
 
     - name: Remove rook files
       shell:
         cmd: sudo rm -rf /var/lib/rook
       delegate_to: "{{ item }}.{{ domain }}"
       remote_user: core
+      vars:
+        nodes: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name|list }}"
       args:
         warn: false
       with_items: 
-        - "{{ worker_name|list if is_one_node == 'N' else node_name }}"
+        - "{{ nodes if is_one_node == 'N' else node_name }}"
       ignore_errors: yes
       when: storage_type == 'R'
 
@@ -105,6 +111,8 @@
         - { name: "haproxy" }
         - { name: "chronyd" }
       ignore_errors: true
+
+    - meta: end_play
 
     - name: Restore original HA Proxy config
       copy:
