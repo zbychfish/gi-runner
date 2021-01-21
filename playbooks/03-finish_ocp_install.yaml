@@ -327,9 +327,6 @@
       dest: "../scripts/rook-cluster.yaml"
     when: storage_type == "R"
 
-  - name: Stop execution
-    meta: end_play
-
   - name: Add CEPH image variables for air-gapp installation
     lineinfile:
       path: ../scripts/rook-operator.yaml
