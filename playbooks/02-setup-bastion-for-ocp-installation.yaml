@@ -62,8 +62,6 @@
         worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
       when: is_one_node == 'N'
 
-    - debug:
-        msg: "{{ worker_name+db2_name|default([])+ocs_name|default([])|zip(worker_ip+db2_ip|default([])+ocs_ip|default([]))|list }}"
     - name: Check workers parameters
       fail: msg="Variable {{ item.name }} is not set"
       when: node_ip|length > 1 and item.value == ""
@@ -461,38 +459,12 @@
         - "{{ [ 'etcd-0', 'etcd-1', 'etcd-2' ] if is_one_node == 'N' else [ 'etcd-0' ] }}"
         - "{{ node_ip }}"
 
-          #    - name: Prepare ETCD entries for master nodes in no onenode
-          #shell: >
-          #echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
-          #register: etcd_dns
-          #with_together:
-          #- [ "etcd-0" ]
-          #- "{{ node_ip }}"
-          #when: is_one_node == 'Y'
-
-    - name: debug
-      debug:
-        msg: "{{ etcd_dns }}"
-      
     - name: Prepare SRV entries for master nodes
       shell: >
         echo "srv-host=_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
       register: srv_dns
       with_together:
         - "{{ [ 'etcd-0', 'etcd-1', 'etcd-2' ] if is_one_node == 'N' else [ 'etcd-0' ] }}"
-
-      #- name: Prepare SRV entries for master nodes
-      #shell: >
-      #  echo "srv-host=_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
-      #register: srv_dns
-      #with_together:
-      #  - [ "etcd-0" ]
-      #when: is_one_node == 'Y'
-
-    - debug:
-        msg: "{{ item.stdout }}"
-      with_items: "{{ node_ptr.results }}"
-      when: true
 
     - name: Check original dnsmasq config file existence
       stat:
@@ -738,10 +710,6 @@
       register: repo_cert
       when: is_air_gapped == 'Y'
 
-    - name: Define number of infra nodes
-      set_fact:
-        n_workers: "{{ workers_ip|default([])|length + db2_ip|default([])|length + ocs_ip|default([])|length }}"
-
     - name: Create OCP config file in air-gapped env
       template:
         src: install-config-air-gapped.j2
@@ -761,6 +729,8 @@
       template:
         src: install-config-proxy.j2
         dest: ../ocp/install-config.yaml
+      vars:
+        n_workers: "{{ workers_ip|default([])|length + db2_ip|default([])|length + ocs_ip|default([])|length }}"
       when: proxy != "NO_PROXY" and is_air_gapped == 'N'
 
     - name: Add RHN key - ansible replace /" to /'
