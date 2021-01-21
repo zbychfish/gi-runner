@@ -48,12 +48,16 @@
     when: is_one_node == 'N'
 
   - set_fact:
+      image: "rook/ceph:master"
+    when: is_air_gapped == 'N' and is_one_node == 'N' and storage_type == 'R'
+
+  - set_fact:
       image: "rook/ceph:v1.1.7"
-    when: is_air_gapped == 'N' and is_one_node == 'Y'
+    when: is_air_gapped == 'N' and is_one_node == 'Y' and storage_type == 'R'
 
   - set_fact:
       image: "registry.{{ domain }}:5000/ocp4/rook-ceph:rook-ceph-v1.1.7"
-    when: is_air_gapped == 'Y' and is_one_node == 'Y'
+    when: is_air_gapped == 'Y' and is_one_node == 'Y' and storage_type == 'R'
 
   - name: Check configuration parameters for air-gapped installation
     fail: msg="Variable {{ item.name }} is not set"
@@ -72,7 +76,7 @@
       - podman load -i ../download/rook/csi-node-driver-registrar_v1.1.0 docker.io/rook/csi-node-driver-registrar-v1.1.0
       - podman load -i ../download/rook/csi-provisioner-v1.3.0.tar docker.io/rook/csi-provisioner:v1.3.0
       - podman load -i ../download/rook/csi-snapshotter-1.2.0.tar docker.io/rook/csi-snapshotter-1.2.0
-    when: is_air_gapped == 'Y' and is_one_node == 'Y'
+    when: is_air_gapped == 'Y' and is_one_node == 'Y' and storage_type == 'R'
 
   - name: Push rook-ceph image to bastion image registry
     shell:
@@ -84,7 +88,7 @@
       - "podman push --creds {{ repo_user }}:{{ repo_user_password}} a93898755322 docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-node-driver-registrar-v1.1.0"
       - "podman push --creds {{ repo_user }}:{{ repo_user_password}} 2422aa77f05f docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-provisioner-v1.3.0"
       - "podman push --creds {{ repo_user }}:{{ repo_user_password}} 571ae7354c50 docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-snapshotter-1.2.0"
-    when: is_air_gapped == 'Y' and is_one_node == 'Y'
+    when: is_air_gapped == 'Y' and is_one_node == 'Y' and storage_type == 'R'
 
   - name: Waiting for OCP cluster deployment (it takes 15-40 minutes)
     command: openshift-install --dir=../ocp wait-for bootstrap-complete
@@ -174,7 +178,7 @@
       enabled: yes
     when: is_one_node == 'N'
 
-  - name: test
+  - name: Check cluster nodes health and approve CSR's if needed
     vars:
       node_number: "{{ node_ip|length+worker_ip|default([])|length+db2_ip|default([])|length+ocs_ip|default([])|length }}"
     shell: ../scripts/check_cluster_health.sh
@@ -286,6 +290,8 @@
     file:
       path: "../download/ocadmin.htpasswd"
       state: absent
+
+  - meta: end_play
 
   - name: Configure rook-ceph nodes
     shell:
