@@ -68,9 +68,6 @@
       ignore_errors: yes
       when: true
 
-    - name: Stop
-      meta: end_play
-
     - name: Delete rook-ceph cluster
       shell:
         cmd: "{{ item.cmd }}"
@@ -83,8 +80,9 @@
         - { cmd: "oc delete -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig" }
         - { cmd: "oc delete namespace rook-ceph" }
       ignore_errors: yes
+      when: storage_type == 'R'
 
-    - name: remove rook files
+    - name: Remove rook files
       shell:
         cmd: sudo rm -rf /var/lib/rook
       delegate_to: "{{ item }}.{{ domain }}"
@@ -92,9 +90,9 @@
       args:
         warn: false
       with_items: 
-        - "{{ worker_name|list }}"
+        - "{{ worker_name|list if is_one_node == 'N' else node_name }}"
       ignore_errors: yes
-      when: false
+      when: storage_type == 'R'
 
     - name: Stop services
       service:
@@ -108,11 +106,13 @@
         - { name: "chronyd" }
       ignore_errors: true
 
+    - meta: end_play
+
     - name: Restore original HA Proxy config
       copy:
         src: /etc/haproxy/haproxy.cfg.orig
         dest: /etc/haproxy/haproxy.cfg
-      when: false
+      when: true
 
     - name: Restore original dnsmasq config
       copy:
@@ -160,7 +160,6 @@
         - { path: "/var/lib/matchbox" }
         - { path: "/var/lib/tftp" }
         - { path: "../ocp" }
-        - { path: "/etc/haproxy/haproxy.cfg" }
 
     - name: Remove matchbox user
       user:
@@ -171,7 +170,7 @@
       pip:
         name: "dnspython"
         state: "absent"
-      when: false
+      when: true
   
     - name: Remove software packages
       dnf:
