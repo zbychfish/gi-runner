@@ -269,6 +269,8 @@ then
 		if [[ ! -z "$GI_STORAGE_DEVICE" ]]
 		then
                 	read -p "Cluster storage device set to [$GI_STORAGE_DEVICE], insert new cluster storage device specification or confirm existing one <ENTER>: " storage_device
+		else
+			read -p "Provide cluster storage device specification (for example sdb): " storage_device
                 fi
         done
 	echo export GI_STORAGE_DEVICE=$storage_device >> $file
