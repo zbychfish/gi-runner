@@ -470,7 +470,8 @@
       when: is_one_node == 'Y'
 
     - name: debug
-      msg: "{{ etcd_dns }}"
+      debug:
+        msg: "{{ etcd_dns }}"
       
     - name: Prepare SRV entries for master nodes
       shell: >
