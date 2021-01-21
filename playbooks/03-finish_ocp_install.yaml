@@ -11,7 +11,7 @@
     repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
     repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
     is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
-    storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
+    storage_type: "{{ lookup('env','GI_STORAGE') }}"
     is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
     is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
     is_db2_in_ha:  "{{ lookup('env','GI_DB2_HA') }}"
@@ -115,9 +115,9 @@
       regexp: "{{ item.regexp }}"
       line: "{{ item.line }}"
     with_items:
-      - { regexp: "^address=/api.{{ domain }}/{{ bas_ip }}", line: "address=/api.{{ domain }}/{{ node_ip }}" }
-      - { regexp: "^address=/api-int.{{ domain }}/{{ bas_ip }}", line: "address=/api-int.{{ domain }}/{{ node_ip }}" }
-      - { regexp: "^address=/.apps.{{ domain }}/{{ bas_ip }}", line: "address=/.apps.{{ domain }}/{{ node_ip }}" }
+      - { regexp: "^address=/api.{{ domain }}/{{ bas_ip }}", line: "address=/api.{{ domain }}/{{ node_ip[0] }}" }
+      - { regexp: "^address=/api-int.{{ domain }}/{{ bas_ip }}", line: "address=/api-int.{{ domain }}/{{ node_ip[0] }}" }
+      - { regexp: "^address=/.apps.{{ domain }}/{{ bas_ip }}", line: "address=/.apps.{{ domain }}/{{ node_ip[0] }}" }
     when: is_one_node == 'Y'
 
   - name: Remove DNS records
@@ -287,43 +287,48 @@
       path: "../download/ocadmin.htpasswd"
       state: absent
 
-  - name: Stop execution
-    meta: end_play
-
   - name: Configure rook-ceph nodes
     shell:
       cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
     with_items: "{{ worker_name|list }}"
-    when: storage_type == "rook"
+    when: storage_type == "R" and is_one_node == 'N'
+
+  - name: Configure rook-ceph nodes
+    shell:
+      cmd: "oc label node {{ node_name[0] }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Configure common rook settings
     shell:
       cmd: "oc apply -f ../scripts/rook-common.yaml --config ../ocp/auth/kubeconfig"
-    when: storage_type == "rook"
+    when: storage_type == "R"
 
   - name: Configure rook-ceph operator file
     vars:
-      replica_number: "{{ '3' if storage_type == 'rook' else '1' }}"
+      replica_number: "{{ '3' if is_one_node == 'N' else '1' }}"
     template:
       src: "rook-operator.j2"
       dest: "../scripts/rook-operator.yaml"
-    when: storage_type != "ocs"
+    when: storage_type == "R"
 
   - name: Configure rook-ceph filesystem file
     vars:
-      replica_number: "{{ '3' if storage_type == 'rook' else '1' }}"
+      replica_number: "{{ '3' if is_one_node == 'N' else '1' }}"
     template:
       src: "rook-filesystem.j2"
       dest: "../scripts/rook-filesystem.yaml"
-    when: storage_type != "ocs"
+    when: storage_type == "R"
 
   - name: Configure rook-ceph cluster file
     vars:
-      multiple_per_node: "{{ 'false' if storage_type == 'rook' else 'true' }}"
+      multiple_per_node: "{{ 'false' if is_one_node == 'N' else 'true' }}"
     template:
       src: "rook-cluster.j2"
       dest: "../scripts/rook-cluster.yaml"
-    when: storage_type != "ocs"
+    when: storage_type == "R"
+
+  - name: Stop execution
+    meta: end_play
 
   - name: Add CEPH image variables for air-gapp installation
     lineinfile:
@@ -341,7 +346,7 @@
       - '          value: "registry.{{ domain }}:5000/ocp4/rook-ceph:cephcsi-1.2.0"'
       - '        - name: ROOK_CSI_SNAPSHOTTER_IMAGE'
       - '          value: "registry.{{ domain }}:5000/ocp4/rook-ceph:csi-snapshotter-1.2.0"'
-    when: is_air_gapped == 'Y'
+    when: is_air_gapped == 'Y' and storage_type == "R"
 
   - name: Configure rook operator
     shell:
@@ -349,6 +354,7 @@
     loop:
       - oc apply -f ../scripts/rook-operator.yaml --config ../ocp/auth/kubeconfig
       - oc apply -f ../scripts/rook-filesystem.yaml --config ../ocp/auth/kubeconfig
+    when: storage_type == "R"
 
   - name: Wait for Rook operator
     shell:
@@ -357,13 +363,14 @@
     until: "rook_operator_status.stdout == \"0\""
     retries: 20
     delay: 10
-    when: true
+    when: storage_type == "R"
 
   - name: Deploy rook-ceph cluster
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
       - { cmd: "oc apply -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
+    when: storage_type == "R"
 
   - name: Wait for correct Rook Ceph cluster deployment
     shell:
@@ -372,6 +379,7 @@
     until: "ceph_installation_status.stdout == \"HEALTH_OK\" or ceph_installation_status.stdout == \"HEALTH_WARN\""
     retries: 50
     delay: 10
+    when: storage_type == "R"
 
   - name: Configure storage classes
     shell:
@@ -380,7 +388,7 @@
       - { cmd: "oc apply -f ../scripts/rook-storage_class_rbd.yaml --config ../ocp/auth/kubeconfig" }
       - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --config ../ocp/auth/kubeconfig" }
       - { cmd: "oc patch storageclass rook-ceph-block --config ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io\/is-default-class\":\"true\"}}}'" }
-    when: true
+    when: storage_type == "R"
   
   - name: Create PVC for registry storage
     shell:
