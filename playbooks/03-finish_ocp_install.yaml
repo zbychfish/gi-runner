@@ -48,7 +48,7 @@
     when: is_one_node == 'N'
 
   - debug:
-    msg: "{{ worker_name[:3] }}"
+    msg: "{{ worker_name[0:3] }}"
 
   - set_fact:
       image: "rook/ceph:master"
