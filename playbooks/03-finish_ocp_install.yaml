@@ -398,6 +398,8 @@
     delay: 10
     when: storage_type == "R"
 
+  - meta: end_play
+
   - name: Configure storage classes
     shell:
       cmd: "{{ item.cmd }}"
