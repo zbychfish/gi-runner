@@ -293,7 +293,7 @@
   - name: Configure rook-ceph nodes
     shell:
       cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
-      with_items: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[0:2]|list }}"
+      with_items: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name|list[0:2] }}"
     when: storage_type == "R" and is_one_node == 'N'
 
   - meta: end_play
