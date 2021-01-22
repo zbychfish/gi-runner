@@ -47,6 +47,9 @@
       worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
     when: is_one_node == 'N'
 
+  - debug:
+      msg: "{{ worker_name }}"
+
   - set_fact:
       image: "rook/ceph:master"
     when: is_air_gapped == 'N' and is_one_node == 'N' and storage_type == 'R'
