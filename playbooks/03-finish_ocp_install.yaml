@@ -294,9 +294,9 @@
       state: absent
 
   - name: Configure rook-ceph nodes
-    shell:
     vars:
       first_three: worker_name[:3]
+    shell:
       cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --config ../ocp/auth/kubeconfig --overwrite=true"
       with_items: "{{ worker_name+db2_name|list if worker_name|length == 2 else first_three|list }}"
     when: storage_type == "R" and is_one_node == 'N'
