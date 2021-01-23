@@ -103,8 +103,7 @@
     - name: Remove rook files
       shell:
         cmd:
-          - sudo 'rm -rf /var/lib/rook || true'
-          - "sudo sgdisk --zap-all /dev/{{ storage_device }}"
+          - "sudo rm -rf /var/lib/rook || true;sudo sgdisk --zap-all /dev/{{ storage_device }}"
       delegate_to: "{{ item }}.{{ domain }}"
       remote_user: core
       vars:
