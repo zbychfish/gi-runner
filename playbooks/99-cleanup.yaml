@@ -144,6 +144,8 @@
         src: /etc/chrony.conf.orig
         dest: /etc/chrony.conf
 
+    - meta: end_play
+
     - name: Restore original NIC config
       copy:
         src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
