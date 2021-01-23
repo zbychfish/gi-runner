@@ -106,7 +106,7 @@
       delegate_to: "{{ item }}.{{ domain }}"
       remote_user: core
       vars:
-        nodes: "{{ worker_name+db2_name|list }}"
+        nodes: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
       args:
         warn: false
       with_items: 
