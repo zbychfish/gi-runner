@@ -103,7 +103,7 @@
     - name: Remove rook files
       shell:
         cmd:
-          - sudo rm -rf /var/lib/rook
+          - sudo rm -rf /var/lib/rook || true
           - "sudo sgdisk --zap-all /dev/{{ storage_device }}"
       delegate_to: "{{ item }}.{{ domain }}"
       remote_user: core
@@ -115,6 +115,8 @@
         - "{{ nodes if is_one_node == 'N' else node_name }}"
       ignore_errors: yes
       when: storage_type == 'R'
+
+    - meta: end_play
 
     - name: Stop services
       service:
