@@ -74,6 +74,12 @@
       ignore_errors: yes
       when: true
 
+    - name: Delete registry PV
+      shell:
+        cmd: oc delete pv `oc get pv | grep openshift-image-registry/registry | awk '{ print $1}'`
+      ignore_errors: yes
+      when: true
+
     - name: Delete rook-ceph cluster
       shell:
         cmd: "{{ item.cmd }}"
@@ -99,7 +105,7 @@
       delegate_to: "{{ item }}.{{ domain }}"
       remote_user: core
       vars:
-        nodes: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name|list }}"
+        nodes: "{{ worker_name+db2_name|list }}"
       args:
         warn: false
       with_items: 
