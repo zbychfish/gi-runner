@@ -1,6 +1,7 @@
 - hosts: all
 
   vars:
+    ocp_release: "4.6.12"
     bas_int:  "{{ lookup('env','GI_BASTION_INTERFACE') }}"
     bas_gw:  "{{ lookup('env','GI_GATEWAY') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
@@ -292,8 +293,8 @@
         path: "../download/{{ item.file }}"
       register: rhcos_images
       with_items:
-        - { file: "rhcos-installer-initramfs.x86_64.img" }
-        - { file: "rhcos-installer-kernel-x86_64" }
+        - { file: "rhcos-live-installer-initramfs.x86_64.img" }
+        - { file: "rhcos-live-installer-kernel-x86_64" }
         - { file: "rhcos-metal.x86_64.raw.gz" }
       ignore_errors: true
 
@@ -309,7 +310,7 @@
 
     - name: Download RHCOS images 4.3.33
       get_url:
-        url: https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.3/4.3.33/{{ item.item.file }}
+        url: https://mirror.openshift.com/pub/openshift-v4/x86-64/dependencies/rhcos/4.6/latest/{{ item.item.file }}
         dest: "../download"
         use_proxy: "{{ use_proxy }}"
       with_items: "{{ rhcos_images.results }}"
@@ -323,8 +324,8 @@
         group: matchbox
         state: hard
       with_items:
-        - { name: "rhcos-installer-initramfs.x86_64.img" }
-        - { name: "rhcos-installer-kernel-x86_64" }
+        - { name: "rhcos-live-installer-initramfs.x86_64.img" }
+        - { name: "rhcos-live-installer-kernel-x86_64" }
         - { name: "rhcos-metal.x86_64.raw.gz" }
       when: true
 
@@ -656,7 +657,7 @@
 
     - name: Download RHCOS tools 4.3.40
       get_url:
-        url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.3.40/{{ item.item.file }}
+        url: "https://mirror.openshift.com/pub/openshift-v4/x86-64/clients/ocp/{{ ocp_release }}/{{ item.item.file }}"
         dest: "../download"
         use_proxy: "{{ use_proxy }}"
       with_items: "{{ rhcos_tools.results }}"
