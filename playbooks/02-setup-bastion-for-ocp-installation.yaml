@@ -35,6 +35,16 @@
     hs_size:  "{{ lookup('env','GI_HS_SIZE') }}"
 
   tasks:
+    - name: Cleanup configuration files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items:
+        - { path: "/etc/systemd/system/matchbox.service" }
+        - { path: "/usr/local/bin/matchbox" }
+        - { path: "/var/lib/matchbox" }
+        - { path: "/var/lib/tftp" }
+        - { path: "../ocp" }
 
     - name: Set masters array
       set_fact:
@@ -293,9 +303,9 @@
         path: "../download/{{ item.file }}"
       register: rhcos_images
       with_items:
-        - { file: "rhcos-live-installer-initramfs.x86_64.img" }
-        - { file: "rhcos-live-installer-kernel-x86_64" }
-        - { file: "rhcos-metal.x86_64.raw.gz" }
+        - { file: "rhcos-live-initramfs.x86_64.img" }
+        - { file: "rhcos-live-kernel-x86_64" }
+        - { file: "rhcos-live-rootfs.x86_64.img" }
       ignore_errors: true
 
     - debug:
@@ -308,9 +318,9 @@
       with_items: "{{ rhcos_images.results }}"
       when: item.stat.exists == False and is_air_gapped == 'Y'
 
-    - name: Download RHCOS images 4.3.33
+    - name: Download RHCOS images 4.6
       get_url:
-        url: https://mirror.openshift.com/pub/openshift-v4/x86-64/dependencies/rhcos/4.6/latest/{{ item.item.file }}
+        url: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/{{ item.item.file }}
         dest: "../download"
         use_proxy: "{{ use_proxy }}"
       with_items: "{{ rhcos_images.results }}"
@@ -324,9 +334,9 @@
         group: matchbox
         state: hard
       with_items:
-        - { name: "rhcos-live-installer-initramfs.x86_64.img" }
-        - { name: "rhcos-live-installer-kernel-x86_64" }
-        - { name: "rhcos-metal.x86_64.raw.gz" }
+        - { name: "rhcos-live-initramfs.x86_64.img" }
+        - { name: "rhcos-live-kernel-x86_64" }
+        - { name: "rhcos-live-rootfs.x86_64.img" }
       when: true
 
     - name: prepare TFTP for iPXE
@@ -655,9 +665,9 @@
       with_items: "{{ rhcos_tools.results }}"
       when: item.stat.exists == False and is_air_gapped == 'Y'
 
-    - name: Download RHCOS tools 4.3.40
+    - name: "Download RHCOS tools {{ ocp_release }}"
       get_url:
-        url: "https://mirror.openshift.com/pub/openshift-v4/x86-64/clients/ocp/{{ ocp_release }}/{{ item.item.file }}"
+        url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/{{ ocp_release }}/{{ item.item.file }}"
         dest: "../download"
         use_proxy: "{{ use_proxy }}"
       with_items: "{{ rhcos_tools.results }}"

@@ -114,8 +114,6 @@
       ignore_errors: yes
       when: storage_type == 'R'
 
-    - meta: end_play
-
     - name: Stop services
       service:
         name: "{{ item.name }}"
