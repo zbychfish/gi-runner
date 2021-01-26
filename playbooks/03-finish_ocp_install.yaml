@@ -441,7 +441,7 @@
       - "oc apply -f ../scripts/ocs-cluster.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "O"
 
-  - name: Wait for local storage deployment
+  - name: Wait for OCS cluster deployment
     shell:
       cmd: "oc get pvc -n openshift-storage --no-headers | grep localblock-sc | grep Bound | wc -l"
     register: ocs_status

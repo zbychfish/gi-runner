@@ -91,7 +91,15 @@
       ignore_errors: yes
       when: storage_type == 'O'
 
-    - meta: end_play
+    - name: Delete local volumes
+      shell:
+        cmd: "{{ item.cmd }}"
+      with_items:
+        - { cmd: "oc delete -f ../scripts/ls-vol.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/ls-op.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete namespace openshift-local-storage --kubeconfig ../ocp/auth/kubeconfig" }
+      ignore_errors: yes
+      when: storage_type == 'O'
 
     - name: Delete rook-ceph cluster
       shell:
@@ -124,7 +132,9 @@
       with_items: 
         - "{{ nodes if is_one_node == 'N' else node_name }}"
       ignore_errors: yes
-      when: storage_type == 'R'
+      #when: storage_type == 'R'
+
+    - meta: end_play
 
     - name: Stop services
       service:
