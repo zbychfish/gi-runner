@@ -293,7 +293,11 @@
       path: "../download/ocadmin.htpasswd"
       state: absent
 
-  - meta: end_play
+  - name: Configure OCS nodes
+    shell:
+      cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --config ../ocp/auth/kubeconfig --overwrite=true"
+    with_items: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
+    when: storage_type == "O" and is_one_node == 'N'
 
   - name: Configure rook-ceph nodes
     shell:
@@ -366,6 +370,40 @@
       - '        - name: ROOK_CSI_SNAPSHOTTER_IMAGE'
       - '          value: "registry.{{ domain }}:5000/ocp4/rook-ceph:csi-snapshotter-1.2.0"'
     when: is_air_gapped == 'Y' and storage_type == "R"
+
+  - name: Configure local storage operator
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - "oc apply -f ../scripts/local-storage-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
+    when: storage_type == "O"
+
+  - name: Wait for local storage operator
+    shell:
+      cmd: "oc get csv -n openshift-local-storage --kubeconfig=../ocp/auth/kubeconfig --no-headers -o custom-columns=STATUS:.status.phase"
+    register: ls_operator_status
+    until: "ls_operator_status.stdout == \"Succeeded\""
+    retries: 30
+    delay: 10
+    when: storage_type == "O"
+
+  - name: Configure OCS operator
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - "oc apply -f ../scripts/ocs-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
+    when: storage_type == "O"
+
+  - name: Wait for OCS operator
+    shell:
+      cmd: "oc get csv -n openshift-storage --kubeconfig=../ocp/auth/kubeconfig --no-headers -o custom-columns=STATUS:.status.phase"
+    register: ocs_operator_status
+    until: "ocs_operator_status.stdout == \"Succeeded\""
+    retries: 30
+    delay: 10
+    when: storage_type == "O"
+
+  - meta: end_play
 
   - name: Configure rook operator
     shell:
