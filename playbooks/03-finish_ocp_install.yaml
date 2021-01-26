@@ -438,7 +438,7 @@
     shell:
       cmd: "{{ item }}"
     loop:
-      - "oc apply -f ../scripts/ocs-clusteryaml --kubeconfig ../ocp/auth/kubeconfig"
+      - "oc apply -f ../scripts/ocs-cluster.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "O"
 
   - name: Wait for local storage deployment
