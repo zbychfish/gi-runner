@@ -22,12 +22,12 @@
 
     - name: Remove image registry default route
       shell:
-        cmd: oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":false}}' --type=merge --config ../ocp/auth/kubeconfig
+        cmd: oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":false}}' --type=merge --kubeconfig ../ocp/auth/kubeconfig
       ignore_errors: yes
 
     - name: Wait for API server successful reconfiguration
       shell:
-        cmd: "oc get clusteroperators kube-apiserver --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
+        cmd: "oc get clusteroperators kube-apiserver --kubeconfig ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
       register: image_registry_status
       until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
       retries: 40
@@ -39,8 +39,8 @@
       shell:
         cmd: "{{ item.cmd }}"
       with_items:
-        - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\": {\"managementState\": \"Unmanaged\"}}'" }
-        - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\":{\"storage\":{}}}'" }
+        - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --kubeconfig ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\": {\"managementState\": \"Unmanaged\"}}'" }
+        - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --kubeconfig ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\":{\"storage\":{}}}'" }
       when: true
       ignore_errors: yes
 
@@ -49,7 +49,7 @@
 
     - name: Wait for Image registry successful reconfiguration
       shell:
-        cmd: "oc get clusteroperators image-registry --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
+        cmd: "oc get clusteroperators image-registry --kubeconfig ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
       register: image_registry_status
       until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
       retries: 20
@@ -59,7 +59,7 @@
 
     - name: Delete PVC for registry storage
       shell:
-        cmd: nohup oc delete -f ../scripts/ocp_registry_pvc.yaml --config ../ocp/auth/kubeconfig
+        cmd: nohup oc delete -f ../scripts/ocp_registry_pvc.yaml --kubeconfig ../ocp/auth/kubeconfig
       async: 10
       poll: 0
       ignore_errors: yes
@@ -71,7 +71,7 @@
       shell:
         cmd: "{{ item.cmd }}"
       with_items:
-        - { cmd: "oc patch pvc registry -n openshift-image-registry --config ../ocp/auth/kubeconfig --type=merge --patch '{\"metadata\": {\"finalizers\":[]}}'" }
+        - { cmd: "oc patch pvc registry -n openshift-image-registry --kubeconfig ../ocp/auth/kubeconfig --type=merge --patch '{\"metadata\": {\"finalizers\":[]}}'" }
       ignore_errors: yes
       when: true
 
@@ -81,22 +81,34 @@
       ignore_errors: yes
       when: true
 
+    - name: Delete OCS cluster
+      shell:
+        cmd: "{{ item.cmd }}"
+      with_items:
+        - { cmd: "oc delete -f ../scripts/ocs-cluster.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/ocs-op.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete namespace openshift-storage --kubeconfig ../ocp/auth/kubeconfig" }
+      ignore_errors: yes
+      when: storage_type == 'O'
+
+    - meta: end_play
+
     - name: Delete rook-ceph cluster
       shell:
         cmd: "{{ item.cmd }}"
       with_items:
-        - { cmd: "oc delete -f ../scripts/rook-storage_class_cephfs.yaml --config ../ocp/auth/kubeconfig" }
-        - { cmd: "oc delete -f ../scripts/rook-storage_class_rbd.yaml --config ../ocp/auth/kubeconfig" }
-        - { cmd: "oc delete -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
-        - { cmd: "oc delete -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-filesystem-master.yaml' }} --config ../ocp/auth/kubeconfig" }
-        - { cmd: "oc delete -f ../scripts/{{ 'rook-operator.yaml' if is_one_node == 'Y' else 'rook-operator-master.yaml' }} --config ../ocp/auth/kubeconfig" }
-        - { cmd: "oc delete -f ../scripts/{{ 'rook-common.yaml' if is_one_node == 'Y' else 'rook-common-master.yaml' }} --config ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/rook-storage_class_cephfs.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/rook-storage_class_rbd.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/rook-cluster.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-filesystem-master.yaml' }} --kubeconfig ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/{{ 'rook-operator.yaml' if is_one_node == 'Y' else 'rook-operator-master.yaml' }} --kubeconfig ../ocp/auth/kubeconfig" }
+        - { cmd: "oc delete -f ../scripts/{{ 'rook-common.yaml' if is_one_node == 'Y' else 'rook-common-master.yaml' }} --kubeconfig ../ocp/auth/kubeconfig" }
       ignore_errors: yes
       when: storage_type == 'R'
 
     - name: Delete rook CRD's
       shell:
-        cmd: "oc delete -f ../scripts/rook-crds.yaml --config ../ocp/auth/kubeconfig"
+        cmd: "oc delete -f ../scripts/rook-crds.yaml --kubeconfig ../ocp/auth/kubeconfig"
       ignore_errors: yes
       when: is_one_node == 'N'
 
