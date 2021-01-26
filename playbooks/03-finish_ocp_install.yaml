@@ -378,6 +378,23 @@
       - "oc apply -f ../scripts/local-storage-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "O"
 
+  - name: Configure local storage deployment file
+    vars:
+      nodes: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
+    template:
+      src: "local-storage-vol.j2"
+      dest: "../scripts/local-storage-vol.yaml"
+    when: storage_type == "O"
+
+  - meta: end_play
+
+  - name: Deploy local storage
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - "oc apply -f ../scripts/local-storage-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
+    when: storage_type == "O"
+
   - name: Wait for local storage operator
     shell:
       cmd: "oc get csv -n openshift-local-storage --kubeconfig=../ocp/auth/kubeconfig --no-headers -o custom-columns=STATUS:.status.phase"
@@ -402,8 +419,6 @@
     retries: 30
     delay: 10
     when: storage_type == "O"
-
-  - meta: end_play
 
   - name: Configure rook operator
     shell:
