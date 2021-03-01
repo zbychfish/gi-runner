@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# Guardium Insights 2.5 installation initialization
+# Guardium Insights 3.0 installation initialization
+
 GI_HOME=`pwd`
 file=variables.sh
+
 echo "# Guardium Insights installation parameters" > $file
 echo "*** Checking CentOS version ***"
 if [ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1":"$3}'` != 'CentOS:8' ]
@@ -10,26 +12,6 @@ then
 	echo "*** ERROR ***"
         echo "Your bastion machine is not CentOS 8 - please use the supported Operating System"
 	exit 1
-fi
-if [[ ! -z "$GI_DOMAIN" ]]
-then
-        read -p "Cluster domain is set to [$GI_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ocp_domain
-        if [[ $new_ocp_domain != '' ]]
-        then
-                ocp_domain=$new_ocp_domain
-        fi
-else
-	while [[ $ocp_domain == '' ]]
-	do
-		read -p "Insert cluster domain (your private domain name) [ocp.io.priv]: " ocp_domain
-	        ocp_domain=${ocp_domain:-ocp.io.priv}
-	done
-fi
-if [[ -z "$ocp_domain" ]]
-then
-        echo export GI_DOMAIN=$GI_DOMAIN >> $file
-else
-        echo export GI_DOMAIN=$ocp_domain >> $file
 fi
 echo "*** Air-Gapped Setup ***"
 while ! [[ $use_air_gap == 'Y' || $use_air_gap == 'N' ]] # While string is different or empty...
@@ -50,65 +32,52 @@ else
 fi
 if [[ $use_air_gap == 'Y' ]]
 then
-	echo "***Installing tar***"
-	if [[ ! -f "$GI_HOME/tar.cpio" ]]
-	then
-		echo "You did not upload tar.cpio on bastion"
-		exit 1
-	else
-		mkdir temp
-		cd temp
-		cpio -idv < ../tar.cpio > /dev/null 2>&1
-		dnf -qy --disablerepo=* localinstall *rpm
-		cd ..
-                rm -rf temp
-	fi
-	echo "***Extracting air-gapped installation files***"
-	if [[ ! -f "$GI_HOME/air-gap.tar" ]]
-	then
-		echo "You did not upload air-gap.tar on bastion"
-		exit 1
-	else
-		tar xf air-gap.tar
-	fi
-	#rm -f air-gap.tar
-	echo "***Installing CentOS packages***"
-	if [[ ! -f "$GI_HOME/download/air-gap/centos-packages.tar" ]]
-	then
-		echo "You did not upload centos-packages.tar on bastion"
-		exit 1
-	else
-		mkdir temp
-		cd temp
-		tar xvf ../download/air-gap/centos-packages.tar > /dev/null
-		cd centos-packages
-		dnf -qy --disablerepo=* localinstall *rpm --allowerasing
-		cd ../..
-	fi
-	echo "***Installing Ansible and python modules***"
-	if [[ ! -f "$GI_HOME/download/air-gap/ansible.tar" ]]
-	then
-		echo "You did not upload ansible.tar on bastion"
-		exit 1
-	else
-		cd temp
-		tar xvf ../download/air-gap/ansible.tar > /dev/null
-		cd ansible
-		pip3 install 'ansible-2.10.1.tar.gz' --no-index --find-links '.' > /dev/null 2>&1
-		pip3 install 'passlib-1.7.4-py2.py3-none-any.whl' --no-index --find-links '.' > /dev/null 2>&1
-		pip3 install 'dnspython-2.0.0-py3-none-any.whl' --no-index --find-links '.' > /dev/null 2>&1
-	
-		cd ../..
-		rm -rf temp
-	fi
-	echo "***Extracting playbooks***"
-	if [[ ! -f "$GI_HOME/files.tar" ]]
-	then
-		echo "You did not upload files.tar on bastion"
-		exit 1
-	else
-		tar xf $GI_HOME/files.tar > /dev/null
-	fi
+        echo "*** Extracting air-gapped installation files ***"
+        if [[ ! -f "$GI_HOME/download/air-gap.tar" ]]
+        then
+                echo "You did not upload air-gap.tar to download directory on bastion"
+                exit 1
+        else
+                mkdir -p air-gap
+                tar xf download/air-gap.tar -C air-gap
+        fi
+        echo "*** Installing CentOS updates ***"
+        #tar xf air-gap/centos-updates*.tar -C air-gap --strip-components 1 > /dev/null
+        tar xf air-gap/centos-updates*.tar -C air-gap > /dev/null
+        dnf -qy --disablerepo=* localinstall air-gap/centos-updates/*rpm --allowerasing
+        rm -rf air-gap/centos-updates
+        echo "*** Installing CentOS packages ***"
+        tar xf air-gap/centos-packages*.tar -C air-gap  > /dev/null
+        dnf -qy --disablerepo=* localinstall air-gap/centos-packages/*rpm --allowerasing
+        rm -rf air-gap/centos-packages
+        echo "*** Installing Ansible and python modules ***"
+        tar xf air-gap/ansible-*.tar -C air-gap > /dev/null
+        cd air-gap/ansible
+        pip3 install ansible-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
+        cd $GI_HOME
+        rm -rf air-gap/ansible
+fi
+if [[ ! -z "$GI_DOMAIN" ]]
+then
+        read -p "Cluster domain is set to [$GI_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ocp_domain
+        if [[ $new_ocp_domain != '' ]]
+        then
+                ocp_domain=$new_ocp_domain
+        fi
+else
+	while [[ $ocp_domain == '' ]]
+	do
+		read -p "Insert cluster domain (your private domain name) [ocp.io.priv]: " ocp_domain
+	        ocp_domain=${ocp_domain:-ocp.io.priv}
+	done
+fi
+if [[ -z "$ocp_domain" ]]
+then
+        echo export GI_DOMAIN=$GI_DOMAIN >> $file
+else
+        echo export GI_DOMAIN=$ocp_domain >> $file
 fi
 if [[ $use_air_gap == 'N' ]]
 then
@@ -176,6 +145,8 @@ then
 fi
 if [[ $use_air_gap == 'N' ]]
 then
+        echo "*** Update CentOS ***"
+        dnf -qy update
 	echo "*** Installing python, tar and git ***"
 	dnf -qy install python3 tar git
 	echo "*** Installing Ansible ***"
