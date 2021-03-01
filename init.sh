@@ -167,12 +167,15 @@ echo "*** Add a new RSA SSH key ***"
 ssh-keygen -N '' -f /root/.ssh/cluster_id_rsa -q <<< y > /dev/null
 echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > /root/.ssh/config 
 cat /root/.ssh/cluster_id_rsa.pub >> /root/.ssh/authorized_keys
-echo "*** Checking CentOS installed environment groups ***"
-if [[ `dnf group list installed|grep "Server with GUI"|wc -l` -ne 1 ]]
+if [[ $use_air_gap == 'N' ]]
 then
-	echo "*** ERROR ***"
-	echo "Your bastion machine must have installed Server with GUI environment group"
-	exit 1
+	echo "*** Checking CentOS installed environment groups ***"
+	if [[ `dnf group list installed|grep "Server with GUI"|wc -l` -ne 1 ]]
+	then
+		echo "*** ERROR ***"
+		echo "Your bastion machine must have installed Server with GUI environment group"
+		exit 1
+	fi
 fi
 echo "*** Setting GI installation parameters**"
 if [[ $use_air_gap == 'Y' ]]
