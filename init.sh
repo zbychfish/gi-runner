@@ -158,6 +158,7 @@ then
 	pip3 install ansible --proxy $proxy_ip:$proxy_port > /dev/null 2>&1
 	echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts
 elif [[ $use_proxy == 'D' ]]
+then
 	pip3 install ansible > /dev/null 2>&1
 	echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
 fi
