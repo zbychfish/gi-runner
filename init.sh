@@ -56,6 +56,7 @@ then
         pip3 install ansible-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
+	echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
         cd $GI_HOME
         rm -rf air-gap/ansible
 fi
@@ -156,7 +157,7 @@ if [[ $use_proxy == 'P' ]]
 then
 	pip3 install ansible --proxy $proxy_ip:$proxy_port > /dev/null 2>&1
 	echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts
-else
+elif [[ $use_proxy == 'D' ]]
 	pip3 install ansible > /dev/null 2>&1
 	echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
 fi
