@@ -169,10 +169,10 @@ cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
 if [[ $use_air_gap == 'N' ]]
 then
 	echo "*** Checking CentOS installed environment groups ***"
-	if [[ `dnf group list installed|wc -l` -lt 2 || `dnf group list installed|tail -n 1|tr -d " "` != "MinimalInstall" ]]
+	if [[ `dnf group list installed|grep "Server with GUI"|wc -l` -ne 1 ]]
 	then
 		echo "*** ERROR ***"
-		echo "Your bastion machine must have installed only Minimal Install environment group"
+		echo "Your bastion machine must have installed Server with GUI environment group"
 		exit 1
 	fi
 fi
