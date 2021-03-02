@@ -6,6 +6,7 @@
     domain:  "{{ lookup('env','GI_DOMAIN') }}"
     repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
     repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
+    ocp_release: "{{ lookup('env','GI_OCP_RELEASE') }}"
 
 
   tasks:
@@ -24,6 +25,7 @@
         - { name: "GI_DOMAIN", value: "{{ domain }}" }
         - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
         - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+        - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
 
     - name: Upgrade system
       dnf:
@@ -136,7 +138,7 @@
 
     - name: Extract OpenShift 4.33 registry
       unarchive:
-        src: ../download/oc-registry-*.tar
+        src: "../download/oc-registry-{{ ocp_release }}.tar"
         dest: /opt/registry
       when: is_air_gapped == 'Y'
 
