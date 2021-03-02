@@ -10,7 +10,7 @@ do
 done
 tar cf centos-packages-`date +%Y-%m-%d`.tar centos-packages 
 rm -rf centos-packages
-packages="ansible passlib dnspython"
+packages="passlib dnspython"
 for package in $packages
 do
 	python3 -m pip download --only-binary=:all: $package -d ansible > /dev/null 2>&1

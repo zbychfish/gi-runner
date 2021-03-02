@@ -76,34 +76,6 @@
         - { path: "../ssl/csr" }
       when: is_air_gapped == 'Y'
 
-    - name: Create private key
-      community.crypto.openssl_privatekey:
-        path: /opt/registry/certs/bastion.repo.pem
-        force: yes
-      when: is_air_gapped == 'Y' and false
-
-    - name: Generate an OpenSSL Certificate Signing Request
-      community.crypto.openssl_csr:
-        path: "../ssl/csr/{{ bas_name }}.{{ domain }}.csr"
-        privatekey_path: /opt/registry/certs/bastion.repo.pem
-        country_name: PL
-        organization_name: "GI TEST"
-        organizational_unit_name: "GI Lab"
-        email_address: user@localhost
-        locality_name: Miedzyrzecz
-        common_name: "registry.{{ domain }}"
-        force: yes
-      when: is_air_gapped == 'Y' and false
-
-    - name: Create repository self-signed-certificate
-      community.crypto.x509_certificate:
-        path: /opt/registry/certs/bastion.repo.crt
-        privatekey_path: /opt/registry/certs/bastion.repo.pem
-        csr_path: "../ssl/csr/{{ bas_name }}.{{ domain }}.csr"
-        provider: selfsigned
-        force: yes
-      when: is_air_gapped == 'Y' and false
-
     - name: Create certificate using OpenSSL
       shell:
         cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ domain }}\""
@@ -167,6 +139,7 @@
         src: ../download/air-gap/oc-registry-4.33.tar
         dest: /opt/registry
       when: is_air_gapped == 'Y'
+      when: false
 
     - name: Check image repository existence
       shell:
