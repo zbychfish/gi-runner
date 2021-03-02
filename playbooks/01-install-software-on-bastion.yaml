@@ -136,9 +136,9 @@
         cmd: podman load -i ../air-gap/oc-registry.tar
       when: is_air_gapped == 'Y'
 
-    - name: Extract OpenShift 4.33 registry
+    - name: Extract OpenShift registry for release {{ ocp_release }}
       unarchive:
-        src: "../download/oc-registry-{{ ocp_release }}.tar"
+        src: "../download/ocp-registry-{{ ocp_release }}.tar"
         dest: /opt/registry
       when: is_air_gapped == 'Y'
 
