@@ -1,5 +1,6 @@
 #!/bin/bash
 
+local_directory=`pwd`
 read -p "Insert RedHat pull secret: " pull_secret
 echo "$pull_secret" > "pull-secret.txt"
 read -p "Insert your mail address to authenticate in RedHat Network: " mail
@@ -7,7 +8,7 @@ read -p "Insert OCP version to mirror (for example 4.6.19): " version
 dnf update -qy --downloadonly --downloaddir centos-updates
 tar cf centos-updates-`date +%Y-%m-%d`.tar centos-updates
 rm -rf centos-updates
-packages="git haproxy openldap perl podman-docker unzip ipxe-bootimgs httpd"
+packages="git haproxy openldap perl podman-docker unzip ipxe-bootimgs"
 for package in $packages
 do
 	dnf download -qy --downloaddir centos-packages $package --resolve
@@ -21,6 +22,10 @@ do
 done
 tar cf ansible-`date +%Y-%m-%d`.tar ansible
 rm -rf ansible
+dnf -y install httpd
+podman stop bastion-registry
+podman container prune <<< 'Y'
+rm -rf /opt/registry
 podman pull docker.io/library/registry:2
 podman save -o oc-registry.tar docker.io/library/registry:2
 mkdir -p /opt/registry/{auth,certs,data}
@@ -33,9 +38,10 @@ systemctl start firewalld
 firewall-cmd --zone=public --add-port=5000/tcp --permanent
 firewall-cmd --zone=public --add-service=http --permanent
 firewall-cmd --reload
-podman stop bastion-registry
-podman container prune
-podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/bastion.repo.htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2
+podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${version}/openshift-client-linux.tar.gz"
+tar xf openshift-client-linux.tar.gz
+cp oc kubectl /usr/local/bin
 semanage permissive -a NetworkManager_t
 host_fqdn=$( hostname --long )
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
@@ -45,11 +51,15 @@ LOCAL_REGISTRY="$host_fqdn:5000"
 LOCAL_REPOSITORY=ocp4/openshift4
 PRODUCT_REPO='openshift-release-dev'
 RELEASE_NAME="ocp-release"
-LOCAL_SECRET_JSON='/root/gi-runner/pull-secret-update.txt'
+LOCAL_SECRET_JSON='./pull-secret-update.txt'
 ARCHITECTURE=x86_64
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${version}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${version}-${ARCHITECTURE}
-exit 0
-tar cf air-gap.tar *.tar
+podman stop bastion-registry
+cd /opt/registry
+tar cf "ocp-registry-${version}.tar" data
+mv "/opt/registry/ocp-registry-${version}.tar" "${local_directory}/download"
+cd $local_directory
+tar cf air-gap.tar centos-updates-* centos-packages-* ansible-* oc-registry.tar
 rm -rf centos-updates-* centos-packages-* ansible-* oc-registry.tar
 mv air-gap.tar download
 
