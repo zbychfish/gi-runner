@@ -1005,7 +1005,7 @@ then
        	echo "export GI_LDAP_USERS_PWD='$ldap_password'" >> $file
 fi
 echo "pullSecret: '$rhn_secret'" > scripts/pull_secret.tmp
-echo "export GI_SSH_KEY='`cat /root/.ssh/id_rsa.pub`'" >> $file
+echo "export GI_SSH_KEY='`cat /root/.ssh/cluster_id_rsa.pub`'" >> $file
 echo "export KUBECONFIG=$GI_HOME/ocp/auth/kubeconfig" >> $file
 echo "*** Execute commands below ***"
 if [[ $use_proxy == 'P' ]]
