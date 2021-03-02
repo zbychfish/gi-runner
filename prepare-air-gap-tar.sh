@@ -8,7 +8,8 @@ read -p "Insert OCP version to mirror (for example 4.6.19): " version
 dnf update -qy --downloadonly --downloaddir centos-updates
 tar cf centos-updates-`date +%Y-%m-%d`.tar centos-updates
 rm -rf centos-updates
-packages="git haproxy openldap perl podman-docker unzip ipxe-bootimgs"
+dnf -qy install epel-release
+packages="ansible git haproxy openldap perl podman-docker unzip ipxe-bootimgs"
 for package in $packages
 do
 	dnf download -qy --downloaddir centos-packages $package --resolve

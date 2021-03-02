@@ -33,13 +33,13 @@ fi
 if [[ $use_air_gap == 'Y' ]]
 then
         echo "*** Extracting air-gapped installation files ***"
-        if [[ ! -f "$GI_HOME/download/air-gap.tar" ]]
+        if [[ `ls $GI_HOME/download/air-gap*.tar|wc -l` -ne 1 ]]
         then
                 echo "You did not upload air-gap.tar to download directory on bastion"
                 exit 1
         else
                 mkdir -p air-gap
-                tar xf download/air-gap.tar -C air-gap
+                tar xf download/air-gap*.tar -C air-gap
         fi
         echo "*** Installing CentOS updates ***"
         #tar xf air-gap/centos-updates*.tar -C air-gap --strip-components 1 > /dev/null
@@ -53,7 +53,6 @@ then
         echo "*** Installing Ansible and python modules ***"
         tar xf air-gap/ansible-*.tar -C air-gap > /dev/null
         cd air-gap/ansible
-        pip3 install ansible-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
 	mkdir -p /etc/ansible
