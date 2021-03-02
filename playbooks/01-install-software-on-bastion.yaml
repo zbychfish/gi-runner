@@ -54,6 +54,7 @@
           - "podman"
           - "podman-docker"
           - "chrony"
+          - "httpd"
         state: latest
       when: is_air_gapped == 'N'
 
