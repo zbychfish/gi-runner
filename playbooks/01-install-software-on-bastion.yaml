@@ -78,7 +78,7 @@
 
     - name: Create certificate using OpenSSL
       shell:
-        cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ domain }}\""
+              cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ domain }}\" -addext \"subjectAltName = DNS:registry.{{ domain }}\""
       when: is_air_gapped == 'Y'
 
     - name: Copy CA cert to Centos PKI
@@ -131,12 +131,12 @@
 
     - name: Load image registry image into local repository
       shell:
-        cmd: podman load -i ../download/air-gap/oc-registry.tar
+        cmd: podman load -i ../air-gap/oc-registry.tar
       when: is_air_gapped == 'Y'
 
     - name: Extract OpenShift 4.33 registry
       unarchive:
-        src: ../download/air-gap/oc-registry-4.33.tar
+        src: ../air-gap/oc-registry-4.33.tar
         dest: /opt/registry
       when: is_air_gapped == 'Y'
       when: false

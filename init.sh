@@ -61,6 +61,7 @@ then
         cd $GI_HOME
         rm -rf air-gap/ansible
 fi
+ansible-galaxy collection install ansible.posix
 if [[ ! -z "$GI_DOMAIN" ]]
 then
         read -p "Cluster domain is set to [$GI_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ocp_domain
