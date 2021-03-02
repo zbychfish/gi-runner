@@ -4,7 +4,39 @@
 
 GI_HOME=`pwd`
 file=variables.sh
+while ! [[ $is_tz_ok == 'Y' ]]
+do
+        read -p "Your Timezone on bastion is set to `timedatectl show|grep Timezone|awk -F '=' '{ print $2 }'`, is it correct one [Y/N]: " is_tz_ok
+        if [[ $is_tz_ok == 'N' ]]
+        then
+                read -p "Insert your Timezone in Linux format (i.e. Europe/Berlin): " new_tz
+                timedatectl set-timezone $new_tz 2>/dev/null
+                if [[ $? -eq 0 ]]
+                then
+                        is_tz_ok='Y'
+                else
+                        echo "You have inserted incorrect timezone specification, try again"
+                fi
+        fi
 
+done
+while ! [[ $is_td_ok == 'Y' ]]
+do
+        read -p "Current local time is `date`, is it correct one [Y/N]: " is_td_ok
+        if [[ $is_td_ok == 'N' ]]
+        then
+                read -p "Insert correct date and time in format \"2012-10-30 18:17:16\": " new_td
+                timedatectl set-ntp false
+                echo "NTP client is turned off"
+                timedatectl set-time "$new_td" 2>/dev/null
+                if [[ $? -eq 0 ]]
+                then
+                        is_td_ok='Y'
+                else
+                        echo "You have inserted incorrect time and date specification, try again"
+                fi
+        fi
+done
 echo "# Guardium Insights installation parameters" > $file
 echo "*** Checking CentOS version ***"
 if [ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1":"$3}'` != 'CentOS:8' ]
