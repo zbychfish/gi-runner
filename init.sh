@@ -60,7 +60,6 @@ then
         cd $GI_HOME
         rm -rf air-gap/ansible
 fi
-ansible-galaxy collection install ansible.posix
 if [[ ! -z "$GI_DOMAIN" ]]
 then
         read -p "Cluster domain is set to [$GI_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ocp_domain
@@ -163,6 +162,7 @@ then
 	pip3 install ansible > /dev/null 2>&1
 	echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
 fi
+ansible-galaxy collection install ansible.posix
 echo "*** Add a new RSA SSH key ***"
 ssh-keygen -N '' -f /root/.ssh/cluster_id_rsa -q <<< y > /dev/null
 echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > /root/.ssh/config 
