@@ -4,6 +4,9 @@
 
 GI_HOME=`pwd`
 file=variables.sh
+echo "# Guardium Insights installation parameters" > $file
+read -p "Insert OCP release to install in this process, it must correspond to existing one, in case of air-gapped installation ensure that image repository uploaded to bastion match OCP release (for instance 4.6.19): " ocp_release
+echo "export GI_OCP_RELEASE=$ocp_release" > $file
 while ! [[ $is_tz_ok == 'Y' ]]
 do
         read -p "Your Timezone on bastion is set to `timedatectl show|grep Timezone|awk -F '=' '{ print $2 }'`, is it correct one [Y/N]: " is_tz_ok
@@ -37,7 +40,6 @@ do
                 fi
         fi
 done
-echo "# Guardium Insights installation parameters" > $file
 echo "*** Checking CentOS version ***"
 if [ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1":"$3}'` != 'CentOS:8' ]
 then

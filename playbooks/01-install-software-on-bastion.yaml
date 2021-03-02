@@ -136,7 +136,7 @@
 
     - name: Extract OpenShift 4.33 registry
       unarchive:
-        src: ../air-gap/oc-registry-*.tar
+        src: ../download/oc-registry-*.tar
         dest: /opt/registry
       when: is_air_gapped == 'Y'
 
