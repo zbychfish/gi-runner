@@ -136,10 +136,9 @@
 
     - name: Extract OpenShift 4.33 registry
       unarchive:
-        src: ../air-gap/oc-registry-4.33.tar
+        src: ../air-gap/oc-registry-*.tar
         dest: /opt/registry
       when: is_air_gapped == 'Y'
-      when: false
 
     - name: Check image repository existence
       shell:
