@@ -1,7 +1,7 @@
 - hosts: all
 
   vars:
-    ocp_release: "4.6.12"
+    ocp_release: "{{ lookup('env','GI_OCP_RELEASE') }}"
     bas_int:  "{{ lookup('env','GI_BASTION_INTERFACE') }}"
     bas_gw:  "{{ lookup('env','GI_GATEWAY') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
@@ -220,14 +220,14 @@
 
     - name: Download matchbox
       get_url:
-        url: https://github.com/poseidon/matchbox/releases/download/v0.8.3/matchbox-v0.8.3-linux-amd64.tar.gz 
+        url: https://github.com/poseidon/matchbox/releases/download/v0.9.0/matchbox-v0.9.0-linux-amd64.tar.gz 
         dest: ../download
         use_proxy: "{{ use_proxy }}"
       when: matchbox_presence.stat.exists == false and is_air_gapped == 'N'
 
     - name: Unzip matchbox
       command:
-        cmd: tar zxf ../download/matchbox-v0.8.3-linux-amd64.tar.gz -C ../download
+        cmd: tar zxf ../download/matchbox-v0.9.0-linux-amd64.tar.gz -C ../download
       args:
         warn: false
       when: true
@@ -240,12 +240,12 @@
         group: root
         mode: 0755
       with_items:
-        - { src: "../download/matchbox-v0.8.3-linux-amd64/matchbox", dest: "/usr/local/bin" }
+        - { src: "../download/matchbox-v0.9.0-linux-amd64/matchbox", dest: "/usr/local/bin" }
       when: true
 
     - name: Copy matchbox service file
       copy:
-        src: "../download/matchbox-v0.8.3-linux-amd64/contrib/systemd/matchbox-local.service"
+        src: "../download/matchbox-v0.9.0-linux-amd64/contrib/systemd/matchbox-local.service"
         dest: "/etc/systemd/system/matchbox.service"
         owner: root
         mode: 0644
@@ -762,6 +762,8 @@
         owner: root
         group: root
         mode: 0755
+
+    - meta: end_play
 
     - name: Create Ignition files
       command:
