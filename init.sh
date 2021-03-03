@@ -89,6 +89,7 @@ then
         cd air-gap/ansible
         pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
+	#ansible-galaxy collection install ansible-posix-1.1.2-dev8.tar.gz
 	mkdir -p /etc/ansible
 	echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
         cd $GI_HOME
@@ -196,7 +197,7 @@ then
 	pip3 install ansible > /dev/null 2>&1
 	echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
 fi
-ansible-galaxy collection install ansible.posix
+#ansible-galaxy collection install ansible.posix
 echo "*** Add a new RSA SSH key ***"
 ssh-keygen -N '' -f /root/.ssh/cluster_id_rsa -q <<< y > /dev/null
 echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > /root/.ssh/config 

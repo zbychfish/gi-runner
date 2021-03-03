@@ -115,7 +115,7 @@
         enabled: yes
 
     - name: Open ports on bastion 1
-      ansible.posix.firewalld:
+      firewalld:
         port: "{{ item.port }}/{{ item.type }}"
         permanent: yes
         immediate: yes
@@ -125,7 +125,7 @@
       when: is_air_gapped == 'Y'
 
     - name: Open ports on bastion 2
-      ansible.posix.firewalld:
+      firewalld:
         service: http
         permanent: yes
         state: enabled
@@ -153,7 +153,7 @@
         cmd: "{{ item }}"
       loop:
         - podman stop bastion-registry
-        - podman container prune
+        - "podman container prune <<< 'Y'"
       when: is_air_gapped == 'Y' and is_repo_available.stdout == '1'
 
     - name: Setup image registry
