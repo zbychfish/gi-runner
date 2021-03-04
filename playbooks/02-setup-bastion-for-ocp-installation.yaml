@@ -651,8 +651,8 @@
         path: "../download/{{ item.file }}"
       register: rhcos_tools
       with_items:
-        - { file: "openshift-client-linux.tar.gz" }
-        - { file: "openshift-install-linux.tar.gz" }
+        - { file: "openshift-client-linux-{{ ocp_release }}.tar.gz" }
+        - { file: "openshift-install-linux-{{ ocp_release }}.tar.gz" }
       ignore_errors: true
 
     - debug:
@@ -678,8 +678,8 @@
         cmd: tar xvf ../download/{{ item.src }} -C ../download/tmp
         warn: no
       with_items:
-        - { src: "openshift-client-linux.tar.gz" }
-        - { src: "openshift-install-linux.tar.gz" }
+        - { src: "openshift-client-linux-{{ ocp_release }}.tar.gz" }
+        - { src: "openshift-install-linux-{{ ocp_release }}.tar.gz" }
       when: true
     
     - name: Copy RHCOS tools to /usr/local/bin
