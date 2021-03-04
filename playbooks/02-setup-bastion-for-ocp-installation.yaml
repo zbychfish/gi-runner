@@ -763,8 +763,6 @@
         group: root
         mode: 0755
 
-    - meta: end_play
-
     - name: Create Ignition files
       command:
         cmd: "{{ item.cmd }}"
