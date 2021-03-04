@@ -55,9 +55,19 @@ RELEASE_NAME="ocp-release"
 LOCAL_SECRET_JSON='./pull-secret-update.txt'
 ARCHITECTURE=x86_64
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${version}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${version}-${ARCHITECTURE}
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${version}/opm-linux.tar.gz"
+tar xf opm-linux.tar.gz -C /usr/local/bin
+REDHAT_OPERATORS="local-storage-operator,ocs-operator"
+read -p "Insert RH account name: " rh_account
+read -sp "Insert RH account password: " rh_account_pwd
+podman login $LOCAL_REGISTRY -u admin -p guardium
+podman login registry.redhat.io -u "$rh_account" -p "$rh_account_pwd"
+opm index prune -f registry.redhat.io/redhat/redhat-operator-index:v4.6 -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v4.6
+podman push $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v4.6
+oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v4.6 $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
 podman stop bastion-registry
 cd /opt/registry
-tar cf "ocp-registry-${version}.tar" data
+tar cf "ocp-registry-${version}-with-olm.tar" data
 mv "/opt/registry/ocp-registry-${version}.tar" "${local_directory}/download"
 cd $local_directory
 tar cf air-gap.tar centos-updates-* centos-packages-* ansible-* oc-registry.tar
