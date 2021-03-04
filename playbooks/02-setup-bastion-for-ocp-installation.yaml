@@ -210,7 +210,7 @@
 
     - name: Check matchbox package presence
       stat:
-        path: "../download/matchbox-v0.8.3-linux-amd64.tar.gz"
+        path: "../download/matchbox-v0.9.0-linux-amd64.tar.gz"
       register: matchbox_presence
       
     - name: Stop if matchbox not uploaded for air-gapped installation
@@ -245,7 +245,7 @@
 
     - name: Copy matchbox service file
       copy:
-        src: "../download/matchbox-v0.9.0-linux-amd64/contrib/systemd/matchbox-local.service"
+        src: "../download/matchbox-v0.9.0-linux-amd64/contrib/systemd/matchbox.service"
         dest: "/etc/systemd/system/matchbox.service"
         owner: root
         mode: 0644

@@ -1054,5 +1054,8 @@ then
 else
 	echo "export GI_PROXY_URL=NO_PROXY" >> $file
 fi
+# Disable virt services for dnsmasq (GNOME starts them)
+systemctl stop libvirtd
+systemctl disable libvirtd
 echo "- import variables: \". $file\""
 echo "- start first playbook: \"ansible-playbook playbooks/01-install-software-on-bastion.yaml\""
