@@ -73,7 +73,8 @@ then
                 exit 1
         else
                 mkdir -p air-gap
-                tar xf download/air-gap*.tar -C air-gap
+                tar xf download/air-gap*.tar -C download
+		tar xf download/packages-*.tar -C air-gap
         fi
         echo "*** Installing CentOS updates ***"
         #tar xf air-gap/centos-updates*.tar -C air-gap --strip-components 1 > /dev/null
@@ -253,40 +254,57 @@ do
        	        echo "Incorrect value"
         fi
 done
-echo export GI_ONENODE=$is_onenode >> $file
+echo export GI_0NENODE=$is_onenode >> $file
+while ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
+do
+        printf "Is your installation the 3 nodes only (master only)? (\e[4mY\e[0m)es/(N)o: "
+        read is_master_only
+        is_master_only=${is_master_only:-Y}
+        if ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
+        then
+                echo "Incorrect value"
+        fi
+done
+echo export GI_MASTER_ONLY=$is_master_only >> $file
 if [ $is_onenode == 'Y' ]
 then
 	m_number=1
 	w_number=0
 else
 	m_number=3
+	w_number=0
 fi
-if [ $is_onenode == 'N' ]
+if [[ $is_onenode == 'N' && $is_master_only == 'N' ]]
 then
-	while ! [[ $storage_type == 'R' || $storage_type == 'O' ]]
-	do
-		printf "What type of storage would you like to implement (\e[4mR\e[0m)ook/(O)CS?: "
-                read storage_type
-                storage_type=${storage_type:-R}
-                if ! [[ $storage_type == 'R' || $storage_type == 'O' ]]
-                then
-                        echo "Incorrect value"
-                fi
-        done
+	storage_type='O'
 	while [[ $storage_device == '' || -z "$storage_device" ]]
         do 
 		if [[ ! -z "$GI_STORAGE_DEVICE" ]]
 		then
-                	read -p "Cluster storage device set to [$GI_STORAGE_DEVICE], insert new cluster storage device specification or confirm existing one <ENTER>: " storage_device
+                	read -p "Cluster device for storage virtualization set to [$GI_STORAGE_DEVICE], insert new cluster storage device specification or confirm existing one <ENTER>: " storage_device
 			if [[ $storage_device == '' ]]
 			then
 				storage_device=$GI_STORAGE_DEVICE
 			fi
 		else
-			read -p "Provide cluster storage device specification (for example sdb): " storage_device
+			read -p "Provide cluster device specification for storage virtualization (for example sdb): " storage_device
                 fi
         done
 	echo export GI_STORAGE_DEVICE=$storage_device >> $file
+	while [[ $storage_device_size == '' || -z "$storage_device_size" ]]
+        do
+                if [[ ! -z "$GI_STORAGE_DEVICE_SIZE" ]]
+                then
+                        read -p "Maximum space for available for for storage virtualization on all disks is set to [$GI_STORAGE_DEVICE_SIZE] GB, insert new maximum space on cluster device for virtualization (in GB) or confirm existing one <ENTER>: " storage_device_size
+                        if [[ $storage_device_size == '' ]]
+                        then
+                                storage_device_size=$GI_STORAGE_DEVICE_SIZE
+                        fi
+                else
+                        read -p "Provide maximum space on cluster devices for storage virtualization (for example 300) in GB: " storage_device_size
+                fi
+        done
+        echo export GI_STORAGE_DEVICE_SIZE=$storage_device_size >> $file
 	while ! [[ $db2_ha == "Y" || $db2_ha == "N" ]]
 	do
 		printf "Would you like install DB2 in HA configuration (\e[4mN\e[0m)o/(Y)es?: "
@@ -297,6 +315,18 @@ then
 			echo "Incorrect value, insert Y or N"
 		fi
 	done
+	if [[ $db2_ha == 'Y' ]]
+	then
+		while [[ $db2_ha_size == "" || -z $db2_ha_size ]]
+	        do
+        	        printf "How many instaces DB2 would you like to (\e[4m2\e[0m)o/(3)es?: "
+	                read db2_ha_size
+	                db2_ha_size=${db2_ha_size:-2}
+	        done
+	else
+		db2_ha_size=1
+	fi
+	echo export GI_DB2_HA_SIZE=$db2_ha_size >> $file
 	if [ $storage_type == "O" ]
 	then
 		while ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]	
@@ -312,22 +342,16 @@ then
 	else
 		ocs_tainted="N"
 	fi
-	if [[ $ocs_tainted == "N" && $storage_type == "O" ]]
-	then
-		echo "***DB2 node(s) must be tainted!***"
-		db2_tainted="Y"
-	else
-		while ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
-		do
-			printf "Would you like isolate (taint) DB2 node in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
-			read db2_tainted
-			db2_tainted=${db2_tainted:-N}
-			if ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
-			then
-				echo "Incorrect value, insert Y or N"
-			fi
-		done
-	fi
+	while ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
+	do
+		printf "Would you like isolate (taint) DB2 node/s in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
+		read db2_tainted
+		db2_tainted=${db2_tainted:-N}
+		if ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
+		then
+			echo "Incorrect value, insert Y or N"
+		fi
+	done
 else
 	storage_type='R'
 	db_ha='N'
@@ -568,20 +592,14 @@ do
         GI_NODE_NAME=$node_name
 done
 echo export GI_NODE_NAME=$node_name >> $file
-if [ $is_onenode == 'N' ]
+if [[ $is_onenode == 'N' && $is_master_only == 'N' ]]
 then
-	if [[ $db2_ha == 'Y' ]]
-	then
-		d_number=2
-	else
-		d_number=1
-	fi
 	declare -a db_ip_arr
-	while [[ $d_number != ${#db2_ip_arr[@]} ]]
+	while [[ $db2_ha_size != ${#db2_ip_arr[@]} ]]
 	do
 		if [ ! -z "$GI_DB2_IP" ]
 	        then
-        	        read -p "Current list of DB2 node IP list is set to [$GI_DB2_IP] - insert $d_number IP's (comma separated) or confirm existing <ENTER>: " new_db2_ip
+        	        read -p "Current list of DB2 node IP list is set to [$GI_DB2_IP] - insert $db2_ha_size IP\'s (comma separated) or confirm existing <ENTER>: " new_db2_ip
 	                if [[ $new_db2_ip != '' ]]
         	        then
                 	        db2_ip=$new_db2_ip
@@ -589,18 +607,18 @@ then
         	                db2_ip=$GI_DB2_IP
 	                fi
 	        else
-                	read -p "Insert $d_number IP address(es) of DB2 node(s) (comma separated): " db2_ip
+                	read -p "Insert $db2_ha_size IP address(es) of DB2 node(s) (comma separated): " db2_ip
 	        fi
         	IFS=',' read -r -a db2_ip_arr <<< $db2_ip
 	        GI_DB2_IP=$db2_ip
 	done
 	echo export GI_DB2_IP=$db2_ip >> $file
 	declare -a db2_mac_arr
-	while [[ $d_number != ${#db2_mac_arr[@]} ]]
+	while [[ $db2_ha_size != ${#db2_mac_arr[@]} ]]
 	do
         	if [ ! -z "$GI_DB2_MAC_ADDRESS" ]
 	        then
-        	        read -p "Current master DB2 MAC address list is set to [$GI_DB2_MAC_ADDRESS] - insert $d_number MAC address(es) or confirm existing one <ENTER>: " new_db2_mac
+        	        read -p "Current DB2 MAC address list is set to [$GI_DB2_MAC_ADDRESS] - insert $db2_ha_size MAC address(es) or confirm existing one <ENTER>: " new_db2_mac
                 	if [[ $new_db2_mac != '' ]]
 	                then
         	                db2_mac=$new_db2_mac
@@ -608,18 +626,18 @@ then
 	                        db2_mac=$GI_DB2_MAC_ADDRESS
         	        fi
 	        else
-        	        read -p "Insert $d_number MAC address(es) of DB2 node(s): " db2_mac
+        	        read -p "Insert $db2_ha_size MAC address(es) of DB2 node(s): " db2_mac
 	        fi
 	        IFS=',' read -r -a db2_mac_arr <<< $db2_mac
 	        GI_DB2_MAC_ADDRESS=$db2_mac
 	done
 	echo export GI_DB2_MAC_ADDRESS=$db2_mac >> $file
 	declare -a db2_name_arr
-        while [[ $d_number != ${#db2_name_arr[@]} ]]
+        while [[ $db2_ha_size != ${#db2_name_arr[@]} ]]
         do
                 if [ ! -z "$GI_DB2_NAME" ]
                 then
-                        read -p "Current DB2 node name list is set to [$GI_DB2_NAME] - insert $d_number node names or confirm existing one <ENTER>: " new_db2_name
+                        read -p "Current DB2 node name list is set to [$GI_DB2_NAME] - insert $db2_ha_size node names or confirm existing one <ENTER>: " new_db2_name
                         if [[ $new_db2_name != '' ]]
                         then
                                 db2_name=$new_db2_name
@@ -627,7 +645,7 @@ then
                                 db2_name=$GI_DB2_NAME
                         fi
                 else
-                        read -p "Insert $d_number DB2 node names: " db2_name
+                        read -p "Insert $db2_ha_size DB2 node names: " db2_name
                 fi
                 IFS=',' read -r -a db2_name_arr <<< $db2_name
                 GI_DB2_NAME=$DB2_name
