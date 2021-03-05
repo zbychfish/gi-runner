@@ -185,6 +185,10 @@
         state: directory
         mode: '0755'
 
+    - name: Unpack tools
+      command:
+        cmd: tar xf download/tools.tar -C download
+
     - name: Add the user 'matchbox'
       user:
         name: matchbox
@@ -614,7 +618,7 @@
         warn: false
       register: repo_status
       failed_when:
-        - repo_status.rc != 0 or "{\"repositories\":[\"ocp4/openshift4\"]}" not in repo_status.stdout
+        - repo_status.rc != 0 or "\"ocp4/openshift4\"" not in repo_status.stdout
       when: is_air_gapped == 'Y'
 
     - name: Open ports on bastion
@@ -651,8 +655,8 @@
         path: "../download/{{ item.file }}"
       register: rhcos_tools
       with_items:
-        - { file: "openshift-client-linux-{{ ocp_release }}.tar.gz" }
-        - { file: "openshift-install-linux-{{ ocp_release }}.tar.gz" }
+        - { file: "openshift-client-linux.tar.gz" }
+        - { file: "openshift-install-linux.tar.gz" }
       ignore_errors: true
 
     - debug:
@@ -678,8 +682,8 @@
         cmd: tar xvf ../download/{{ item.src }} -C ../download/tmp
         warn: no
       with_items:
-        - { src: "openshift-client-linux-{{ ocp_release }}.tar.gz" }
-        - { src: "openshift-install-linux-{{ ocp_release }}.tar.gz" }
+        - { src: "openshift-client-linux.tar.gz" }
+        - { src: "openshift-install-linux.tar.gz" }
       when: true
     
     - name: Copy RHCOS tools to /usr/local/bin
