@@ -254,7 +254,7 @@ do
        	        echo "Incorrect value"
         fi
 done
-echo export GI_0NENODE=$is_onenode >> $file
+echo export GI_ONENODE=$is_onenode >> $file
 while ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
 do
         printf "Is your installation the 3 nodes only (master only)? (\e[4mY\e[0m)es/(N)o: "

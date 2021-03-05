@@ -618,7 +618,7 @@
       when: is_air_gapped == 'Y'
 
     - name: Open ports on bastion
-      ansible.posix.firewalld:
+      firewalld:
         port: "{{ item.port }}/{{ item.type }}"
         permanent: yes
         immediate: yes
