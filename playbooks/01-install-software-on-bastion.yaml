@@ -138,7 +138,7 @@
 
     - name: Extract OpenShift registry for release {{ ocp_release }}
       unarchive:
-        src: "../download/ocp-registry-{{ ocp_release }}.tar"
+        src: "../download/ocp-registry-with-olm-{{ ocp_release }}.tar"
         dest: /opt/registry
       when: is_air_gapped == 'Y'
 
@@ -148,7 +148,7 @@
       register: is_repo_available
       when: is_air_gapped == 'Y'
       
-    - name: Remove existing bastion image registry
+    - name: Remove existing bastion image registry container
       shell:
         cmd: "{{ item }}"
       loop:

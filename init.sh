@@ -599,7 +599,7 @@ then
 	do
 		if [ ! -z "$GI_DB2_IP" ]
 	        then
-        	        read -p "Current list of DB2 node IP list is set to [$GI_DB2_IP] - insert $db2_ha_size IP\'s (comma separated) or confirm existing <ENTER>: " new_db2_ip
+        	        read -p "Current list of DB2 node IP list is set to [$GI_DB2_IP] - insert $db2_ha_size IP's (comma separated) or confirm existing <ENTER>: " new_db2_ip
 	                if [[ $new_db2_ip != '' ]]
         	        then
                 	        db2_ip=$new_db2_ip
@@ -739,7 +739,7 @@ then
 	do
 		if [ ! -z "$GI_WORKER_IP" ]
 		then
-			read -p "Current list of worker nodes IP list is set to [$GI_NODE_IP] - insert $w_number IP's (comma separated) or confirm existing <ENTER>: " new_worker_ip
+			read -p "Current list of worker nodes IP list is set to [$GI_WORKER_IP] - insert $w_number IP's (comma separated) or confirm existing <ENTER>: " new_worker_ip
 			if [[ $new_worker_ip != '' ]]
                 	then
                         	worker_ip=$new_worker_ip
@@ -851,7 +851,7 @@ else
 fi
 if [[ ! -z "$GI_BOOT_DEVICE" ]]
 then
-        read -p "Bootstrap and cluster node root disk device is set to [$GI_BOOT_DEVICE] - insert new or confirm existing one <ENTER>: " new_machine_disk
+        read -p "Bootstrap and cluster nodes root disk device is set to [$GI_BOOT_DEVICE] - insert new or confirm existing one <ENTER>: " new_machine_disk
         if [[ $new_machine_disk != '' ]]
         then
                 machine_disk=$new_machine_disk
