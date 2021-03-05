@@ -40,11 +40,18 @@ firewall-cmd --zone=public --add-port=5000/tcp --permanent
 firewall-cmd --zone=public --add-service=http --permanent
 firewall-cmd --reload
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${version}/openshift-client-linux.tar.gz"
-tar xf openshift-client-linux.tar.gz
-cp oc kubectl /usr/local/bin
 semanage permissive -a NetworkManager_t
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${version}/openshift-client-linux.tar.gz"
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${version}/openshift-install-linux.tar.gz"
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-initramfs.x86_64.img"
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-kernel-x86_64"
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-rootfs.x86_64.img"
+tar xf openshift-client-linux.tar.gz -C /usr/local/bin
 host_fqdn=$( hostname --long )
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${version}/opm-linux.tar.gz"
+tar xf opm-linux.tar.gz -C /usr/local/bin
+tar cf download/tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz
+rm -rf openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
 jq ".auths += $AUTHSTRING" < pull-secret.txt > pull-secret-update.txt
@@ -55,9 +62,10 @@ RELEASE_NAME="ocp-release"
 LOCAL_SECRET_JSON='./pull-secret-update.txt'
 ARCHITECTURE=x86_64
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${version}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${version}-${ARCHITECTURE}
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${version}/opm-linux.tar.gz"
-tar xf opm-linux.tar.gz -C /usr/local/bin
 REDHAT_OPERATORS="local-storage-operator,ocs-operator"
+CERTIFIED_OPERATORS="cert-manager-operator,nginx-ingress-operator,portworx-certified"
+MARKETPLACE_OPERATORS="mongodb-enterprise-rhmp"
+COMMUNITY_OPERATORS="portworx-essentials,postgresql"
 read -p "Insert RH account name: " rh_account
 read -sp "Insert RH account password: " rh_account_pwd
 podman login $LOCAL_REGISTRY -u admin -p guardium
@@ -65,10 +73,20 @@ podman login registry.redhat.io -u "$rh_account" -p "$rh_account_pwd"
 opm index prune -f registry.redhat.io/redhat/redhat-operator-index:v4.6 -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v4.6
 podman push $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v4.6
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v4.6 $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+opm index prune -f registry.redhat.io/redhat/certified-operator-index:v4.6 -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/certified-operator-index:v4.6
+podman push $LOCAL_REGISTRY/olm-v1/certified-operator-index:v4.6
+oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/certified-operator-index:v4.6 $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+opm index prune -f registry.redhat.io/redhat/redhat-marketplace-index:v4.6 -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v4.6
+podman push $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v4.6
+oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v4.6 $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+opm index prune -f registry.redhat.io/redhat/community-operator-index:latest -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
+podman push $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
+oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/community-operator-index:latest $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+tar cf download/manifests.tar manifests-*
+rm -rf manifests-*
 podman stop bastion-registry
 cd /opt/registry
-tar cf "ocp-registry-${version}-with-olm.tar" data
-mv "/opt/registry/ocp-registry-${version}.tar" "${local_directory}/download"
+tar cf "download/ocp-registry-with-olm-${version}.tar" data
 cd $local_directory
 tar cf air-gap.tar centos-updates-* centos-packages-* ansible-* oc-registry.tar
 rm -rf centos-updates-* centos-packages-* ansible-* oc-registry.tar
