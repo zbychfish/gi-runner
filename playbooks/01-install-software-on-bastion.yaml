@@ -38,7 +38,7 @@
       shell: LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then echo 'reboot'; else echo 'no'; fi
       ignore_errors: true
       register: reboot_hint
-      when: is_air_gapped == 'N'
+      when: is_air_gapped == 'Y'
 
     - name: Install software packages
       dnf:
@@ -172,18 +172,18 @@
           - "Press ENTER to restart machine."
           - "Then re-login to bastion and read variables: '. variables.sh'"
           - "Continue installation by executing: 'ansible-playbook playbooks/02-setup-bastion-for-ocp-installation.yaml'"
-      when: is_air_gapped == 'N' and reboot_hint.stdout.find("reboot") != -1
+      when: reboot_hint.stdout.find("reboot") != -1
 
     - pause:
         echo: no    
-      when: is_air_gapped == 'N' and reboot_hint.stdout.find("reboot") != -1
+      when: reboot_hint.stdout.find("reboot") != -1
 
     - name: Rebooting ...
       command: shutdown -r now "Reboot required for updated kernel"
       async: 0
       poll: 0
       ignore_errors: true
-      when: is_air_gapped == 'N' and reboot_hint.stdout.find("reboot") != -1
+      when: reboot_hint.stdout.find("reboot") != -1
 
 
     - debug:
