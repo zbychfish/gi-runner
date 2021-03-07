@@ -105,8 +105,7 @@
 
   - name: Stop bootstrap
     shell:
-      cmd: sudo shutdown -h +1
-    delegate_to: "{{ boot_name }}.{{ domain }}"
+      cmd: "ssh -l core boot.ocp.io.priv -i ~/.ssh/cluster_id_rsa sudo shutdown -h +1"
     remote_user: core
     args:
       warn: false
@@ -203,7 +202,7 @@
     register: co_status
     until: "co_status.stdout == \"0\""
     retries: 80
-    delay: 10
+    delay: 20
     when: true
 
   - name: Wait - cluster stabilization
@@ -372,6 +371,94 @@
       - '          value: "registry.{{ domain }}:5000/ocp4/rook-ceph:csi-snapshotter-1.2.0"'
     when: is_air_gapped == 'Y' and storage_type == "R"
 
+  - name: Disable default image sources
+    shell:
+      cmd: "oc patch OperatorHub cluster --type json -p '[{\"op\": \"add\", \"path\": \"/spec/disableAllDefaultSources\", \"value\": true}]'"
+    when: is_air_gapped == 'Y'
+
+  - name: Unpack OLM manifests
+    shell:
+      cmd: tar xf ../download/manifests.tar -C ../download
+      warn: false
+    when: is_air_gapped == 'Y'
+
+  - name: Identify image registry name in the import 
+    shell: 
+      cmd: "cd  ../download/manifests-redhat-operator-index;cat catalogSource.yaml | grep image | awk '{print $2}'| awk -F':' '{print $1}'"
+    register: old_registry_name
+    when: is_air_gapped == 'Y'
+
+  - name: Set correct image registry mirror name in catalogSources
+    shell:
+      cmd: "sed -i 's/{{ old_registry_name.stdout }}/registry.{{ domain }}/g' catalogSource.yaml"
+      chdir: "../download/{{ item }}"
+      warn: false
+    with_items:
+      - manifests-redhat-operator-index
+      - manifests-certified-operator-index
+      - manifests-redhat-marketplace-index
+      - manifests-community-operator-index
+    when: is_air_gapped == 'Y'
+
+  - name: Set correct image registry mirror name in imageContentSourcePolicy
+    shell:
+      cmd: "sed -i 's/{{ old_registry_name.stdout }}/registry.{{ domain }}/g' imageContentSourcePolicy.yaml"
+      chdir: "../download/{{ item }}"
+      warn: false
+    with_items:
+      - manifests-redhat-operator-index
+      - manifests-certified-operator-index
+      - manifests-redhat-marketplace-index
+      - manifests-community-operator-index
+    when: is_air_gapped == 'Y'
+
+  - name: Configure mirrored catalogSources
+    shell:
+      cmd: "oc apply -f catalogSource.yaml"
+      chdir: "../download/{{ item }}"
+      warn: false
+    with_items:
+      - manifests-redhat-operator-index
+      - manifests-certified-operator-index
+      - manifests-redhat-marketplace-index
+      - manifests-community-operator-index
+    when: is_air_gapped == 'Y'
+
+  - name: Configure mirrored imageContentSourcePolicy.yaml
+    shell:
+      cmd: "oc apply -f imageContentSourcePolicy.yaml"
+      chdir: "../download/{{ item }}"
+      warn: false
+    with_items:
+      - manifests-redhat-operator-index
+      - manifests-certified-operator-index
+      - manifests-redhat-marketplace-index
+      - manifests-community-operator-index
+    when: is_air_gapped == 'Y'
+
+  - name: Wait - cluster stabilization
+    pause:
+      minutes: 5
+    when: is_air_gapped == 'Y'
+
+  - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
+    shell:
+      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
+    register: co_status
+    until: "co_status.stdout == \"0\""
+    retries: 150
+    delay: 20
+    when: is_air_gapped == 'Y'
+
+  - name: Create OCS namespaces
+    shell:
+      cmd: "oc create namespace {{ item }}"
+    with_items:
+      - openshift-local-storage
+      - openshift-storage
+    ignore_errors: yes
+    when: storage_type == "O"
+
   - name: Configure local storage operator
     shell:
       cmd: "{{ item }}"
@@ -412,6 +499,8 @@
     delay: 10
     when: storage_type == "O"
 
+  - meta: end_play
+
   - name: Configure OCS operator
     shell:
       cmd: "{{ item }}"
@@ -446,7 +535,7 @@
       cmd: "oc get pvc -n openshift-storage --no-headers | grep localblock-sc | grep Bound | wc -l"
     register: ocs_status
     until: "ocs_status.stdout|int >= 3"
-    retries: 50
+    retries: 60
     delay: 10
     when: storage_type == "O"
 
