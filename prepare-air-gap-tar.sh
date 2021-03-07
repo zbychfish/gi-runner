@@ -13,7 +13,7 @@ tar cf centos-updates-`date +%Y-%m-%d`.tar centos-updates
 rm -rf centos-updates
 echo "Downloading additional CentOS packages ..."
 dnf -qy install epel-release
-packages="ansible git haproxy openldap perl podman-docker unzip ipxe-bootimgs"
+packages="ansible haproxy openldap perl podman-docker unzip ipxe-bootimgs"
 for package in $packages
 do
 	dnf download -qy --downloaddir centos-packages $package --resolve
