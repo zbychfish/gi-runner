@@ -93,6 +93,10 @@ echo "Mirrorring Community Operators - ${COMMUNITY_OPERATORS} ..."
 opm index prune -f registry.redhat.io/redhat/community-operator-index:latest -p $COMMUNITY_OPERATORS -t $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
 podman push $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/community-operator-index:latest $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+mv download/manifests-redhat-operator-index-* download/manifests-redhat-operator-index
+mv download/manifests-certified-operator-index-* download/manifests-certified-operator-index
+mv download/manifests-redhat-marketplace-index-* download/manifests-redhat-maketplace-index
+mv download/manifests-community-operator-index-* download/manifests-community-operator-index
 tar cf download/manifests.tar manifests-*
 rm -rf manifests-*
 podman stop bastion-registry
