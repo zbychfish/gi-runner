@@ -12,6 +12,7 @@
     repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
     storage_type: "{{ lookup('env','GI_STORAGE') }}"
     storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
+    storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
     is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
     is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
     is_db2_in_ha:  "{{ lookup('env','GI_DB2_HA') }}"
@@ -465,7 +466,6 @@
     loop:
       - "oc apply -f ../scripts/local-storage-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "O"
-    when: false
 
   - name: Wait for local storage operator
     shell:
@@ -499,7 +499,6 @@
     retries: 30
     delay: 10
     when: storage_type == "O"
-
 
   - name: Configure OCS operator
     shell:
