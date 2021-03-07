@@ -465,6 +465,7 @@
     loop:
       - "oc apply -f ../scripts/local-storage-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "O"
+    when: false
 
   - name: Wait for local storage operator
     shell:
@@ -487,7 +488,7 @@
     shell:
       cmd: "{{ item }}"
     loop:
-      - "oc apply -f ../scripts/local-storage-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
+      - "oc apply -f ../scripts/local-storage-vol.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "O"
 
   - name: Wait for local storage deployment
@@ -499,7 +500,6 @@
     delay: 10
     when: storage_type == "O"
 
-  - meta: end_play
 
   - name: Configure OCS operator
     shell:
