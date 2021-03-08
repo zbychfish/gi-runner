@@ -1,12 +1,12 @@
 #!/bin/bash
 
 local_directory=`pwd`
+read -p "Insert OCP version to mirror (for example 4.6.19): " version
 read -p "Insert RedHat pull secret: " pull_secret
 echo "$pull_secret" > "pull-secret.txt"
 read -p "Insert your mail address to authenticate in RedHat Network: " mail
 read -p "Insert RH account name: " rh_account
 read -sp "Insert RH account password: " rh_account_pwd
-read -p "Insert OCP version to mirror (for example 4.6.19): " version
 echo "Downloading CentOS updates ..."
 dnf update -qy --downloadonly --downloaddir centos-updates
 tar cf centos-updates-`date +%Y-%m-%d`.tar centos-updates
@@ -28,7 +28,7 @@ do
 done
 tar cf ansible-`date +%Y-%m-%d`.tar ansible
 rm -rf ansible
-dnf -y install httpd
+dnf -qy install httpd
 echo "Setup mirror image registry ..."
 podman stop bastion-registry
 podman container prune <<< 'Y'
@@ -93,10 +93,10 @@ echo "Mirrorring Community Operators - ${COMMUNITY_OPERATORS} ..."
 opm index prune -f registry.redhat.io/redhat/community-operator-index:latest -p $COMMUNITY_OPERATORS -t $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
 podman push $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/community-operator-index:latest $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
-mv download/manifests-redhat-operator-index-* download/manifests-redhat-operator-index
-mv download/manifests-certified-operator-index-* download/manifests-certified-operator-index
-mv download/manifests-redhat-marketplace-index-* download/manifests-redhat-maketplace-index
-mv download/manifests-community-operator-index-* download/manifests-community-operator-index
+mv manifests-redhat-operator-index-* manifests-redhat-operator-index
+mv manifests-certified-operator-index-* manifests-certified-operator-index
+mv manifests-redhat-marketplace-index-* manifests-redhat-marketplace-index
+mv manifests-community-operator-index-* manifests-community-operator-index
 tar cf download/manifests.tar manifests-*
 rm -rf manifests-*
 podman stop bastion-registry
@@ -108,7 +108,8 @@ tar cf ${local_directory}/download/packages-`date +%Y-%m-%d`.tar centos-updates-
 rm -rf centos-updates-* centos-packages-* ansible-* oc-registry.tar
 cd download
 tar cf ../air-gap-files-centos-`cat /etc/centos-release|head -1|awk '{print $NF}'`-ocp-release-${version}-`date +%Y-%m-%d`.tar *.tar
-rm *.tar
+rm -rf *.tar
 cd $local_directory
+rm -rf pull-secret*
 mv air-gap-files-* download
 echo "AIR GAPPED FILES PREPARED"
