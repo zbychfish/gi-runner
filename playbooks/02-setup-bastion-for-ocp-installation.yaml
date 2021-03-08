@@ -35,6 +35,18 @@
     hs_size:  "{{ lookup('env','GI_HS_SIZE') }}"
 
   tasks:
+    - name: Check mirror image registry status
+      shell:
+        cmd: podman ps|grep bastion-registry|wc -l
+        warn: false
+      register: image_registry_status
+      when: is_air_gapped == 'Y'
+
+    - name: Start image registry
+      shell:
+        cmd: podman start bastion-registry
+      when: is_air_gapped == 'Y' and image_registry_status.stdout == "0"
+
     - name: Cleanup configuration files
       file:
         path: "{{ item.path }}"
@@ -840,18 +852,6 @@
         name: haproxy
         state: restarted
         enabled: yes
-
-    - name: Check mirror image registry status
-      shell:
-        cmd: podman ps|grep bastion-registry|wc -l
-        warn: false
-      register: image_registry_status
-      when: is_air_gapped == 'Y'
-
-    - name: Start image registry
-      shell:
-        cmd: podman start bastion-registry
-      when: is_air_gapped == 'Y' and image_registry_status.stdout == 0
 
     - debug:
         msg:
