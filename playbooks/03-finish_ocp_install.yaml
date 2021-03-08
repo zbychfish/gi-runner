@@ -14,6 +14,7 @@
     storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
     storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
     is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
+    is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
     is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
     is_db2_in_ha:  "{{ lookup('env','GI_DB2_HA') }}"
     is_db2_tainted:  "{{ lookup('env','GI_DB2_TAINTED') }}"
@@ -33,7 +34,7 @@
       db2_ip: "{{ lookup('env', 'GI_DB2_IP').split(',') }}"
       db2_mac: "{{ lookup('env', 'GI_DB2_MAC_ADDRESS').split(',') }}"
       db2_name: "{{ lookup('env', 'GI_DB2_NAME').split(',') }}"
-    when: is_one_node == 'N'
+    when: is_one_node == 'N' and is_master_only == 'N'
 
   - name: Set OCS array
     set_fact:
@@ -47,10 +48,11 @@
       worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
       worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
       worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
-    when: is_one_node == 'N'
+    when: is_one_node == 'N' and is_master_only == 'N'
 
   - debug:
       msg: "{{ worker_name[0:3] }}"
+    when: is_one_node == 'N' and is_master_only == 'N'
 
   - set_fact:
       image: "rook/ceph:master"
@@ -168,11 +170,11 @@
 
   - name: Reconfigure HA Proxy
     lineinfile:
-      path: /etc/haproxy.cfg
+      path: /etc/haproxy/haproxy.cfg
       regexp: "{{ item.regexp }}"
       state: absent
     with_items:
-      - { regexp: "^ server m0" }
+      - { regexp: '^ server m0' }
     when: is_one_node == 'N'
 
   - name: Restart HA Proxy
@@ -294,11 +296,17 @@
       path: "../download/ocadmin.htpasswd"
       state: absent
 
-  - name: Configure OCS nodes
+  - name: Configure OCS nodes on workers
     shell:
       cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --config ../ocp/auth/kubeconfig --overwrite=true"
     with_items: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
-    when: storage_type == "O" and is_one_node == 'N'
+    when: storage_type == "O" and is_master_only == 'N'
+
+  - name: Configure OCS nodes on masters
+    shell:
+      cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --config ../ocp/auth/kubeconfig --overwrite=true"
+    with_items: "{{ node_name|list }}"
+    when: storage_type == "O" and is_master_only == 'Y'
 
   - name: Configure rook-ceph nodes
     shell:
@@ -476,14 +484,21 @@
     delay: 10
     when: storage_type == "O"
 
-  - name: Configure local storage deployment file
+  - name: Configure local storage deployment file with workers
     vars:
       nodes: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
     template:
       src: "local-storage-vol.j2"
       dest: "../scripts/local-storage-vol.yaml"
-    when: storage_type == "O"
+    when: storage_type == "O" and is_master_only == 'N'
     
+  - name: Configure local storage deployment file with masters only
+    vars:
+      nodes: "{{ node_name|list }}"
+    template:
+      src: "local-storage-vol.j2"
+      dest: "../scripts/local-storage-vol.yaml"
+    when: storage_type == "O" and is_master_only == 'Y'
   - name: Deploy local storage
     shell:
       cmd: "{{ item }}"
@@ -632,7 +647,7 @@
     register: image_registry_status
     until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
     retries: 60
-    delay: 10
+    delay: 15
     when: true
 
   - debug:

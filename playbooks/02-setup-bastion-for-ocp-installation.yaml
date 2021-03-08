@@ -27,6 +27,7 @@
     repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
     repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
     is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
+    is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
     is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
     is_db2_in_ha:  "{{ lookup('env','GI_DB2_HA') }}"
     is_db2_tainted:  "{{ lookup('env','GI_DB2_TAINTED') }}"
@@ -69,7 +70,7 @@
         db2_ip: "{{ lookup('env', 'GI_DB2_IP').split(',') }}"
         db2_mac: "{{ lookup('env', 'GI_DB2_MAC_ADDRESS').split(',') }}"
         db2_name: "{{ lookup('env', 'GI_DB2_NAME').split(',') }}"
-      when: is_one_node == 'N'
+      when: is_one_node == 'N' and is_master_only == 'N'
 
     - name: Set OCS array
       set_fact:
@@ -83,7 +84,7 @@
         worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
         worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
         worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
-      when: is_one_node == 'N'
+      when: is_one_node == 'N' and is_master_only == 'N'
 
     - name: Check workers parameters
       fail: msg="Variable {{ item.name }} is not set"
@@ -92,6 +93,7 @@
         - { name: "GI_WORKER_IP", value: "{{ worker_ip }}" }
         - { name: "GI_WORKER_MAC_ADDRESS", value: "{{ worker_mac }}" }
         - { name: "GI_WORKER_NAME", value: "{{ worker_name }}" }
+      when: is_one_node == 'N' and is_master_only == 'N'
 
     - name: Check other configuration parameters
       fail: msg="Variable {{ item.name }} is not set"
@@ -404,7 +406,7 @@
         mac: "{{ item }}"
       with_items:
         - "{{ db2_mac|list }}"
-      when: is_one_node == 'N'
+      when: is_one_node == 'N' and is_master_only == 'N'
 
     - name: Matchbox ocs group json
       template:
@@ -430,7 +432,7 @@
         mac: "{{ item }}"
       with_items:
         - "{{ worker_mac|list }}"
-      when: is_one_node == 'N'
+      when: is_one_node == 'N' and is_master_only == 'N'
 
     - name: Matchbox profiles files
       vars:
@@ -779,13 +781,24 @@
         group: root
         mode: 0755
 
-    - name: Create Ignition files
+    - name: Create manifests files
       command:
         cmd: "{{ item.cmd }}"
       with_items:
         - { cmd: "openshift-install create manifests --dir=../ocp" }
+
+    - name: Modify manifests for non-worker environments (for 0 workers it is automatically set)
+      lineinfile:
+        path: ../ocp/manifests/cluster-scheduler-02-config.yml
+        regexp: '^  mastersSchedulable: false'
+        line: '  mastersSchedulable: true'
+      when: is_one_node == 'Y' or is_master_only == 'Y'
+
+    - name: Create ignition files
+      command:
+        cmd: "{{ item.cmd }}"
+      with_items:
         - { cmd: "openshift-install create ignition-configs --dir=../ocp" }
-      when: true
 
     - name: Copy ignition files to matchbox
       copy:
@@ -825,7 +838,7 @@
         nodes: "{{ worker_name|default([])+db2_name|default([])+ocs_name|default([]) }}"
         ips: "{{ worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
         workers: "{{ nodes|zip(ips)|list }}"
-      when: is_one_node == 'N'
+      when: is_one_node == 'N' and is_master_only == 'N'
 
     - name: Create HA Proxy config file
       template:
@@ -833,7 +846,7 @@
         dest: /etc/haproxy/haproxy.cfg
       vars:
         masters: "{{ node_name|zip(node_ip)|list }}"
-      when: is_one_node == 'Y'
+      when: is_one_node == 'Y' or is_master_only == 'Y'
 
     - name: Stop execution
       meta: end_play
