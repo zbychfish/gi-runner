@@ -841,6 +841,18 @@
         state: restarted
         enabled: yes
 
+    - name: Check mirror image registry status
+      shell:
+        cmd: podman ps|grep bastion-registry|wc -l
+        warn: false
+      register: image_registry_status
+      when: is_air_gapped == 'Y'
+
+    - name: Start image registry
+      shell:
+        cmd: podman start bastion-registry
+      when: is_air_gapped == 'Y' and image_registry_status.stdout == 0
+
     - debug:
         msg:
         - "Bastion is ready for OCP installation." 
