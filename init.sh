@@ -274,7 +274,7 @@ else
 	m_number=3
 	w_number=0
 fi
-if [[ $is_onenode == 'N' && $is_master_only == 'N' ]]
+if [[ $is_onenode == 'N' ]]
 then
 	storage_type='O'
 	while [[ $storage_device == '' || -z "$storage_device" ]]
@@ -305,58 +305,67 @@ then
                 fi
         done
         echo export GI_STORAGE_DEVICE_SIZE=$storage_device_size >> $file
-	while ! [[ $db2_ha == "Y" || $db2_ha == "N" ]]
-	do
-		printf "Would you like install DB2 in HA configuration (\e[4mN\e[0m)o/(Y)es?: "
-		read db2_ha
-		db2_ha=${db2_ha:-N}
-		if ! [[ $db2_ha == "Y" || $db2_ha == "N" ]]
-		then
-			echo "Incorrect value, insert Y or N"
-		fi
-	done
-	if [[ $db2_ha == 'Y' ]]
+	if [[ $is_master_only == 'N' ]]
 	then
-		while [[ $db2_ha_size == "" || -z $db2_ha_size ]]
-	        do
-        	        printf "How many instaces DB2 would you like to (\e[4m2\e[0m)o/(3)es?: "
-	                read db2_ha_size
-	                db2_ha_size=${db2_ha_size:-2}
-	        done
-	else
-		db2_ha_size=1
-	fi
-	echo export GI_DB2_HA_SIZE=$db2_ha_size >> $file
-	if [ $storage_type == "O" ]
-	then
-		while ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]	
+		while ! [[ $db2_ha == "Y" || $db2_ha == "N" ]]
 		do
-	                printf "Would you like isolate (taint) OCS nodes in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
-	                read ocs_tainted
-	                ocs_tainted=${ocs_tainted:-N}
-	                if ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]
-	                then
-	                        echo "Incorrect value, insert Y or N"
-	                fi
-	        done
-	else
-		ocs_tainted="N"
-	fi
-	while ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
-	do
-		printf "Would you like isolate (taint) DB2 node/s in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
-		read db2_tainted
-		db2_tainted=${db2_tainted:-N}
-		if ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
+			printf "Would you like install DB2 in HA configuration (\e[4mN\e[0m)o/(Y)es?: "
+			read db2_ha
+			db2_ha=${db2_ha:-N}
+			if ! [[ $db2_ha == "Y" || $db2_ha == "N" ]]
+			then
+				echo "Incorrect value, insert Y or N"
+			fi
+		done
+		if [[ $db2_ha == 'Y' ]]
 		then
-			echo "Incorrect value, insert Y or N"
+			while [[ $db2_ha_size == "" || -z $db2_ha_size ]]
+	        	do
+        	        	printf "How many instaces DB2 would you like to (\e[4m2\e[0m)o/(3)es?: "
+	                	read db2_ha_size
+	                	db2_ha_size=${db2_ha_size:-2}
+	        	done
+		else
+			db2_ha_size=1
 		fi
-	done
+		echo export GI_DB2_HA_SIZE=$db2_ha_size >> $file
+		if [ $storage_type == "O" ]
+		then
+			while ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]	
+			do
+	                	printf "Would you like isolate (taint) OCS nodes in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
+	                	read ocs_tainted
+	                	ocs_tainted=${ocs_tainted:-N}
+	                	if ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]
+	                	then
+	                        	echo "Incorrect value, insert Y or N"
+	                	fi
+	        	done
+		else
+			ocs_tainted="N"
+		fi
+		while ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
+		do
+			printf "Would you like isolate (taint) DB2 node/s in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
+			read db2_tainted
+			db2_tainted=${db2_tainted:-N}
+			if ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
+			then
+				echo "Incorrect value, insert Y or N"
+			fi
+		done
+	else
+		db_ha='N'
+        	ocs_tainted='N'
+        	db_tainted='N'
+		echo export GI_DB2_HA_SIZE=0 >> $file
+	fi
 else
 	storage_type='R'
 	db_ha='N'
 	ocs_tainted='N'
 	db_tainted='N'
+	echo export GI_DB2_HA_SIZE=0 >> $file
 fi
 echo export GI_STORAGE=$storage_type >> $file
 echo export GI_DB2_HA=$db2_ha >> $file
