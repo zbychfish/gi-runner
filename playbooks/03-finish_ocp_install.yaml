@@ -68,7 +68,7 @@
 
   - name: Check configuration parameters for air-gapped installation
     fail: msg="Variable {{ item.name }} is not set"
-    when: is_air_gapped == 'Y'
+    when: item.value == "" and is_air_gapped == 'Y'
     loop:
       - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
       - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
@@ -300,7 +300,14 @@
     shell:
       cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --config ../ocp/auth/kubeconfig --overwrite=true"
     with_items: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
-    when: storage_type == "O" and is_master_only == 'N'
+    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'N'
+
+  - name: Configure OCS nodes for taint 
+    shell: |
+      oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --config ../ocp/auth/kubeconfig --overwrite=true
+      oc label nodes {{ item }}.{{ domain }} node-role.kubernetes.io/infra='' --config ../ocp/auth/kubeconfig --overwrite=true
+    with_items: "{{ ocs_name|list }}"
+    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'Y'
 
   - name: Configure OCS nodes on masters
     shell:
@@ -490,8 +497,16 @@
     template:
       src: "local-storage-vol.j2"
       dest: "../scripts/local-storage-vol.yaml"
-    when: storage_type == "O" and is_master_only == 'N'
+    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'N'
     
+  - name: Configure local storage deployment file in taint
+    vars:
+      nodes: "{{ ocs_name|list }}"
+    template:
+      src: "local-storage-vol-tainted.j2"
+      dest: "../scripts/local-storage-vol.yaml"
+    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'Y'
+
   - name: Configure local storage deployment file with masters only
     vars:
       nodes: "{{ node_name|list }}"
@@ -499,6 +514,7 @@
       src: "local-storage-vol.j2"
       dest: "../scripts/local-storage-vol.yaml"
     when: storage_type == "O" and is_master_only == 'Y'
+
   - name: Deploy local storage
     shell:
       cmd: "{{ item }}"
@@ -514,6 +530,13 @@
     retries: 30
     delay: 10
     when: storage_type == "O"
+
+  - name: Taint OCS nodes
+    shell:
+      cmd: "oc adm taint node {{ item }}.{{ domain }} node.ocs.openshift.io/storage=\"true\":NoSchedule"
+    with_items: "{{ ocs_name|list }}"
+    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'Y'
+    ignore_errors: yes
 
   - name: Configure OCS operator
     shell:
@@ -550,7 +573,7 @@
     register: ocs_status
     until: "ocs_status.stdout|int >= 3"
     retries: 60
-    delay: 10
+    delay: 15
     when: storage_type == "O"
 
   - name: Configure rook operator
