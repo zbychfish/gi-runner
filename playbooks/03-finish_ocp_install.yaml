@@ -68,7 +68,7 @@
 
   - name: Check configuration parameters for air-gapped installation
     fail: msg="Variable {{ item.name }} is not set"
-    when: item.value == "" and is_air_gapped == 'Y'
+    when: is_air_gapped == 'Y'
     loop:
       - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
       - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
