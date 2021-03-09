@@ -1,0 +1,24 @@
+apiVersion: "local.storage.openshift.io/v1"
+kind: "LocalVolume"
+metadata:
+  name: "local-disks"
+  namespace: "openshift-local-storage" 
+spec:
+  tolerations:
+  - key: "node.ocs.openshift.io/storage"
+    value: "true"
+    effect: NoSchedule
+  nodeSelector: 
+    nodeSelectorTerms:
+    - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+{% for name in nodes%}
+          - {{ name }}.{{ domain }}
+{% endfor %}
+  storageClassDevices:
+    - storageClassName: "localblock-sc"
+      volumeMode: Block  
+      devicePaths: 
+        - /dev/{{ storage_device }}
