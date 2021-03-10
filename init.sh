@@ -255,17 +255,20 @@ do
         fi
 done
 echo export GI_ONENODE=$is_onenode >> $file
-while ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
-do
-        printf "Is your installation the 3 nodes only (master only)? (\e[4mY\e[0m)es/(N)o: "
-        read is_master_only
-        is_master_only=${is_master_only:-Y}
-        if ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
-        then
-                echo "Incorrect value"
-        fi
-done
-echo export GI_MASTER_ONLY=$is_master_only >> $file
+if [[ $is_onenode == 'N' ]]
+then
+	while ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
+	do
+        	printf "Is your installation the 3 nodes only (master only)? (\e[4mY\e[0m)es/(N)o: "
+	        read is_master_only
+	        is_master_only=${is_master_only:-Y}
+	        if ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
+	        then
+	                echo "Incorrect value"
+	        fi
+	done
+	echo export GI_MASTER_ONLY=$is_master_only >> $file
+fi
 if [ $is_onenode == 'Y' ]
 then
 	m_number=1
@@ -1072,7 +1075,6 @@ then
 fi
 echo "export GI_SSH_KEY='`cat /root/.ssh/cluster_id_rsa.pub`'" >> $file
 echo "export KUBECONFIG=$GI_HOME/ocp/auth/kubeconfig" >> $file
-echo "*** Execute commands below ***"
 if [[ $use_proxy == 'P' ]]
 then
 	echo "export GI_NOPROXY_NET=$no_proxy" >> $file
@@ -1084,5 +1086,6 @@ fi
 # Disable virt services for dnsmasq (GNOME starts them)
 systemctl stop libvirtd
 systemctl disable libvirtd
+echo "*** Execute commands below ***"
 echo "- import variables: \". $file\""
 echo "- start first playbook: \"ansible-playbook playbooks/01-install-software-on-bastion.yaml\""
