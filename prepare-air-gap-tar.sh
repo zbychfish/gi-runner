@@ -7,7 +7,7 @@ echo "$pull_secret" > "pull-secret.txt"
 read -p "Insert your mail address to authenticate in RedHat Network: " mail
 read -p "Insert RH account name: " rh_account
 read -sp "Insert RH account password: " rh_account_pwd
-echo "Downloading CentOS updates ..."
+echo -n "Downloading CentOS updates ..."
 dnf update -qy --downloadonly --downloaddir centos-updates
 tar cf centos-updates-`date +%Y-%m-%d`.tar centos-updates
 rm -rf centos-updates
@@ -99,15 +99,19 @@ mv manifests-redhat-marketplace-index-* manifests-redhat-marketplace-index
 mv manifests-community-operator-index-* manifests-community-operator-index
 tar cf download/manifests.tar manifests-*
 rm -rf manifests-*
-echo "Mirroring ope source rook-ceph ..."
+echo "Mirroring open source rook-ceph ..."
 images="docker.io/rook/ceph:v1.1.7 quay.io/cephcsi/cephcsi:v1.2.1 quay.io/k8scsi/csi-node-driver-registrar:v1.1.0 quay.io/k8scsi/csi-provisioner:v1.3.0 quay.io/k8scsi/csi-snapshotter:v1.2.0 quay.io/k8scsi/csi-attacher:v1.2.0"
-tags="ceph:v1.1.7 cephcsi:v1.2.1 csi-node-driver-registrar:v1.1.0 csi-provisioner:v1.3.0 csi-snapshotter:v1.2.0 csi-attacher:v1.2.0"
 for image in $images
 do
         echo $image
         podman pull $image
-        tag=`echo "$image" | awk -F '/' "{print $NF}"`
-        podman tag $image $LOCAL_REGISTRY/$tag
+        tag=`echo "$image" | awk -F '/' '{print $NF}'`
+        echo "TAG: $tag"
+        podman save -o image.tar $image
+        podman rmi $image
+        podman load -i image.tar
+        podman push $image test.guardium.notes:5000/rook/$tag
+        rm -rf image.tar
 done
 podman stop bastion-registry
 echo "Archiving mirror registry ..."
