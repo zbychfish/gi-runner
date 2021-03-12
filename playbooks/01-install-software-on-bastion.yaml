@@ -38,7 +38,6 @@
       shell: LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then echo 'reboot'; else echo 'no'; fi
       ignore_errors: true
       register: reboot_hint
-      when: is_air_gapped == 'Y'
 
     - name: Install software packages
       dnf:
@@ -58,14 +57,7 @@
           - "chrony"
           - "httpd"
         state: latest
-      when: is_air_gapped == 'N'
-
-    - name: Install Python modules
-      pip:
-        name: 
-          - "dnspython"
-          - "passlib"
-      when: is_air_gapped == 'N'
+      when: false
 
     - name: Create registry directories
       file:

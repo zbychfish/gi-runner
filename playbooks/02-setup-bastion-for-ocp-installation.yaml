@@ -201,6 +201,7 @@
     - name: Unpack tools
       command:
         cmd: tar xf ../download/tools.tar -C ../download
+      when: is_air_gapped == 'Y'
 
     - name: Add the user 'matchbox'
       user:
@@ -671,10 +672,6 @@
         - { file: "openshift-client-linux.tar.gz" }
         - { file: "openshift-install-linux.tar.gz" }
       ignore_errors: true
-
-    - debug:
-        var: rhcos_tools
-      when: false
 
     - name: Stop if RHCOS tools are not uploaded for air-gapped installation
       fail:
