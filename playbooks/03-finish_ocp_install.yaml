@@ -73,32 +73,6 @@
       - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
       - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
 
-  - name: Import rook-ceph image to local repository
-    shell:
-      cmd: "{{ item }}"
-    loop:
-      - podman load -i ../download/rook/rook.tar docker.io/rook/ceph:rook-ceph-v1.1.7
-      - podman load -i ../download/rook/cephcsi-1.2.0.tar docker.io/rook/ceph:cephcsi-1.2.0
-      - podman load -i ../download/rook/csi-attacher-1.2.0.tar docker.io/rook/csi-attacher-1.2.0
-      - podman load -i ../download/rook/csi-node-driver-registrar_v1.1.0 docker.io/rook/csi-node-driver-registrar-v1.1.0
-      - podman load -i ../download/rook/csi-provisioner-v1.3.0.tar docker.io/rook/csi-provisioner:v1.3.0
-      - podman load -i ../download/rook/csi-snapshotter-1.2.0.tar docker.io/rook/csi-snapshotter-1.2.0
-    when: is_air_gapped == 'Y' and is_one_node == 'Y' and storage_type == 'R'
-    when: false
-
-  - name: Push rook-ceph image to bastion image registry
-    shell:
-      cmd: "{{ item }}"
-    loop:
-      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} f10be59eaf82 docker://registry.{{ domain }}:5000/ocp4/rook-ceph:rook-ceph-v1.1.7"
-      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} 4ed9912287b5 docker://registry.{{ domain }}:5000/ocp4/rook-ceph:cephcsi-1.2.0"
-      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} eef7a9550ede docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-attacher-1.2.0"
-      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} a93898755322 docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-node-driver-registrar-v1.1.0"
-      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} 2422aa77f05f docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-provisioner-v1.3.0"
-      - "podman push --creds {{ repo_user }}:{{ repo_user_password}} 571ae7354c50 docker://registry.{{ domain }}:5000/ocp4/rook-ceph:csi-snapshotter-1.2.0"
-    when: is_air_gapped == 'Y' and is_one_node == 'Y' and storage_type == 'R'
-    when: false
-
   - name: Modify etcd settings in bootstrap phase for allinone configuration
     shell:
       cmd: "oc patch etcd cluster -p='{\"spec\": {\"unsupportedConfigOverrides\": {\"useUnsupportedUnsafeNonHANonProductionUnstableEtcd\": true}}}' --type=merge"
