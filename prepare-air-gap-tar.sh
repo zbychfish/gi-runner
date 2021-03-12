@@ -7,7 +7,7 @@ echo "$pull_secret" > "pull-secret.txt"
 read -p "Insert your mail address to authenticate in RedHat Network: " mail
 read -p "Insert RH account name: " rh_account
 read -sp "Insert RH account password: " rh_account_pwd
-echo -n "Downloading CentOS updates ..."
+echo -e "\nDownloading CentOS updates ..."
 dnf update -qy --downloadonly --downloaddir centos-updates
 tar cf centos-updates-`date +%Y-%m-%d`.tar centos-updates
 rm -rf centos-updates
