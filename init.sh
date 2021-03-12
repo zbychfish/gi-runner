@@ -184,18 +184,21 @@ if [[ $use_air_gap == 'N' ]]
 then
         echo "*** Update CentOS ***"
         dnf -qy update
-	echo "*** Installing python, tar and git ***"
-	dnf -qy install python3 tar git
-	echo "*** Installing Ansible ***"
+	echo "*** Installing Ansible and other CentOS packages ***"
+	dnf -qy install haproxy openldap perl podman-docker unzip ipxe-bootimgs
+	dnf -qy install epel-release
+	dnf -qy install ansible
+	pip3 install passlib > /dev/null 2>&1
+	pip3 install dnspython > /dev/null 2>&1
 fi
 mkdir -p /etc/ansible
 if [[ $use_proxy == 'P' ]]
 then
-	pip3 install ansible --proxy $proxy_ip:$proxy_port > /dev/null 2>&1
+	#pip3 install ansible --proxy $proxy_ip:$proxy_port > /dev/null 2>&1
 	echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts
 elif [[ $use_proxy == 'D' ]]
 then
-	pip3 install ansible > /dev/null 2>&1
+	#pip3 install ansible > /dev/null 2>&1
 	echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
 fi
 #ansible-galaxy collection install ansible.posix
