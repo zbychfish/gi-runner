@@ -67,13 +67,13 @@ fi
 if [[ $use_air_gap == 'Y' ]]
 then
         echo "*** Extracting air-gapped installation files ***"
-        if [[ `ls $GI_HOME/download/air-gap*.tar|wc -l` -ne 1 ]]
+        if [[ `ls $GI_HOME/download/air-gap*.tar00|wc -l` -ne 1 ]]
         then
                 echo "You did not upload air-gap.tar to download directory on bastion"
                 exit 1
         else
                 mkdir -p air-gap
-                tar xf download/air-gap*.tar -C download
+		cat download/air-gap-*.tar*| tar tzpvf -C -
 		tar xf download/packages-*.tar -C air-gap
         fi
         echo "*** Installing CentOS updates ***"

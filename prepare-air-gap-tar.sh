@@ -162,9 +162,9 @@ cd $local_directory
 tar cf ${local_directory}/download/packages-`date +%Y-%m-%d`.tar centos-updates-* centos-packages-* ansible-* oc-registry.tar
 rm -rf centos-updates-* centos-packages-* ansible-* oc-registry.tar
 cd download
-tar --tape-length=10G -cMv --file=../air-gap-files-centos-`cat /etc/centos-release|head -1|awk '{print $NF}'`-ocp-release-${ocp_version}-ics-release-${ics_versions[${version_selected}]}-`date +%Y-%m-%d`.{tar,tar-{2..10}} *.tar
+tar czpvf - *.tar | split -d -b 10G - air-gap-files-centos-8.3.2011-ocp-release-4.6.19-ics-release-3.7-2021-03-13.tar
 rm -rf *.tar
 cd $local_directory
 rm -rf pull-secret*
-mv air-gap-files-* download
+#mv air-gap-files-* download
 echo "AIR GAPPED FILES PREPARED"
