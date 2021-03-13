@@ -433,6 +433,14 @@
     ignore_errors: yes
     when: storage_type == "O"
 
+  - name: Configure local storage operator file
+    vars:
+      operator_source: "{{ 'redhat-operators' if is_one_node == 'N' else 'redhat-operator-index' }}"
+    template:
+      src: "local-storage-op.j2"
+      dest: "../scripts/local-storage-op.yaml"
+    when: storage_type == "O"
+
   - name: Configure local storage operator
     shell:
       cmd: "{{ item }}"
@@ -495,6 +503,14 @@
     with_items: "{{ ocs_name|list }}"
     when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'Y'
     ignore_errors: yes
+
+  - name: Configure OCS operator file
+    vars:
+      operator_source: "{{ 'redhat-operators' if is_one_node == 'N' else 'redhat-operator-index' }}"
+    template:
+      src: "ocs-op.j2"
+      dest: "../scripts/ocs-op.yaml"
+    when: storage_type == "O"
 
   - name: Configure OCS operator
     shell:
