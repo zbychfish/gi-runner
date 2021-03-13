@@ -1,12 +1,33 @@
 #!/bin/bash
 
 local_directory=`pwd`
-read -p "Insert OCP version to mirror (for example 4.6.19): " version
+read -p "Insert OCP version to mirror (for example 4.6.19): " ocp_version
 read -p "Insert RedHat pull secret: " pull_secret
 echo "$pull_secret" > "pull-secret.txt"
 read -p "Insert your mail address to authenticate in RedHat Network: " mail
 read -p "Insert RH account name: " rh_account
 read -sp "Insert RH account password: " rh_account_pwd
+echo -e "\n"
+while [[ $get_ics != 'Y' && $get_ics != 'N' ]]
+do
+        read -p "Do you need mirror ICS images? (Y/N): " get_ics
+done
+if [ $get_ics == 'Y' ]
+then
+        declare -a ics_versions=(3.5.6 3.6.2 3.6.3 3.7)
+        while [[ ( -z $version_selected ) || ( $version_selected -lt 1 || $version_selected -gt 4 ) ]]
+        do
+                echo "Select ICS version to mirror:"
+                i=1
+                for ics_version in "${ics_versions[@]}"
+                do
+                        echo "$i - $ics_version"
+                        i=$((i+1))
+                done
+                read -p "Your choice?: " version_selected
+        done
+        version_selected=$(($version_selected-1))
+fi
 echo -e "\nDownloading CentOS updates ..."
 dnf update -qy --downloadonly --downloaddir centos-updates
 tar cf centos-updates-`date +%Y-%m-%d`.tar centos-updates
@@ -48,19 +69,19 @@ firewall-cmd --reload
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2
 semanage permissive -a NetworkManager_t
 echo "Download OCP tools and CoreOS installation files ..."
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${version}/openshift-client-linux.tar.gz"
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${version}/openshift-install-linux.tar.gz"
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-client-linux.tar.gz"
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-install-linux.tar.gz"
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-initramfs.x86_64.img"
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-kernel-x86_64"
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-rootfs.x86_64.img"
 wget "https://github.com/poseidon/matchbox/releases/download/v0.9.0/matchbox-v0.9.0-linux-amd64.tar.gz"
 tar xf openshift-client-linux.tar.gz -C /usr/local/bin
 host_fqdn=$( hostname --long )
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${version}/opm-linux.tar.gz"
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/opm-linux.tar.gz"
 tar xf opm-linux.tar.gz -C /usr/local/bin
 tar cf download/tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v0.9.0-linux-amd64.tar.gz
 rm -rf openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v0.9.0-linux-amd64.tar.gz
-echo "Mirroring OCP ${version} images ..."
+echo "Mirroring OCP ${ocp_version} images ..."
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
 jq ".auths += $AUTHSTRING" < pull-secret.txt > pull-secret-update.txt
@@ -70,7 +91,7 @@ PRODUCT_REPO='openshift-release-dev'
 RELEASE_NAME="ocp-release"
 LOCAL_SECRET_JSON='./pull-secret-update.txt'
 ARCHITECTURE=x86_64
-oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${version}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${version}-${ARCHITECTURE}
+oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_version}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_version}-${ARCHITECTURE}
 REDHAT_OPERATORS="local-storage-operator,ocs-operator"
 CERTIFIED_OPERATORS="cert-manager-operator,nginx-ingress-operator,portworx-certified"
 MARKETPLACE_OPERATORS="mongodb-enterprise-rhmp"
@@ -113,15 +134,35 @@ do
         podman push $image test.guardium.notes:5000/rook/$tag
         rm -rf image.tar
 done
+if [ $get_ics == 'Y' ]
+then
+	echo "Mirroring ICS ${ics_versions[${version_selected}]}"
+        wget https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz
+        tar xf cloudctl-linux-amd64.tar.gz -C /usr/local/bin
+        mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
+        rm -f cloudctl-linux-amd64.tar.gz
+        declare -a cases=(ibm-cp-common-services-1.1.16.tgz ibm-cp-common-services-1.2.2.tgz ibm-cp-common-services-1.2.3.tgz ibm-cp-common-services-1.3.1.tgz)
+        CASE_ARCHIVE=${cases[${version_selected}]}
+        CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
+        cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir ics_offline
+        sites="cp.icr.io registry.redhat.io registry.access.redhat.com"
+        for site in $sites
+        do
+                echo $site
+                cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry $site --user $rh_account --pass $rh_account_pwd"
+        done
+        cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry test.guardium.notes:5000 --user admin --pass guardium"
+        cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry test.guardium.notes:5000 --inputDir ics_offline"
+fi
 podman stop bastion-registry
 echo "Archiving mirror registry ..."
 cd /opt/registry
-tar cf ${local_directory}/download/ocp-registry-with-olm-${version}.tar data
+tar cf ${local_directory}/download/ocp-registry-with-olm-${ocp_version}.tar data
 cd $local_directory
 tar cf ${local_directory}/download/packages-`date +%Y-%m-%d`.tar centos-updates-* centos-packages-* ansible-* oc-registry.tar
 rm -rf centos-updates-* centos-packages-* ansible-* oc-registry.tar
 cd download
-tar cf ../air-gap-files-centos-`cat /etc/centos-release|head -1|awk '{print $NF}'`-ocp-release-${version}-`date +%Y-%m-%d`.tar *.tar
+tar --tape-length=10G -cMv --file=../air-gap-files-centos-`cat /etc/centos-release|head -1|awk '{print $NF}'`-ocp-release-${ocp_version}-ics-release-${ics_versions[${version_selected}]}-`date +%Y-%m-%d`.{tar,tar-{2..10}} *.tar
 rm -rf *.tar
 cd $local_directory
 rm -rf pull-secret*
