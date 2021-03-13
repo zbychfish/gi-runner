@@ -102,6 +102,8 @@ then
         if [[ $new_ocp_domain != '' ]]
         then
                 ocp_domain=$new_ocp_domain
+	else
+		ocp_domain=$GI_DOMAIN
         fi
 else
 	while [[ $ocp_domain == '' ]]
@@ -166,7 +168,7 @@ then
 	fi
 	if [ `cat /etc/profile | grep "export no_proxy=" | wc -l` -ne 0 ]
 	then
-		sed -i "s/^export no_proxy=.*/export no_proxy=\"127.0.0.1,localhost,*.$ocp_domain\"/g" /etc/profile
+		sed -i "s/^export no_proxy=.*/export no_proxy=\"127.0.0.1,localhost,*.$ocp_domain,$no_proxy\"/g" /etc/profile
 	else
 		echo "export no_proxy=\"127.0.0.1,localhost,*.$ocp_domain,$no_proxy\"" >> /etc/profile
 	fi
@@ -175,9 +177,9 @@ then
 	echo "- Add proxy settings to DNF config file"
 	if [ `cat /etc/dnf/dnf.conf | grep "proxy=" | wc -l` -ne 0 ]
 	then
-		sed -i "s/^proxy=.*/proxy=$proxy_ip:$proxy_port/g" /etc/dnf/dnf.conf
+		sed -i "s/^proxy=.*/proxy=http:\/\/$proxy_ip:$proxy_port/g" /etc/dnf/dnf.conf
 	else
-		echo "proxy=$proxy_ip:$proxy_port" >> /etc/dnf/dnf.conf 
+		echo "proxy=http://$proxy_ip:$proxy_port" >> /etc/dnf/dnf.conf 
 	fi
 fi
 if [[ $use_air_gap == 'N' ]]
@@ -188,8 +190,14 @@ then
 	dnf -qy install haproxy openldap perl podman-docker unzip ipxe-bootimgs
 	dnf -qy install epel-release
 	dnf -qy install ansible
-	pip3 install passlib > /dev/null 2>&1
-	pip3 install dnspython > /dev/null 2>&1
+	if [[ $use_proxy == 'D' ]]
+	then
+		pip3 install passlib > /dev/null 2>&1
+		pip3 install dnspython > /dev/null 2>&1
+	else
+		pip3 install passlib --proxy $proxy_ip:$proxy_port > /dev/null 2>&1
+		pip3 install dnspython --proxy $proxy_ip:$proxy_port > /dev/null 2>&1
+	fi
 fi
 mkdir -p /etc/ansible
 if [[ $use_proxy == 'P' ]]
