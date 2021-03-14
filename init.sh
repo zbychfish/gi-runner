@@ -73,7 +73,9 @@ then
                 exit 1
         else
                 mkdir -p air-gap
-		cat download/air-gap-*.tar*| tar tzpvf -C -
+		cd download
+		cat air-gap-*.tar*| tar xzpf -
+		cd ..
 		tar xf download/packages-*.tar -C air-gap
         fi
         echo "*** Installing CentOS updates ***"
