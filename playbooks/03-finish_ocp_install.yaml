@@ -435,7 +435,7 @@
 
   - name: Configure local storage operator file
     vars:
-      operator_source: "{{ 'redhat-operators' if is_one_node == 'N' else 'redhat-operator-index' }}"
+      operator_source: "{{ 'redhat-operators' if is_air_gapped == 'N' else 'redhat-operator-index' }}"
     template:
       src: "local-storage-op.j2"
       dest: "../scripts/local-storage-op.yaml"
@@ -506,7 +506,7 @@
 
   - name: Configure OCS operator file
     vars:
-      operator_source: "{{ 'redhat-operators' if is_one_node == 'N' else 'redhat-operator-index' }}"
+      operator_source: "{{ 'redhat-operators' if is_air_gapped == 'N' else 'redhat-operator-index' }}"
     template:
       src: "ocs-op.j2"
       dest: "../scripts/ocs-op.yaml"

@@ -141,7 +141,7 @@ then
         wget https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz
         tar xf cloudctl-linux-amd64.tar.gz -C /usr/local/bin
         mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
-        rm -f cloudctl-linux-amd64.tar.gz
+	mv cloudctl-linux-amd64.tar.gz download
         declare -a cases=(ibm-cp-common-services-1.1.16.tgz ibm-cp-common-services-1.2.2.tgz ibm-cp-common-services-1.2.3.tgz ibm-cp-common-services-1.3.1.tgz)
         CASE_ARCHIVE=${cases[${version_selected}]}
         CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
@@ -154,7 +154,7 @@ then
         done
         cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry test.guardium.notes:5000 --user admin --pass guardium"
         cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry test.guardium.notes:5000 --inputDir ics_offline"
-	tar cf download/ics_offline-${ics-version}.tar ics_offline
+	tar cf download/ics_offline-${ics_version}.tar ics_offline
 	rm -rf ics_offline
 fi
 podman stop bastion-registry
@@ -166,8 +166,8 @@ tar cf ${local_directory}/download/packages-`date +%Y-%m-%d`.tar centos-updates-
 rm -rf centos-updates-* centos-packages-* ansible-* oc-registry.tar
 cd download
 now_is=`date +%Y-%m-%d`
-tar czpvf - *.tar | split -d -b 10G - air-gap-files-centos-`cat /etc/centos-release|awk '{print $NF}'`-ocp-release-${ocp_version}-ics-release-${ics_version}-${now_is}.tar
-rm -rf *.tar
+tar czpvf - *.tar cloudctl-linux-amd64.tar.gz | split -d -b 10G - air-gap-files-centos-`cat /etc/centos-release|awk '{print $NF}'`-ocp-release-${ocp_version}-ics-release-${ics_version}-${now_is}.tar
+rm -rf *.tar cloudctl-linux-amd64.tar.gz
 cd $local_directory
 rm -rf pull-secret*
 #mv air-gap-files-* download
