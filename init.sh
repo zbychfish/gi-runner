@@ -1008,26 +1008,66 @@ do
 	echo -e '\n'
 done
 echo "export GI_ICSADMIN_PWD='$ics_password'" >> $file
-if [[ ! -z "$GI_HS_SIZE" ]]
-then
-       read -p "Guardium Insights hot storage size is set to [$GI_HS_SIZE] - insert new size or confirm existing one <ENTER>: " new_hs_size
-        if [[ $new_hs_size != '' ]]
+while ! [[ $is_ics == 'Y' || $is_ics == 'N' ]]
+do
+        printf "Would you like install IBM Common Services? (\e[4mY\e[0m)es/(N)o: "
+        read is_ics
+        is_ics=${is_ics:-Y}
+        if ! [[ $is_ics == 'Y' || $is_ics == 'N' ]]
         then
-                hs_size=$new_hs_size
+                echo "Incorrect value"
         fi
-else
-       while [[ $hs_size == '' ]]
-       do
-               read -p "Insert Guardium Insights hot storage size (default size 300 gigabytes) [300]: " hs_size
-               hs_size=${hs_size:-300}
-       done
-fi
-if [[ -z $hs_size ]]
+done
+echo "export GI_ICS='$is_ics'" >> $file
+if [ $is_ics == 'Y' ]
 then
-       echo export GI_HS_SIZE=$GI_HS_SIZE >> $file
-else
-       echo export GI_HS_SIZE=$hs_size >> $file
+        declare -a ics_versions=(3.5.6 3.6.2 3.6.3 3.7.1)
+        while [[ ( -z $version_selected ) || ( $version_selected -lt 1 || $version_selected -gt $i ) ]]
+        do
+                echo "Select ICS version to mirror:"
+                i=1
+                for ics_version in "${ics_versions[@]}"
+                do
+                        echo "$i - $ics_version"
+                        i=$((i+1))
+                done
+                read -p "Your choice?: " version_selected
+        done
+        version_selected=$(($version_selected-1))
+        echo "export GI_ICS_VERSION='$version_selected'" >> $file
+        ics_sizes="S M L"
+        while [[ ( -z $size_selected ) || ! " ${ics_sizes[@]} " =~ " ${size_selected} " ]]
+        do
+                printf "Select ICS deployment size (\e[4mS\e[0m)mall/(M)edium/(L)arge: "
+                read size_selected
+                size_selected=${size_selected:-S}
+                if ! [[ " ${ics_sizes[@]} " =~ " ${size_selected} " ]]
+                then
+                        echo "Incorrect value"
+                fi
+        done
+        echo "export GI_ICS_SIZE='$size_selected'" >> $file
 fi
+#if [[ ! -z "$GI_HS_SIZE" ]]
+#then
+#       read -p "Guardium Insights hot storage size is set to [$GI_HS_SIZE] - insert new size or confirm existing one <ENTER>: " new_hs_size
+#        if [[ $new_hs_size != '' ]]
+#        then
+#                hs_size=$new_hs_size
+#        fi
+#else
+#       while [[ $hs_size == '' ]]
+#       do
+#               read -p "Insert Guardium Insights hot storage size (default size 300 gigabytes) [300]: " hs_size
+#               hs_size=${hs_size:-300}
+#       done
+#fi
+#if [[ -z $hs_size ]]
+#then
+#       echo export GI_HS_SIZE=$GI_HS_SIZE >> $file
+#else
+#       echo export GI_HS_SIZE=$hs_size >> $file
+#fi
 while ! [[ $install_ldap == 'Y' || $install_ldap == 'N' ]] # While string is different or empty...
 do
         printf "Would you like install OpenLDAP as Guardium Insights identity source? (\e[4mY\e[0m)es/(N)o: "
