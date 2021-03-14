@@ -14,8 +14,8 @@ do
 done
 if [ $get_ics == 'Y' ]
 then
-        declare -a ics_versions=(3.5.6 3.6.2 3.6.3 3.7)
-        while [[ ( -z $version_selected ) || ( $version_selected -lt 1 || $version_selected -gt 4 ) ]]
+        declare -a ics_versions=(3.5.6 3.6.2 3.6.3 3.7.1)
+        while [[ ( -z $version_selected ) || ( $version_selected -lt 1 || $version_selected -gt $i ) ]]
         do
                 echo "Select ICS version to mirror:"
                 i=1
@@ -34,7 +34,7 @@ tar cf centos-updates-`date +%Y-%m-%d`.tar centos-updates
 rm -rf centos-updates
 echo "Downloading additional CentOS packages ..."
 dnf -qy install epel-release
-packages="ansible haproxy openldap perl podman-docker unzip ipxe-bootimgs"
+packages="ansible haproxy openldap perl podman-docker unzip ipxe-bootimgs skopeo"
 for package in $packages
 do
 	dnf download -qy --downloaddir centos-packages $package --resolve
@@ -137,6 +137,7 @@ done
 if [ $get_ics == 'Y' ]
 then
 	echo "Mirroring ICS ${ics_versions[${version_selected}]}"
+	dnf -y install skopeo
         wget https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz
         tar xf cloudctl-linux-amd64.tar.gz -C /usr/local/bin
         mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
@@ -154,6 +155,7 @@ then
         cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry test.guardium.notes:5000 --user admin --pass guardium"
         cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry test.guardium.notes:5000 --inputDir ics_offline"
 fi
+rm -rf ics_offline
 podman stop bastion-registry
 echo "Archiving mirror registry ..."
 cd /opt/registry
@@ -167,4 +169,7 @@ rm -rf *.tar
 cd $local_directory
 rm -rf pull-secret*
 #mv air-gap-files-* download
+rm -rf /opt/registry
+podman rm bastion-registry
+podman rmi --all
 echo "AIR GAPPED FILES PREPARED"
