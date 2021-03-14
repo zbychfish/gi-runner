@@ -154,8 +154,9 @@ then
         done
         cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry test.guardium.notes:5000 --user admin --pass guardium"
         cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry test.guardium.notes:5000 --inputDir ics_offline"
+	tar cf download/ics_offline-${ics-version}.tar ics_offline
+	rm -rf ics_offline
 fi
-rm -rf ics_offline
 podman stop bastion-registry
 echo "Archiving mirror registry ..."
 cd /opt/registry
@@ -164,7 +165,8 @@ cd $local_directory
 tar cf ${local_directory}/download/packages-`date +%Y-%m-%d`.tar centos-updates-* centos-packages-* ansible-* oc-registry.tar
 rm -rf centos-updates-* centos-packages-* ansible-* oc-registry.tar
 cd download
-tar czpvf - *.tar | split -d -b 10G - air-gap-files-centos-8.3.2011-ocp-release-4.6.19-ics-release-3.7-2021-03-13.tar
+now_is=`date +%Y-%m-%d`
+tar czpvf - *.tar | split -d -b 10G - air-gap-files-centos-`cat /etc/centos-release|awk '{print $NF}'`-ocp-release-${ocp_version}-ics-release-${ics_version}-${now_is}.tar
 rm -rf *.tar
 cd $local_directory
 rm -rf pull-secret*
