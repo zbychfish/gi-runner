@@ -39,9 +39,10 @@ echo `cat /etc/centos-release|awk '{print $NF}'` > download/os_release.txt
 # Gets kernel version
 echo `uname -r` > download/kernel.txt
 # Install tar and creates tar.cpio in case of base os where tar is not available
-echo -e "\nPrepare TAR package for base OS ..."
+echo -e "\nPrepare TAR and UNZIP package for base OS ..."
 dnf download -qy --downloaddir tar-install tar --resolve
-ls tar-install/* | cpio -ov > download/tar.cpio
+dnf download -qy --downloaddir tar-install unzip --resolve
+tar xf tar.cpio tar-install
 rm -rf tar-install
 dnf -qy install tar
 # Download all patches (does not apply them on source)
@@ -217,7 +218,7 @@ then
         done
         cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry `hostname --long`:5000 --user admin --pass guardium"
 	# - mirrors ICS images
-        cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir ics_offline"
+        cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir gi-temp/ics_offline"
 	# - archives ICS manifests
 	cd gi-temp
         tar cf ${local_directory}/download/ics_offline-${ics_version}.tar ics_offline
