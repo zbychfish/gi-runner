@@ -93,7 +93,7 @@
 
   - name: Stop bootstrap
     shell:
-      cmd: "ssh -l core boot.ocp.io.priv -i ~/.ssh/cluster_id_rsa sudo shutdown -h +1"
+      cmd: "ssh -l core {{ boot_name }}.{{ domain }} -i ~/.ssh/cluster_id_rsa sudo shutdown -h +1"
     remote_user: core
     args:
       warn: false
