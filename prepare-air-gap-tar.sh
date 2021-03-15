@@ -131,7 +131,7 @@ do
         podman save -o image.tar $image
         podman rmi $image
         podman load -i image.tar
-        podman push $image test.guardium.notes:5000/rook/$tag
+        podman push $image `hostname --long`:5000/rook/$tag
         rm -rf image.tar
 done
 if [ $get_ics == 'Y' ]
