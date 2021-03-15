@@ -28,13 +28,18 @@ then
         done
         version_selected=$(($version_selected-1))
 fi
-echo -e "\nDownloading CentOS updates ..."
+echo -e "\nPrepare TAR package for base OS ..."
+dnf download -qy --downloaddir tar-install tar --resolve
+ls tar-install/* cpio -ov > download/tar.cpio
+rm -rf tar-install
+dnf -qy install tar
+echo -e "Downloading CentOS updates ..."
 dnf update -qy --downloadonly --downloaddir centos-updates
 tar cf centos-updates-`date +%Y-%m-%d`.tar centos-updates
 rm -rf centos-updates
 echo "Downloading additional CentOS packages ..."
 dnf -qy install epel-release
-packages="ansible haproxy openldap perl podman-docker unzip ipxe-bootimgs skopeo"
+packages="ansible haproxy openldap perl podman-docker unzip ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq"
 for package in $packages
 do
 	dnf download -qy --downloaddir centos-packages $package --resolve
