@@ -30,7 +30,7 @@ then
 fi
 echo -e "\nPrepare TAR package for base OS ..."
 dnf download -qy --downloaddir tar-install tar --resolve
-ls tar-install/* cpio -ov > download/tar.cpio
+ls tar-install/* | cpio -ov > download/tar.cpio
 rm -rf tar-install
 dnf -qy install tar
 echo -e "Downloading CentOS updates ..."
