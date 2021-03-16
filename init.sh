@@ -32,6 +32,12 @@ function get_ocp_domain() {
 	fi
 }
 
+# Get OCP release to install
+while [[ $ocp_release == '' ]]
+do
+	read -p "Insert OCP version to install: " ocp_release
+done
+echo "export GI_OCP_RELEASE=$ocp_release" >> $file
 # Get information about environment type (Air-Gapped, Proxy, Direct access to the internet)
 echo "*** Air-Gapped Setup ***"
 while ! [[ $use_air_gap == 'Y' || $use_air_gap == 'N' ]] # While string is different or empty...
@@ -46,7 +52,7 @@ do
 done
 if [ $use_air_gap == 'Y' ]
 then
-	echo export GI_INTERNET_ACCESS=A >> $file
+	echo "export GI_INTERNET_ACCESS=A" >> $file
 fi
 if [[ $use_air_gap == 'N' ]]
 then
@@ -245,7 +251,7 @@ then
         echo "*** Update CentOS ***"
         dnf -qy update
         echo "*** Installing Ansible and other CentOS packages ***"
-        dnf -qy ansible haproxy openldap perl podman-docker ipxe-bootimgs chrony dnsmasq unzip wget jq httpd-tools
+        dnf -qy ansible haproxy openldap perl podman-docker ipxe-bootimgs chrony dnsmasq unzip wget jq httpd-tools policycoreutils-python-utils
         dnf -qy install epel-release 
         dnf -qy install ansible skopeo
         if [[ $use_proxy == 'D' ]]
@@ -290,7 +296,7 @@ then
                         repo_admin=$new_repo_admin
                 fi
         else
-                while [[ $repo_admin = '' ]]
+                while [[ $repo_admin == '' ]]
                 do
                         read -p "Insert bastion portable admin account name [admin]: " repo_admin
                         repo_admin=${repo_admin:-admin}
@@ -302,7 +308,7 @@ then
         else
                 echo export GI_REPO_USER=$repo_admin >> $file
         fi
-        while [[ $repo_password = '' ]]
+        while [[ $repo_password == '' ]]
         do
                 read -sp "Insert bastion image repository $repo_admin password: " repo_password
                 echo -e '\n'
