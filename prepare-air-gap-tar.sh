@@ -42,7 +42,7 @@ echo `uname -r` > download/kernel.txt
 echo -e "\nPrepare TAR and UNZIP package for base OS ..."
 dnf download -qy --downloaddir tar-install tar --resolve
 dnf download -qy --downloaddir tar-install unzip --resolve
-tar xf download/tar.cpio tar-install
+tar cf download/tar.cpio tar-install
 rm -rf tar-install
 dnf -qy install tar
 # Download all patches (does not apply them on source)
