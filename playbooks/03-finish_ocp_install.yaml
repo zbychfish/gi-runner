@@ -1,28 +1,53 @@
 - hosts: bastion
   vars:
-    bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
-    boot_ip:  "{{ lookup('env','GI_BOOTSTRAP_IP') }}"
-    node_ip:  "{{ lookup('env','GI_NODE_IP') }}"
-    domain:  "{{ lookup('env','GI_DOMAIN') }}"
-    ocadmin:  "{{ lookup('env','GI_OCADMIN') }}"
-    ocp_password:  "{{ lookup('env','GI_OCADMIN_PWD') }}"
-    boot_name: "{{ lookup('env','GI_BOOTSTRAP_NAME') }}"
-    node_name: "{{ lookup('env','GI_NODE_NAME') }}"
-    repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
-    repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
-    storage_type: "{{ lookup('env','GI_STORAGE') }}"
-    storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
-    storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
-    is_air_gapped:  "{{ lookup('env','GI_AIR_GAPPED') }}"
     is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
     is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
-    is_db2_in_ha:  "{{ lookup('env','GI_DB2_HA') }}"
-    is_db2_tainted:  "{{ lookup('env','GI_DB2_TAINTED') }}"
     is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
-    hs_size:  "{{ lookup('env','GI_HS_SIZE') }}"
+    internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+    storage_type:  "{{ lookup('env','GI_STORAGE') }}"
+    boot_name: "{{ lookup('env','GI_BOOTSTRAP_NAME') }}"
+    domain:  "{{ lookup('env','GI_DOMAIN') }}"
+    bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
+    ocadmin:  "{{ lookup('env','GI_OCADMIN') }}"
+    ocadmin_password:  "{{ lookup('env','GI_OCADMIN_PWD') }}"
+    storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
+    storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
+    is_ics: "{{ lookup('env','GI_ICS') }}"
 
 
   tasks:
+  - name: Check other configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
+      - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
+      - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
+      - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
+      - { name: "GI_STORAGE", value: "{{ storage_type }}" }
+      - { name: "GI_BOOTSTRAP_NAME", value: "{{ boot_name }}" }
+      - { name: "GI_DOMAIN", value: "{{ domain }}" }
+      - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
+      - { name: "GI_OCADMIN", value: "{{ ocadmin }}" }
+      - { name: "GI_OCADMIN_PWD", value: "{{ ocadmin_password }}" }
+      - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
+      - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
+      - { name: "GI_ICS", value: "{{ is_ics }}" }
+      
+
+  - name: Set parameters for air-gapped installation
+    set_fact:
+      repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
+      repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
+    when: internet_type == 'A'
+
+  - name: Check configuration parameters for air-gapped installation
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == "" and is_air_gapped == 'Y'
+    loop:
+      - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
+      - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+
   - name: Set masters array
     set_fact:
       node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
@@ -50,28 +75,13 @@
       worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
     when: is_one_node == 'N' and is_master_only == 'N'
 
-  - debug:
-      msg: "{{ worker_name[0:3] }}"
-    when: is_one_node == 'N' and is_master_only == 'N'
+  - set_fact:
+      rook_registry: "rook/ceph:v1.1.7"
+    when: internet_type != 'A' and is_one_node == 'Y' and storage_type == 'R'
 
   - set_fact:
-      image: "rook/ceph:master"
-    when: is_air_gapped == 'N' and is_one_node == 'N' and storage_type == 'R'
-
-  - set_fact:
-      image: "rook/ceph:v1.1.7"
-    when: is_air_gapped == 'N' and is_one_node == 'Y' and storage_type == 'R'
-
-  - set_fact:
-          image: "registry.{{ domain }}:5000/rook/ceph:v1.1.7"
-    when: is_air_gapped == 'Y' and is_one_node == 'Y' and storage_type == 'R'
-
-  - name: Check configuration parameters for air-gapped installation
-    fail: msg="Variable {{ item.name }} is not set"
-    when: item.value == "" and is_air_gapped == 'Y'
-    loop:
-      - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
-      - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+          rook_registry: "registry.{{ domain }}:5000/rook/ceph:v1.1.7"
+    when: internet_type == 'A' and is_one_node == 'Y' and storage_type == 'R'
 
   - name: Modify etcd settings in bootstrap phase for allinone configuration
     shell:
@@ -228,12 +238,6 @@
     until: node_number == cluster_health.stdout
     retries: 30
     delay: 60
-  
-  - name: debug
-    debug:
-      msg:
-        - "{{ cluster_health }}"
-        - "{{ node_ip|length+worker_ip|default([])|length+db2_ip|default([])|length+ocs_ip|default([])|length }}"
 
   - name: Wait for cluster operators
     shell:
@@ -248,7 +252,7 @@
     htpasswd:
       path: ../download/ocadmin.htpasswd
       name: "{{ ocadmin }}"
-      password: "{{ ocp_password }}"
+      password: "{{ ocadmin_password }}"
 
   - name: Register htpasswd file in OCP
     shell:
@@ -260,10 +264,87 @@
     when: true
     ignore_errors: yes #if htpasswd has been imported before
 
-  - name: Remove htpasswd file
-    file:
-      path: "../download/ocadmin.htpasswd"
-      state: absent
+  - meta: end_play
+    when: false
+
+  - name: Disable default image sources
+    shell:
+      cmd: "oc patch OperatorHub cluster --type json -p '[{\"op\": \"add\", \"path\": \"/spec/disableAllDefaultSources\", \"value\": true}]'"
+    when: internet_type == 'A'
+
+  - name: Unpack OLM manifests
+    shell:
+      cmd: tar xf ../download/manifests.tar -C ../gi-temp
+      warn: false
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Identify image registry name in the import
+    shell:
+      cmd: "cd  ../gi-temp/manifests-redhat-operator-index;cat catalogSource.yaml | grep image | awk '{print $2}'| awk -F':' '{print $1}'"
+    register: old_registry_name
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Set correct image registry mirror name in catalogSources
+    shell:
+      cmd: "sed -i 's/{{ old_registry_name.stdout }}/registry.{{ domain }}/g' catalogSource.yaml"
+      chdir: "../gi-temp/{{ item }}"
+      warn: false
+    with_items:
+      - manifests-redhat-operator-index
+      - manifests-certified-operator-index
+      - manifests-redhat-marketplace-index
+      - manifests-community-operator-index
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Set correct image registry mirror name in imageContentSourcePolicy
+    shell:
+      cmd: "sed -i 's/{{ old_registry_name.stdout }}/registry.{{ domain }}/g' imageContentSourcePolicy.yaml"
+      chdir: "../gi-temp/{{ item }}"
+      warn: false
+    with_items:
+      - manifests-redhat-operator-index
+      - manifests-certified-operator-index
+      - manifests-redhat-marketplace-index
+      - manifests-community-operator-index
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Configure mirrored catalogSources
+    shell:
+      cmd: "oc apply -f catalogSource.yaml"
+      chdir: "../gi-temp/{{ item }}"
+      warn: false
+    with_items:
+      - manifests-redhat-operator-index
+      - manifests-certified-operator-index
+      - manifests-redhat-marketplace-index
+      - manifests-community-operator-index
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Configure mirrored imageContentSourcePolicy.yaml
+    shell:
+      cmd: "oc apply -f imageContentSourcePolicy.yaml"
+      chdir: "../gi-temp/{{ item }}"
+      warn: false
+    with_items:
+      - manifests-redhat-operator-index
+      - manifests-certified-operator-index
+      - manifests-redhat-marketplace-index
+      - manifests-community-operator-index
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Wait - cluster stabilization
+    pause:
+      minutes: 1
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
+    shell:
+      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
+    register: co_status
+    until: "co_status.stdout == \"0\""
+    retries: 150
+    delay: 20
+    when: internet_type == 'A' and is_one_node == 'N'
 
   - name: Configure OCS nodes on workers
     shell:
@@ -271,7 +352,7 @@
     with_items: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
     when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'N'
 
-  - name: Configure OCS nodes for taint 
+  - name: Configure OCS nodes for taint
     shell: |
       oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --config ../ocp/auth/kubeconfig --overwrite=true
       oc label nodes {{ item }}.{{ domain }} node-role.kubernetes.io/infra='' --config ../ocp/auth/kubeconfig --overwrite=true
@@ -283,6 +364,139 @@
       cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --config ../ocp/auth/kubeconfig --overwrite=true"
     with_items: "{{ node_name|list }}"
     when: storage_type == "O" and is_master_only == 'Y'
+
+  - name: Create OCS namespaces
+    shell:
+      cmd: "oc create namespace {{ item }}"
+    with_items:
+      - openshift-local-storage
+      - openshift-storage
+    ignore_errors: yes
+    when: storage_type == "O"
+
+  - name: Configure local storage operator file
+    vars:
+      operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
+    template:
+      src: "local-storage-op.j2"
+      dest: "../scripts/local-storage-op.yaml"
+    when: storage_type == "O"
+
+  - name: Configure local storage operator
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - "oc apply -f ../scripts/local-storage-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
+    when: storage_type == "O"
+
+  - name: Wait for local storage operator
+    shell:
+      cmd: "oc get csv -n openshift-local-storage --kubeconfig=../ocp/auth/kubeconfig --no-headers -o custom-columns=STATUS:.status.phase"
+    register: ls_operator_status
+    until: "ls_operator_status.stdout == \"Succeeded\""
+    retries: 30
+    delay: 10
+    when: storage_type == "O"
+
+  - name: Configure local storage deployment file with workers
+    vars:
+      nodes: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
+    template:
+      src: "local-storage-vol.j2"
+      dest: "../scripts/local-storage-vol.yaml"
+    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'N'
+
+  - name: Configure local storage deployment file in taint
+    vars:
+      nodes: "{{ ocs_name|list }}"
+    template:
+      src: "local-storage-vol-tainted.j2"
+      dest: "../scripts/local-storage-vol.yaml"
+    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'Y'
+
+  - name: Configure local storage deployment file with masters only
+    vars:
+      nodes: "{{ node_name|list }}"
+    template:
+      src: "local-storage-vol.j2"
+      dest: "../scripts/local-storage-vol.yaml"
+    when: storage_type == "O" and is_master_only == 'Y'
+
+  - name: Deploy local storage
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - "oc apply -f ../scripts/local-storage-vol.yaml --kubeconfig ../ocp/auth/kubeconfig"
+    when: storage_type == "O"
+
+  - name: Wait for local storage deployment
+    shell:
+      cmd: "oc get pv | grep localblock-sc | wc -l"
+    register: ls_status
+    until: "ls_status.stdout|int >= 3"
+    retries: 30
+    delay: 10
+    when: storage_type == "O"
+
+  - name: Taint OCS nodes
+    shell:
+      cmd: "oc adm taint node {{ item }}.{{ domain }} node.ocs.openshift.io/storage=\"true\":NoSchedule"
+    with_items: "{{ ocs_name|list }}"
+    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'Y'
+    ignore_errors: yes
+
+  - name: Configure OCS operator file
+    vars:
+      operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
+    template:
+      src: "ocs-op.j2"
+      dest: "../scripts/ocs-op.yaml"
+    when: storage_type == "O"
+
+  - name: Configure OCS operator
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - "oc apply -f ../scripts/ocs-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
+    when: storage_type == "O"
+
+  - name: Wait for OCS operator
+    shell:
+      cmd: "oc get csv -n openshift-storage --kubeconfig=../ocp/auth/kubeconfig --no-headers -o custom-columns=STATUS:.status.phase"
+    register: ocs_operator_status
+    until: "ocs_operator_status.stdout == \"Succeeded\""
+    retries: 30
+    delay: 10
+    when: storage_type == "O"
+
+  - name: Configure OCS cluster deployment file
+    template:
+      src: "ocs-cluster.j2"
+      dest: "../scripts/ocs-cluster.yaml"
+    when: storage_type == "O"
+
+  - name: Deploy OCS cluster
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - "oc apply -f ../scripts/ocs-cluster.yaml --kubeconfig ../ocp/auth/kubeconfig"
+    when: storage_type == "O"
+
+  - name: Wait for OCS cluster deployment
+    shell:
+      cmd: "oc get pvc -n openshift-storage --no-headers | grep localblock-sc | grep Bound | wc -l"
+    register: ocs_status
+    until: "ocs_status.stdout|int >= 3"
+    retries: 60
+    delay: 15
+    when: storage_type == "O"
+
+  - name: Configure OCS default storage class
+    shell:
+      cmd: "{{ item.cmd }}"
+    with_items:
+      - { cmd: "oc patch storageclass ocs-storagecluster-cephfs --config ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
+    when: storage_type == "O"
 
   - name: Configure rook-ceph nodes
     shell:
@@ -343,212 +557,7 @@
       - '          value: "registry.{{ domain }}:5000/rook/cephcsi:v1.2.1"'
       - '        - name: ROOK_CSI_SNAPSHOTTER_IMAGE'
       - '          value: "registry.{{ domain }}:5000/rook/csi-snapshotter:v1.2.0"'
-    when: is_air_gapped == 'Y' and storage_type == "R"
-
-  - name: Disable default image sources
-    shell:
-      cmd: "oc patch OperatorHub cluster --type json -p '[{\"op\": \"add\", \"path\": \"/spec/disableAllDefaultSources\", \"value\": true}]'"
-    when: is_air_gapped == 'Y'
-    
-  - name: Unpack OLM manifests
-    shell:
-      cmd: tar xf ../download/manifests.tar -C ../download
-      warn: false
-    when: is_air_gapped == 'Y' and is_one_node == 'N'
-
-  - name: Identify image registry name in the import 
-    shell: 
-      cmd: "cd  ../download/manifests-redhat-operator-index;cat catalogSource.yaml | grep image | awk '{print $2}'| awk -F':' '{print $1}'"
-    register: old_registry_name
-    when: is_air_gapped == 'Y' and is_one_node == 'N'
-
-  - name: Set correct image registry mirror name in catalogSources
-    shell:
-      cmd: "sed -i 's/{{ old_registry_name.stdout }}/registry.{{ domain }}/g' catalogSource.yaml"
-      chdir: "../download/{{ item }}"
-      warn: false
-    with_items:
-      - manifests-redhat-operator-index
-      - manifests-certified-operator-index
-      - manifests-redhat-marketplace-index
-      - manifests-community-operator-index
-    when: is_air_gapped == 'Y' and is_one_node == 'N'
-
-  - name: Set correct image registry mirror name in imageContentSourcePolicy
-    shell:
-      cmd: "sed -i 's/{{ old_registry_name.stdout }}/registry.{{ domain }}/g' imageContentSourcePolicy.yaml"
-      chdir: "../download/{{ item }}"
-      warn: false
-    with_items:
-      - manifests-redhat-operator-index
-      - manifests-certified-operator-index
-      - manifests-redhat-marketplace-index
-      - manifests-community-operator-index
-    when: is_air_gapped == 'Y' and is_one_node == 'N'
-
-  - name: Configure mirrored catalogSources
-    shell:
-      cmd: "oc apply -f catalogSource.yaml"
-      chdir: "../download/{{ item }}"
-      warn: false
-    with_items:
-      - manifests-redhat-operator-index
-      - manifests-certified-operator-index
-      - manifests-redhat-marketplace-index
-      - manifests-community-operator-index
-    when: is_air_gapped == 'Y' and is_one_node == 'N'
-
-  - name: Configure mirrored imageContentSourcePolicy.yaml
-    shell:
-      cmd: "oc apply -f imageContentSourcePolicy.yaml"
-      chdir: "../download/{{ item }}"
-      warn: false
-    with_items:
-      - manifests-redhat-operator-index
-      - manifests-certified-operator-index
-      - manifests-redhat-marketplace-index
-      - manifests-community-operator-index
-    when: is_air_gapped == 'Y' and is_one_node == 'N'
-
-  - name: Wait - cluster stabilization
-    pause:
-      minutes: 1
-    when: is_air_gapped == 'Y' and is_one_node == 'N'
-
-  - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
-    shell:
-      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
-    register: co_status
-    until: "co_status.stdout == \"0\""
-    retries: 150
-    delay: 20
-    when: is_air_gapped == 'Y' and is_one_node == 'N'
-
-  - name: Create OCS namespaces
-    shell:
-      cmd: "oc create namespace {{ item }}"
-    with_items:
-      - openshift-local-storage
-      - openshift-storage
-    ignore_errors: yes
-    when: storage_type == "O"
-
-  - name: Configure local storage operator file
-    vars:
-      operator_source: "{{ 'redhat-operators' if is_air_gapped == 'N' else 'redhat-operator-index' }}"
-    template:
-      src: "local-storage-op.j2"
-      dest: "../scripts/local-storage-op.yaml"
-    when: storage_type == "O"
-
-  - name: Configure local storage operator
-    shell:
-      cmd: "{{ item }}"
-    loop:
-      - "oc apply -f ../scripts/local-storage-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
-    when: storage_type == "O"
-
-  - name: Wait for local storage operator
-    shell:
-      cmd: "oc get csv -n openshift-local-storage --kubeconfig=../ocp/auth/kubeconfig --no-headers -o custom-columns=STATUS:.status.phase"
-    register: ls_operator_status
-    until: "ls_operator_status.stdout == \"Succeeded\""
-    retries: 30
-    delay: 10
-    when: storage_type == "O"
-
-  - name: Configure local storage deployment file with workers
-    vars:
-      nodes: "{{ worker_name+db2_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
-    template:
-      src: "local-storage-vol.j2"
-      dest: "../scripts/local-storage-vol.yaml"
-    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'N'
-    
-  - name: Configure local storage deployment file in taint
-    vars:
-      nodes: "{{ ocs_name|list }}"
-    template:
-      src: "local-storage-vol-tainted.j2"
-      dest: "../scripts/local-storage-vol.yaml"
-    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'Y'
-
-  - name: Configure local storage deployment file with masters only
-    vars:
-      nodes: "{{ node_name|list }}"
-    template:
-      src: "local-storage-vol.j2"
-      dest: "../scripts/local-storage-vol.yaml"
-    when: storage_type == "O" and is_master_only == 'Y'
-
-  - name: Deploy local storage
-    shell:
-      cmd: "{{ item }}"
-    loop:
-      - "oc apply -f ../scripts/local-storage-vol.yaml --kubeconfig ../ocp/auth/kubeconfig"
-    when: storage_type == "O"
-
-  - name: Wait for local storage deployment
-    shell:
-      cmd: "oc get pv | grep localblock-sc | wc -l"
-    register: ls_status
-    until: "ls_status.stdout|int >= 3"
-    retries: 30
-    delay: 10
-    when: storage_type == "O"
-
-  - name: Taint OCS nodes
-    shell:
-      cmd: "oc adm taint node {{ item }}.{{ domain }} node.ocs.openshift.io/storage=\"true\":NoSchedule"
-    with_items: "{{ ocs_name|list }}"
-    when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'Y'
-    ignore_errors: yes
-
-  - name: Configure OCS operator file
-    vars:
-      operator_source: "{{ 'redhat-operators' if is_air_gapped == 'N' else 'redhat-operator-index' }}"
-    template:
-      src: "ocs-op.j2"
-      dest: "../scripts/ocs-op.yaml"
-    when: storage_type == "O"
-
-  - name: Configure OCS operator
-    shell:
-      cmd: "{{ item }}"
-    loop:
-      - "oc apply -f ../scripts/ocs-op.yaml --kubeconfig ../ocp/auth/kubeconfig"
-    when: storage_type == "O"
-
-  - name: Wait for OCS operator
-    shell:
-      cmd: "oc get csv -n openshift-storage --kubeconfig=../ocp/auth/kubeconfig --no-headers -o custom-columns=STATUS:.status.phase"
-    register: ocs_operator_status
-    until: "ocs_operator_status.stdout == \"Succeeded\""
-    retries: 30
-    delay: 10
-    when: storage_type == "O"
-
-  - name: Configure OCS cluster deployment file
-    template:
-      src: "ocs-cluster.j2"
-      dest: "../scripts/ocs-cluster.yaml"
-    when: storage_type == "O"
-    
-  - name: Deploy OCS cluster
-    shell:
-      cmd: "{{ item }}"
-    loop:
-      - "oc apply -f ../scripts/ocs-cluster.yaml --kubeconfig ../ocp/auth/kubeconfig"
-    when: storage_type == "O"
-
-  - name: Wait for OCS cluster deployment
-    shell:
-      cmd: "oc get pvc -n openshift-storage --no-headers | grep localblock-sc | grep Bound | wc -l"
-    register: ocs_status
-    until: "ocs_status.stdout|int >= 3"
-    retries: 60
-    delay: 15
-    when: storage_type == "O"
+    when: internet_type == 'A' and storage_type == "R"
 
   - name: Configure rook operator
     shell:
@@ -591,14 +600,14 @@
       - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --config ../ocp/auth/kubeconfig" }
       - { cmd: "oc patch storageclass rook-ceph-block --config ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "R"
-  
+
   - name: Configure registry PVC file
     vars:
       storage_class_rw_many: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
     template:
       src: "ocp_registry_pvc.j2"
       dest: "../scripts/ocp_registry_pvc.yaml"
-    
+
   - name: Create PVC for registry storage
     shell:
       cmd: oc apply -f ../scripts/ocp_registry_pvc.yaml --config ../ocp/auth/kubeconfig
@@ -634,7 +643,7 @@
   - name: Set public route for image registry
     shell:
       cmd: oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge --config ../ocp/auth/kubeconfig
-      
+
   - pause:
       seconds: 30
 
@@ -649,9 +658,12 @@
 
   - debug:
         msg:
-          - OpenShift 4.6 cluster installation finished 
+          - OpenShift 4.6 cluster installation finished
           - Add to hosts on your web browser workstation this line
           - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} icp-console.apps.{{ domain }} insights.apps.{{ domain }}"
-          - "Login to OCP console as {{ ocadmin }} user - https://console-openshift-console.apps.{{ domain }}"
-          - To install IBM Common services start playbook 'ansible-playbook playbooks/04-install-ics.yaml'
-        
+          - "Login to OCP console as {{ ocadmin }} user - https://console-openshift-console.apps.{{ domain }}"  
+
+  - debug:
+        msg:
+          - To install ICS execute playbook 'ansible-playbook playbooks/04-install-ics.yaml'
+    when: is_ics == 'Y'
