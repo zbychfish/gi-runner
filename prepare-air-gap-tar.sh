@@ -53,7 +53,7 @@ rm -rf centos-updates
 # Download all OS packages required to install OCP, ICS and GI in air-gap env, some of them from epel (python3 always available on CentOS 8)
 echo "Downloading additional CentOS packages ..."
 dnf -qy install epel-release
-packages="ansible haproxy openldap perl podman-docker unzip ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd-tools"
+packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd"
 for package in $packages
 do
         dnf download -qy --downloaddir centos-packages $package --resolve
