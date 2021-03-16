@@ -201,7 +201,7 @@ if [ $get_ics == 'Y' ]
 then
         echo "Mirroring ICS ${ics_versions[${ics_version_selected}]}"
 	# - install Skopeo utility
-        dnf -y install skopeo
+        dnf -qy install skopeo
 	# - declares cases files per ICS release
         declare -a cases=(ibm-cp-common-services-1.1.16.tgz ibm-cp-common-services-1.2.2.tgz ibm-cp-common-services-1.2.3.tgz ibm-cp-common-services-1.3.1.tgz)
 	# - declares variables
@@ -214,11 +214,11 @@ then
         for site in $sites
         do
                 echo $site
-                cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry $site --user $rh_account --pass $rh_account_pwd"
+                cloudctl case launch --case gi-temp/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry $site --user $rh_account --pass $rh_account_pwd"
         done
-        cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry `hostname --long`:5000 --user admin --pass guardium"
+        cloudctl case launch --case gi-temp/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry `hostname --long`:5000 --user admin --pass guardium"
 	# - mirrors ICS images
-        cloudctl case launch --case ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir gi-temp/ics_offline"
+        cloudctl case launch --case gi-temp/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir gi-temp/ics_offline"
 	# - archives ICS manifests
 	cd gi-temp
         tar cf ${local_directory}/download/ics_offline-${ics_version}.tar ics_offline
