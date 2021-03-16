@@ -45,15 +45,17 @@ dnf download -qy --downloaddir tar-install unzip --resolve
 tar cf download/tar.cpio tar-install
 rm -rf tar-install
 dnf -qy install tar
-# Download all patches (does not apply them on source)
+# Install all required software
 echo -e "Downloading CentOS updates ..."
 dnf update -qy --downloadonly --downloaddir centos-updates
 tar cf gi-temp/centos-updates-`date +%Y-%m-%d`.tar centos-updates
 rm -rf centos-updates
+echo "Update system ..."
+dnf -qy update
 # Download all OS packages required to install OCP, ICS and GI in air-gap env, some of them from epel (python3 always available on CentOS 8)
 echo "Downloading additional CentOS packages ..."
+packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq http-tools"
 dnf -qy install epel-release
-packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd"
 for package in $packages
 do
         dnf download -qy --downloaddir centos-packages $package --resolve
