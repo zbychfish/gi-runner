@@ -72,7 +72,7 @@ fi
 # Configure bastion to use proxy
 if [[ $use_proxy == 'P' ]]
 then
-	ocp_domain="${get_ocp_domain}"
+	get_ocp_domain
         while [[ $proxy_ip == '' ]]
         do
                 read -p "HTTP Proxy ip address: " proxy_ip
