@@ -3,6 +3,7 @@
     internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     domain:  "{{ lookup('env','GI_DOMAIN') }}"
     ics_version_hint:  "{{ lookup('env','ICS_VERSION') }}"
+    ics_size:  "{{ lookup('env','ICS_SIZE') }}"
   
 
   tasks:
@@ -12,6 +13,8 @@
     loop:
       - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
+      - { name: "ICS_VERSION", value: "{{ ics_version_hint }}" }
+      - { name: "ICS_SIZE", value: "{{ ics_size }}" }
 
   - name: Set parameters for air-gapped installation
     set_fact:
