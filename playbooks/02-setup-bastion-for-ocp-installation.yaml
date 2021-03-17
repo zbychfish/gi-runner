@@ -229,7 +229,7 @@
         url: https://github.com/poseidon/matchbox/releases/download/v0.9.0/matchbox-v0.9.0-linux-amd64.tar.gz
         dest: ../download
         use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
-      when: matchbox_presence.stat.exists == false and internet_type == 'A'
+      when: matchbox_presence.stat.exists == false and internet_type != 'A'
 
     - name: Unzip matchbox
       command:
@@ -651,7 +651,7 @@
       get_url:
         url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/{{ ocp_release }}/{{ item.item.file }}"
         dest: "../download"
-        use_proxy: "{{ use_proxy }}"
+        use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
       with_items: "{{ rhcos_tools.results }}"
       when: item.stat.exists == False and internet_type != 'A'
 
