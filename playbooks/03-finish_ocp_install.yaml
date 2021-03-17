@@ -37,17 +37,16 @@
 
   - name: Set parameters for air-gapped installation
     set_fact:
-      repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
-      repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
+      repo_user: "{{ lookup('env','GI_REPO_USER') }}"
+      repo_user_password: "{{ lookup('env','GI_REPO_USER_PWD') }}"
     when: internet_type == 'A'
 
   - name: Check configuration parameters for air-gapped installation
     fail: msg="Variable {{ item.name }} is not set"
-    when: item.value == "" and is_air_gapped == 'Y'
     loop:
       - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
       - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
-    when: internet_type == 'A'
+    when: internet_type == 'A' and item.value == ""
 
   - name: Set masters array
     set_fact:
