@@ -146,7 +146,7 @@ then
                 exit 1
         else
                 cd download
-                #cat air-gap-*.tar*| tar xzpf -
+                cat air-gap-*.tar*| tar xzpf -
                 cd $GI_HOME
 	fi
 	echo "*** Checking source and target kernel ***"
