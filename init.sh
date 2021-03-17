@@ -196,6 +196,8 @@ then
                 if [[ $new_ntp_server != '' ]]
                 then
                         ntp_server=$new_ntp_server
+                else
+			ntp_server=$GI_NTP_SRV
                 fi
         else
                 while [[ $ntp_server == '' ]]
@@ -203,7 +205,7 @@ then
                         read -p "Insert NTP server IP address: " ntp_server
                 done
         fi
-	sed -i "s/^pool .*/pool $ntp_server/g" /etc/chrony.conf
+	sed -i "s/^pool .*/pool $ntp_server iburst/g" /etc/chrony.conf
 	systemctl enable chronyd
 	systemctl restart chronyd
 fi
