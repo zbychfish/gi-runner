@@ -578,7 +578,7 @@
         state: restarted
         enabled: yes
 
-    - name: Resolve some luster names to check DNS state
+    - name: Resolve some cluster names to check DNS state
       debug:
         msg:
           - "Resolve IP of {{ bas_name }}.{{ domain }} - {{ lookup('dig', '{{ bas_name }}.{{ domain }}.', '@127.0.0.1') }}"
