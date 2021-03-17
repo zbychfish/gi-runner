@@ -46,36 +46,36 @@
         - { file: "cloudctl-linux-amd64.tar.gz" }
       ignore_errors: true
 
-    - name: Stop if cloudct tool is not uploaded for air-gapped installation
-      fail:
-        msg: "Please upload cloud tool to download directory"
+  - name: Stop if cloudct tool is not uploaded for air-gapped installation
+    fail:
+      msg: "Please upload cloud tool to download directory"
+    with_items: "{{ cloud_tool.results }}"
+    when: item.stat.exists == False and internet_type == 'A'
+
+  - name: "Download cloud tool"
+    get_url:
+      url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz/{{ item.item.file }}"
+      dest: "../gi-temp"
+      use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
       with_items: "{{ cloud_tool.results }}"
-      when: item.stat.exists == False and internet_type == 'A'
+    when: item.stat.exists == False and internet_type != 'A'
 
-    - name: "Download cloud tool"
-      get_url:
-        url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz/{{ item.item.file }}"
-        dest: "../gi-temp"
-        use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
-        with_items: "{{ cloud_tool.results }}"
-      when: item.stat.exists == False and internet_type != 'A'
+  - name: Unpack cloudctl tools
+    shell:
+      cmd: tar xf ../gi-temp/{{ item.src }} -C /usr/local/bin
+      warn: no
+    with_items:
+      - { src: "cloudctl-linux-amd64.tar.gz" }
 
-    - name: Unpack cloudctl tools
-      shell:
-        cmd: tar xf ../gi-temp/{{ item.src }} -C /usr/local/bin
-        warn: no
-      with_items:
-        - { src: "cloudctl-linux-amd64.tar.gz" }
+  - name: Standarize cloudctl name
+    command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
 
-    - name: Standarize cloudctl name
-      command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
-
-    - name: Set correct rights for RHCOS tools in /usr/local/bin
-      file:
-        path: "/usr/local/bin/{{ item.file }}"
-        owner: root
-        group: root
-        mode: 0755
-      with_items:
-        - { file: "cloudctl" }
+  - name: Set correct rights for RHCOS tools in /usr/local/bin
+    file:
+      path: "/usr/local/bin/{{ item.file }}"
+      owner: root
+      group: root
+      mode: 0755
+    with_items:
+      - { file: "cloudctl" }
 
