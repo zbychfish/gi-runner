@@ -253,7 +253,7 @@ then
         echo "*** Update CentOS ***"
         dnf -qy update
         echo "*** Installing Ansible and other CentOS packages ***"
-        dnf -qy ansible haproxy openldap perl podman-docker ipxe-bootimgs chrony dnsmasq unzip wget jq httpd-tools policycoreutils-python-utils
+        dnf -qy install ansible haproxy openldap perl podman-docker ipxe-bootimgs chrony dnsmasq unzip wget jq httpd-tools policycoreutils-python-utils
         dnf -qy install epel-release 
         dnf -qy install ansible skopeo
         if [[ $use_proxy == 'D' ]]
