@@ -246,7 +246,7 @@ then
 else
 	ics_info="no-ics"
 fi
-tar czpvf - *.tar *.txt | split -d -b 10G - air-gap-files-centos-`cat /etc/centos-release|awk '{print $1"-"$2"-"$3"-"$NF}'`-ocp-release-${ocp_version}-${ics_info}-os-packages-sync-${now_is}.tar
+tar czpvf - *.tar *.txt | split -d -b 10G - air-gap-files-`cat /etc/centos-release|awk '{print $1"-"$2"-"$3"-"$NF}'`-ocp-release-${ocp_version}-${ics_info}-os-packages-sync-${now_is}.tar
 rm -f *.tar *.txt
 cd $local_directory
 # Cleanup gi-temp, portable-registry
