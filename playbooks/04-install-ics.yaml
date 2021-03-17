@@ -1,0 +1,5 @@
+- hosts: bastion
+  vars:
+
+  tasks:
+
