@@ -111,8 +111,6 @@ then
         else
                 echo "export no_proxy=\"127.0.0.1,localhost,*.$ocp_domain,$no_proxy\"" >> /etc/profile
         fi
-        echo "- Read proxy variables into shell"
-        . /etc/profile
         echo "- Add proxy settings to DNF config file"
         if [ `cat /etc/dnf/dnf.conf | grep "proxy=" | wc -l` -ne 0 ]
         then
