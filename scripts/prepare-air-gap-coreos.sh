@@ -1,0 +1,82 @@
+#!/bin/bash
+
+local_directory=`pwd`
+host_fqdn=$( hostname --long )
+temp_dir=$local_directory/gi-temp
+air_dir=$local_directory/air-gap
+# Creates target download directory
+mkdir -p $temp_dir
+# Creates temporary directory
+mkdir -p $air_gap
+# Gets list of parameters to create repo
+read -p "Insert OCP version to mirror (for example 4.6.19): " ocp_version
+read -p "Insert RedHat pull secret: " pull_secret
+echo "$pull_secret" > $temp_dir/pull-secret.txt
+read -p "Insert your mail address to authenticate in RedHat Network: " mail
+echo -e "\n"
+echo "Setup mirror image registry ..."
+# - cleanup repository if exists
+podman stop bastion-registry
+podman container prune <<< 'Y'
+rm -rf /opt/registry
+# - Pulls image of portable registry and save it 
+podman pull docker.io/library/registry:2
+podman save -o $air_dir/oc-registry.tar docker.io/library/registry:2
+# - Prepares portable registry directory structure
+mkdir -p /opt/registry/{auth,certs,data}
+# - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
+openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:`hostname --long`"
+cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
+update-ca-trust extract
+# - Creates user to get access to portable repository
+dnf -qy install httpd-tools
+htpasswd -bBc /opt/registry/auth/htpasswd admin guardium
+# - Sets firewall settings
+systemctl enable firewalld
+systemctl start firewalld
+firewall-cmd --zone=public --add-port=5000/tcp --permanent
+firewall-cmd --zone=public --add-service=http --permanent
+firewall-cmd --reload
+# - Sets SE Linux for NetworkManager
+semanage permissive -a NetworkManager_t
+# - Starts portable registry
+podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2
+# Packs together centos updates, packages, python libraries and portable image
+cd $temp_dir
+# Download external tools and software (OCP, ICS, matchbox)
+echo "Download OCP tools and CoreOS installation files ..."
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-client-linux.tar.gz" > /dev/null
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-install-linux.tar.gz" > /dev/null
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-initramfs.x86_64.img" > /dev/null
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-kernel-x86_64" > /dev/null
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-rootfs.x86_64.img" > /dev/null
+wget "https://github.com/poseidon/matchbox/releases/download/v0.9.0/matchbox-v0.9.0-linux-amd64.tar.gz" > /dev/null
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz" > /dev/null
+tar cf $air_dir/tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v0.9.0-linux-amd64.tar.gz
+# Install OCP and ICS tools
+tar xf openshift-client-linux.tar.gz -C /usr/local/bin
+tar xf opm-linux.tar.gz -C /usr/local/bin
+# Mirrors OCP images to portable repository
+echo "Mirroring OCP ${ocp_version} images ..."
+dnf -qy install jq
+b64auth=$( echo -n 'admin:guardium' | openssl base64 )
+AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
+jq ".auths += $AUTHSTRING" < pull-secret.txt > $temp_dir/pull-secret-update.txt
+LOCAL_REGISTRY="$host_fqdn:5000"
+LOCAL_REPOSITORY=ocp4/openshift4
+PRODUCT_REPO='openshift-release-dev'
+RELEASE_NAME="ocp-release"
+LOCAL_SECRET_JSON='gi-temp/pull-secret-update.txt'
+ARCHITECTURE=x86_64
+oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_version}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_version}-${ARCHITECTURE}
+# Mirrors OCP operators
+podman stop bastion-registry
+cd /opt/registry
+tar cf $air_dir/coreos-registry.tar data
+cd $air_dir
+tar cf coreos-resistry-${ocp_version}.tar tools.tar oc-registry.tar coreos-registry.tar
+rm tools.tar oc-registry.tar coreos-registry.tar
+podman rm bastion-registry
+podman rmi --all
+rm -rf /opt/registry
+echo "CoreOS images prepared - copy them from download directory to air-gapped bastion machine"
