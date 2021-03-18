@@ -1106,7 +1106,7 @@ then
 	        op_log=${op_log:-N}
 	done
 	ics_ops+=($op_log)
-	echo export ICS_OPERANDS=`echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1'` >> $file
+	echo export GI_ICS_OPERANDS=`echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1'` >> $file
 fi
 # Save pull secret in separate file
 if [ $use_air_gap == 'N' ]
