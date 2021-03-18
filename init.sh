@@ -1076,6 +1076,37 @@ then
         	echo -e '\n'
 	done
 	echo "export GI_ICSADMIN_PWD='$ics_password'" >> $file
+	# Define ICS operand list
+	declare -a ics_ops
+	while ! [[ $op_zen == 'Y' || $op_zen == 'N' ]]
+	do
+        	printf "Would you like to install zen operand with ICS?: (\e[4mN\e[0m)o/(Y)es: "
+	        read op_zen
+        	op_zen=${op_zen:-N}
+	done
+	ics_ops+=($op_zen)
+	while ! [[ $op_mon == 'Y' || $op_mon == 'N' ]]
+	do
+        	printf "Would you like to install Monitoring operand with ICS?: (\e[4mN\e[0m)o/(Y)es: "
+	        read op_mon
+	        op_mon=${op_mon:-N}
+	done
+	ics_ops+=($op_mon)
+	while ! [[ $op_event == 'Y' || $op_event == 'N' ]]
+	do
+        	printf "Would you like to install Event Streams operand with ICS?: (\e[4mN\e[0m)o/(Y)es: "
+	        read op_event
+        	op_event=${op_event:-N}
+	done
+	ics_ops+=($op_event)
+	while ! [[ $op_log == 'Y' || $op_log == 'N' ]]
+	do
+	        printf "Would you like to install Logging operand with ICS?: (\e[4mN\e[0m)o/(Y)es: "
+	        read op_log
+	        op_log=${op_log:-N}
+	done
+	ics_ops+=($op_log)
+	echo export ICS_OPERANDS=`echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1'` >> $file
 fi
 # Save pull secret in separate file
 if [ $use_air_gap == 'N' ]
