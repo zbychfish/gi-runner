@@ -1,15 +1,15 @@
 - hosts: bastion
   vars:
-    internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
-    domain:  "{{ lookup('env','GI_DOMAIN') }}"
-    ics_version_hint:  "{{ lookup('env','GI_ICS_VERSION') }}"
-    ics_size:  "{{ lookup('env','GI_ICS_SIZE') }}"
+    internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+    domain: "{{ lookup('env','GI_DOMAIN') }}"
+    ics_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
     ics_versions: [ "3.5.6","3.6.2","3.6.3","3.7.1" ]
     ics_cases: [ "ibm-cp-common-services-1.1.16.tgz","ibm-cp-common-services-1.2.2.tgz","ibm-cp-common-services-1.2.3.tgz","ibm-cp-common-services-1.3.1.tgz" ]
-    is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
-    ics_size_hint:  "{{ lookup('env','GI_ICS_SIZE') }}"
+    is_one_node: "{{ lookup('env','GI_ONENODE') }}"
+    ics_size_hint: "{{ lookup('env','GI_ICS_SIZE') }}"
+    ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
+    ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
   
-
   tasks:
   - name: Check other configuration parameters
     fail: msg="Variable {{ item.name }} is not set"
@@ -18,9 +18,9 @@
       - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
       - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
-      - { name: "GI_ICS_SIZE", value: "{{ ics_size }}" }
       - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
       - { name: "GI_ICS_SIZE", value: "{{ ics_size_hint }}" }
+      - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
 
   - name: Set parameters for air-gapped installation
     set_fact:
@@ -43,6 +43,7 @@
       ics_version: "{{ ics_versions[ics_version_hint|int] }}"
       ics_case: "{{ ics_cases[ics_version_hint|int] }}"
       ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
+      ics_operands_arr: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
 
   - debug:
       var: ics_size
@@ -104,9 +105,9 @@
       cmd: "cloudctl case launch --case ../gi-temp/ics_offline/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir ../gi-temp/ics_offline\""
     when: internet_type == 'A'
 
-  - name: Wait - cluster stabilization
+  - name: Wait for cluster reconfiguration
     pause:
-      minutes: 1
+      minutes: 3
     when: internet_type == 'A' and is_one_node == 'N'
 
   - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
@@ -139,8 +140,83 @@
     retries: 30
     delay: 10
 
-  - name: Install ICS operator
+  - name: Subscribe ICS operator
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/ics_offline/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action uninstall-operator --namespace {{ ics_operator_namespace }}  --args \"--size {{ ics_size }}\""
-    when: internet_type == 'A'
+      cmd: "oc apply -f ../scripts/ics_subscription.yaml"
 
+  - name: Wait for ICS csv
+    shell:
+      cmd: "oc -n common-service get csv|grep ibm-common-service-operator|grep Succeeded|wc -l"
+    register: ics_csv_status
+    until: "ics_csv_status.stdout == \"1\""
+    retries: 30
+    delay: 10
+
+  - name: Wait for ICS crd's
+    shell:
+      cmd: "oc get crd | grep operandrequest|wc -l"
+    register: ics_crd_status
+    until: "ics_crd_status.stdout == \"1\""
+    retries: 30
+    delay: 10
+
+  - name: Set ICS deployment size
+    shell:
+      cmd: "oc patch commonservice common-service -n ibm-common-services --type=\"json\" -p='[{\"op\": \"replace\", \"path\": \"/spec/size\", \"value\": \"{{ ics_size }}\"}]'"
+
+  - name: Wait for deployment size change
+    shell:
+      cmd: "oc get commonservice common-service -n ibm-common-services -o json|jq -r .status.phase"
+    register: ics_commonservice_status
+    until: "ics_commonservice_status.stdout == \"Succeeded\""
+    retries: 30
+    delay: 10
+
+  - name: Generate operands file
+    template:
+      src: "ics_operands.j2"
+      dest: "../gi-temp/ics_operands.yaml"
+
+  - name: Deploy ICS
+    shell:
+      cmd: "oc apply -f ../gi-temp/ics_operands.yaml"
+
+  - name: Wait for operands deployment initiation
+    pause:
+      minutes: 3
+
+  - name: Wait for successful ICS deployment (takes 10-20 minutes)
+    shell:
+      cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+    register: ics_pods_status
+    until: "ics_pods_status.stdout == \"0\""
+    retries: 80
+    delay: 20
+
+  - name: Check pod's containers status
+    shell:
+      cmd: "oc get pods -n ibm-common-services|grep Running|awk '{print $2}'|awk -F'/' '$1!=$2'|wc -l"
+    register: ics_containers_status
+    until: "ics_containers_status.stdout == \"0\""
+    retries: 80
+    delay: 20
+
+  - name: Login to ICS
+    shell:
+      cmd: "cloudctl login -a https://cp-console.apps.{{ domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
+
+  - name: Set ICS admin password
+    shell:
+      cmd: "cloudctl pm update-secret ibm-common-services platform-auth-idp-credentials -f -d admin_password='{{ ics_admin_password }}'"
+
+  - name: Wait for ion
+    pause:
+      minutes: 3
+
+  - name: Wait for successful password change
+    shell:
+      cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+    register: ics_pods_status
+    until: "ics_pods_status.stdout == \"0\""
+    retries: 80
+    delay: 20

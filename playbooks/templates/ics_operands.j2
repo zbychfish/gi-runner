@@ -1,0 +1,32 @@
+apiVersion: operator.ibm.com/v1alpha1
+kind: OperandRequest
+metadata:
+  name: common-service
+  namespace: ibm-common-services
+spec:
+  requests:
+    - operands:
+        - name: ibm-cert-manager-operator
+        - name: ibm-mongodb-operator
+        - name: ibm-iam-operator
+{% if ics_operands[1] == 'Y' %}
+        - name: ibm-monitoring-exporters-operator
+        - name: ibm-monitoring-prometheusext-operator
+        - name: ibm-monitoring-grafana-operator
+{% endif %}
+        - name: ibm-healthcheck-operator
+        - name: ibm-management-ingress-operator
+        - name: ibm-licensing-operator
+        - name: ibm-commonui-operator
+{% if ics_operands[2] == 'Y' %}
+        - name: ibm-events-operator
+{% endif %}
+        - name: ibm-ingress-nginx-operator
+{% if ics_operands[3] == 'Y' %}
+        - name: ibm-auditlogging-operator
+{% endif %}
+        - name: ibm-platform-api-operator
+{% if ics_operands[0] == 'Y' %}
+        - name: ibm-zen-operator
+{% endif %}
+      registry: common-service
