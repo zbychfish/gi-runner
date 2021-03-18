@@ -2,8 +2,12 @@
   vars:
     internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     domain:  "{{ lookup('env','GI_DOMAIN') }}"
-    ics_version_hint:  "{{ lookup('env','ICS_VERSION') }}"
-    ics_size:  "{{ lookup('env','ICS_SIZE') }}"
+    ics_version_hint:  "{{ lookup('env','GI_ICS_VERSION') }}"
+    ics_size:  "{{ lookup('env','GI_ICS_SIZE') }}"
+    ics_versions: [ "3.5.6","3.6.2","3.6.3","3.7.1" ]
+    ics_cases: [ "ibm-cp-common-services-1.1.16.tgz","ibm-cp-common-services-1.2.2.tgz","ibm-cp-common-services-1.2.3.tgz","ibm-cp-common-services-1.3.1.tgz" ]
+    is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
+    ics_size_hint:  "{{ lookup('env','GI_ICS_SIZE') }}"
   
 
   tasks:
@@ -13,8 +17,10 @@
     loop:
       - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
-      - { name: "ICS_VERSION", value: "{{ ics_version_hint }}" }
-      - { name: "ICS_SIZE", value: "{{ ics_size }}" }
+      - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
+      - { name: "GI_ICS_SIZE", value: "{{ ics_size }}" }
+      - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
+      - { name: "GI_ICS_SIZE", value: "{{ ics_size_hint }}" }
 
   - name: Set parameters for air-gapped installation
     set_fact:
@@ -34,7 +40,12 @@
       ics_operator_namespace: "common-service"
       ics_case_name: "ibm-cp-common-services"
       ics_case_inventory_setup: "ibmCommonServiceOperatorSetup"
-      ics_version: [ "3.5.6","3.6.2","3.6.3","3.7.1" ].ics_version_hint
+      ics_version: "{{ ics_versions[ics_version_hint|int] }}"
+      ics_case: "{{ ics_cases[ics_version_hint|int] }}"
+      ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
+
+  - debug:
+      var: ics_size
 
   - name: Create ICS operator namespace
     shell:
@@ -42,30 +53,30 @@
     ignore_errors: yes
 
   - name: Check presence of cloudctl tool
-      stat:
-        path: "../gi-temp/{{ item.file }}"
-      register: cloudctl_tool
-      with_items:
-        - { file: "cloudctl-linux-amd64.tar.gz" }
-      ignore_errors: true
+    stat:
+      path: "../download/{{ item.file }}"
+    register: cloudctl_tool
+    with_items:
+      - { file: "cloudctl-linux-amd64.tar.gz" }
+    ignore_errors: true
 
   - name: Stop if cloudct tool is not uploaded for air-gapped installation
     fail:
       msg: "Please upload cloud tool to download directory"
-    with_items: "{{ cloud_tool.results }}"
+    with_items: "{{ cloudctl_tool.results }}"
     when: item.stat.exists == False and internet_type == 'A'
 
   - name: "Download cloud tool"
     get_url:
       url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz/{{ item.item.file }}"
-      dest: "../gi-temp"
+      dest: "../download"
       use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
-      with_items: "{{ cloud_tool.results }}"
-    when: item.stat.exists == False and internet_type != 'A'
+      with_items: "{{ cloudctl_tool.results }}"
+    when: internet_type != 'A'
 
   - name: Unpack cloudctl tools
     shell:
-      cmd: tar xf ../gi-temp/{{ item.src }} -C /usr/local/bin
+      cmd: tar xf ../download/{{ item.src }} -C /usr/local/bin
       warn: no
     with_items:
       - { src: "cloudctl-linux-amd64.tar.gz" }
@@ -81,4 +92,55 @@
       mode: 0755
     with_items:
       - { file: "cloudctl" }
+
+  - name: Unpack ICS manifests
+    unarchive:
+      src: "../download/ics_offline-{{ ics_version }}.tar"
+      dest: ../gi-temp
+    when: internet_type == 'A'
+
+  - name: Switch ICS inventory to portable registry
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/ics_offline/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir ../gi-temp/ics_offline\""
+    when: internet_type == 'A'
+
+  - name: Wait - cluster stabilization
+    pause:
+      minutes: 1
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
+    shell:
+      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
+    register: co_status
+    until: "co_status.stdout == \"0\""
+    retries: 150
+    delay: 20
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Publish ICS catalog
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/ics_offline/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
+    when: internet_type == 'A'
+
+  - name: Wait for ICS catalog
+    shell:
+      cmd: "oc get pods -n openshift-marketplace|grep opencloud-operators|grep 1/1|grep Running|wc -l"
+    register: ics_catalog_status
+    until: "ics_catalog_status.stdout == \"1\""
+    retries: 30
+    delay: 10
+
+  - name: Wait for ICS catalog source
+    shell:
+      cmd: "oc get catalogsource -n openshift-marketplace|grep opencloud-operators|wc -l"
+    register: ics_catalog_source_status
+    until: "ics_catalog_source_status.stdout == \"1\""
+    retries: 30
+    delay: 10
+
+  - name: Install ICS operator
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/ics_offline/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action uninstall-operator --namespace {{ ics_operator_namespace }}  --args \"--size {{ ics_size }}\""
+    when: internet_type == 'A'
 
