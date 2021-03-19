@@ -61,7 +61,7 @@ echo "Mirroring OCP ${ocp_version} images ..."
 dnf -qy install jq
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
-jq ".auths += $AUTHSTRING" < pull-secret.txt > $temp_dir/pull-secret-update.txt
+jq ".auths += $AUTHSTRING" < $temp_dir/pull-secret.txt > $temp_dir/pull-secret-update.txt
 LOCAL_REGISTRY="$host_fqdn:5000"
 LOCAL_REPOSITORY=ocp4/openshift4
 PRODUCT_REPO='openshift-release-dev'
@@ -74,8 +74,9 @@ podman stop bastion-registry
 cd /opt/registry
 tar cf $air_dir/coreos-registry.tar data
 cd $air_dir
-tar cf coreos-resistry-${ocp_version}.tar tools.tar oc-registry.tar coreos-registry.tar
+tar cf coreos-registry-${ocp_version}.tar tools.tar oc-registry.tar coreos-registry.tar
 rm tools.tar oc-registry.tar coreos-registry.tar
+rm -rf $temp_dir
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry

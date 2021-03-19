@@ -50,7 +50,7 @@ done
 tar cf $air_dir/ansible-`date +%Y-%m-%d`.tar ansible
 rm -rf ansible
 cd $air_dir
-tar cf $temp_dir/os-`cat /etc/centos-release|awk '{print $1"-"$2"-"$3"-"$NF}'`.tar *
+tar cf $temp_dir/os-`cat /etc/centos-release|awk '{print $1"-"$2"-"$3"-"$NF}'`-`date +%Y-%m-%d`.tar *
 rm -f *
 mv $temp_dir/os*tar .
 cd $local_directory
