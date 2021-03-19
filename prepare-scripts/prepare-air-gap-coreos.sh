@@ -7,7 +7,7 @@ air_dir=$local_directory/air-gap
 # Creates target download directory
 mkdir -p $temp_dir
 # Creates temporary directory
-mkdir -p $air_gap
+mkdir -p $air_dir
 # Gets list of parameters to create repo
 read -p "Insert OCP version to mirror (for example 4.6.19): " ocp_version
 read -p "Insert RedHat pull secret: " pull_secret
