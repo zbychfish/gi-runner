@@ -66,7 +66,7 @@ LOCAL_REGISTRY="$host_fqdn:5000"
 LOCAL_REPOSITORY=ocp4/openshift4
 PRODUCT_REPO='openshift-release-dev'
 RELEASE_NAME="ocp-release"
-LOCAL_SECRET_JSON='gi-temp/pull-secret-update.txt'
+LOCAL_SECRET_JSON=$temp_dir/pull-secret-update.txt
 ARCHITECTURE=x86_64
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_version}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_version}-${ARCHITECTURE}
 # Mirrors OCP operators
