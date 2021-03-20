@@ -94,7 +94,7 @@ tar cf ${air_dir}/ics_images.tar data
 cd $air_dir
 #tar czpvf - *.tar | split -d -b 10G - ics_registry-${ics_version}.tar
 tar cf ics_registry-${ics_version}.tar ics_images.tar ics_offline.tar cloudctl-linux-amd64.tar.gz
-rm -f ics_offline.tar cloudctl-linux-amd64.tar.gz
+rm -f ics_offline.tar cloudctl-linux-amd64.tar.gz ics_images.tar
 cd $local_directory
 # Cleanup gi-temp, portable-registry
 podman rm bastion-registry
