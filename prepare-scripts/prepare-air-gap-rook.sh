@@ -51,7 +51,6 @@ do
 	podman rmi $image
         rm -rf image.tar
 done
-fi
 # Archives mirrored images
 echo "Archiving mirrored registry ..."
 podman stop bastion-registry
