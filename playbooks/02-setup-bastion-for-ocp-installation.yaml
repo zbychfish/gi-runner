@@ -180,15 +180,9 @@
         state: directory
         mode: '0755'
 
-    - name: Create download directory
-      file:
-        path: "../download"
-        state: directory
-        mode: '0755'
-
     - name: Unpack tools
       command:
-        cmd: tar xf ../download/tools.tar -C ../gi-temp
+        cmd: tar xf ../gi-temp/tools.tar -C ../gi-temp
       args:
         warn: false
       when: internet_type == 'A'

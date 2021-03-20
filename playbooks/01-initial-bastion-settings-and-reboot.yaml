@@ -101,14 +101,38 @@
         permanent: yes
         state: enabled
 
+    - name: Extract coreos archive
+      unarchive:
+        src: "../download/coreos-registry-{{ ocp_release }}.tar"
+        dest: ../gi-temp
+      when: internet_type == 'A'
+
+    - name: Extract OLM archive
+      unarchive:
+        src: "../download/olm-registry-{{ ocp_release }}.tar"
+        dest: ../gi-temp
+      when: internet_type == 'A'
+
     - name: Load image registry into local repository
       shell:
         cmd: podman load -i ../gi-temp/oc-registry.tar
       when: internet_type == 'A'
 
-    - name: Extract OpenShift registry for release {{ ocp_release }}
+    - name: Extract CoreOS registry for release {{ ocp_release }}
       unarchive:
-        src: "../download/ocp-registry-with-olm-{{ ocp_release }}.tar"
+        src: "../gi-temp/coreos-registry.tar"
+        dest: /opt/registry
+      when: internet_type == 'A'
+
+    - name: Extract OLM registry for release {{ ocp_release }}
+      unarchive:
+        src: "../gi-temp/olm-registry.tar"
+        dest: /opt/registry
+      when: internet_type == 'A'
+
+    - name: Extract rook-ceph registry
+      unarchive:
+        src: "../download/rook-registry.tar"
         dest: /opt/registry
       when: internet_type == 'A'
 

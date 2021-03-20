@@ -250,7 +250,7 @@
 
   - name: Create htpasswd file
     htpasswd:
-      path: ../download/ocadmin.htpasswd
+      path: ../gi-temp/ocadmin.htpasswd
       name: "{{ ocadmin }}"
       password: "{{ ocadmin_password }}"
 
@@ -258,7 +258,7 @@
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
-      - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../download/ocadmin.htpasswd -n openshift-config --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocadmin.htpasswd -n openshift-config --config ../ocp/auth/kubeconfig" }
       - { cmd: "oc apply -f ../scripts/oauth_provider.yaml --config ../ocp/auth/kubeconfig" }
       - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocadmin }} --config ../ocp/auth/kubeconfig" }
     when: true
@@ -274,7 +274,7 @@
 
   - name: Unpack OLM manifests
     shell:
-      cmd: tar xf ../download/manifests.tar -C ../gi-temp
+      cmd: tar xf ../gi-temp/manifests.tar -C ../gi-temp
       warn: false
     when: internet_type == 'A' and is_one_node == 'N'
 
