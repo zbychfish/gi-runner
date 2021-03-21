@@ -101,4 +101,4 @@ podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
 rm -rf $temp_dir
-echo "AIR GAPPED FILE(S) PREPARED - copy them from download directory to air-gapped bastion machine"
+echo "ICS ${ics_version} files prepared - copy $air_dir/ics_registry-${ics_version}.tar to air-gapped bastion machine"

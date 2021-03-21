@@ -5,17 +5,17 @@ host_fqdn=$( hostname --long )
 temp_dir=$local_directory/gi-temp
 air_dir=$local_directory/air-gap
 # Creates target download directory
-mkdir -p $temp_dir
-# Creates temporary directory
 mkdir -p $air_dir
-# Gets list of parameters to create repo
+# Creates temporary directory
+mkdir -p $temp_dir
+# Gets list of parameters 
 read -p "Insert OCP version to mirror (for example 4.6.19): " ocp_version
 read -p "Insert RedHat pull secret: " pull_secret
 echo "$pull_secret" > $temp_dir/pull-secret.txt
 read -p "Insert your mail address to authenticate in RedHat Network: " mail
 echo -e "\n"
+# Setup portable registry
 echo "Setup mirror image registry ..."
-# - cleanup repository if exists
 podman stop bastion-registry
 podman container prune <<< 'Y'
 rm -rf /opt/registry
@@ -41,7 +41,6 @@ firewall-cmd --reload
 semanage permissive -a NetworkManager_t
 # - Starts portable registry
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2
-# Packs together centos updates, packages, python libraries and portable image
 cd $temp_dir
 # Download external tools and software (OCP, ICS, matchbox)
 echo "Download OCP tools and CoreOS installation files ..."
@@ -53,7 +52,7 @@ wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.
 wget "https://github.com/poseidon/matchbox/releases/download/v0.9.0/matchbox-v0.9.0-linux-amd64.tar.gz" > /dev/null
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz" > /dev/null
 tar cf $air_dir/tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v0.9.0-linux-amd64.tar.gz
-# Install OCP and ICS tools
+# Install OCP tools
 tar xf openshift-client-linux.tar.gz -C /usr/local/bin
 tar xf opm-linux.tar.gz -C /usr/local/bin
 # Mirrors OCP images to portable repository
@@ -80,4 +79,4 @@ rm -rf $temp_dir
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
-echo "CoreOS images prepared - copy them from download directory to air-gapped bastion machine"
+echo "CoreOS images prepared - copy file ${air_dir}/coreos-registry-${ocp_version}.tar to air-gapped bastion machine"

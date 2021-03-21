@@ -9,6 +9,7 @@
     ics_size_hint: "{{ lookup('env','GI_ICS_SIZE') }}"
     ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+    bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -21,6 +22,8 @@
       - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
       - { name: "GI_ICS_SIZE", value: "{{ ics_size_hint }}" }
       - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
+      - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
+      - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
 
   - name: Set parameters for air-gapped installation
     set_fact:
@@ -30,10 +33,16 @@
 
   - name: Check configuration parameters for air-gapped installation
     fail: msg="Variable {{ item.name }} is not set"
-    when: item.value == "" and is_air_gapped == 'Y'
+    when: internet_type == 'A' and item.value == ""
     loop:
       - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
       - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+
+  - name: Set masters array
+    set_fact:
+      node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
+      node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
+      node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
 
   - name: Set ICS installation variables
     set_fact:
@@ -144,7 +153,18 @@
     delay: 20
     when: internet_type == 'A' and is_one_node == 'N'
 
+  - name: Create ICS catalog file
+    template:
+      src: ics_catalog.j2
+      dest: "../gi-temp/ics_catalog.yaml"
+    when: internet_type != 'A'
+
   - name: Publish ICS catalog
+    shell:
+      cmd: "oc apply -f ../gi-temp/ics_catalog.yaml"
+    when: internet_type != 'A'
+
+  - name: Publish ICS catalog in air-gap
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/ics_offline/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
     when: internet_type == 'A'

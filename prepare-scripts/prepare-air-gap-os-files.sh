@@ -55,4 +55,4 @@ rm -f *
 mv $temp_dir/os*tar .
 cd $local_directory
 rm rf $temp_dir
-echo "OS files prepared - copy them from download directory to the air-gap bastion machine"
+echo "OS files - copy $air_dir/os-`cat /etc/centos-release|awk '{print $1"-"$2"-"$3"-"$NF}'`-`date +%Y-%m-%d`.tar to the air-gap bastion machine"

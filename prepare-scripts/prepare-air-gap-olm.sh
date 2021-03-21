@@ -5,9 +5,9 @@ host_fqdn=$( hostname --long )
 temp_dir=$local_directory/gi-temp
 air_dir=$local_directory/air-gap
 # Creates target download directory
-mkdir -p $temp_dir
-# Creates temporary directory
 mkdir -p $air_dir
+# Creates temporary directory
+mkdir -p $temp_dir
 # Gets list of parameters to create repo
 read -p "Insert OCP version to mirror (for example 4.6.19): " ocp_version
 read -p "Insert RedHat pull secret: " pull_secret
@@ -40,7 +40,7 @@ firewall-cmd --reload
 semanage permissive -a NetworkManager_t
 # - Starts portable registry
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2
-# Mirrors OCP images to portable repository
+# Get tools
 cd $temp_dir
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz" > /dev/null
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-client-linux.tar.gz" > /dev/null
@@ -58,7 +58,6 @@ b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
 jq ".auths += $AUTHSTRING" < $temp_dir/pull-secret.txt > $temp_dir/pull-secret-update.txt
 LOCAL_REGISTRY="$host_fqdn:5000"
-
 echo $REDHAT_OPERATORS > $air_dir/operators.txt
 echo $CERTIFIED_OPERATORS >> $air_dir/operators.txt
 echo $MARKETPLACE_OPERATORS >> $air_dir/operators.txt
@@ -94,11 +93,12 @@ podman stop bastion-registry
 cd /opt/registry
 tar cf $air_dir/olm-registry.tar data
 cd $air_dir
-tar cf olm-registry-${ocp_version}.tar olm-registry.tar manifests.tar operators.txt
+ocp_major_release=`echo $ocp_release|awk -F'.' '{print $1.$2}'`
+tar cf olm-registry-${ocp_major_version}-`date +%Y-%m-%d`.tar olm-registry.tar manifests.tar operators.txt
 rm -f olm-registry.tar manifests.tar operators.txt
 rm -rf $temp_dir
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
-echo "OLM images prepared - copy them from download directory to air-gapped bastion machine"
+echo "OLM images prepared for ${ocp_major_version} - copy $air_dir/olm-registry-${ocp_major_version}-`date +%Y-%m-%d`.tarto air-gapped bastion machine"
 

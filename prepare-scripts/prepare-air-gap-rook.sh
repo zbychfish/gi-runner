@@ -59,4 +59,4 @@ tar cf ${air_dir}/rook-registry.tar data
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
-echo "Rook-Ceph images prepared - copy them from download directory to air-gapped bastion machine"
+echo "Rook-Ceph images prepared - copy file ${air_dir}/rook-registry.tar to air-gapped bastion machine"
