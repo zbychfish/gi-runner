@@ -660,7 +660,7 @@
         msg:
           - OpenShift 4.6 cluster installation finished
           - Add to hosts on your web browser workstation this line
-          - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} icp-console.apps.{{ domain }} insights.apps.{{ domain }}"
+          - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }}"
           - "Login to OCP console as {{ ocadmin }} user - https://console-openshift-console.apps.{{ domain }}"  
 
   - debug:

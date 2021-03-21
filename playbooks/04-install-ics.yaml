@@ -48,6 +48,12 @@
   - debug:
       var: ics_size
 
+  - name: Extract ICS archive
+    unarchive:
+      src: "../download/ics_registry-{{ ics_version }}.tar"
+      dest: ../gi-temp
+    when: internet_type == 'A'
+
   - name: Create ICS operator namespace
     shell:
       cmd: "oc create namespace {{ ics_operator_namespace }}"
@@ -55,7 +61,7 @@
 
   - name: Check presence of cloudctl tool
     stat:
-      path: "../download/{{ item.file }}"
+      path: "../gi-temp/{{ item.file }}"
     register: cloudctl_tool
     with_items:
       - { file: "cloudctl-linux-amd64.tar.gz" }
@@ -69,15 +75,14 @@
 
   - name: "Download cloud tool"
     get_url:
-      url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz/{{ item.item.file }}"
-      dest: "../download"
+      url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz"
+      dest: "../gi-temp"
       use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
-      with_items: "{{ cloudctl_tool.results }}"
     when: internet_type != 'A'
 
   - name: Unpack cloudctl tools
     shell:
-      cmd: tar xf ../download/{{ item.src }} -C /usr/local/bin
+      cmd: tar xf ../gi-temp/{{ item.src }} -C /usr/local/bin
       warn: no
     with_items:
       - { src: "cloudctl-linux-amd64.tar.gz" }
@@ -96,8 +101,28 @@
 
   - name: Unpack ICS manifests
     unarchive:
-      src: "../download/ics_offline-{{ ics_version }}.tar"
+      src: "../gi-temp/ics_offline.tar"
       dest: ../gi-temp
+    when: internet_type == 'A'
+
+  - name: Stop portable registry
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - podman stop bastion-registry
+    when: internet_type == 'A'
+
+  - name: Extract ICS registry
+    unarchive:
+      src: "../gi-temp/ics_images.tar"
+      dest: /opt/registry
+    when: internet_type == 'A'
+
+  - name: Start portable registry
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - podman start bastion-registry
     when: internet_type == 'A'
 
   - name: Switch ICS inventory to portable registry
@@ -209,7 +234,7 @@
     shell:
       cmd: "cloudctl pm update-secret ibm-common-services platform-auth-idp-credentials -f -d admin_password='{{ ics_admin_password }}'"
 
-  - name: Wait for ion
+  - name: Wait for authentication changes
     pause:
       minutes: 3
 
@@ -220,3 +245,10 @@
     until: "ics_pods_status.stdout == \"0\""
     retries: 80
     delay: 20
+
+  - debug:
+      msg:
+        - "IBM Common Services {{ ics_version }} installation finished"
+        - Update the hosts file on your web browser workstation
+        - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} cp-console.apps.{{ domain }}"
+        - "Login to ICS console as admin user - https://cp-console.apps.{{ domain }}"
