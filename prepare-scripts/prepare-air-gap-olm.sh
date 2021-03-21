@@ -93,7 +93,7 @@ podman stop bastion-registry
 cd /opt/registry
 tar cf $air_dir/olm-registry.tar data
 cd $air_dir
-ocp_major_release=`echo $ocp_release|awk -F'.' '{print $1.$2}'`
+ocp_major_release=`echo $ocp_version|awk -F'.' '{print $1"."$2}'`
 tar cf olm-registry-${ocp_major_version}-`date +%Y-%m-%d`.tar olm-registry.tar manifests.tar operators.txt
 rm -f olm-registry.tar manifests.tar operators.txt
 rm -rf $temp_dir
