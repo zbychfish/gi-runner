@@ -137,25 +137,28 @@ fi
 # Unpack air-gap archives
 if [[ $use_air_gap == 'Y' ]]
 then
-        echo "*** Extracting air-gapped installation files ***"
-        if [[ `ls $GI_HOME/download/air-gap*.tar00|wc -l` -ne 1 ]]
+        echo "*** Extracting OS files ***"
+        if [[ `ls $GI_HOME/download/os*.tar|wc -l` -ne 1 ]]
         then
-                echo "You did not upload air-gap.tar to download directory on bastion"
+                echo "You did not upload os-<version>.tar to download directory on bastion"
                 exit 1
         else
                 cd download
-                cat air-gap-*.tar*| tar xzpf -
-                cd $GI_HOME
+                tar xf $GI_HOME/download/os*.tar -C $GI_TEMP
+                cd $GI_TEMP
 	fi
 	echo "*** Checking source and target kernel ***"
-	if [[ `uname -r` != `cat download/kernel.txt` ]]
+	if [[ `uname -r` != `cat $GI_TEMP/kernel.txt` ]]
 	then
 		echo "Kernel of air-gap bastion differs from air-gap file generator!"
-		echo "Upload air-gap files corresponding to bastion kernel or generate files for bastion environment."
-		exit 1
+		read -p "Have you updated system before, would you like to continue (Y/N)?: " is_updated
+		if [ $is_updated != 'N' ]
+		then
+			echo "Upload air-gap files corresponding to bastion kernel or generate files for bastion environment."
+			exit 1
+		fi
 	fi
 	# Install software for air-gap installation
-	tar xf download/packages-*.tar -C ${GI_TEMP}
 	echo "*** Installing CentOS updates ***"
         tar xf ${GI_TEMP}/centos-updates*.tar -C ${GI_TEMP} > /dev/null
         dnf -qy --disablerepo=* localinstall ${GI_TEMP}/centos-updates/*rpm --allowerasing
@@ -174,6 +177,7 @@ then
         mkdir -p /etc/ansible
         echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
         cd $GI_HOME
+	rm -rf $GI_TEMP/*
 fi
 # Time settings
 while ! [[ $install_ntpd == 'Y' || $install_ntpd == 'N' ]]
