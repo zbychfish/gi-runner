@@ -94,11 +94,11 @@ cd /opt/registry
 tar cf $air_dir/olm-registry.tar data
 cd $air_dir
 ocp_major_release=`echo $ocp_version|awk -F'.' '{print $1"."$2}'`
-tar cf olm-registry-${ocp_major_version}-`date +%Y-%m-%d`.tar olm-registry.tar manifests.tar operators.txt
+tar cf olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar olm-registry.tar manifests.tar operators.txt
 rm -f olm-registry.tar manifests.tar operators.txt
 rm -rf $temp_dir
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
-echo "OLM images prepared for ${ocp_major_version} - copy $air_dir/olm-registry-${ocp_major_version}-`date +%Y-%m-%d`.tarto air-gapped bastion machine"
+echo "OLM images prepared for ${ocp_major_release} - copy $air_dir/olm-registry-${ocp_major_version}-`date +%Y-%m-%d`.tarto air-gapped bastion machine"
 

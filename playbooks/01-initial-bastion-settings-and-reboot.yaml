@@ -106,13 +106,20 @@
         src: "../download/coreos-registry-{{ ocp_release }}.tar"
         dest: ../gi-temp
       when: internet_type == 'A'
+      
+    - name: Find olm package
+      find:
+        paths: "../download"
+        patterns: "olm-registry*tar"
+      register: find_result
 
     - name: Extract OLM archive
       unarchive:
-        src: "../download/olm-registry-{{ ocp_release }}.tar"
+        src: "{{ item.path }}"
         dest: ../gi-temp
+      with_items: "{{ find_result.files }}"
       when: internet_type == 'A'
-
+     
     - name: Load image registry into local repository
       shell:
         cmd: podman load -i ../gi-temp/oc-registry.tar
