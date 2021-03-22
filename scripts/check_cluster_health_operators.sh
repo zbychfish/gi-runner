@@ -4,8 +4,9 @@ then
 else
 	nodes_ok="no"
 fi
-if [[ $nodes_ok == "yes" && `oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l` -eq 0 ]]
+if [[ $nodes_ok == "yes" && `oc get co --kubeconfig=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l` -eq 0 ]]
 then
 	echo "0"
 else
 	echo "1"
+fi
