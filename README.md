@@ -21,25 +21,28 @@ OCP installation with direct access to the internet
   <LI>In case of NTP server installed on bastion confirm the time and date (Y) or correct it (N) - "Current local time is Tue Mar 23 18:25:17 CET 2021, is it correct one [Y/N]"
   <LI>Insert cluster domain, it should be dedicated domain like <cluster_domain>.<corporate_domain>. Domain will be managed on bastion - "Insert cluster domain (your private domain name), like ocp.io.priv:"
   <LI>Accept or reject one node OCP installation - "Is your installation the one node (allinone)? (Y)es/(N)o:"
-  <UL>
-In case of multinode installation:
+  <UL>In case of multinode installation:
     <li>Accept or reject 3 nodes OCP installation - "Is your installation the 3 nodes only (master only)? (Y)es/(N)o:"
     <li>Provide second disk specification for OpenShift Container Storage (OCS) - "Provide cluster device specification for storage virtualization (for example sdb):"
     <li>Provide size of disk attached to OCS nodes - "Provide maximum space on cluster devices for storage virtualization (for example 300) in GB:"
-    For installation with separate workers:
-    <UL>
+    <UL>For installation with separate workers:
       <li>Decide if the DB2 database will be installed in HA cluster, only for Guardium Insights installation - "Would you like install DB2 in HA configuration (N)o/(Y)es?:"
       <li>Specify separation of OCS workers from other, it installs OCS in taint, you need minimum 4 workers in this case - "Would you like isolate (taint) OCS nodes in the OCP cluster (N)o/(Y)es?:"
       <li>Decide if the DB2 workers should be separated from other services, only for Guardium Insights installation - "Would you like isolate (taint) DB2 node/s in the OCP cluster (N)o/(Y)es?:"
     </UL>
   </UL>
   <li>Provide bastion IP, in case of two or more interfaces it defines used for cluster management - "Insert Bastion IP used to communicate with your OCP cluster:"
-  <LI> Execute init.sh script.
-  <UL>
-    <LI> Insert OCP minor number - for instance 4.6.20
-    <LI> Answer N for question about air-gap inatllation
-    <LI> Answer D for question about Direct or Proxy access to the intenet
-
+  <LI>Insert bastion name (without domain) - "Insert Bastion name used to communicate with Bootstrap server:"
+  <li>Provide default gateway of cluster network - "Provide subnet gateway (default router):"
+  <li>Provide IP address of DNS forwarder (corporate DNS) - "Point DNS server to resolve public names:"
+  <li>Insert bootstrap IP address - "Insert Bootstrap IP:"
+  <li>Insert bootstrap MAC address - "Insert Bootstrap MAC address:"
+  <li>Insert bootstrap name (without domain) - "Insert OCP bootstrap name [boot]:"
+  <UL>In case of one node installation
+    <li>Insert master IP, MAC address and name
+  </UL>
+  <UL>In multi-master installation
+    <li>Insert 3 master IP, MAC addresses and names
   </UL>
 </UL>
 
