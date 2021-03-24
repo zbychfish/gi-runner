@@ -410,8 +410,8 @@ then
                 #        db2_ha_size=1
                 #fi
                 #echo export GI_DB2_HA_SIZE=$db2_ha_size >> $file
-                #if [ $storage_type == "O" ]
-                #then
+                if [ $storage_type == "O" ]
+                then
                         while ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]
                         do
                                 printf "Would you like isolate (taint) OCS nodes in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
