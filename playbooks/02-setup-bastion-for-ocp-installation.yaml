@@ -370,19 +370,6 @@
       with_items:
         - "{{ node_mac|list }}"
 
-    - name: Matchbox db2 group json
-      template:
-        src: "groups.j2"
-        dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
-      vars:
-        id: "worker"
-        name: "OCP worker"
-        profile: "worker"
-        mac: "{{ item }}"
-      with_items:
-        - "{{ db2_mac|list }}"
-      when: is_one_node == 'N' and is_master_only == 'N'
-
     - name: Matchbox ocs group json
       template:
         src: "groups.j2"
