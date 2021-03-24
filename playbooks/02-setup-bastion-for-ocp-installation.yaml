@@ -108,13 +108,6 @@
         node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
         node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
 
-    - name: Set DB2 array
-      set_fact:
-        db2_ip: "{{ lookup('env', 'GI_DB2_IP').split(',') }}"
-        db2_mac: "{{ lookup('env', 'GI_DB2_MAC_ADDRESS').split(',') }}"
-        db2_name: "{{ lookup('env', 'GI_DB2_NAME').split(',') }}"
-      when: is_one_node == 'N' and is_master_only == 'N'
-
     - name: Set OCS array
       set_fact:
         ocs_ip: "{{ lookup('env', 'GI_OCS_IP').split(',') }}"
@@ -131,8 +124,8 @@
 
     - name: Iterates all workers in one array
       vars:
-        nodes: "{{ worker_name|default([])+db2_name|default([])+ocs_name|default([]) }}"
-        ips: "{{ worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
+        nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
+        ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
       debug:
         msg: "{{ nodes|zip(ips)|list }}"
 
@@ -441,24 +434,24 @@
         echo "ptr-record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ item.1 }}.{{ domain }}"
       register: node_ptr
       with_together:
-        - "{{ node_ip+worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
-        - "{{ node_name+worker_name|default([])+db2_name|default([])+ocs_name|default([]) }}"
+        - "{{ node_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+        - "{{ node_name+worker_name|default([])+ocs_name|default([]) }}"
 
     - name: Prepare DHCP entries for nodes
       shell: >
         echo "dhcp-host={{ item.0 }},{{ item.1 }},12h"
       register: node_dhcp
       with_together:
-        - "{{ node_mac+worker_mac|default([])+db2_mac|default([])+ocs_mac|default([]) }}"
-        - "{{ node_ip+worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
+        - "{{ node_mac+worker_mac|default([])+ocs_mac|default([]) }}"
+        - "{{ node_ip+worker_ip|default([])+ocs_ip|default([]) }}"
 
     - name: Prepare DNS entries for nodes
       shell: >
         echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
       register: node_dns
       with_together:
-        - "{{ node_name+worker_name|default([])+db2_name|default([])+ocs_name|default([]) }}"
-        - "{{ node_ip+worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
+        - "{{ node_name+worker_name|default([])+ocs_name|default([]) }}"
+        - "{{ node_ip+worker_ip|default([])+ocs_ip|default([]) }}"
 
     - name: Prepare ETCD entries for master nodes in no onenode
       shell: >
@@ -698,7 +691,7 @@
         src: install-config-air-gapped.j2
         dest: ../ocp/install-config.yaml
       vars:
-        n_workers: "{{ worker_ip|default([])|length+db2_ip|default([])|length+ocs_ip|default([])|length }}"
+        n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
         n_masters: "{{ node_ip|length }}"
       when: internet_type == 'A'
 
@@ -707,7 +700,7 @@
         src: install-config.j2
         dest: ../ocp/install-config.yaml
       vars:
-        n_workers: "{{ worker_ip|default([])|length+db2_ip|default([])|length+ocs_ip|default([])|length }}"
+        n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
         n_masters: "{{ node_ip|length }}"
       when: internet_type == 'D'
 
@@ -716,7 +709,7 @@
         src: install-config-proxy.j2
         dest: ../ocp/install-config.yaml
       vars:
-        n_workers: "{{ worker_ip|default([])|length+db2_ip|default([])|length+ocs_ip|default([])|length }}"
+        n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
         n_masters: "{{ node_ip|length }}"
       when: internet_type == 'P'
 
@@ -779,8 +772,8 @@
         dest: /etc/haproxy/haproxy.cfg
       vars:
         masters: "{{ node_name|zip(node_ip)|list }}"
-        nodes: "{{ worker_name|default([])+db2_name|default([])+ocs_name|default([]) }}"
-        ips: "{{ worker_ip|default([])+db2_ip|default([])+ocs_ip|default([]) }}"
+        nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
+        ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
         workers: "{{ nodes|zip(ips)|list }}"
       when: is_one_node == 'N' and is_master_only == 'N'
 
