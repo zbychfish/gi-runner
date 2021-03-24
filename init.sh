@@ -388,28 +388,6 @@ then
         echo export GI_STORAGE_DEVICE_SIZE=$storage_device_size >> $file
 	if [[ $is_master_only == 'N' ]]
         then
-                #while ! [[ $db2_ha == "Y" || $db2_ha == "N" ]]
-                #do
-                #        printf "Would you like install DB2 in HA configuration (\e[4mN\e[0m)o/(Y)es?: "
-                #        read db2_ha
-                #        db2_ha=${db2_ha:-N}
-                #        if ! [[ $db2_ha == "Y" || $db2_ha == "N" ]]
-                #        then
-                #                echo "Incorrect value, insert Y or N"
-                #        fi
-                #done
-                #if [[ $db2_ha == 'Y' ]]
-                #then
-                #        while [[ $db2_ha_size == "" || -z $db2_ha_size ]]
-                #        do
-                #                printf "How many instaces DB2 would you like to (\e[4m2\e[0m)o/(3)es?: "
-                #                read db2_ha_size
-                #                db2_ha_size=${db2_ha_size:-2}
-                #        done
-                #else
-                #        db2_ha_size=1
-                #fi
-                #echo export GI_DB2_HA_SIZE=$db2_ha_size >> $file
                 if [ $storage_type == "O" ]
                 then
                         while ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]
@@ -425,28 +403,12 @@ then
                 else
                         ocs_tainted="N"
                 fi
-                #while ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
-                #do
-                #        printf "Would you like isolate (taint) DB2 node/s in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
-                #        read db2_tainted
-                #        db2_tainted=${db2_tainted:-N}
-                #        if ! [[ $db2_tainted == "Y" || $db2_tainted == "N" ]]
-                #        then
-                #                echo "Incorrect value, insert Y or N"
-                #        fi
-                #done
         else
-                #db_ha='N'
                 ocs_tainted='N'
-                #db_tainted='N'
-                #echo export GI_DB2_HA_SIZE=0 >> $file
         fi
 else
         storage_type='R'
-        #db_ha='N'
         ocs_tainted='N'
-        #db_tainted='N'
-        #echo export GI_DB2_HA_SIZE=0 >> $file
 fi
 echo export GI_STORAGE=$storage_type >> $file
 #echo export GI_DB2_HA=$db2_ha >> $file
@@ -664,63 +626,6 @@ echo export GI_NODE_NAME=$node_name >> $file
 # Defines workers, db2 and OCS nodes
 if [[ $is_onenode == 'N' && $is_master_only == 'N' ]]
 then
-        #declare -a db_ip_arr
-        #while [[ $db2_ha_size != ${#db2_ip_arr[@]} ]]
-        #do
-        #        if [ ! -z "$GI_DB2_IP" ]
-        #        then
-        #                read -p "Current list of DB2 node IP list is set to [$GI_DB2_IP] - insert $db2_ha_size IP's (comma separated) or confirm existing <ENTER>: " new_db2_ip
-        #                if [[ $new_db2_ip != '' ]]
-        #                then
-        #                        db2_ip=$new_db2_ip
-        #                else
-        #                        db2_ip=$GI_DB2_IP
-        #                fi
-        #        else
-        #                read -p "Insert $db2_ha_size IP address(es) of DB2 node(s) (comma separated): " db2_ip
-        #        fi
-        #        IFS=',' read -r -a db2_ip_arr <<< $db2_ip
-        #        GI_DB2_IP=$db2_ip
-        #done
-        #echo export GI_DB2_IP=$db2_ip >> $file
-        #declare -a db2_mac_arr
-        #while [[ $db2_ha_size != ${#db2_mac_arr[@]} ]]
-        #do
-        #        if [ ! -z "$GI_DB2_MAC_ADDRESS" ]
-        #        then
-        #                read -p "Current DB2 MAC address list is set to [$GI_DB2_MAC_ADDRESS] - insert $db2_ha_size MAC address(es) or confirm existing one <ENTER>: " new_db2_mac
-        #                if [[ $new_db2_mac != '' ]]
-        #                then
-        #                        db2_mac=$new_db2_mac
-        #                else
-        #                        db2_mac=$GI_DB2_MAC_ADDRESS
-        #                fi
-        #        else
-        #                read -p "Insert $db2_ha_size MAC address(es) of DB2 node(s): " db2_mac
-        #        fi
-        #        IFS=',' read -r -a db2_mac_arr <<< $db2_mac
-        #        GI_DB2_MAC_ADDRESS=$db2_mac
-        #done
-        #echo export GI_DB2_MAC_ADDRESS=$db2_mac >> $file
-        #declare -a db2_name_arr
-        #while [[ $db2_ha_size != ${#db2_name_arr[@]} ]]
-        #do
-        #        if [ ! -z "$GI_DB2_NAME" ]
-        #        then
-        #                read -p "Current DB2 node name list is set to [$GI_DB2_NAME] - insert $db2_ha_size node names or confirm existing one <ENTER>: " new_db2_name
-        #                if [[ $new_db2_name != '' ]]
-        #                then
-        #                        db2_name=$new_db2_name
-        #                else
-        #                        db2_name=$GI_DB2_NAME
-        #                fi
-        #        else
-        #                read -p "Insert $db2_ha_size DB2 node names: " db2_name
-        #        fi
-        #        IFS=',' read -r -a db2_name_arr <<< $db2_name
-        #        GI_DB2_NAME=$DB2_name
-        #done
-	echo export GI_DB2_NAME=$db2_name >> $file
         if [[ $ocs_tainted == 'Y' ]]
         then
                 declare -a ocs_ip_arr
@@ -781,17 +686,12 @@ then
 		done
 		echo export GI_OCS_NAME=$ocs_name >> $file
         fi
-        #if [[ $db2_tainted == 'Y' ]]
-        #then
-        #        m_worker_number=3
-        #else
         if [[ ocs_tainted == 'N' ]]
         then
         	m_worker_number=3
         else
                 m_worker_number=2
         fi
-        #fi
         echo "Define number of workers, you must set minimum $m_worker_number of workers."
         while ! [[ $w_number -ge $m_worker_number ]]
         do
