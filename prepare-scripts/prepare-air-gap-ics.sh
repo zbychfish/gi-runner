@@ -10,7 +10,7 @@ mkdir -p $temp_dir
 mkdir -p $air_dir
 read -p "Insert RH account name: " rh_account
 read -sp "Insert RH account password: " rh_account_pwd
-declare -a ics_versions=(3.5.6 3.6.2 3.6.3 3.7.1)
+declare -a ics_versions=(3.5.6 3.6.2 3.6.3 3.7.1 3.7.2)
 while [[ ( -z $ics_version_selected ) || ( $ics_version_selected -lt 1 || $ics_version_selected -gt $i ) ]]
 do
 	echo "Select ICS version to mirror:"
@@ -68,7 +68,7 @@ echo "Mirroring ICS ${ics_versions[${ics_version_selected}]}"
 # - install Skopeo utility
 dnf -qy install skopeo
 # - declares cases files per ICS release
-declare -a cases=(ibm-cp-common-services-1.1.16.tgz ibm-cp-common-services-1.2.2.tgz ibm-cp-common-services-1.2.3.tgz ibm-cp-common-services-1.3.1.tgz)
+declare -a cases=(ibm-cp-common-services-1.1.16.tgz ibm-cp-common-services-1.2.2.tgz ibm-cp-common-services-1.2.3.tgz ibm-cp-common-services-1.3.1.tgz ibm-cp-common-services-1.3.2.tgz)
 # - declares variables
 CASE_ARCHIVE=${cases[${ics_version_selected}]}
 CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
