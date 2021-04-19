@@ -52,7 +52,7 @@
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
 
     - debug:
-        msg: ocp_major_release
+        msg: "{{ ocp_major_release }}"
 
     - name: Check mirror image registry status
       shell:
