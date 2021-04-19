@@ -52,7 +52,7 @@
 
     - name: test
       set_fact:
-              ocp_major_release: "{{ ocp_release.split('.')|join(''[:-1] }}"
+        ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}" 
 
     - debug:
         msg: "{{ ocp_major_release }}"
