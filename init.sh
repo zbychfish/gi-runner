@@ -38,7 +38,7 @@ do
 	read -p "Insert OCP version to install: " ocp_release
 	if [[ `echo $ocp_release|cut -f -2 -d .` != "4.6" && `echo $ocp_release|cut -f -2 -d .` != "4.7" ]]
 	then
-		$ocp_release = ''
+		ocp_release = ''
 	fi
 done
 echo "export GI_OCP_RELEASE=$ocp_release" >> $file
