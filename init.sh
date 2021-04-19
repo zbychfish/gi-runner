@@ -36,7 +36,7 @@ function get_ocp_domain() {
 while [[ $ocp_release == '' ]]
 do
 	read -p "Insert OCP version to install: " ocp_release
-	if [[ echo $ocp_release|cut -f -2 -d . != "4.6" or echo $ocp_release|cut -f -2 -d . != "4.7" ]]
+	if [[ echo $ocp_release|cut -f -2 -d . != "4.6" || echo $ocp_release|cut -f -2 -d . != "4.7" ]]
 	then
 		$ocp_release = ''
 	fi
