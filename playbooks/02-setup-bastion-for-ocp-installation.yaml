@@ -22,6 +22,7 @@
     cluster_network_subnet:  "{{ lookup('env','GI_OCP_CIDR_MASK') }}"
     ssh_key:  "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_release:  "{{ lookup('env','GI_OCP_RELEASE') }}"
+    ocp_major_release: "{{ ocp_release | regex_replace('\..*$') }}"
 
 
 
