@@ -52,7 +52,7 @@
 
     - name: test
       set_fact:
-        ocp_major_release: "{{ ocp_release | regex_replace('(.*)$', '\\1') }}"
+        ocp_major_release: "{{ ocp_release | regex_replace('\\..*$') }}"
 
     - debug:
         msg: "{{ ocp_major_release }}"
