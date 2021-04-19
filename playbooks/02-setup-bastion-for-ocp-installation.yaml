@@ -22,7 +22,6 @@
     cluster_network_subnet:  "{{ lookup('env','GI_OCP_CIDR_MASK') }}"
     ssh_key:  "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_release:  "{{ lookup('env','GI_OCP_RELEASE') }}"
-    ocp_major_release: "{{ ocp_release | regex_replace('.*$') }}"
 
 
   tasks:
@@ -50,6 +49,10 @@
         - { name: "GI_OCP_CIDR_MASK", value: "{{ cluster_network_subnet }}" }
         - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
+
+    - name: test
+      set_fact:
+        ocp_major_release: "{{ ocp_release | regex_replace('(.*)$') }}"
 
     - debug:
         msg: "{{ ocp_major_release }}"
