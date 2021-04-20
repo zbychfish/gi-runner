@@ -1,0 +1,211 @@
+- hosts: bastion
+
+  vars:
+    bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
+    domain:  "{{ lookup('env','GI_DOMAIN') }}"
+    ldap_domain: "{{ lookup('env','GI_LDAP_DOMAIN') }}"
+    ldap_password: "{{ lookup('env','GI_LDAP_USERS_PWD') }}"
+    ldap_users_raw: "{{ lookup('env','GI_LDAP_USERS') }}"
+    ics_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+    internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+
+  tasks:
+  - name: Check configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == "" or item.value == "''"
+    loop:
+      - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
+      - { name: "GI_DOMAIN", value: "{{ domain }}" }
+      - { name: "GI_LDAP_DOMAIN", value: " {{ ldap_domain }}" }
+      - { name: "GI_LDAP_USERS_PWD", value: " {{ ldap_password }}" }
+      - { name: "GI_LDAP_USERS", value: " {{ ldap_users_raw }}" }
+
+  - debug:
+      msg: "{{ ldap_users_raw.split(',') }}"
+    register: ldap_users
+
+  - name: Install python3-ldap
+    dnf:
+      name:
+        - "python3-ldap"
+      state: latest
+    when: internet_type != 'A'
+
+  - name: Add community.general modules to ansible
+    shell:
+      cmd: "ansible-galaxy collection install community.general"
+    when: internet_type != 'A'
+
+  - name: Create LDAP directory
+    file:
+      path: ../ldap
+      state: directory
+
+  - name: Add Sofl repo
+    get_url:
+      url: https://repo.symas.com/configs/SOFL/rhel8/sofl.repo
+      dest: /etc/yum.repos.d/sofl.repo
+    when: internet_type != 'A'
+
+  - name: Get installed software facts
+    package_facts:
+      manager: "auto"
+
+  - name: Stop OpenLDAP server if started
+    service:
+      name: slapd
+      state: stopped
+      enabled: no
+    when: "'symas-openldap-servers' in ansible_facts.packages and internet_type != 'A'"
+
+  - name: Uninstall OpenLDAP if installed
+    yum:
+      name: "{{ item }}"
+      state: absent
+      autoremove: yes
+    loop:
+      - symas-openldap-clients
+      - symas-openldap-servers
+    when: "'symas-openldap-servers' in ansible_facts.packages and internet_type != 'A'"
+
+  - name: Remove OpenLDAP configs
+    file:
+      path: "{{ item }}"
+      state: absent
+    loop:
+      - /etc/openldap
+      - /var/lib/ldap
+    when: "'symas-openldap-servers' in ansible_facts.packages and internet_type != 'A'"
+
+  - name: Install OpenLDAP
+    yum:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - symas-openldap-clients
+      - symas-openldap-servers
+    when: internet_type != 'A'
+
+  - name: Set SELINUX for OpenLDAP
+    shell:
+      cmd: "semanage permissive -a slapd_t"
+    when: true
+
+  - name: Open ports for OpenLDAP
+    firewalld:
+      port: "{{ item.port }}/{{ item.type }}"
+      permanent: yes
+      immediate: yes
+      state: enabled
+    with_items:
+      - { port: "389", type: "tcp" } 
+      - { port: "636", type: "tcp" } 
+
+  - name: Start LDAP server
+    service:
+      name: slapd
+      state: started
+      enabled: yes
+
+  - name: Encrypt admin password
+    shell:
+      cmd: slappasswd -s {{ ldap_password }}
+    register: ssha_admin_password
+
+  - name: Extract first LDAP domain component
+    shell:
+      cmd: "echo {{ ldap_domain }}|awk -F ',' '{ print $1}'|awk -F '=' '{ print $2 }'"
+    register: ldap_organization
+
+  - name: "Prepare ldif's"
+    template:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+    with_items:
+      - { src: "ldap/config.j2", dest: "../ldap/config.ldif" }
+      - { src: "ldap/admin_passwd.j2", dest: "../ldap/admin_passwd.ldif" }
+      - { src: "ldap/monitor.j2", dest: "../ldap/monitor.ldif" }
+      - { src: "ldap/root_dn.j2", dest: "../ldap/root_dn.ldif" }
+          #- { src: "ldap/users.j2", dest: "ldap/users.ldif" }
+    when: true
+
+  - name: Modify LDAP domain
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - "ldapmodify -Y EXTERNAL -H ldapi:/// -f ../ldap/config.ldif"
+      - "ldapmodify -Y EXTERNAL -H ldapi:/// -f ../ldap/admin_passwd.ldif"
+      - "ldapmodify -Y EXTERNAL -H ldapi:/// -f ../ldap/monitor.ldif"
+    ignore_errors: no
+    when: true
+
+  - name: Add Root DN
+    shell:
+      cmd: "ldapadd -f ../ldap/root_dn.ldif -D cn=admin,{{ ldap_domain }} -w {{ ldap_password }}"
+    when: true
+
+  - name: Add InetOrgPerson schema
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - "ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/cosine.ldif"
+      - "ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/inetorgperson.ldif"
+    when: true
+
+  - name: Add User OU
+    community.general.ldap_entry:
+      dn: "ou=users,{{ ldap_domain }}"
+      objectClass: organizationalUnit
+      bind_dn: "cn=admin,{{ ldap_domain }}"
+      bind_pw: "{{ ldap_password }}"
+      server_uri: ldap://{{ bas_ip }}/
+    when: true
+
+  - name: Add Users
+    community.general.ldap_entry:
+      dn: "cn={{ item }},ou=users,{{ ldap_domain }}"
+      objectClass: inetOrgPerson
+      attributes:
+        cn: "{{ item }}"
+        sn: "{{ item }}"
+        uid: "{{ item }}"
+        userPassword: "{{ ldap_password }}"
+      bind_dn: "cn=admin,{{ ldap_domain }}"
+      bind_pw: "{{ ldap_password }}"
+      server_uri: "ldap://{{ bas_ip }}/"
+    with_items:
+      - "{{ ldap_users.msg | list }}"
+    when: true
+
+  - name: Encode Base64 ldap admin password
+    shell:
+      cmd: "echo -n {{ ics_password }} | base64"
+    register: ldap_password_base64
+
+  - name: Login to ICS
+    shell:
+      cmd: "cloudctl login -a https://cp-console.apps.{{ domain }} --skip-ssl-validation -u admin -p '{{ ics_password }}' -n ibm-common-services"
+
+  - name: Extract ICS Access Token
+    shell:
+      cmd: "cloudctl tokens|grep Access|awk -F ':' '{ print $2 }'|awk -F ' ' '{ print $2}'"
+    register: access_token
+
+  - name: Add OpenLDAP to ICS configuration
+    uri:
+      url: 'https://cp-console.apps.{{ domain }}/idmgmt/identity/api/v1/directory/ldap/onboardDirectory'
+      method: POST
+      body: "{\"LDAP_ID\": \"local_ldap\", \"LDAP_URL\": \"ldap://{{ bas_ip }}:389\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"\", \"LDAP_GROUPMEMBERIDMAP\": \"\"}"
+      body_format: json
+      headers:
+        Authorization: 'bearer {{ access_token.stdout }}'
+        Content-Type: 'application/json'
+      validate_certs: no
+      use_proxy: no
+    register: result
+
+  - debug:
+      msg:
+        - "Open LDAP installed"
+        - "LDAP instance configured in ICS as 'local_ldap'"
+
