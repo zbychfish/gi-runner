@@ -375,6 +375,8 @@
     ignore_errors: yes
     when: storage_type == "O"
 
+  - meta: end_play
+
   - name: Configure local storage operator file
     vars:
       operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
