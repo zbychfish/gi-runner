@@ -572,13 +572,13 @@
     shell:
       cmd: "{{ item }}"
     loop:
-      - "oc apply -f ../scripts/{{ 'rook-operator.yaml' if is_one_node == 'Y' else 'rook-operator-master.yaml' }} --config ../ocp/auth/kubeconfig"
-      - "oc apply -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-filesystem-master.yaml' }} --config ../ocp/auth/kubeconfig"
+      - "oc apply -f ../scripts/{{ 'rook-operator.yaml' if is_one_node == 'Y' else 'rook-operator-master.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
+      - "oc apply -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-filesystem-master.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
   - name: Wait for Rook operator
     shell:
-      cmd: "oc get pods -n rook-ceph --config=../ocp/auth/kubeconfig --selector app=rook-ceph-operator --no-headers -o custom-columns=STATUS:.status.phase|grep -v Running|wc -l"
+      cmd: "oc get pods -n rook-ceph --kubeconfig=../ocp/auth/kubeconfig --selector app=rook-ceph-operator --no-headers -o custom-columns=STATUS:.status.phase|grep -v Running|wc -l"
     register: rook_operator_status
     until: "rook_operator_status.stdout == \"0\""
     retries: 20
@@ -589,12 +589,12 @@
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
-      - { cmd: "oc apply -f ../scripts/rook-cluster.yaml --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc apply -f ../scripts/rook-cluster.yaml --kubeconfig ../ocp/auth/kubeconfig" }
     when: storage_type == "R"
 
   - name: Wait for correct Rook Ceph cluster deployment
     shell:
-      cmd: "oc get cephcluster -n rook-ceph --config ../ocp/auth/kubeconfig --no-headers -o custom-columns=HEALTH:.status.ceph.health"
+      cmd: "oc get cephcluster -n rook-ceph --kubeconfig ../ocp/auth/kubeconfig --no-headers -o custom-columns=HEALTH:.status.ceph.health"
     register: ceph_installation_status
     until: "ceph_installation_status.stdout == \"HEALTH_OK\" or ceph_installation_status.stdout == \"HEALTH_WARN\""
     retries: 60
@@ -605,9 +605,9 @@
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
-      - { cmd: "oc apply -f ../scripts/rook-storage_class_rbd.yaml --config ../ocp/auth/kubeconfig" }
-      - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --config ../ocp/auth/kubeconfig" }
-      - { cmd: "oc patch storageclass rook-ceph-block --config ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
+      - { cmd: "oc apply -f ../scripts/rook-storage_class_rbd.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+      - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+      - { cmd: "oc patch storageclass rook-ceph-block --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "R"
 
   - name: Configure registry PVC file
@@ -619,11 +619,11 @@
 
   - name: Create PVC for registry storage
     shell:
-      cmd: oc apply -f ../scripts/ocp_registry_pvc.yaml --config ../ocp/auth/kubeconfig
+      cmd: oc apply -f ../scripts/ocp_registry_pvc.yaml --kubeconfig ../ocp/auth/kubeconfig
 
   - name: Wait for PVC
     shell:
-      cmd: "oc get pvc -n openshift-image-registry --config=../ocp/auth/kubeconfig registry --no-headers -o custom-columns=STATUS:.status.phase"
+      cmd: "oc get pvc -n openshift-image-registry --kubeconfig=../ocp/auth/kubeconfig registry --no-headers -o custom-columns=STATUS:.status.phase"
     register: image_pvc_status
     until: "image_pvc_status.stdout == \"Bound\""
     retries: 30
@@ -633,8 +633,8 @@
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
-      - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\":{\"storage\":{\"pvc\":{\"claim\": \"registry\"}}}}'" }
-      - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --config ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\": {\"managementState\": \"Managed\"}}'" }
+      - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --kubeconfig ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\":{\"storage\":{\"pvc\":{\"claim\": \"registry\"}}}}'" }
+      - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --kubeconfig ../ocp/auth/kubeconfig --type=merge --patch '{\"spec\": {\"managementState\": \"Managed\"}}'" }
     when: true
 
   - pause:
@@ -642,7 +642,7 @@
 
   - name: Wait for Image registry successful reconfiguration
     shell:
-      cmd: "oc get clusteroperators image-registry --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
+      cmd: "oc get clusteroperators image-registry --kubeconfig ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
     register: image_registry_status
     until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
     retries: 20
@@ -651,14 +651,14 @@
 
   - name: Set public route for image registry
     shell:
-      cmd: oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge --config ../ocp/auth/kubeconfig
+      cmd: oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge --kubeconfig ../ocp/auth/kubeconfig
 
   - pause:
       seconds: 30
 
   - name: Wait for API server successful reconfiguration
     shell:
-      cmd: "oc get clusteroperators kube-apiserver --config ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
+      cmd: "oc get clusteroperators kube-apiserver --kubeconfig ../ocp/auth/kubeconfig --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
     register: image_registry_status
     until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
     retries: 60
@@ -667,7 +667,7 @@
 
   - debug:
         msg:
-          - OpenShift 4.6 cluster installation finished
+          - "OpenShift {{ ocp_release }} cluster installation finished"
           - Add to hosts on your web browser workstation this line
           - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }}"
           - "Login to OCP console as {{ ocadmin }} user - https://console-openshift-console.apps.{{ domain }}"  
