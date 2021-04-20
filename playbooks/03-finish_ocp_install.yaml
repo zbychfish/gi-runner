@@ -251,9 +251,9 @@
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
-      - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocadmin.htpasswd -n openshift-config --config ../ocp/auth/kubeconfig" }
-      - { cmd: "oc apply -f ../scripts/oauth_provider.yaml --config ../ocp/auth/kubeconfig" }
-      - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocadmin }} --config ../ocp/auth/kubeconfig" }
+      - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocadmin.htpasswd -n openshift-config --kubeconfig ../ocp/auth/kubeconfig" }
+      - { cmd: "oc apply -f ../scripts/oauth_provider.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+      - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocadmin }} --kubeconfig ../ocp/auth/kubeconfig" }
     when: true
     ignore_errors: yes #if htpasswd has been imported before
 
