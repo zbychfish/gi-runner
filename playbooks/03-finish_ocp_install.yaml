@@ -442,8 +442,6 @@
     delay: 10
     when: storage_type == "O"
 
-  - meta: end_play
-
   - name: Taint OCS nodes
     shell:
       cmd: "oc adm taint node {{ item }}.{{ domain }} node.ocs.openshift.io/storage=\"true\":NoSchedule"
