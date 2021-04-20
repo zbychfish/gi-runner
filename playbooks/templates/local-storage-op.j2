@@ -13,7 +13,7 @@ metadata:
   name: local-storage-subscription
   namespace: openshift-local-storage
 spec:
-  channel: "4.6"
+  channel: "{{ ocp_major_release }}"
   name: local-storage-operator 
   source: {{ operator_source }}
   sourceNamespace: openshift-marketplace

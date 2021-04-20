@@ -13,6 +13,8 @@
     storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
     storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
     is_ics: "{{ lookup('env','GI_ICS') }}"
+    ocp_release:  "{{ lookup('env','GI_OCP_RELEASE') }}"
+    ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}"
 
 
   tasks:
@@ -33,6 +35,7 @@
       - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
       - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
       - { name: "GI_ICS", value: "{{ is_ics }}" }
+      - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
       
 
   - name: Set parameters for air-gapped installation
@@ -349,20 +352,20 @@
 
   - name: Configure OCS nodes on workers
     shell:
-      cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --config ../ocp/auth/kubeconfig --overwrite=true"
+      cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --kubeconfig ../ocp/auth/kubeconfig --overwrite=true"
     with_items: "{{ worker_name|list if worker_name|length == 2 else worker_name[:3]|list }}"
     when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'N'
 
   - name: Configure OCS nodes for taint
     shell: |
-      oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --config ../ocp/auth/kubeconfig --overwrite=true
-      oc label nodes {{ item }}.{{ domain }} node-role.kubernetes.io/infra='' --config ../ocp/auth/kubeconfig --overwrite=true
+      oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --kubeconfig ../ocp/auth/kubeconfig --overwrite=true
+      oc label nodes {{ item }}.{{ domain }} node-role.kubernetes.io/infra='' --kubeconfig ../ocp/auth/kubeconfig --overwrite=true
     with_items: "{{ ocs_name|list }}"
     when: storage_type == "O" and is_master_only == 'N' and is_ocs_tainted == 'Y'
 
   - name: Configure OCS nodes on masters
     shell:
-      cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --config ../ocp/auth/kubeconfig --overwrite=true"
+      cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --kubeconfig ../ocp/auth/kubeconfig --overwrite=true"
     with_items: "{{ node_name|list }}"
     when: storage_type == "O" and is_master_only == 'Y'
 
@@ -374,8 +377,6 @@
       - openshift-storage
     ignore_errors: yes
     when: storage_type == "O"
-
-  - meta: end_play
 
   - name: Configure local storage operator file
     vars:
@@ -440,6 +441,8 @@
     retries: 30
     delay: 10
     when: storage_type == "O"
+
+  - meta: end_play
 
   - name: Taint OCS nodes
     shell:
