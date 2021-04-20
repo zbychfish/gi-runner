@@ -315,9 +315,9 @@
       with_items: "{{ rhcos_images.results }}"
       when: item.stat.exists == False and internet_type == 'A'
 
-    - name: Download RHCOS images 4.6
+    - name: Download RHCOS images {{ ocp_major_release }}
       get_url:
-        url: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/{{ item.item.file }}
+        url: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/{{ ocp_major_release }}/latest/{{ item.item.file }}
         dest: "../gi-temp"
         use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
       with_items: "{{ rhcos_images.results }}"
