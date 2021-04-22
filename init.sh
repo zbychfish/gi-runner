@@ -361,6 +361,8 @@ fi
 # Detail architecture for multinode OCP
 if [[ $is_onenode == 'N' ]]
 then
+	# Storage type selection
+
         storage_type='O'
         while [[ $storage_device == '' || -z "$storage_device" ]]
         do
