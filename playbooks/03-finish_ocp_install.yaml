@@ -37,6 +37,9 @@
       - { name: "GI_ICS", value: "{{ is_ics }}" }
       - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
       
+  - set_fact:
+      image: "rook/ceph:v1.1.7"
+    when: internet_type != 'A'
 
   - name: Set parameters for air-gapped installation
     set_fact:
