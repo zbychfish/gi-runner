@@ -10,6 +10,7 @@ mkdir -p $air_dir
 mkdir -p $temp_dir
 # Gets list of parameters to create repo
 read -p "Insert OCP version to mirror (for example 4.6.19): " ocp_version
+ocp_major_release=`echo $ocp_version|cut -f -2 -d .`
 read -p "Insert RedHat pull secret: " pull_secret
 echo "$pull_secret" > $temp_dir/pull-secret.txt
 read -p "Insert RH account name: " rh_account
@@ -65,17 +66,17 @@ echo $COMMUNITY_OPERATORS >> $air_dir/operators.txt
 # - Mirrroring process
 podman login $LOCAL_REGISTRY -u admin -p guardium
 podman login registry.redhat.io -u "$rh_account" -p "$rh_account_pwd"
-opm index prune -f registry.redhat.io/redhat/redhat-operator-index:v4.6 -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v4.6
-podman push $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v4.6
-oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v4.6 $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+opm index prune -f registry.redhat.io/redhat/redhat-operator-index:v${ocp_major_release} -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
+podman push $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
+oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
 echo "Mirrorring Certified Operators - ${CERTIFIED_OPERATORS} ..."
-opm index prune -f registry.redhat.io/redhat/certified-operator-index:v4.6 -p $CERTIFIED_OPERATORS -t $LOCAL_REGISTRY/olm-v1/certified-operator-index:v4.6
-podman push $LOCAL_REGISTRY/olm-v1/certified-operator-index:v4.6
-oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/certified-operator-index:v4.6 $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+opm index prune -f registry.redhat.io/redhat/certified-operator-index:v${ocp_major_release} -p $CERTIFIED_OPERATORS -t $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release}
+podman push $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release}
+oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
 echo "Mirrorring Marketplace Operators - ${MARKETPLACE_OPERATORS} ..."
-opm index prune -f registry.redhat.io/redhat/redhat-marketplace-index:v4.6 -p $MARKETPLACE_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v4.6
-podman push $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v4.6
-oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v4.6 $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+opm index prune -f registry.redhat.io/redhat/redhat-marketplace-index:v${ocp_major_release} -p $MARKETPLACE_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release}
+podman push $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release}
+oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
 echo "Mirrorring Community Operators - ${COMMUNITY_OPERATORS} ..."
 opm index prune -f registry.redhat.io/redhat/community-operator-index:latest -p $COMMUNITY_OPERATORS -t $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
 podman push $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
