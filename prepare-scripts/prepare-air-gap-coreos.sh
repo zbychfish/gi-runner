@@ -10,6 +10,7 @@ mkdir -p $air_dir
 mkdir -p $temp_dir
 # Gets list of parameters 
 read -p "Insert OCP version to mirror (for example 4.6.19): " ocp_version
+ocp_major_release=`echo $ocp_version|cut -f -2 -d .`
 read -p "Insert RedHat pull secret: " pull_secret
 echo "$pull_secret" > $temp_dir/pull-secret.txt
 read -p "Insert your mail address to authenticate in RedHat Network: " mail
@@ -46,9 +47,9 @@ cd $temp_dir
 echo "Download OCP tools and CoreOS installation files ..."
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-client-linux.tar.gz" > /dev/null
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-install-linux.tar.gz" > /dev/null
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-initramfs.x86_64.img" > /dev/null
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-kernel-x86_64" > /dev/null
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.6/latest/rhcos-live-rootfs.x86_64.img" > /dev/null
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-initramfs.x86_64.img" > /dev/null
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-kernel-x86_64" > /dev/null
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-rootfs.x86_64.img" > /dev/null
 wget "https://github.com/poseidon/matchbox/releases/download/v0.9.0/matchbox-v0.9.0-linux-amd64.tar.gz" > /dev/null
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz" > /dev/null
 tar cf $air_dir/tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v0.9.0-linux-amd64.tar.gz
