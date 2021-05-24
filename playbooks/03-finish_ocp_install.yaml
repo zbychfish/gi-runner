@@ -510,6 +510,8 @@
       - { cmd: "oc patch storageclass ocs-storagecluster-cephfs --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "O"
 
+  - meta: end_play
+
   - name: Configure rook-ceph nodes
     shell:
       cmd: "oc label node {{ node_name[0] }}.{{ domain }} role=storage-node --kubeconfig ../ocp/auth/kubeconfig --overwrite=true"
@@ -518,7 +520,7 @@
   - name: Configure common rook settings
     shell:
       cmd: "oc apply -f ../scripts/{{ 'rook-common.yaml' if is_one_node == 'Y' else 'rook-common-master.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
-    when: storage_type == "R"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Configure rook-ceph operator file
     vars:
@@ -542,7 +544,7 @@
     template:
       src: "{{ 'rook-cluster.j2' if is_one_node == 'Y' else 'rook-cluster-master.j2' }}"
       dest: "../scripts/rook-cluster.yaml"
-    when: storage_type == "R"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Configure rook-ceph-rbd-sc file
     vars:
@@ -551,7 +553,7 @@
     template:
       src: "rook-storage_class_rbd.j2"
       dest: "../scripts/rook-storage_class_rbd.yaml"
-    when: storage_type == "R"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Add CEPH image variables for air-gapp installation
     lineinfile:
@@ -569,7 +571,7 @@
       - '          value: "registry.{{ domain }}:5000/rook/cephcsi:v1.2.1"'
       - '        - name: ROOK_CSI_SNAPSHOTTER_IMAGE'
       - '          value: "registry.{{ domain }}:5000/rook/csi-snapshotter:v1.2.0"'
-    when: internet_type == 'A' and storage_type == "R"
+    when: internet_type == 'A' and storage_type == "R" and is_one_node == 'Y'
 
   - name: Configure rook operator
     shell:
@@ -577,7 +579,7 @@
     loop:
       - "oc apply -f ../scripts/{{ 'rook-operator.yaml' if is_one_node == 'Y' else 'rook-operator-master.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
       - "oc apply -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-filesystem-master.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
-    when: storage_type == "R"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Wait for Rook operator
     shell:
@@ -586,14 +588,14 @@
     until: "rook_operator_status.stdout == \"0\""
     retries: 20
     delay: 10
-    when: storage_type == "R"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Deploy rook-ceph cluster
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
       - { cmd: "oc apply -f ../scripts/rook-cluster.yaml --kubeconfig ../ocp/auth/kubeconfig" }
-    when: storage_type == "R"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Wait for correct Rook Ceph cluster deployment
     shell:
@@ -602,7 +604,7 @@
     until: "ceph_installation_status.stdout == \"HEALTH_OK\" or ceph_installation_status.stdout == \"HEALTH_WARN\""
     retries: 60
     delay: 10
-    when: storage_type == "R"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Configure storage classes
     shell:
@@ -611,7 +613,7 @@
       - { cmd: "oc apply -f ../scripts/rook-storage_class_rbd.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc patch storageclass rook-ceph-block --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
-    when: storage_type == "R"
+    when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Configure registry PVC file
     vars:
