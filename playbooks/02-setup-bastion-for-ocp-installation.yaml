@@ -627,7 +627,7 @@
 
     - name: "Download RHCOS tools {{ ocp_release }}"
       get_url:
-        url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/{{ ocp_release }}/{{ item.item.file }}"
+        url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/{{ 'stable-'+ocp_major_release if ocp_minor_release == 'latest' else ocp_release }}/{{ item.item.file }}"
         dest: "../gi-temp"
         use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
       with_items: "{{ rhcos_tools.results }}"
