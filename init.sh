@@ -362,8 +362,19 @@ fi
 if [[ $is_onenode == 'N' ]]
 then
 	# Storage type selection
-
-        storage_type='O'
+	while [[ $storage_type == 'O' || "$storage_device" == 'R' ]]
+	do
+		if [[ ! -z "$GI_STORAGE_TYPE" ]]
+                then
+			read -p "Cluster storage is set to [$GI_STORAGE_TYPE], insert (R) for Rook-Ceph, (O) for OCS or confirm curreent selection <ENTER>: " storage_type
+			if [[ $storage_type == '' ]]
+			then
+				storage_type=$GI_STORAGE_TYPE
+			fi
+		else
+			read -p "What kind of cluster storage type will be deployed (O) for OCS (OpenShift Cluster Storage) or (R) for Rook-Ceph: " storage_type
+		fi
+	done
         while [[ $storage_device == '' || -z "$storage_device" ]]
         do
                 if [[ ! -z "$GI_STORAGE_DEVICE" ]]
