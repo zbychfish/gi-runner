@@ -37,6 +37,7 @@ while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
 do	
 	printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
 	read ocp_release_decision
+	ocp_release_decision=${ocp_release_decision:-E}
 	if [[ $ocp_release_decision == 'E' ]]
 	then
 		while [[ $ocp_release == '' ]]
@@ -51,8 +52,9 @@ do
 	then
 		while [[ $ocp_release_stable != '6' && $ocp_release_stable != '7' ]]
 		do
-			printf "Would you like install the latest stable OCP release (4.\e[4m6\e[0m)/4.(7): "
+			printf "Would you like install the latest stable OCP release 4.(\e[4m6\e[0m)/4.(7): "
 			read ocp_release_stable
+			ocp_release_stable=${ocp_release_stable:-6}
 			if [ $ocp_release_stable == '6' ]
 			then
 				ocp_release='4.6.latest'
