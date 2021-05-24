@@ -47,6 +47,7 @@ do
 			fi
 		done
 	elif [ $ocp_release_decision == 'S' ]
+	then
 		while [[ $ocp_release_stable != '6' && $ocp_release_stable != '7' ]]
 		do
 			printf "Would you like install the latest stable OCP release (4.\e[4m6\e[0m)/4.(7): "
@@ -54,7 +55,8 @@ do
 			if [ $ocp_release_stable == '6' ]
 			then
 				ocp_release='4.6.latest'
-			elif
+			elif [ $ocp_release_stable == '7' ]
+			then
 				ocp_release='4.7.latest'
 			fi
 		done
