@@ -23,6 +23,7 @@
     ssh_key:  "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_release:  "{{ lookup('env','GI_OCP_RELEASE') }}"
     ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}" 
+    ocp_minor_release: "{{ ocp_release.split('.')[-1] }}" 
 
 
   tasks:
@@ -52,7 +53,7 @@
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
 
     - debug:
-        msg: "{{ ocp_major_release }}"
+        msg: "{{ ocp_minor_release }}"
 
     - name: Check mirror image registry status
       shell:

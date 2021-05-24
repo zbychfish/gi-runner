@@ -390,7 +390,7 @@ then
 	do
 		if [[ ! -z "$GI_STORAGE_TYPE" ]]
                 then
-			read -p "Cluster storage is set to [$GI_STORAGE_TYPE], insert (R) for Rook-Ceph, (O) for OCS or confirm curreent selection <ENTER>: " storage_type
+			read -p "Cluster storage is set to [$GI_STORAGE_TYPE], insert (R) for Rook-Ceph, (O) for OCS or confirm current selection <ENTER>: " storage_type
 			if [[ $storage_type == '' ]]
 			then
 				storage_type=$GI_STORAGE_TYPE
