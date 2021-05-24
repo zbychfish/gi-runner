@@ -362,7 +362,7 @@ fi
 if [[ $is_onenode == 'N' ]]
 then
 	# Storage type selection
-	while [[ $storage_type == 'O' || "$storage_device" == 'R' ]]
+	while [[ $storage_type != 'O' || "$storage_device" != 'R' ]]
 	do
 		if [[ ! -z "$GI_STORAGE_TYPE" ]]
                 then
