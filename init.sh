@@ -375,6 +375,7 @@ then
 			read -p "What kind of cluster storage type will be deployed (O) for OCS (OpenShift Cluster Storage) or (R) for Rook-Ceph: " storage_type
 		fi
 	done
+	echo export GI_STORAGE_TYPE=$storage_type >> $file
         while [[ $storage_device == '' || -z "$storage_device" ]]
         do
                 if [[ ! -z "$GI_STORAGE_DEVICE" ]]
