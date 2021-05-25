@@ -577,8 +577,6 @@
     delay: 10
     when: storage_type == "R"
 
-  - meta: end_play
-
   - name: Deploy rook-ceph cluster
     shell:
       cmd: "{{ item.cmd }}"
@@ -603,6 +601,8 @@
       - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc patch storageclass rook-cephfs --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "R"
+
+  - meta: end_play
 
   - name: Configure registry PVC file
     vars:
