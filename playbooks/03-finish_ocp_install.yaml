@@ -533,8 +533,6 @@
       dest: "../scripts/rook-cluster.yaml"
     when: storage_type == "R"
 
-  - meta: end_play
-
   - name: Configure rook-ceph-rbd-sc file
     vars:
       replica_size: "{{ 2 if is_one_node == 'N' else 1 }}"
@@ -568,7 +566,7 @@
     loop:
       - "oc apply -f ../scripts/{{ 'rook-operator.yaml' if is_one_node == 'Y' else 'rook-latest-operator.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
       - "oc apply -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-latest-lesystem.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
-    when: storage_type == "R" and is_one_node == 'Y'
+    when: storage_type == "R"
 
   - name: Wait for Rook operator
     shell:
@@ -577,7 +575,9 @@
     until: "rook_operator_status.stdout == \"0\""
     retries: 20
     delay: 10
-    when: storage_type == "R" and is_one_node == 'Y'
+    when: storage_type == "R"
+
+  - meta: end_play
 
   - name: Deploy rook-ceph cluster
     shell:
@@ -593,7 +593,7 @@
     until: "ceph_installation_status.stdout == \"HEALTH_OK\" or ceph_installation_status.stdout == \"HEALTH_WARN\""
     retries: 60
     delay: 10
-    when: storage_type == "R" and is_one_node == 'Y'
+    when: storage_type == "R"
 
   - name: Configure storage classes
     shell:
@@ -601,8 +601,8 @@
     with_items:
       - { cmd: "oc apply -f ../scripts/rook-storage_class_rbd.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --kubeconfig ../ocp/auth/kubeconfig" }
-      - { cmd: "oc patch storageclass rook-ceph-block --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
-    when: storage_type == "R" and is_one_node == 'Y'
+      - { cmd: "oc patch storageclass rook-cephfs --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
+    when: storage_type == "R"
 
   - name: Configure registry PVC file
     vars:
