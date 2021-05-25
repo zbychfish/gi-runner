@@ -529,7 +529,7 @@
     vars:
       multiple_per_node: "{{ 'false' if is_one_node == 'N' else 'true' }}"
     template:
-            src: "{{ 'rook-cluster.j2' if is_one_node == 'Y' else 'rook-latest-cluster.j2' }}"
+      src: "{{ 'rook-cluster.j2' if is_one_node == 'Y' else 'rook-latest-cluster.j2' }}"
       dest: "../scripts/rook-cluster.yaml"
     when: storage_type == "R"
 
