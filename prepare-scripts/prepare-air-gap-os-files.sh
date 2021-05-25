@@ -9,7 +9,7 @@ mkdir -p $air_dir
 # Creates temporary directory
 mkdir -p $temp_dir
 # Gets source bastion release (supported CentOS 8)
-echo `cat /etc/centos-release|awk '{print $NF}'` > $air_dir/os_release.txt
+echo `cat /etc/system-release|grep cpe|awk '{print $NF}'` > $air_dir/os_release.txt
 # Gets kernel version
 echo `uname -r` > $air_dir/kernel.txt
 # Install tar and creates tar.cpio in case of base os where tar is not available
@@ -22,21 +22,21 @@ rm -f *rpm
 dnf -qy install tar
 # Install all required software
 echo -e "Downloading CentOS updates ..."
-dnf update -qy --downloadonly --downloaddir centos-updates
-tar cf $air_dir/centos-updates-`date +%Y-%m-%d`.tar centos-updates
-rm -rf centos-updates
+dnf update -qy --downloadonly --downloaddir os-updates
+tar cf $air_dir/os-updates-`date +%Y-%m-%d`.tar os-updates
+rm -rf os-updates
 echo "Update system ..."
 dnf -qy update
 # Download all OS packages required to install OCP, ICS and GI in air-gap env, some of them from epel (python3 always available on CentOS 8)
-echo "Downloading additional CentOS packages ..."
+echo "Downloading additional OS packages ..."
 packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd-tools podman python3"
 dnf -qy install epel-release
 for package in $packages
 do
-        dnf download -qy --downloaddir centos-packages $package --resolve
+        dnf download -qy --downloaddir os-packages $package --resolve
 done
-tar cf $air_dir/centos-packages-`date +%Y-%m-%d`.tar centos-packages
-rm -rf centos-packages
+tar cf $air_dir/os-packages-`date +%Y-%m-%d`.tar os-packages
+rm -rf os-packages
 # Install packages
 echo "Installing missing packages ..."
 dnf -qy install python3 podman wget
