@@ -527,21 +527,13 @@
       cmd: "oc apply -f ../scripts/{{ 'rook-common.yaml' if is_one_node == 'Y' else 'rook-latest-common.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
-  - name: Configure rook-ceph filesystem file
-    vars:
-      replica_number: "{{ '3' if is_one_node == 'N' else '1' }}"
-    template:
-      src: "rook-filesystem.j2"
-      dest: "../scripts/rook-filesystem.yaml"
-    when: storage_type == "R" and is_one_node == 'Y'
-
   - name: Configure rook-ceph cluster file
     vars:
       multiple_per_node: "{{ 'false' if is_one_node == 'N' else 'true' }}"
     template:
-      src: "{{ 'rook-cluster.j2' if is_one_node == 'Y' else 'rook-cluster-master.j2' }}"
+      src: "{{ 'rook-cluster.j2' if is_one_node == 'Y' else 'rook-latest-cluster.j2' }}"
       dest: "../scripts/rook-cluster.yaml"
-    when: storage_type == "R" and is_one_node == 'Y'
+    when: storage_type == "R"
 
   - name: Configure rook-ceph-rbd-sc file
     vars:
