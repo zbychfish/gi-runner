@@ -582,7 +582,7 @@
       cmd: "{{ item.cmd }}"
     with_items:
       - { cmd: "oc apply -f ../scripts/{{ 'rook-cluster.yaml' if is_one_node == 'Y' else 'rook-latest-cluster.yaml' }} --kubeconfig ../ocp/auth/kubeconfig" }
-    when: storage_type == "R" and is_one_node == 'Y'
+    when: storage_type == "R"
 
   - name: Wait for correct Rook Ceph cluster deployment
     shell:
