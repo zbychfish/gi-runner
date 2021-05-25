@@ -527,14 +527,6 @@
       cmd: "oc apply -f ../scripts/{{ 'rook-common.yaml' if is_one_node == 'Y' else 'rook-latest-common.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
-  - name: Configure rook-ceph operator file
-    vars:
-      replica_number: "{{ '3' if is_one_node == 'N' else '1' }}"
-    template:
-      src: "rook-operator.j2"
-      dest: "../scripts/rook-operator.yaml"
-    when: storage_type == "R" and is_one_node == 'Y'
-
   - name: Configure rook-ceph filesystem file
     vars:
       replica_number: "{{ '3' if is_one_node == 'N' else '1' }}"
