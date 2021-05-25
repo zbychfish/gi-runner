@@ -639,7 +639,7 @@
     until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
     retries: 20
     delay: 10
-    wif is_one_node == 'Y' else 'rook-latest-operator.yaml' }}hen: true
+    when: true
 
   - name: Set public route for image registry
     shell:
