@@ -222,8 +222,6 @@
       src: "ics_operands.j2"
       dest: "../gi-temp/ics_operands.yaml"
 
-  - meta: end_play
-
   - name: Deploy ICS
     shell:
       cmd: "oc apply -f ../gi-temp/ics_operands.yaml"
