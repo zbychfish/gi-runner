@@ -529,7 +529,7 @@
     vars:
       multiple_per_node: "{{ 'false' if is_one_node == 'N' else 'true' }}"
     template:
-      src: "{{ 'rook-cluster.j2' if is_one_node == 'Y' else 'rook-latest-cluster.j2' }}"
+            src: "{{ 'rook-cluster.j2' if is_one_node == 'Y' else 'rook-latest-cluster.j2' }}"
       dest: "../scripts/rook-cluster.yaml"
     when: storage_type == "R"
 
@@ -540,7 +540,7 @@
     template:
       src: "rook-storage_class_rbd.j2"
       dest: "../scripts/rook-storage_class_rbd.yaml"
-    when: storage_type == "R" and is_one_node == 'Y'
+    when: storage_type == "R"
 
   - name: Add CEPH image variables for air-gapp installation
     lineinfile:
@@ -583,7 +583,7 @@
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
-      - { cmd: "oc apply -f ../scripts/rook-cluster.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+      - { cmd: "oc apply -f ../scripts/{{ 'rook-cluster.yaml' if is_one_node == 'Y' else 'rook-latest-cluster.yaml' }} --kubeconfig ../ocp/auth/kubeconfig" }
     when: storage_type == "R" and is_one_node == 'Y'
 
   - name: Wait for correct Rook Ceph cluster deployment
