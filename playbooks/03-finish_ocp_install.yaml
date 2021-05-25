@@ -565,7 +565,7 @@
       cmd: "{{ item }}"
     loop:
       - "oc apply -f ../scripts/{{ 'rook-operator.yaml' if is_one_node == 'Y' else 'rook-latest-operator.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
-      - "oc apply -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-latest-lesystem.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
+      - "oc apply -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-latest-filesystem.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
   - name: Wait for Rook operator
