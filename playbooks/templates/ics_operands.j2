@@ -29,4 +29,13 @@ spec:
 {% if ics_operands[0] == 'Y' %}
         - name: ibm-zen-operator
 {% endif %}
+{% if ics_operands[4] == 'Y' %}
+        - name: ibm-metering-operator
+{% endif %}
+{% if ics_operands[5] == 'Y' %}
+        - name: ibm-mongodb-operator
+{% endif %}
+{% if ics_operands[6] == 'Y' %}
+        - name: ibm-elastic-stack-operator
+{% endif %}
       registry: common-service

@@ -1158,7 +1158,7 @@ then
 	op_option=''
 	while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
 	do
-	        printf "Would you like to install Meetiring operand with ICS?: (N)o/(\e[4mY\e[0m)es: "
+	        printf "Would you like to install Metering operand with ICS?: (N)o/(\e[4mY\e[0m)es: "
 	        read op_option
 	        op_option=${op_option:-Y}
 	done
