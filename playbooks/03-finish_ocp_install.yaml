@@ -602,8 +602,6 @@
       - { cmd: "oc patch storageclass rook-cephfs --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "R"
 
-  - meta: end_play
-
   - name: Configure registry PVC file
     vars:
       storage_class_rw_many: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
@@ -641,7 +639,7 @@
     until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
     retries: 20
     delay: 10
-    when: true
+    wif is_one_node == 'Y' else 'rook-latest-operator.yaml' }}hen: true
 
   - name: Set public route for image registry
     shell:
