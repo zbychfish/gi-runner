@@ -517,10 +517,15 @@
       cmd: "oc label node {{ node_name[0] }}.{{ domain }} role=storage-node --kubeconfig ../ocp/auth/kubeconfig --overwrite=true"
     when: storage_type == "R" and is_one_node == 'Y'
 
+  - name: Configure rook-ceph CRD's
+    shell:
+      cmd: "oc apply -f ../scripts/rook-latest-crds.yaml --kubeconfig ../ocp/auth/kubeconfig"
+    when: storage_type == "R" and is_one_node == 'N'
+
   - name: Configure common rook settings
     shell:
-      cmd: "oc apply -f ../scripts/{{ 'rook-common.yaml' if is_one_node == 'Y' else 'rook-common-master.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
-    when: storage_type == "R" and is_one_node == 'Y'
+      cmd: "oc apply -f ../scripts/{{ 'rook-common.yaml' if is_one_node == 'Y' else 'rook-latest-common.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
+    when: storage_type == "R"
 
   - name: Configure rook-ceph operator file
     vars:
