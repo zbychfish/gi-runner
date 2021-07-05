@@ -9,38 +9,7 @@ mkdir -p $air_dir
 # Creates temporary directory
 mkdir -p $temp_dir
 # Gets list of parameters 
-while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
-do
-        printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
-        read ocp_release_decision
-        ocp_release_decision=${ocp_release_decision:-E}
-        if [[ $ocp_release_decision == 'E' ]]
-        then
-                while [[ $ocp_release == '' ]]
-                do
-                        read -p "Insert OCP version to install: " ocp_release
-                        if [[ `echo $ocp_release|cut -f -2 -d .` != "4.6" && `echo $ocp_release|cut -f -2 -d .` != "4.7" ]]
-                        then
-                                ocp_release=''
-                        fi
-                done
-        elif [[ $ocp_release_decision == 'S' ]]
-        then
-                while [[ $ocp_release_stable != '6' && $ocp_release_stable != '7' ]]
-                do
-                        printf "Would you like install the latest stable OCP release 4.(\e[4m6\e[0m)/4.(7): "
-                        read ocp_release_stable
-                        ocp_release_stable=${ocp_release_stable:-6}
-                        if [ $ocp_release_stable == '6' ]
-                        then
-                                ocp_release='4.6.latest'
-                        elif [ $ocp_release_stable == '7' ]
-                        then
-                                ocp_release='4.7.latest'
-                        fi
-                done
-        fi
-done
+read -p "Insert OCP release to mirror images: " ocp_release
 ocp_major_release=`echo $ocp_release|cut -f -2 -d .`
 read -p "Insert RedHat pull secret: " pull_secret
 echo "$pull_secret" > $temp_dir/pull-secret.txt
@@ -74,16 +43,11 @@ semanage permissive -a NetworkManager_t
 # - Starts portable registry
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2
 cd $temp_dir
+rm -f openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img matchbox-v0.9.0-linux-amd64.tar.gz opm-linux.tar.gz
 # Download external tools and software (OCP, ICS, matchbox)
 echo "Download OCP tools and CoreOS installation files ..."
-if [[ `echo $ocp_release|cut -f3 -d '.'` == 'latest' ]]
-then
-	wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-${ocp_major_release}/openshift-client-linux.tar.gz" > /dev/null
-	wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-${ocp_major_release}/openshift-install-linux.tar.gz" > /dev/null
-else
-	wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-client-linux.tar.gz" > /dev/null
-        wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-install-linux.tar.gz" > /dev/null
-fi
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-client-linux.tar.gz" > /dev/null
+wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-install-linux.tar.gz" > /dev/null
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-initramfs.x86_64.img" > /dev/null
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-kernel-x86_64" > /dev/null
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-rootfs.x86_64.img" > /dev/null
@@ -105,7 +69,7 @@ PRODUCT_REPO='openshift-release-dev'
 RELEASE_NAME="ocp-release"
 LOCAL_SECRET_JSON=$temp_dir/pull-secret-update.txt
 ARCHITECTURE=x86_64
-oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_version}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_version}-${ARCHITECTURE}
+oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_release}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_release}-${ARCHITECTURE}
 # Mirrors OCP operators
 podman stop bastion-registry
 cd /opt/registry
