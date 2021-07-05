@@ -8,8 +8,8 @@ air_dir=$local_directory/air-gap
 mkdir -p $air_dir
 # Creates temporary directory
 mkdir -p $temp_dir
-# Gets source bastion release (supported CentOS 8)
-echo `cat /etc/system-release|awk '{print $NF}'` > $air_dir/os_release.txt
+# Gets source bastion release (supported Fedora)
+echo `cat /etc/system-release|sed -e "s/ /_/g"` > $air_dir/os_release.txt
 # Gets kernel version
 echo `uname -r` > $air_dir/kernel.txt
 # Install tar and creates tar.cpio in case of base os where tar is not available
@@ -30,7 +30,7 @@ dnf -qy update
 # Download all OS packages required to install OCP, ICS and GI in air-gap env, some of them from epel (python3 always available on CentOS 8)
 echo "Downloading additional OS packages ..."
 packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd-tools podman python3"
-dnf -qy install epel-release
+#dnf -qy install epel-release
 for package in $packages
 do
         dnf download -qy --downloaddir os-packages $package --resolve
@@ -50,9 +50,9 @@ done
 tar cf $air_dir/ansible-`date +%Y-%m-%d`.tar ansible
 rm -rf ansible
 cd $air_dir
-tar cf $temp_dir/os-`cat /etc/system-release|awk '{print $1"-"$2"-"$3"-"$NF}'`-`date +%Y-%m-%d`.tar *
+tar cf $temp_dir/os-`cat /etc/system-release|sed -e "s/ /_/g"`-`date +%Y-%m-%d`.tar *
 rm -f *
 mv $temp_dir/os*tar .
 cd $local_directory
 rm -rf $temp_dir
-echo "OS files - copy $air_dir/os-`cat /etc/system-release|awk '{print $1"-"$2"-"$3"-"$NF}'`-`date +%Y-%m-%d`.tar to the air-gap bastion machine"
+echo "OS files - copy $air_dir/os-`cat /etc/system-release|sed -e "s/ /_/g"`-`date +%Y-%m-%d`.tar to the air-gap bastion machine"
