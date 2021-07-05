@@ -9,8 +9,39 @@ mkdir -p $air_dir
 # Creates temporary directory
 mkdir -p $temp_dir
 # Gets list of parameters 
-read -p "Insert OCP version to mirror (for example 4.6.19): " ocp_version
-ocp_major_release=`echo $ocp_version|cut -f -2 -d .`
+while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
+do
+        printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
+        read ocp_release_decision
+        ocp_release_decision=${ocp_release_decision:-E}
+        if [[ $ocp_release_decision == 'E' ]]
+        then
+                while [[ $ocp_release == '' ]]
+                do
+                        read -p "Insert OCP version to install: " ocp_release
+                        if [[ `echo $ocp_release|cut -f -2 -d .` != "4.6" && `echo $ocp_release|cut -f -2 -d .` != "4.7" ]]
+                        then
+                                ocp_release=''
+                        fi
+                done
+        elif [[ $ocp_release_decision == 'S' ]]
+        then
+                while [[ $ocp_release_stable != '6' && $ocp_release_stable != '7' ]]
+                do
+                        printf "Would you like install the latest stable OCP release 4.(\e[4m6\e[0m)/4.(7): "
+                        read ocp_release_stable
+                        ocp_release_stable=${ocp_release_stable:-6}
+                        if [ $ocp_release_stable == '6' ]
+                        then
+                                ocp_release='4.6.latest'
+                        elif [ $ocp_release_stable == '7' ]
+                        then
+                                ocp_release='4.7.latest'
+                        fi
+                done
+        fi
+done
+ocp_major_release=`echo $ocp_release|cut -f -2 -d .`
 read -p "Insert RedHat pull secret: " pull_secret
 echo "$pull_secret" > $temp_dir/pull-secret.txt
 read -p "Insert your mail address to authenticate in RedHat Network: " mail
@@ -45,8 +76,14 @@ podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/li
 cd $temp_dir
 # Download external tools and software (OCP, ICS, matchbox)
 echo "Download OCP tools and CoreOS installation files ..."
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-client-linux.tar.gz" > /dev/null
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-install-linux.tar.gz" > /dev/null
+if [[ `echo $ocp_release|cut -f3 -d '.'` == 'latest' ]]
+then
+	wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-${ocp_major_release}/openshift-client-linux.tar.gz" > /dev/null
+	wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest-${ocp_major_release}/openshift-install-linux.tar.gz" > /dev/null
+else
+	wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-client-linux.tar.gz" > /dev/null
+        wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-install-linux.tar.gz" > /dev/null
+fi
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-initramfs.x86_64.img" > /dev/null
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-kernel-x86_64" > /dev/null
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-rootfs.x86_64.img" > /dev/null
