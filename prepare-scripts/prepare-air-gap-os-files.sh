@@ -9,7 +9,7 @@ mkdir -p $air_dir
 # Creates temporary directory
 mkdir -p $temp_dir
 # Gets source bastion release (supported CentOS 8)
-echo `cat /etc/system-release|grep cpe|awk '{print $NF}'` > $air_dir/os_release.txt
+echo `cat /etc/system-release|awk '{print $NF}'` > $air_dir/os_release.txt
 # Gets kernel version
 echo `uname -r` > $air_dir/kernel.txt
 # Install tar and creates tar.cpio in case of base os where tar is not available
@@ -21,7 +21,7 @@ tar cf $air_dir/tar.cpio *rpm
 rm -f *rpm
 dnf -qy install tar
 # Install all required software
-echo -e "Downloading CentOS updates ..."
+echo -e "Downloading OS updates ..."
 dnf update -qy --downloadonly --downloaddir os-updates
 tar cf $air_dir/os-updates-`date +%Y-%m-%d`.tar os-updates
 rm -rf os-updates
@@ -50,9 +50,9 @@ done
 tar cf $air_dir/ansible-`date +%Y-%m-%d`.tar ansible
 rm -rf ansible
 cd $air_dir
-tar cf $temp_dir/os-`cat /etc/centos-release|awk '{print $1"-"$2"-"$3"-"$NF}'`-`date +%Y-%m-%d`.tar *
+tar cf $temp_dir/os-`cat /etc/system-release|awk '{print $1"-"$2"-"$3"-"$NF}'`-`date +%Y-%m-%d`.tar *
 rm -f *
 mv $temp_dir/os*tar .
 cd $local_directory
 rm -rf $temp_dir
-echo "OS files - copy $air_dir/os-`cat /etc/centos-release|awk '{print $1"-"$2"-"$3"-"$NF}'`-`date +%Y-%m-%d`.tar to the air-gap bastion machine"
+echo "OS files - copy $air_dir/os-`cat /etc/system-release|awk '{print $1"-"$2"-"$3"-"$NF}'`-`date +%Y-%m-%d`.tar to the air-gap bastion machine"
