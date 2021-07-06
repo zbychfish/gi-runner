@@ -76,9 +76,9 @@ cd /opt/registry
 tar cf $air_dir/coreos-registry.tar data
 cd $air_dir
 tar cf coreos-registry-${ocp_version}.tar tools.tar oc-registry.tar coreos-registry.tar
-rm tools.tar oc-registry.tar coreos-registry.tar
+rm -f tools.tar oc-registry.tar coreos-registry.tar
 rm -rf $temp_dir
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
-echo "CoreOS images prepared - copy file ${air_dir}/coreos-registry-${ocp_version}.tar to air-gapped bastion machine"
+echo "CoreOS images prepared - copy file ${air_dir}/coreos-registry-${ocp_release}.tar to air-gapped bastion machine"
