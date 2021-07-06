@@ -24,7 +24,6 @@ do
 done
 ics_version_selected=$(($ics_version_selected-1))
 # Gets source bastion release (supported CentOS 8)
-dnf -qy install epel-release
 dnf -qy install python3 podman wget
 # - cleanup repository if exists
 podman stop bastion-registry
