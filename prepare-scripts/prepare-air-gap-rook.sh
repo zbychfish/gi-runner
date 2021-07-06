@@ -36,7 +36,7 @@ semanage permissive -a NetworkManager_t
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2
 # Packs together centos updates, packages, python libraries and portable image
 # Mirroring Rook-Ceph images (old version for all in one)
-echo "Mirroring open source rook-ceph ..."
+echo "Mirroring open source rook-ceph for onenode installation version 1.1.7 ..."
 images="docker.io/rook/ceph:v1.1.7 quay.io/cephcsi/cephcsi:v1.2.1 quay.io/k8scsi/csi-node-driver-registrar:v1.1.0 quay.io/k8scsi/csi-provisioner:v1.3.0 quay.io/k8scsi/csi-snapshotter:v1.2.0 quay.io/k8scsi/csi-attacher:v1.2.0"
 for image in $images
 do
@@ -52,11 +52,22 @@ do
         rm -rf image.tar
 done
 # Archives mirrored images
+echo "Mirroring open source rook-ceph for not onenode installation version 1.6.3 ..."
+images="docker.io/rook/ceph:v1.6.3 quay.io/cephcsi/cephcsi:v3.3.1 k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.0.1 k8s.gcr.io/sig-storage/csi-resizer:v1.0.1 k8s.gcr.io/sig-storage/csi-provisioner:v2.0.4 k8s.gcr.io/sig-storage/csi-snapshotter:v4.0.0 k8s.gcr.io/sig-storage/csi-attacher:v3.0.2"
+for image in $images
+do
+	echo $image
+        podman pull $image
+        tag=`echo "$image" | awk -F '/' '{print $NF}'`
+        echo "TAG: $tag"
+	podman push $image `hostname --long`:5000/rook/$tag
+	podman rmi $image
+done
 echo "Archiving mirrored registry ..."
 podman stop bastion-registry
 cd /opt/registry
-tar cf ${air_dir}/rook-registry.tar data
+tar cf ${air_dir}/rook-registry-`date +%Y-%m-%d`.tar data
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
-echo "Rook-Ceph images prepared - copy file ${air_dir}/rook-registry.tar to air-gapped bastion machine"
+echo "Rook-Ceph images prepared - copy file ${air_dir}/rook-registry-`date +%Y-%m-%d`.tar to air-gapped bastion machine"
