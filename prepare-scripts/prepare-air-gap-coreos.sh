@@ -75,7 +75,7 @@ podman stop bastion-registry
 cd /opt/registry
 tar cf $air_dir/coreos-registry.tar data
 cd $air_dir
-tar cf coreos-registry-${ocp_version}.tar tools.tar oc-registry.tar coreos-registry.tar
+tar cf coreos-registry-${ocp_release}.tar tools.tar oc-registry.tar coreos-registry.tar
 rm -f tools.tar oc-registry.tar coreos-registry.tar
 rm -rf $temp_dir
 podman rm bastion-registry
