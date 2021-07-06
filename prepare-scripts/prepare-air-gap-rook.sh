@@ -5,7 +5,6 @@ host_fqdn=$( hostname --long )
 air_dir=$local_directory/air-gap
 # Creates temporary directory
 mkdir -p $air_dir
-dnf -qy install epel-release
 dnf -qy install python3 podman wget
 echo "Setup mirror image registry ..."
 # - cleanup repository if exists
