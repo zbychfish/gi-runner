@@ -66,6 +66,7 @@ echo $COMMUNITY_OPERATORS >> $air_dir/operators.txt
 # - Mirrroring process
 podman login $LOCAL_REGISTRY -u admin -p guardium
 podman login registry.redhat.io -u "$rh_account" -p "$rh_account_pwd"
+echo "Mirrorring RedHat Operators - ${REDHAT_OPERATORS} ..."
 opm index prune -f registry.redhat.io/redhat/redhat-operator-index:v${ocp_major_release} -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
 podman push $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
@@ -101,5 +102,4 @@ rm -rf $temp_dir
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
-echo "OLM images prepared for ${ocp_major_release} - copy $air_dir/olm-registry-${ocp_major_version}-`date +%Y-%m-%d`.tarto air-gapped bastion machine"
-
+echo "OLM images prepared for ${ocp_major_release} - copy $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar to air-gapped bastion machine"
