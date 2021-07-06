@@ -92,7 +92,7 @@ cd /opt/registry
 tar cf ${air_dir}/ics_images.tar data
 cd $air_dir
 #tar czpvf - *.tar | split -d -b 10G - ics_registry-${ics_version}.tar
-tar cf ics_registry-${ics_version}.tar ics_images.tar ics_offline.tar cloudctl-linux-amd64.tar.gz
+tar cf ics_registry-${ics_versions[${ics_version_selected}]}.tar ics_images.tar ics_offline.tar cloudctl-linux-amd64.tar.gz
 rm -f ics_offline.tar cloudctl-linux-amd64.tar.gz ics_images.tar
 cd $local_directory
 # Cleanup gi-temp, portable-registry
@@ -100,4 +100,4 @@ podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
 rm -rf $temp_dir
-echo "ICS ${ics_version} files prepared - copy $air_dir/ics_registry-${ics_version}.tar to air-gapped bastion machine"
+echo "ICS ${ics_versions[${ics_version_selected}]} files prepared - copy $air_dir/ics_registry-${ics_versions[${ics_version_selected}]}.tar to air-gapped bastion machine"
