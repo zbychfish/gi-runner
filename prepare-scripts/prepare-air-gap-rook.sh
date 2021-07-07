@@ -12,8 +12,7 @@ podman stop bastion-registry
 podman container prune <<< 'Y'
 rm -rf /opt/registry
 # - Pulls image of portable registry and save it 
-podman pull docker.io/library/registry:2
-podman save -o gi-temp/oc-registry.tar docker.io/library/registry:2.6
+podman pull docker.io/library/registry:2.6
 # - Prepares portable registry directory structure
 mkdir -p /opt/registry/{auth,certs,data}
 # - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
