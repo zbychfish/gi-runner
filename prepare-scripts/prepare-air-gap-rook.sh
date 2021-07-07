@@ -13,7 +13,7 @@ podman container prune <<< 'Y'
 rm -rf /opt/registry
 # - Pulls image of portable registry and save it 
 podman pull docker.io/library/registry:2
-podman save -o gi-temp/oc-registry.tar docker.io/library/registry:2
+podman save -o gi-temp/oc-registry.tar docker.io/library/registry:2.6
 # - Prepares portable registry directory structure
 mkdir -p /opt/registry/{auth,certs,data}
 # - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
@@ -32,7 +32,7 @@ firewall-cmd --reload
 # - Sets SE Linux for NetworkManager
 semanage permissive -a NetworkManager_t
 # - Starts portable registry
-podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2
+podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2.6
 # Packs together centos updates, packages, python libraries and portable image
 # Mirroring Rook-Ceph images (old version for all in one)
 echo "Mirroring open source rook-ceph for onenode installation version 1.1.7 ..."
