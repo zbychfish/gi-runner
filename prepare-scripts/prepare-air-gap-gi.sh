@@ -83,8 +83,10 @@ do
 done
 cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory install --args "--registry `hostname --long`:5000 --user admin --pass guardium"
 # - mirrors ICS images
-cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory install --args "--registry `hostname --long`:5000 --inputDir $temp_dir/gi_offline"
+mirror_status=`cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory install --args "--registry `hostname --long`:5000 --inputDir $temp_dir/gi_offline"`
 # - archives ICS manifests
+echo "Mirroring status: $mirror_status"
+exit 1
 cd $temp_dir
 tar cf $air_dir/gi_offline.tar gi_offline
 rm -rf gi_offline
