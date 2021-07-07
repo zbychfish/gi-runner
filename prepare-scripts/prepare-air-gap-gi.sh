@@ -85,7 +85,6 @@ cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action config
 # - mirrors ICS images
 cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory install --args "--registry `hostname --long`:5000 --inputDir $temp_dir/gi_offline"
 # - archives ICS manifests
-exit 1
 cd $temp_dir
 tar cf $air_dir/gi_offline.tar gi_offline
 rm -rf gi_offline
@@ -93,6 +92,7 @@ podman stop bastion-registry
 cd /opt/registry
 tar cf ${air_dir}/gi_images.tar data
 cd $air_dir
+rm -rf /opt/registry
 #tar czpvf - *.tar | split -d -b 10G - ics_registry-${ics_version}.tar
 tar cf gi_registry-${gi_versions[${gi_version_selected}]}.tar gi_images.tar gi_offline.tar cloudctl-linux-amd64.tar.gz
 rm -f gi_offline.tar cloudctl-linux-amd64.tar.gz gi_images.tar
@@ -100,6 +100,5 @@ cd $local_directory
 # Cleanup gi-temp, portable-registry
 podman rm bastion-registry
 podman rmi --all
-rm -rf /opt/registry
 rm -rf $temp_dir
 echo "GI ${gi_versions[${gi_version_selected}]} files prepared - copy $air_dir/gi_registry-${gi_versions[${gi_version_selected}]}.tar to air-gapped bastion machine"
