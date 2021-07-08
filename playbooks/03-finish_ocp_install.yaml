@@ -75,15 +75,19 @@
     when: is_one_node == 'N' and is_master_only == 'N'
 
   - set_fact:
-      rook_registry: "rook/ceph:v1.1.7"
+    rook_registry: "rook/ceph:v1.1.7"
     when: internet_type != 'A' and is_one_node == 'Y' and storage_type == 'R'
 
   - set_fact:
-          rook_registry: "registry.{{ domain }}:5000/rook/ceph:v1.1.7"
+      rook_registry: "ceph/ceph:v15.2.13"
+    when: internet_type != 'A' and is_one_node == 'Y' and storage_type == 'R'
+
+  - set_fact:
+      rook_registry: "registry.{{ domain }}:5000/rook/ceph:v1.1.7"
     when: internet_type == 'A' and is_one_node == 'Y' and storage_type == 'R'
 
   - set_fact:
-          rook_registry: "registry.{{ domain }}:5000/rook/ceph:v1.6.3"
+      rook_registry: "registry.{{ domain }}:5000/rook/ceph:v15.2.13"
     when: internet_type == 'A' and is_one_node == 'N' and storage_type == 'R'
 
   - name: Modify etcd settings in bootstrap phase for allinone configuration
@@ -334,7 +338,7 @@
 
   - name: Wait - cluster stabilization
     pause:
-      minutes: 1
+      minutes: 3
     when: internet_type == 'A' and is_one_node == 'N'
 
   - name: Check cluster nodes health after Content Source Policy change
