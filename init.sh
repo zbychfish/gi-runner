@@ -149,10 +149,10 @@ then
 fi
 # Check bastion OS (CentOS 8 expected)
 echo "*** Checking CentOS version ***"
-if [ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1":"$3}'` != 'CentOS:8' ]
+if [ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]
 then
         echo "*** ERROR ***"
-        echo "Your bastion machine is not CentOS 8 - please use the supported Operating System"
+        echo "Your bastion machine is not Fedora OS - please use the supported Operating System"
         exit 1
 fi
 # Check tar availability on OS
