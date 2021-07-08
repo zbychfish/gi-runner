@@ -165,27 +165,48 @@
         path: "/etc/systemd/resolved.conf.orig"
       register: resolved_config_presence
 
-    - name: Copy original resolved.conf file
-      copy:
-        src: "/etc/systemd/resolved.conf"
-        dest: "/etc/systemd/resolved.conf.orig"
-      when: resolved_config_presence.stat.exists == false
+    - name: Check original nsswitch.conf file existence
+      stat:
+        path: "/etc/nsswitch.conf.orig"
+      register: nsswitch_config_presence
 
-    - name: Restore original resolved.conf file
+    - name: Copy original nsswitch.conf file
       copy:
-        src: "/etc/systemd/resolved.conf.orig"
-        dest: "/etc/systemd/resolved.conf"
-      when: resolved_config_presence.stat.exists == true
+        src: "/etc/nsswitch.conf"
+        dest: "/etc/nsswitch.conf.orig"
+      when: nsswitch_config_presence.stat.exists == false
+
+    - name: Restore original nsswitch.conf file
+      copy:
+        src: "/etc/nsswitch.conf.orig"
+        dest: "/etc/nsswitch.conf"
+      when: nsswitch_config_presence.stat.exists == true
 
     - name: Set DNS configuration for systemd (Fedora)
       lineinfile:
-        path: "/etc/systemd/resolved.conf"
+        path: "{{ item.path }}"
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
       with_items:
-        - { regexp: "^#DNS=", line: "DNS={{ bas_ip}} {{ dns_forwarder }}" }
+        - { path: "/etc/systemd/resolved.conf", regexp: "^#DNS=", line: "DNS={{ bas_ip}} {{ dns_forwarder }}" }
+        - { path: "/etc/nsswitch.conf", regexp: "^hosts:.*", line: "hosts:      files dns hostname resolve [!UNAVAIL=return]" }
 
-    - meta: end_play
+
+    - name: Unlink resolv.conf
+      file:
+        path: "/etc/resolv.conf"
+        state: absent
+
+    - name: Link resolv.conf
+      file:
+        src: "/run/systemd/resolve/resolv.conf"
+        dest: "/etc/resolv.conf"
+        state: link
+
+    - name: Restart systemd-resolved
+      service:
+        name: systemd-resolved
+        state: restarted
 
     - name: Set Bastion DNS
       command:
@@ -609,11 +630,6 @@
     - name: Set SELINUX for dnsmasq
       shell:
         cmd: semanage permissive -a dnsmasq_t
-
-    - name: Restart systemd-resolved
-      service:
-        name: systemd-resolved
-        state: restarted
 
     - name: Check repository health
       shell:
