@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ $# -ne 0 && $1 != "repeat" ]]
+then
+	echo "To restart mirroring process use paramater 'repeat'"
+	exit 1
+fi
 local_directory=`pwd`
 host_fqdn=$( hostname --long )
 temp_dir=$local_directory/gi-temp
@@ -82,7 +87,6 @@ declare -a cases=(ibm-guardium-insights-2.0.0.tgz)
 CASE_ARCHIVE=${cases[${ics_version_selected}]}
 CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
 # - downloads manifests
-exit 1
 if [ $# -eq 0 ]
 then
 	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $temp_dir/gi_offline
@@ -102,6 +106,7 @@ mirror_status=$?
 echo "Mirroring status: $mirror_status"
 if [ $mirror_status -ne 0 ]
 then
+	echo "Mirroring process failed, restart script with parameter repeat to finish"
 	exit 1
 fi
 cd $temp_dir
