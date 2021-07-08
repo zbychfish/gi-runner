@@ -112,8 +112,23 @@
         paths: "../download"
         patterns: "olm-registry*tar"
       register: find_result
+      when: internet_type == 'A'
 
     - name: Extract OLM archive
+      unarchive:
+        src: "{{ item.path }}"
+        dest: ../gi-temp
+      with_items: "{{ find_result.files }}"
+      when: internet_type == 'A'
+
+    - name: Find rook package
+      find:
+        paths: "../download"
+        patterns: "rook-registry*tar"
+      register: rook_archive
+      when: internet_type == 'A'
+
+    - name: Extract rook archive
       unarchive:
         src: "{{ item.path }}"
         dest: ../gi-temp
@@ -137,10 +152,11 @@
         dest: /opt/registry
       when: internet_type == 'A'
 
-    - name: Extract rook-ceph registry
+    - name: Load rook-ceph registry into local repository
       unarchive:
-        src: "../download/rook-registry.tar"
+        src: "{{ item.path }}"
         dest: /opt/registry
+      with_items: "{{ rook_archive.files }}"
       when: internet_type == 'A'
 
     - name: Check image repository existence
