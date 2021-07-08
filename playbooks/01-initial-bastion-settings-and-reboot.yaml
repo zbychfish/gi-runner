@@ -128,13 +128,6 @@
       register: rook_archive
       when: internet_type == 'A'
 
-    - name: Extract rook archive
-      unarchive:
-        src: "{{ item.path }}"
-        dest: ../gi-temp
-      with_items: "{{ find_result.files }}"
-      when: internet_type == 'A'
-     
     - name: Load image registry into local repository
       shell:
         cmd: podman load -i ../gi-temp/oc-registry.tar

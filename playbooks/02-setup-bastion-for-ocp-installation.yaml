@@ -160,6 +160,33 @@
         - { regexp: "^DNS2=", line: "DNS2=\"{{ dns_forwarder }}\"" }
       when: false #no ifcfg in Fedora use nmcli
 
+    - name: Check original resolved.conf file existence
+      stat:
+        path: "/etc/systemd/resolved.conf.orig"
+      register: resolved_config_presence
+
+    - name: Copy original resolved.conf file
+      copy:
+        src: "/etc/systemd/resolved.conf"
+        dest: "/etc/systemd/resolved.conf.orig"
+      when: resolved_config_presence.stat.exists == false
+
+    - name: Restore original resolved.conf file
+      copy:
+        src: "/etc/systemd/resolved.conf.orig"
+        dest: "/etc/systemd/resolved.conf"
+      when: resolved_config_presence.stat.exists == true
+
+    - name: Set DNS configuration for systemd (Fedora)
+      lineinfile:
+        path: "/etc/systemd/resolved.conf"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: "^#DNS=", line: "DNS={{ bas_ip}} {{ dns_forwarder }}" }
+
+    - meta: end_play
+
     - name: Set Bastion DNS
       command:
         cmd: "{{ item }}"
