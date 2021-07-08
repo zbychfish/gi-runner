@@ -187,14 +187,14 @@ then
 		fi
 	fi
 	# Install software for air-gap installation
-	echo "*** Installing CentOS updates ***"
-        tar xf ${GI_TEMP}/centos-updates*.tar -C ${GI_TEMP} > /dev/null
-        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/centos-updates/*rpm --allowerasing
-        rm -rf ${GI_TEMP}/centos-updates
-        echo "*** Installing CentOS packages ***"
-        tar xf ${GI_TEMP}/centos-packages*.tar -C ${GI_TEMP}  > /dev/null
-        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/centos-packages/*rpm --allowerasing
-        rm -rf ${GI_TEMP}/centos-packages
+	echo "*** Installing OS updates ***"
+        tar xf ${GI_TEMP}/os-updates*.tar -C ${GI_TEMP} > /dev/null
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os-updates/*rpm --allowerasing
+        rm -rf ${GI_TEMP}/os-updates
+        echo "*** Installing OS packages ***"
+        tar xf ${GI_TEMP}/os-packages*.tar -C ${GI_TEMP}  > /dev/null
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os-packages/*rpm --allowerasing
+        rm -rf ${GI_TEMP}/os-packages
         echo "*** Installing Ansible and python modules ***"
         tar xf ${GI_TEMP}/ansible-*.tar -C ${GI_TEMP} > /dev/null
         cd ${GI_TEMP}/ansible
@@ -1090,7 +1090,7 @@ done
 echo "export GI_ICS=$ics_install" >> $file
 if [ $ics_install == 'Y' ]
 then
-        declare -a ics_versions=(3.5.6 3.6.2 3.6.3 3.7.1 3.7.2)
+        declare -a ics_versions=(3.7.1 3.7.2 3.7.4 3.8.1)
         while [[ ( -z $ics_version_selected ) || ( $ics_version_selected -lt 1 || $ics_version_selected -gt $i ) ]]
         do
                 echo "Select ICS version to mirror:"
@@ -1201,8 +1201,8 @@ else
         echo "export GI_PROXY_URL=NO_PROXY" >> $file
 fi
 # Disable virt services for dnsmasq (GNOME starts them)
-systemctl stop libvirtd > /dev/null 2>&1
-systemctl disable libvirtd > /dev/null 2>&1
+#systemctl stop libvirtd > /dev/null 2>&1
+#systemctl disable libvirtd > /dev/null 2>&1
 # Display information
 echo "*** Execute commands below ***"
 echo "- import variables: \". $file\""
