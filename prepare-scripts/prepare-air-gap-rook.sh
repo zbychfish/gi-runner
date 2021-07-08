@@ -45,20 +45,20 @@ do
         podman save -o image.tar $image
         podman rmi $image
         podman load -i image.tar
-        podman push $image `hostname --long`:5000/rook/$tag
+        podman push --creds admin:guardium $image `hostname --long`:5000/rook/$tag 
 	podman rmi $image
         rm -rf image.tar
 done
 # Archives mirrored images
-echo "Mirroring open source rook-ceph for not onenode installation version 1.6.3 ..."
-images="docker.io/rook/ceph:v1.6.3 quay.io/cephcsi/cephcsi:v3.3.1 k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.0.1 k8s.gcr.io/sig-storage/csi-resizer:v1.0.1 k8s.gcr.io/sig-storage/csi-provisioner:v2.0.4 k8s.gcr.io/sig-storage/csi-snapshotter:v4.0.0 k8s.gcr.io/sig-storage/csi-attacher:v3.0.2"
+echo "Mirroring open source rook-ceph for not onenode installation version 1.6.7 ..."
+images="docker.io/ceph/ceph:v15.2.13 quay.io/cephcsi/cephcsi:v3.3.1 k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.2.0 k8s.gcr.io/sig-storage/csi-resizer:v1.2.0 k8s.gcr.io/sig-storage/csi-provisioner:v2.2.2 k8s.gcr.io/sig-storage/csi-snapshotter:v4.1.1 k8s.gcr.io/sig-storage/csi-attacher:v3.2.1"
 for image in $images
 do
 	echo $image
         podman pull $image
         tag=`echo "$image" | awk -F '/' '{print $NF}'`
         echo "TAG: $tag"
-	podman push $image `hostname --long`:5000/rook/$tag
+	podman push --creds admin:guardium $image `hostname --long`:5000/rook/$tag
 	podman rmi $image
 done
 echo "Archiving mirrored registry ..."

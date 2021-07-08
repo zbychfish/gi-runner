@@ -135,19 +135,19 @@
       stat:
         path: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
       register: nic_config_presence
-      when: true
+      when: false
 
     - name: Restore original NIC config file
       copy:
         src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
         dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
-      when: nic_config_presence.stat.exists == true
+      when: false and nic_config_presence.stat.exists == true
 
     - name: Copy original NIC config file
       copy:
         src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
         dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
-      when: nic_config_presence.stat.exists == false
+      when: false and nic_config_presence.stat.exists == false
 
     - name: Switch off peer DNS configuration
       lineinfile:
@@ -158,11 +158,21 @@
         - { regexp: "^PEERDNS=", line: "PEERDNS=\"yes\"" }
         - { regexp: "^DNS1=", line: "DNS1=\"127.0.0.1\"" }
         - { regexp: "^DNS2=", line: "DNS2=\"{{ dns_forwarder }}\"" }
+      when: false #no ifcfg in Fedora use nmcli
+
+    - name: Set Bastion DNS
+      command:
+        cmd: "{{ item }}"
+      with_items:
+        - "nmcli c modify {{ bas_int }} ipv4.ignore-auto-dns yes"
+        - "nmcli c modify {{ bas_int }} ipv4.dns \"127.0.0.1 {{ dns_forwarder }}\"" 
+      when: false
 
     - name: Restart Network Manager
       service:
         name: NetworkManager
         state: restarted
+      when: false
 
     - name: Clean TFTP directory
       file:
@@ -462,7 +472,7 @@
         path: "/etc/dnsmasq.conf.orig"
       register: dnsmasq_config_presence
 
-    - name: Restore original NIC config file
+    - name: Restore original dnsmasq config file
       copy:
         src: "/etc/dnsmasq.conf.orig"
         dest: "/etc/dnsmasq.conf"
@@ -572,6 +582,11 @@
     - name: Set SELINUX for dnsmasq
       shell:
         cmd: semanage permissive -a dnsmasq_t
+
+    - name: Restart systemd-resolved
+      service:
+        name: systemd-resolved
+        state: restarted
 
     - name: Check repository health
       shell:
