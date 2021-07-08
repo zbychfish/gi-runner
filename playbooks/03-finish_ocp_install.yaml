@@ -565,25 +565,17 @@
       - '          value: "registry.{{ domain }}:5000/rook/csi-snapshotter:v1.2.0"'
     when: internet_type == 'A' and storage_type == "R" and is_one_node == 'Y'
 
-  - name: Add CEPH image variables for air-gapp installation for multi node
-    lineinfile:
-      path: ../scripts/rook-latest-operator.yaml
-      insertbefore: "  # (Optional) set user created priorityclassName for csi plugin pods."
-      line: "{{ item }}"
-    loop:
-      - '        - name: ROOK_CSI_PROVISIONER_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/csi-provisioner:v2.2.0"'
-      - '        - name: ROOK_CSI_REGISTRAR_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/csi-node-driver-registrar:v2.2.0"'
-      - '        - name: ROOK_CSI_ATTACHER_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/csi-attacher:v1.2.0"'
-      - '        - name: ROOK_CSI_CEPH_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/cephcsi:v3.3.1"'
-      - '        - name: ROOK_CSI_SNAPSHOTTER_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/csi-snapshotter:v4.1.1"'
-      - '        - name: ROOK_CSI_RESIZER_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/csi-resizer:v3.2.1"'
+  - name: Configure rook operator file offline
+    template:
+      src: "rook-latest-operator-offline.j2"
+      dest: "../scripts/rook-latest-operator.yaml"
     when: internet_type == 'A' and storage_type == "R" and is_one_node == 'N'
+
+  - name: Configure rook operator file online
+    template:
+      src: "rook-latest-operator.j2"
+      dest: "../scripts/rook-latest-operator.yaml"
+    when: internet_type != 'A' and storage_type == "R" and is_one_node == 'N'
 
   - meta: end_play
     when: true
