@@ -36,13 +36,22 @@
       - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
       - { name: "GI_ICS", value: "{{ is_ics }}" }
       - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
+
+  - set_fact:
+      operator: "registry.{{ domain }}:5000/rook/ceph:v1.1.7"
+    when: is_one_node == 'Y'
+
       
   - set_fact:
-      image: "{{ 'rook/ceph:v1.1.7' if internet_type != 'A' else 'registry.{{ domain }}:5000/rook/ceph:v1.1.7' }}"
+      image: "{{ 'rook/ceph:v1.1.7' if internet_type != 'A' else operator }}"
     when: is_one_node == 'Y'
 
   - set_fact:
-      image: "{{ 'rook/ceph:v1.6.7' if internet_type != 'A' else 'registry.{{ domain }}:5000/rook/ceph:v1.6.7' }}"
+      operator: "registry.{{ domain }}:5000/rook/ceph:v1.6.7"
+    when: is_one_node == 'N'
+
+  - set_fact:
+      image: "{{ 'rook/ceph:v1.6.7' if internet_type != 'A' else operator }}"
     when: is_one_node == 'N'
 
   - name: Set parameters for air-gapped installation
@@ -613,9 +622,6 @@
     retries: 60
     delay: 10
     when: storage_type == "R"
-
-  - meta: end_play
-    when: true
 
   - name: Configure storage classes
     shell:
