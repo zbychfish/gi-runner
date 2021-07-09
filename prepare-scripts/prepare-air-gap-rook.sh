@@ -51,7 +51,7 @@ do
 done
 # Archives mirrored images
 echo "Mirroring open source rook-ceph for not onenode installation version 1.6.7 ..."
-images="docker.io/ceph/ceph:v1.6.7 docker.io/ceph/ceph:v15.2.13 quay.io/cephcsi/cephcsi:v3.3.1 k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.2.0 k8s.gcr.io/sig-storage/csi-resizer:v1.2.0 k8s.gcr.io/sig-storage/csi-provisioner:v2.2.2 k8s.gcr.io/sig-storage/csi-snapshotter:v4.1.1 k8s.gcr.io/sig-storage/csi-attacher:v3.2.1"
+images="docker.io/rook/ceph:v1.6.7 docker.io/ceph/ceph:v15.2.13 quay.io/cephcsi/cephcsi:v3.3.1 k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.2.0 k8s.gcr.io/sig-storage/csi-resizer:v1.2.0 k8s.gcr.io/sig-storage/csi-provisioner:v2.2.2 k8s.gcr.io/sig-storage/csi-snapshotter:v4.1.1 k8s.gcr.io/sig-storage/csi-attacher:v3.2.1"
 for image in $images
 do
 	echo $image
