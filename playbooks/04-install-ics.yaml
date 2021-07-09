@@ -10,6 +10,8 @@
     ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
+    install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
+    gi_version:  "{{ lookup('env','GI_VERSION') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -24,6 +26,8 @@
       - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
       - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
+      - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
+      - { name: "GI_VERSION", value: "{{ gi_version }}" }
 
   - name: Set parameters for air-gapped installation
     set_fact:
@@ -52,7 +56,7 @@
       ics_version: "{{ ics_versions[ics_version_hint|int] }}"
       ics_case: "{{ ics_cases[ics_version_hint|int] }}"
       ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
-      ics_operands_arr: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
+      ics_operands_arr: "{{ lookup('env', 'GI_ICS_OPERANDS').split(',') }}"
 
   - debug:
       var: ics_case
@@ -61,7 +65,20 @@
     unarchive:
       src: "../download/ics_registry-{{ ics_version }}.tar"
       dest: ../gi-temp
-    when: internet_type == 'A'
+    when: internet_type == 'A' and install_gi == 'N'
+
+  - name: Extract GI archive
+    unarchive:
+      src: "../download/gi_registry-{{ gi_version }}.tar"
+      dest: ../gi-temp
+    when: false and internet_type == 'A' and install_gi == 'Y' #ansible creates 2 copies of huge file
+
+  - name: Extract GI archive (using direct tar)
+    shell:
+      cmd: "tar xf ../download/gi_registry-{{ gi_version }}.tar -C ../gi-temp"
+    when: internet_type == 'A' and install_gi == 'Y'
+
+  - meta: end_play
 
   - name: Create ICS operator namespace
     shell:
@@ -112,7 +129,13 @@
     unarchive:
       src: "../gi-temp/ics_offline.tar"
       dest: ../gi-temp
-    when: internet_type == 'A'
+    when: internet_type == 'A' and install_gi == 'N'
+
+  - name: Unpack GI manifests
+    unarchive:
+      src: "../gi-temp/gi_offline.tar"
+      dest: ../gi-temp
+    when: internet_type == 'A' and install_gi == 'Y'
 
   - name: Stop portable registry
     shell:
@@ -121,11 +144,15 @@
       - podman stop bastion-registry
     when: internet_type == 'A'
 
-  - name: Extract ICS registry
+  - meta: end_play
+
+  - name: Extract registry
     unarchive:
-      src: "../gi-temp/ics_images.tar"
+      src: "'../gi-temp/ics_images.tar' if install_gi == 'N' else '../gi-temp/gi_images.tar'"
       dest: /opt/registry
     when: internet_type == 'A'
+
+  - meta: end_play
 
   - name: Start portable registry
     shell:
