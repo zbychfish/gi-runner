@@ -38,8 +38,12 @@
       - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
       
   - set_fact:
-      image: "rook/ceph:v1.1.7"
-    when: internet_type != 'A'
+      image: "{{ 'rook/ceph:v1.1.7' if internet_type != 'A' else 'registry.{{ domain }}:5000/rook/ceph:v1.1.7' }}"
+    when: is_one_node == 'Y'
+
+  - set_fact:
+      image: "{{ 'rook/ceph:v1.6.7' if internet_type != 'A' else 'registry.{{ domain }}:5000/rook/ceph:v1.6.7' }}"
+    when: is_one_node == 'N'
 
   - name: Set parameters for air-gapped installation
     set_fact:
@@ -577,9 +581,6 @@
       dest: "../scripts/rook-latest-operator.yaml"
     when: internet_type != 'A' and storage_type == "R" and is_one_node == 'N'
 
-  - meta: end_play
-    when: true
-
   - name: Configure rook operator
     shell:
       cmd: "{{ item }}"
@@ -612,6 +613,9 @@
     retries: 60
     delay: 10
     when: storage_type == "R"
+
+  - meta: end_play
+    when: true
 
   - name: Configure storage classes
     shell:
