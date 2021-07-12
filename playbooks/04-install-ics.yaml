@@ -152,12 +152,12 @@
   - name: Set archive and repository for offline installation
     set_fact:
       offline_archive: "{{ '../gi-temp/ics_images.tar' if install_gi == 'N' else '../gi-temp/gi_images.tar' }}"
-      offline_inventory: "{{ '..gi-temp/ics_offline' if install_gi == 'N' else '../gi-temp/gi_offline' "
+      offline_inventory: "{{ '..gi-temp/ics_offline' if install_gi == 'N' else '../gi-temp/gi_offline' }}"
 
   - name: Extract registry
     shell:
       cmd: "tar xf {{ offline_archive }} -C /opt/registry"
-    when: internet_type == 'A'
+    when: false and internet_type == 'A'
 
   - name: Start portable registry
     shell:
