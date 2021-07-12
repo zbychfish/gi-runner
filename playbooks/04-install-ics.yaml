@@ -149,10 +149,13 @@
       - podman stop bastion-registry
     when: internet_type == 'A'
 
+  - name: Set archive to unpack
+    set_fact:
+      offline_archive: "{{ '../gi-temp/ics_images.tar' if install_gi == 'N' else '../gi-temp/gi_images.tar' }}"
+
   - name: Extract registry
-    unarchive:
-      src: "'../gi-temp/ics_images.tar' if install_gi == 'N' else '../gi-temp/gi_images.tar'"
-      dest: /opt/registry
+    shell:
+      cmd: "tar xf {{ offline_archive }} -C /opt/registry"
     when: internet_type == 'A'
 
   - name: Start portable registry
