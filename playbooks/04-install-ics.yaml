@@ -76,9 +76,14 @@
   - name: Extract GI archive (using direct tar)
     shell:
       cmd: "tar xf ../download/gi_registry-{{ gi_version }}.tar -C ../gi-temp"
-    when: internet_type == 'A' and install_gi == 'Y'
+    when: false and internet_type == 'A' and install_gi == 'Y'
 
-  - meta: end_play
+  - name: Remove GI archive to safe storage on bastion
+    file:
+      path: "../download/gi_registry-{{ gi_version }}.tar"
+      state: absent
+    when: internet_type == 'A' and install_gi == 'Y'
+    ignore_errors: yes
 
   - name: Create ICS operator namespace
     shell:
@@ -144,15 +149,11 @@
       - podman stop bastion-registry
     when: internet_type == 'A'
 
-  - meta: end_play
-
   - name: Extract registry
     unarchive:
       src: "'../gi-temp/ics_images.tar' if install_gi == 'N' else '../gi-temp/gi_images.tar'"
       dest: /opt/registry
     when: internet_type == 'A'
-
-  - meta: end_play
 
   - name: Start portable registry
     shell:
@@ -160,6 +161,8 @@
     loop:
       - podman start bastion-registry
     when: internet_type == 'A'
+
+  - meta: end_play
 
   - name: Switch ICS inventory to portable registry
     shell:

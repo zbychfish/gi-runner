@@ -22,6 +22,7 @@ podman container prune <<< 'Y'
 rm -rf /opt/registry
 # - Pulls image of portable registry and save it 
 podman pull docker.io/library/registry:2.6
+rm -f $air_dir/oc-registry.tar
 podman save -o $air_dir/oc-registry.tar docker.io/library/registry:2.6
 # - Prepares portable registry directory structure
 mkdir -p /opt/registry/{auth,certs,data}
@@ -53,6 +54,7 @@ wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-rootfs.x86_64.img" > /dev/null
 wget "https://github.com/poseidon/matchbox/releases/download/v0.9.0/matchbox-v0.9.0-linux-amd64.tar.gz" > /dev/null
 wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz" > /dev/null
+rm -r $air_dir/tools.tar
 tar cf $air_dir/tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v0.9.0-linux-amd64.tar.gz
 # Install OCP tools
 tar xf openshift-client-linux.tar.gz -C /usr/local/bin
