@@ -149,9 +149,10 @@
       - podman stop bastion-registry
     when: internet_type == 'A'
 
-  - name: Set archive to unpack
+  - name: Set archive and repository for offline installation
     set_fact:
       offline_archive: "{{ '../gi-temp/ics_images.tar' if install_gi == 'N' else '../gi-temp/gi_images.tar' }}"
+      offline_inventory: "{{ '..gi-temp/ics_offline' if install_gi == 'N' else '../gi-temp/gi_offline' "
 
   - name: Extract registry
     shell:
@@ -165,11 +166,9 @@
       - podman start bastion-registry
     when: internet_type == 'A'
 
-  - meta: end_play
-
   - name: Switch ICS inventory to portable registry
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/ics_offline/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir ../gi-temp/ics_offline\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ offline_inventory }}\""
     when: internet_type == 'A'
 
   - name: Wait for cluster reconfiguration
@@ -199,7 +198,7 @@
 
   - name: Publish ICS catalog in air-gap
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/ics_offline/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
     when: internet_type == 'A'
 
   - name: Wait for ICS catalog
@@ -254,6 +253,8 @@
     template:
       src: "ics_operands.j2"
       dest: "../gi-temp/ics_operands.yaml"
+
+  - meta: end_play
 
   - name: Deploy ICS
     shell:
