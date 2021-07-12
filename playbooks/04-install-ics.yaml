@@ -76,7 +76,8 @@
   - name: Extract GI archive (using direct tar)
     shell:
       cmd: "tar xf ../download/gi_registry-{{ gi_version }}.tar -C ../gi-temp"
-    when: false and internet_type == 'A' and install_gi == 'Y'
+    when: internet_type == 'A' and install_gi == 'Y'
+    ignore_errors: yes
 
   - name: Remove GI archive to safe storage on bastion
     file:
@@ -157,7 +158,7 @@
   - name: Extract registry
     shell:
       cmd: "tar xf {{ offline_archive }} -C /opt/registry"
-    when: false and internet_type == 'A'
+    when: internet_type == 'A'
 
   - name: Start portable registry
     shell:
