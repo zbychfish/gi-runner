@@ -255,8 +255,6 @@
       src: "ics_operands.j2"
       dest: "../gi-temp/ics_operands.yaml"
 
-  - meta: end_play
-
   - name: Deploy ICS
     shell:
       cmd: "oc apply -f ../gi-temp/ics_operands.yaml"
@@ -265,7 +263,7 @@
     pause:
       minutes: 3
 
-  - name: Wait for successful ICS deployment (takes 10-20 minutes)
+  - name: Wait for successful ICS deployment (takes 20-60 minutes)
     shell:
       cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
     register: ics_pods_status
