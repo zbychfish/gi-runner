@@ -9,7 +9,6 @@
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
     gi_version:  "{{ lookup('env','GI_VERSION') }}"
     gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
-    ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     db2_nodes: "{{ lookup('env','GI_DB2_NODES') }}"
     gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
     storage_type:  "{{ lookup('env','GI_STORAGE') }}"
@@ -174,7 +173,7 @@
     shell:
       cmd: "oc get sts -n gi|grep db2-db2u|wc -l"
     register: db2u_initiated
-     until: "db2_initiated.stdout == \"1\""
+    until: "db2_initiated.stdout == \"1\""
     retries: 80
     delay: 20
 
@@ -186,7 +185,7 @@
     shell:
       cmd: "oc get sts -n gi|grep db2-db2u|grep 1/1|wc -l"
     register: db2u_initiated
-     until: "db2_initiated.stdout == \"1\""
+    until: "db2_initiated.stdout == \"1\""
     retries: 80
     delay: 20
 
