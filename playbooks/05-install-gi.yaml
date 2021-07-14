@@ -1,0 +1,307 @@
+- hosts: bastion
+  vars:
+    internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+    domain: "{{ lookup('env','GI_DOMAIN') }}"
+    ics_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
+    ics_versions: [ "3.7.1","3.7.2","3.7.4","3.8.1" ]
+    ics_cases: [ "ibm-cp-common-services-1.3.1.tgz","ibm-cp-common-services-1.3.2.tgz","ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz" ]
+    is_one_node: "{{ lookup('env','GI_ONENODE') }}"
+    ics_size_hint: "{{ lookup('env','GI_ICS_SIZE') }}"
+    ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
+    ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+    bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
+    install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
+    gi_version:  "{{ lookup('env','GI_VERSION') }}"
+  
+  tasks:
+  - name: Check other configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
+      - { name: "GI_DOMAIN", value: "{{ domain }}" }
+      - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
+      - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
+      - { name: "GI_ICS_SIZE", value: "{{ ics_size_hint }}" }
+      - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
+      - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
+      - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
+      - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
+      - { name: "GI_VERSION", value: "{{ gi_version }}" }
+
+  - name: Set parameters for air-gapped installation
+    set_fact:
+      repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
+      repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
+    when: internet_type == 'A'
+
+  - name: Check configuration parameters for air-gapped installation
+    fail: msg="Variable {{ item.name }} is not set"
+    when: internet_type == 'A' and item.value == ""
+    loop:
+      - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
+      - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+
+  - name: Set masters array
+    set_fact:
+      node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
+      node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
+      node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
+
+  - name: Set ICS installation variables
+    set_fact:
+      ics_operator_namespace: "common-service"
+      ics_case_name: "ibm-cp-common-services"
+      ics_case_inventory_setup: "ibmCommonServiceOperatorSetup"
+      ics_version: "{{ ics_versions[ics_version_hint|int] }}"
+      ics_case: "{{ ics_cases[ics_version_hint|int] }}"
+      ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
+      ics_operands_arr: "{{ lookup('env', 'GI_ICS_OPERANDS').split(',') }}"
+
+  - debug:
+      var: ics_case
+
+  - name: Extract ICS archive
+    unarchive:
+      src: "../download/ics_registry-{{ ics_version }}.tar"
+      dest: ../gi-temp
+    when: internet_type == 'A' and install_gi == 'N'
+
+  - name: Extract GI archive
+    unarchive:
+      src: "../download/gi_registry-{{ gi_version }}.tar"
+      dest: ../gi-temp
+    when: false and internet_type == 'A' and install_gi == 'Y' #ansible creates 2 copies of huge file
+
+  - name: Extract GI archive (using direct tar)
+    shell:
+      cmd: "tar xf ../download/gi_registry-{{ gi_version }}.tar -C ../gi-temp"
+    when: internet_type == 'A' and install_gi == 'Y'
+    ignore_errors: yes
+
+  - name: Remove GI archive to safe storage on bastion
+    file:
+      path: "../download/gi_registry-{{ gi_version }}.tar"
+      state: absent
+    when: internet_type == 'A' and install_gi == 'Y'
+    ignore_errors: yes
+
+  - name: Create ICS operator namespace
+    shell:
+      cmd: "oc create namespace {{ ics_operator_namespace }}"
+    ignore_errors: yes
+
+  - name: Check presence of cloudctl tool
+    stat:
+      path: "../gi-temp/{{ item.file }}"
+    register: cloudctl_tool
+    with_items:
+      - { file: "cloudctl-linux-amd64.tar.gz" }
+    ignore_errors: true
+
+  - name: Stop if cloudct tool is not uploaded for air-gapped installation
+    fail:
+      msg: "Please upload cloud tool to download directory"
+    with_items: "{{ cloudctl_tool.results }}"
+    when: item.stat.exists == False and internet_type == 'A'
+
+  - name: "Download cloud tool"
+    get_url:
+      url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz"
+      dest: "../gi-temp"
+      use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+    when: internet_type != 'A'
+
+  - name: Unpack cloudctl tools
+    shell:
+      cmd: tar xf ../gi-temp/{{ item.src }} -C /usr/local/bin
+      warn: no
+    with_items:
+      - { src: "cloudctl-linux-amd64.tar.gz" }
+
+  - name: Standarize cloudctl name
+    command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
+
+  - name: Set correct rights for RHCOS tools in /usr/local/bin
+    file:
+      path: "/usr/local/bin/{{ item.file }}"
+      owner: root
+      group: root
+      mode: 0755
+    with_items:
+      - { file: "cloudctl" }
+
+  - name: Unpack ICS manifests
+    unarchive:
+      src: "../gi-temp/ics_offline.tar"
+      dest: ../gi-temp
+    when: internet_type == 'A' and install_gi == 'N'
+
+  - name: Unpack GI manifests
+    unarchive:
+      src: "../gi-temp/gi_offline.tar"
+      dest: ../gi-temp
+    when: internet_type == 'A' and install_gi == 'Y'
+
+  - name: Stop portable registry
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - podman stop bastion-registry
+    when: internet_type == 'A'
+
+  - name: Set archive and repository for offline installation
+    set_fact:
+      offline_archive: "{{ '../gi-temp/ics_images.tar' if install_gi == 'N' else '../gi-temp/gi_images.tar' }}"
+      offline_inventory: "{{ '..gi-temp/ics_offline' if install_gi == 'N' else '../gi-temp/gi_offline' }}"
+
+  - name: Extract registry
+    shell:
+      cmd: "tar xf {{ offline_archive }} -C /opt/registry"
+    when: internet_type == 'A'
+
+  - name: Start portable registry
+    shell:
+      cmd: "{{ item }}"
+    loop:
+      - podman start bastion-registry
+    when: internet_type == 'A'
+
+  - name: Switch ICS inventory to portable registry
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ offline_inventory }}\""
+    when: internet_type == 'A'
+
+  - name: Wait for cluster reconfiguration
+    pause:
+      minutes: 3
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
+    shell:
+      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
+    register: co_status
+    until: "co_status.stdout == \"0\""
+    retries: 150
+    delay: 20
+    when: internet_type == 'A' and is_one_node == 'N'
+
+  - name: Create ICS catalog file
+    template:
+      src: ics_catalog.j2
+      dest: "../gi-temp/ics_catalog.yaml"
+    when: internet_type != 'A'
+
+  - name: Publish ICS catalog
+    shell:
+      cmd: "oc apply -f ../gi-temp/ics_catalog.yaml"
+    when: internet_type != 'A'
+
+  - name: Publish ICS catalog in air-gap
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
+    when: internet_type == 'A'
+
+  - name: Wait for ICS catalog
+    shell:
+      cmd: "oc get pods -n openshift-marketplace|grep opencloud-operators|grep 1/1|grep Running|wc -l"
+    register: ics_catalog_status
+    until: "ics_catalog_status.stdout == \"1\""
+    retries: 30
+    delay: 10
+
+  - name: Wait for ICS catalog source
+    shell:
+      cmd: "oc get catalogsource -n openshift-marketplace|grep opencloud-operators|wc -l"
+    register: ics_catalog_source_status
+    until: "ics_catalog_source_status.stdout == \"1\""
+    retries: 30
+    delay: 10
+
+  - name: Subscribe ICS operator
+    shell:
+      cmd: "oc apply -f ../scripts/ics_subscription.yaml"
+
+  - name: Wait for ICS csv
+    shell:
+      cmd: "oc -n common-service get csv|grep ibm-common-service-operator|grep Succeeded|wc -l"
+    register: ics_csv_status
+    until: "ics_csv_status.stdout == \"1\""
+    retries: 30
+    delay: 10
+
+  - name: Wait for ICS crd's
+    shell:
+      cmd: "oc get crd | grep operandrequest|wc -l"
+    register: ics_crd_status
+    until: "ics_crd_status.stdout == \"1\""
+    retries: 30
+    delay: 10
+
+  - name: Set ICS deployment size
+    shell:
+      cmd: "oc patch commonservice common-service -n ibm-common-services --type=\"json\" -p='[{\"op\": \"replace\", \"path\": \"/spec/size\", \"value\": \"{{ ics_size }}\"}]'"
+
+  - name: Wait for deployment size change
+    shell:
+      cmd: "oc get commonservice common-service -n ibm-common-services -o json|jq -r .status.phase"
+    register: ics_commonservice_status
+    until: "ics_commonservice_status.stdout == \"Succeeded\""
+    retries: 30
+    delay: 10
+
+  - name: Generate operands file
+    template:
+      src: "ics_operands.j2"
+      dest: "../gi-temp/ics_operands.yaml"
+
+  - name: Deploy ICS
+    shell:
+      cmd: "oc apply -f ../gi-temp/ics_operands.yaml"
+
+  - name: Wait for operands deployment initiation
+    pause:
+      minutes: 3
+
+  - name: Wait for successful ICS deployment (takes 20-60 minutes)
+    shell:
+      cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+    register: ics_pods_status
+    until: "ics_pods_status.stdout == \"0\""
+    retries: 80
+    delay: 20
+
+  - name: Check pod's containers status
+    shell:
+      cmd: "oc get pods -n ibm-common-services|grep Running|awk '{print $2}'|awk -F'/' '$1!=$2'|wc -l"
+    register: ics_containers_status
+    until: "ics_containers_status.stdout == \"0\""
+    retries: 80
+    delay: 20
+
+  - name: Login to ICS
+    shell:
+      cmd: "cloudctl login -a https://cp-console.apps.{{ domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
+
+  - name: Set ICS admin password
+    shell:
+      cmd: "cloudctl pm update-secret ibm-common-services platform-auth-idp-credentials -f -d admin_password='{{ ics_admin_password }}'"
+
+  - name: Wait for authentication changes
+    pause:
+      minutes: 3
+
+  - name: Wait for successful password change
+    shell:
+      cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+    register: ics_pods_status
+    until: "ics_pods_status.stdout == \"0\""
+    retries: 80
+    delay: 20
+
+  - debug:
+      msg:
+        - "IBM Common Services {{ ics_version }} installation finished"
+        - Update the hosts file on your web browser workstation
+        - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} cp-console.apps.{{ domain }}"
+        - "Login to ICS console as admin user - https://cp-console.apps.{{ domain }}"
