@@ -11,6 +11,8 @@
     gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     db2_nodes: "{{ lookup('env','GI_DB2_NODES') }}"
+    gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
+    storage_type:  "{{ lookup('env','GI_STORAGE') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -27,6 +29,8 @@
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_DB2_NODES", value: "{{ db2_nodes }}" }
+      - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
+      - { name: "GI_STORAGE", value: "{{ storage_type }}" }
 
   - name: Set parameters for air-gapped installation
     set_fact:
@@ -53,6 +57,7 @@
       gi_case_archive: "ibm-guardium-insights-2.0.0.tgz"
       offline_inventory: "gi_offline"
       ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
+      storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-fs' }}"
 
   - debug:
       var: ics_case
@@ -151,12 +156,12 @@
       - { operator_pattern: "mongodb-kubernetes-operator" }
       - { operator_pattern: "mongodb-kubernetes-operator" }
 
-  - meta: end_play
-
-  - name: Generate operands file
+  - name: Generate GI deployment file
     template:
-      src: "ics_operands.j2"
-      dest: "../gi-temp/ics_operands.yaml"
+      src: "gi.j2"
+      dest: "../gi-temp/gi.yaml"
+
+  - meta: end_play2
 
   - name: Deploy ICS
     shell:
