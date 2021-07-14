@@ -171,25 +171,25 @@
     shell:
       cmd: "oc get sts -n gi|grep db2-db2u|wc -l"
     register: db2u_initiated
-    until: "db2_initiated.stdout == \"1\""
+    until: "db2u_initiated.stdout == \"1\""
     retries: 80
     delay: 20
 
   - name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part2)
     shell:
-      cmd: "oc patch sts c-{{ gi_namespace }}-db2-db2u -p='{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"db2u\",\"tty\":false}]}}}}}"
+      cmd: "oc patch sts c-{{ gi_namespace }}-db2-db2u -p='{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"db2u\",\"tty\":false}]}}}}}'"
 
   - name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part3)
     shell:
       cmd: "oc get sts -n gi|grep db2-db2u|grep 1/1|wc -l"
     register: db2u_initiated
-    until: "db2_initiated.stdout == \"1\""
+    until: "db2u_initiated.stdout == \"1\""
     retries: 80
     delay: 20
 
   - name: Wait for successful GI deployment (takes 20-60 minutes)
     shell:
-      cmd: "oc get guardiuminsights -o json|jq .items[0].status.versions.reconciled"
+      cmd: "oc get guardiuminsights -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
     register: gi_deployment_status
     until: "gi_deployment_status.stdout == \"3.0.0\""
     retries: 100
