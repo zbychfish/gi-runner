@@ -163,53 +163,45 @@
 
   - meta: end_play2
 
-  - name: Deploy ICS
+  - name: Deploy GI
     shell:
-      cmd: "oc apply -f ../gi-temp/ics_operands.yaml"
+      cmd: "oc apply -f ../gi-temp/gi.yaml"
 
-  - name: Wait for operands deployment initiation
-    pause:
-      minutes: 3
+  - name: Wait for completion of db2-inst - OOMKilled BUG workaround
+    shell: ../scripts/db2_oomkilled.sh
 
-  - name: Wait for successful ICS deployment (takes 20-60 minutes)
+  - name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part1)
     shell:
-      cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
-    register: ics_pods_status
-    until: "ics_pods_status.stdout == \"0\""
+      cmd: "oc get sts -n gi|grep db2-db2u|wc -l"
+    register: db2u_initiated
+     until: "db2_initiated.stdout == \"1\""
     retries: 80
     delay: 20
 
-  - name: Check pod's containers status
+  - name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part2)
     shell:
-      cmd: "oc get pods -n ibm-common-services|grep Running|awk '{print $2}'|awk -F'/' '$1!=$2'|wc -l"
-    register: ics_containers_status
-    until: "ics_containers_status.stdout == \"0\""
+      cmd: "oc patch sts c-{{ gi_namespace }}-db2-db2u -p='{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"db2u\",\"tty\":false}]}}}}}"
+
+  - name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part3)
+    shell:
+      cmd: "oc get sts -n gi|grep db2-db2u|grep 1/1|wc -l"
+    register: db2u_initiated
+     until: "db2_initiated.stdout == \"1\""
     retries: 80
     delay: 20
 
-  - name: Login to ICS
+  - name: Wait for successful GI deployment (takes 20-60 minutes)
     shell:
-      cmd: "cloudctl login -a https://cp-console.apps.{{ domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
-
-  - name: Set ICS admin password
-    shell:
-      cmd: "cloudctl pm update-secret ibm-common-services platform-auth-idp-credentials -f -d admin_password='{{ ics_admin_password }}'"
-
-  - name: Wait for authentication changes
-    pause:
-      minutes: 3
-
-  - name: Wait for successful password change
-    shell:
-      cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
-    register: ics_pods_status
-    until: "ics_pods_status.stdout == \"0\""
-    retries: 80
-    delay: 20
+      cmd: "oc get guardiuminsights -o json|jq .items[0].status.versions.reconciled"
+    register: gi_deployment_status
+    until: "gi_deployment_status.stdout == \"3.0.0\""
+    retries: 100
+    delay: 60
 
   - debug:
       msg:
-        - "IBM Common Services {{ ics_version }} installation finished"
+        - "GI version {{ gi_version }} installation finished"
         - Update the hosts file on your web browser workstation
-        - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} cp-console.apps.{{ domain }}"
-        - "Login to ICS console as admin user - https://cp-console.apps.{{ domain }}"
+        - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} insights.apps.{{ domain }}"
+        - "Login to GI console as admin/{{ ics_admin_password }} - https://insights.apps.{{ domain }}"
+        - "You can deploy on bastion the OpenLDAP and use it to add functional identities to GI, script \"playbooks/50-set_configure_ldap.yaml.sh\""
