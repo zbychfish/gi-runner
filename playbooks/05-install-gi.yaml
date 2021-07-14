@@ -9,6 +9,8 @@
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
     gi_version:  "{{ lookup('env','GI_VERSION') }}"
     gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
+    ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+    db2_nodes: "{{ lookup('env','GI_DB2_NODES') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -23,6 +25,8 @@
       - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
       - { name: "GI_VERSION", value: "{{ gi_version }}" }
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
+      - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
+      - { name: "GI_DB2_NODES", value: "{{ db2_nodes }}" }
 
   - name: Set parameters for air-gapped installation
     set_fact:
@@ -79,9 +83,14 @@
       cmd: "oc create namespace {{ gi_namespace }}"
     ignore_errors: yes
 
+  - name: Save portable repo credentials
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-creds-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }}\""
+    when: internet_type == 'A'
+
   - name: Switch GI inventory to portable registry
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ offline_inventory }}\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir ../gi-temp/{{ offline_inventory }}\""
     when: internet_type == 'A'
 
   - name: Wait for cluster reconfiguration
@@ -98,71 +107,51 @@
     delay: 20
     when: internet_type == 'A' and is_one_node == 'N'
 
-  - meta: end_play
-
-  - name: Create ICS catalog file
-    template:
-      src: ics_catalog.j2
-      dest: "../gi-temp/ics_catalog.yaml"
-    when: internet_type != 'A'
-
-  - name: Publish ICS catalog
+  - name: GI preinstall task
     shell:
-      cmd: "oc apply -f ../gi-temp/ics_catalog.yaml"
-    when: internet_type != 'A'
-
-  - name: Publish ICS catalog in air-gap
-    shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes }}.{{ domain }} -t false\""
     when: internet_type == 'A'
 
-  - name: Wait for ICS catalog
+  - name: Install GI catalog
     shell:
-      cmd: "oc get pods -n openshift-marketplace|grep opencloud-operators|grep 1/1|grep Running|wc -l"
-    register: ics_catalog_status
-    until: "ics_catalog_status.stdout == \"1\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir ../gi-temp/{{ offline_inventory }}\""
+    when: internet_type == 'A'
+
+  - name: Wait for GI catalog (part1)
+    shell:
+      cmd: "oc get pods -n openshift-marketplace|grep ibm-db2uoperator-catalog|grep 1/1|grep Running|wc -l"
+    register: db2_catalog_status
+    until: "db2_catalog_status.stdout == \"1\""
     retries: 30
     delay: 10
 
-  - name: Wait for ICS catalog source
+  - name: Wait for GI catalog (part2)
     shell:
-      cmd: "oc get catalogsource -n openshift-marketplace|grep opencloud-operators|wc -l"
-    register: ics_catalog_source_status
-    until: "ics_catalog_source_status.stdout == \"1\""
+      cmd: "oc get pods -n openshift-marketplace|grep ibm-cloud-databases-redis-operator-catalog|grep 1/1|grep Running|wc -l"
+    register: redis_catalog_status
+    until: "redis_catalog_status.stdout == \"1\""
     retries: 30
     delay: 10
 
-  - name: Subscribe ICS operator
+  - name: Install GI operators
     shell:
-      cmd: "oc apply -f ../scripts/ics_subscription.yaml"
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key\""
+    when: internet_type == 'A'
 
-  - name: Wait for ICS csv
+  - name: Wait for GI operators
     shell:
-      cmd: "oc -n common-service get csv|grep ibm-common-service-operator|grep Succeeded|wc -l"
-    register: ics_csv_status
-    until: "ics_csv_status.stdout == \"1\""
+      cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
+    register: operator_status
+    until: "operator_status.stdout == \"1\""
     retries: 30
     delay: 10
+    with_items:
+      - { operator_pattern: "db2u-operator-manager" }
+      - { operator_pattern: "ibm-cloud-databases-redis-operator" }
+      - { operator_pattern: "mongodb-kubernetes-operator" }
+      - { operator_pattern: "mongodb-kubernetes-operator" }
 
-  - name: Wait for ICS crd's
-    shell:
-      cmd: "oc get crd | grep operandrequest|wc -l"
-    register: ics_crd_status
-    until: "ics_crd_status.stdout == \"1\""
-    retries: 30
-    delay: 10
-
-  - name: Set ICS deployment size
-    shell:
-      cmd: "oc patch commonservice common-service -n ibm-common-services --type=\"json\" -p='[{\"op\": \"replace\", \"path\": \"/spec/size\", \"value\": \"{{ ics_size }}\"}]'"
-
-  - name: Wait for deployment size change
-    shell:
-      cmd: "oc get commonservice common-service -n ibm-common-services -o json|jq -r .status.phase"
-    register: ics_commonservice_status
-    until: "ics_commonservice_status.stdout == \"Succeeded\""
-    retries: 30
-    delay: 10
+  - meta: end_play
 
   - name: Generate operands file
     template:
