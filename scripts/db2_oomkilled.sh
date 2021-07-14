@@ -12,7 +12,10 @@ do
         done
         if [[ `oc get pods|grep db2-instdb |grep OOMKilled|wc -l` -ne 0 ]]
         then
-                oc delete pod --field-selector=status.phase==OOMKilled
+		for pod in `oc get pod --field-selector=status.phase==Failed|grep OOMKilled|awk '{print $1}'`
+		do
+			oc delete pod $pod
+		done
         fi
         if [[ `oc get pod --field-selector=status.phase==Succeeded|grep db2-instdb|wc -l` -eq 1 ]]
         then
