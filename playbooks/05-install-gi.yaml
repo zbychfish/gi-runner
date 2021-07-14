@@ -47,6 +47,7 @@
     set_fact:
       gi_case_inventory_setup: "install"
       gi_case_archive: "ibm-guardium-insights-2.0.0.tgz"
+      offline_inventory: "gi_offline"
       ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
 
   - debug:
@@ -54,7 +55,7 @@
 
   - name: Check presence of cloudctl tool
     stat:
-      path: "/usr/local.bin/{{ item.file }}"
+      path: "/usr/local/bin/{{ item.file }}"
     register: cloudctl_tool
     with_items:
       - { file: "cloudctl" }
@@ -75,12 +76,12 @@
 
   - name: Create GI operator namespace
     shell:
-      cmd: "oc create namespace {{ gi_operator_namespace }}"
+      cmd: "oc create namespace {{ gi_namespace }}"
     ignore_errors: yes
 
   - name: Switch GI inventory to portable registry
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ offline_inventory }}\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ offline_inventory }}\""
     when: internet_type == 'A'
 
   - name: Wait for cluster reconfiguration
