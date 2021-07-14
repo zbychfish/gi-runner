@@ -160,8 +160,6 @@
       src: "gi.j2"
       dest: "../gi-temp/gi.yaml"
 
-  - meta: end_play2
-
   - name: Deploy GI
     shell:
       cmd: "oc apply -f ../gi-temp/gi.yaml"
