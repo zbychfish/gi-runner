@@ -6,12 +6,10 @@
     ics_versions: [ "3.7.1","3.7.2","3.7.4","3.8.1" ]
     ics_cases: [ "ibm-cp-common-services-1.3.1.tgz","ibm-cp-common-services-1.3.2.tgz","ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz" ]
     is_one_node: "{{ lookup('env','GI_ONENODE') }}"
-    ics_size_hint: "{{ lookup('env','GI_ICS_SIZE') }}"
     ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
-    gi_version:  "{{ lookup('env','GI_VERSION') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -29,10 +27,23 @@
       - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
       - { name: "GI_VERSION", value: "{{ gi_version }}" }
 
+  - name: Set parameters for ICS with GI
+    set_fact:
+      gi_version:  "{{ lookup('env','GI_VERSION') }}"
+      gi_size:  "{{ lookup('env','GI_SIZE_GI') }}"
+      ics_size_hint: "{{ 'S' if gi_size == 'values-dev' else 'M' }}"
+    when: install_gi == 'Y'
+
+  - name: Set parameters for ICS without GI
+    set_fact:
+      ics_size_hint: "{{ lookup('env','GI_ICS_SIZE') }}"
+    when: install_gi == 'N'
+
   - name: Set parameters for air-gapped installation
     set_fact:
       repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
       repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
+
     when: internet_type == 'A'
 
   - name: Check configuration parameters for air-gapped installation
