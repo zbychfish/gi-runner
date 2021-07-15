@@ -1113,6 +1113,7 @@ then
 	echo "export GI_INSTALL_GI=$gi_install" >> $file
 	echo "export GI_ICS_VERSION=3" >> $file
 	echo "export GI_ICS_OPERANDS=N,Y,Y,Y,Y,Y,Y" >> $file
+	echo "export GI_ICS=Y" >> $file
 	while [[ $ics_password == '' ]]
         do
                 read -sp "Insert IBM Common Services admin user password: " ics_password
@@ -1152,7 +1153,6 @@ then
         fi
         echo export GI_DB2_NODES=$db2_nodes >> $file
 else
-	echo "export GI_INSTALL_GI=N" >> $file
 	# ICS installation
 	while ! [[ $ics_install == 'Y' || $ics_install == 'N' ]] # While string is different or empty...
 	do
