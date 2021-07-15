@@ -1076,18 +1076,91 @@ do
         echo -e '\n'
 done
 echo "export GI_OCADMIN_PWD='$ocp_password'" >> $file
-# ICS installation
-while ! [[ $ics_install == 'Y' || $ics_install == 'N' ]] # While string is different or empty...
+# GI installation
+while ! [[ $gi_install == 'Y' || $gi_install == 'N' ]] # While string is different or empty...
 do
-        printf "Would you like to install IBM Common Services in this process? (\e[4mN\e[0m)o/(Y)es: "
-        read ics_install
-        ics_install=${ics_install:-N}
-        if ! [[ $ics_install == 'Y' || $ics_install == 'N' ]]
+        printf "Would you like to install Guardium Insights in this process? (\e[4mN\e[0m)o/(Y)es: "
+        read gi_install
+        gi_install=${gi_install:-N}
+        if ! [[ $gi_install == 'Y' || $gi_install == 'N' ]]
         then
                 echo "Incorrect value"
         fi
 done
-echo "export GI_ICS=$ics_install" >> $file
+echo "export GI_INSTALL_GI=$gi_install" >> $file
+if [[ $gi_install == 'Y' ]]
+then
+	declare -a gi_sizes=(values-dev values-small)
+	while [[ ( -z $gi_size_selected ) || ! " ${gi_sizes[@]} " =~ " ${gi_size_selected} " ]]
+        do
+		echo "Select GI deployment size:"
+                i=1
+                for gi_size in "${gi_sizes[@]}"
+                do
+                        echo "$i - $gi_size"
+                        i=$((i+1))
+                done
+                read -p "Your choice?: " gi_version_selected
+        done
+	gi_size_selected=$(($gi_size_selected-1))
+	echo "export GI_SIZE_GI=$gi_sizes[$gi_size_selected]" >> $file
+	echo "export GI_VERSION=3.0" >> $file
+	echo "export GI_INSTALL_GI=$gi_install" >> $file
+	echo "export GI_ICS_VERSION=3" >> $file
+	echo "export GI_ICS_OPERANDS=N,Y,Y,Y,Y" >> $file
+	while [[ $ics_password == '' ]]
+        do
+                read -sp "Insert IBM Common Services admin user password: " ics_password
+                echo -e '\n'
+        done
+        echo "export GI_ICSADMIN_PWD='$ics_password'" >> $file
+	if [[ ! -z "$GI_NAMESPACE_GI" ]]
+	then
+        	read -p "Guardium Insights namespace is set to [$GI_NAMESPACE_GI] - insert new or confirm existing one <ENTER>: " new_gi_namespace
+		if [[ $new_gi_namespace != '' ]]
+        	then
+                	gi_namespace=$new_gi_namespace
+        	fi
+	else
+        	while [[ $gi_namespace == '' ]]
+        	do
+			read -p "Insert Guardium Insights namespace name (maximum 10 characters): " gi_namespace
+        	done
+	fi
+	if [[ -z "$gi_namespace" ]]
+	then
+        	echo export GI_NAMESPACE_GI=$GI_NAMESPACE_GI >> $file
+	else
+        	echo export GI_NAMESPACE_GI=$gi_namespace >> $file
+	fi
+	if [[ ! -z "$GI_DB2_NODES" ]]
+	then
+		read -p "Current list of DB2 nodes is set to [$GI_DB2_NODES] - insert list of DB2 nodes (comma separated) or confirm existing <ENTER>: " new_db2_nodes
+                if [[ $new_db2_nodes != '' ]]
+                then
+                	db2_nodes=$new_db2_nodes
+                else
+                	db2_nodes=$GI_DB2_NODES
+                fi
+        else
+        	read -p "Insert DB2 nodes list (comma separated): " db2_nodes
+        fi
+        echo export GI_DB2_NODES=$db2_nodes >> $file
+else
+	echo "export GI_INSTALL_GI=N" >> $file
+	# ICS installation
+	while ! [[ $ics_install == 'Y' || $ics_install == 'N' ]] # While string is different or empty...
+	do
+        	printf "Would you like to install IBM Common Services in this process? (\e[4mN\e[0m)o/(Y)es: "
+	        read ics_install
+        	ics_install=${ics_install:-N}
+	        if ! [[ $ics_install == 'Y' || $ics_install == 'N' ]]
+        	then
+                	echo "Incorrect value"
+	        fi
+	done
+	echo "export GI_ICS=$ics_install" >> $file
+fi
 if [ $ics_install == 'Y' ]
 then
         declare -a ics_versions=(3.7.1 3.7.2 3.7.4 3.8.1)
