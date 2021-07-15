@@ -1096,7 +1096,7 @@ echo "export GI_INSTALL_GI=$gi_install" >> $file
 if [[ $gi_install == 'Y' ]]
 then
 	declare -a gi_sizes=(values-dev values-small)
-	while [[ ( -z $gi_size_selected ) || ! " ${gi_sizes[@]} " =~ " ${gi_size_selected} " ]]
+	while [[ ( -z $gi_size_selected ) || ! " ${gi_sizes[@]} " =~ " ${gi_sizes[$gi_size_selected]} " ]]
         do
 		echo "Select GI deployment size:"
                 i=1
@@ -1105,10 +1105,10 @@ then
                         echo "$i - $gi_size"
                         i=$((i+1))
                 done
-                read -p "Your choice?: " gi_version_selected
+                read -p "Your choice?: " gi_size_selected
         done
 	gi_size_selected=$(($gi_size_selected-1))
-	echo "export GI_SIZE_GI=$gi_sizes[$gi_size_selected]" >> $file
+	echo "export GI_SIZE_GI=${gi_sizes[$gi_size_selected]}" >> $file
 	echo "export GI_VERSION=3.0" >> $file
 	echo "export GI_INSTALL_GI=$gi_install" >> $file
 	echo "export GI_ICS_VERSION=3" >> $file
@@ -1259,6 +1259,60 @@ then
 	ics_ops+=($op_option)
 	op_option=''
 	echo export GI_ICS_OPERANDS=`echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1'` >> $file
+fi
+while ! [[ $install_ldap == 'Y' || $install_ldap == 'N' ]] # While string is different or empty...
+do
+        printf "Would you like install OpenLDAP as Guardium Insights identity source? (\e[4mY\e[0m)es/(N)o: "
+        read install_ldap
+        install_ldap=${install_ldap:-Y}
+        if ! [[ $install_ldap == 'Y' || $install_ldap == 'N' ]]
+        then
+                echo "Incorrect value"
+        fi
+done
+if [ $install_ldap == 'Y' ]
+then
+	if [[ ! -z "$GI_LDAP_DOMAIN" ]]
+	then
+		read -p "LDAP organization DN is set to [$GI_LDAP_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ldap_domain
+	        if [[ $new_ldap_domain != '' ]]
+        	then
+                	ldap_domain=$new_ldap_domain
+	        fi
+	else
+		read -p "Insert LDAP orgnization DN (for example: DC=io,DC=priv): " ldap_domain
+	fi
+	if [[ -z "$ldap_domain" ]]
+	then
+		echo export GI_LDAP_DOMAIN=$GI_LDAP_DOMAIN >> $file
+	else
+        	echo export GI_LDAP_DOMAIN=$ldap_domain >> $file
+	fi
+	if [[ ! -z "$GI_LDAP_USERS" ]]
+	then
+		read -p "LDAP users list is set to [$GI_LDAP_USERS] - insert new or confirm existing one <ENTER>: " new_ldap_users
+	        if [[ $new_ldap_users != '' ]]
+        	then
+                	ldap_users=$new_ldap_users
+	        fi
+	else
+		while [[ $ldap_users == '' ]]
+		do
+			read -p "Insert insert comma separated list of user names to create them in LDAP (i.e. user1,user2,user2): " ldap_users
+		done
+	fi
+	if [[ -z "$ldap_users" ]]
+	then
+		echo export GI_LDAP_USERS=$GI_LDAP_USERS >> $file
+	else
+        	echo export GI_LDAP_USERS=$ldap_users >> $file
+	fi
+	while [[ $ldap_password == '' ]]
+	do
+        	read -sp "Insert password for LDAP users: " ldap_password
+	        echo -e '\n'
+	done
+       	echo "export GI_LDAP_USERS_PWD='$ldap_password'" >> $file
 fi
 # Save pull secret in separate file
 if [ $use_air_gap == 'N' ]
