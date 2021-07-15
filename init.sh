@@ -200,11 +200,16 @@ then
         cd ${GI_TEMP}/ansible
         pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
+	cd $GI_HOME
         rm -rf ${GI_TEMP}/ansible
+        tar xf ${GI_TEMP}/galaxy-*.tar -C ${GI_TEMP} > /dev/null
+	cd ${GI_TEMP}/galaxy
+	ansible-galaxy collection install community-general-3.3.2.tar.gz
+	cd $GI_HOME
+        rm -rf ${GI_TEMP}/galaxy
 	# Configure Ansible
         mkdir -p /etc/ansible
         echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
-        cd $GI_HOME
 	rm -rf $GI_TEMP/*
 fi
 # Time settings
