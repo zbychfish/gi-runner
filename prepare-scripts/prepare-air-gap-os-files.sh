@@ -47,6 +47,7 @@ for package in $packages
 do
         python3 -m pip download --only-binary=:all: $package -d ansible > /dev/null 2>&1
 done
+wget -P ansible https://galaxy.ansible.com/download/community-general-3.3.2.tar.gz
 tar cf $air_dir/ansible-`date +%Y-%m-%d`.tar ansible
 rm -rf ansible
 cd $air_dir
