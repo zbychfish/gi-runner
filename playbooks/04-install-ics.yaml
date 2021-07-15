@@ -20,17 +20,19 @@
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
       - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
       - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
-      - { name: "GI_ICS_SIZE", value: "{{ ics_size_hint }}" }
       - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
       - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
-      - { name: "GI_VERSION", value: "{{ gi_version }}" }
 
-  - name: Set parameters for ICS with GI
+  - name: Set parameters for ICS with GI (part1)
     set_fact:
       gi_version:  "{{ lookup('env','GI_VERSION') }}"
       gi_size:  "{{ lookup('env','GI_SIZE_GI') }}"
+    when: install_gi == 'Y'
+
+  - name: Set parameters for ICS with GI (part2)
+    set_fact:
       ics_size_hint: "{{ 'S' if gi_size == 'values-dev' else 'M' }}"
     when: install_gi == 'Y'
 
