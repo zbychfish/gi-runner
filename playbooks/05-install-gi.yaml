@@ -56,7 +56,7 @@
       gi_case_archive: "ibm-guardium-insights-2.0.0.tgz"
       offline_inventory: "gi_offline"
       ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
-      storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-fs' }}"
+      storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
 
   - debug:
       var: ics_case
