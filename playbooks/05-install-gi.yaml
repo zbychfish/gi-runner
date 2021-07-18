@@ -111,7 +111,7 @@
 
   - name: GI preinstall task
     shell:
-      cmd: "cloudctl case launch --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_case_archive }} --outputdir ../gi-temp/{{ offline_inventory }} --tolerance 1"
+      cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_case_archive }} --outputdir ../gi-temp/{{ offline_inventory }} --tolerance 1"
     when: internet_type != 'A'
 
   - name: GI preinstall task
