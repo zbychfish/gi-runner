@@ -603,7 +603,7 @@
       cmd: "oc get pods -n rook-ceph --kubeconfig=../ocp/auth/kubeconfig --selector app=rook-ceph-operator --no-headers -o custom-columns=STATUS:.status.phase|grep -v Running|wc -l"
     register: rook_operator_status
     until: "rook_operator_status.stdout == \"0\""
-    retries: 20
+    retries: 30
     delay: 10
     when: storage_type == "R"
 
@@ -620,7 +620,7 @@
     register: ceph_installation_status
     until: "ceph_installation_status.stdout == \"HEALTH_OK\" or ceph_installation_status.stdout == \"HEALTH_WARN\""
     retries: 60
-    delay: 10
+    delay: 15
     when: storage_type == "R"
 
   - name: Configure storage classes
