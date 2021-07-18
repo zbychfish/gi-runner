@@ -147,8 +147,8 @@ then
                 echo "proxy=http://$proxy_ip:$proxy_port" >> /etc/dnf/dnf.conf
         fi
 fi
-# Check bastion OS (CentOS 8 expected)
-echo "*** Checking CentOS version ***"
+# Check bastion OS 
+echo "*** Checking OS version ***"
 if [ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]
 then
         echo "*** ERROR ***"
