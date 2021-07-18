@@ -12,6 +12,7 @@
     db2_nodes: "{{ lookup('env','GI_DB2_NODES') }}"
     gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
     storage_type:  "{{ lookup('env','GI_STORAGE') }}"
+    ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -29,7 +30,7 @@
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_DB2_NODES", value: "{{ db2_nodes }}" }
       - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
-      - { name: "GI_STORAGE", value: "{{ storage_type }}" }
+      - { name: "GI_IBM_SECRET", value: "{{ ibm_secret }}" }
 
   - name: Set parameters for air-gapped installation
     set_fact:
@@ -57,9 +58,6 @@
       offline_inventory: "gi_offline"
       ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
       storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
-
-  - debug:
-      var: ics_case
 
   - name: Check presence of cloudctl tool
     stat:
@@ -113,13 +111,16 @@
 
   - name: GI preinstall task
     shell:
+      cmd: "cloudctl case launch --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${ gi_case_archive } --outputdir ../gi-temp/{{ offline_inventory }} --tolerance 1"
+    when: internet_type != 'A'
+
+  - name: GI preinstall task
+    shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes }}.{{ domain }} -t false\""
-    when: internet_type == 'A'
 
   - name: Install GI catalog
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir ../gi-temp/{{ offline_inventory }}\""
-    when: internet_type == 'A'
 
   - name: Wait for GI catalog (part1)
     shell:
@@ -137,10 +138,15 @@
     retries: 30
     delay: 10
 
-  - name: Install GI operators
+  - name: Install GI operators in air-gapped env
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key\""
     when: internet_type == 'A'
+
+  - name: Install GI operators online
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user icp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
+    when: internet_type != 'A'
 
   - name: Wait for GI operators
     shell:
