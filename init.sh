@@ -1095,6 +1095,31 @@ done
 echo "export GI_INSTALL_GI=$gi_install" >> $file
 if [[ $gi_install == 'Y' ]]
 then
+	# Gets IBM Cloud Pull Secret
+	if [[ $use_air_gap == 'N' ]]
+	then
+        	if [[ ! -z "$GI_IBM_SECRET" ]]
+	        then
+        	        read -p "IBM Cloud secret is set to [$GI_IBM_SECRET] - insert new or confirm existing one <ENTER>: " new_ibm_secret
+	                if [[ $new_ibm_secret != '' ]]
+	                then
+	                        ibm_secret=$new_ibm_secret
+	                else
+	                        ibm_secret=$GI_IBM_SECRET
+	                fi
+	        else
+	                while [[ $ibm_secret == '' ]]
+	                do
+	                        read -p "Insert IBM Cloud secret: " ibm_secret
+	                done
+	        fi
+	        if [[ -z "$ibm_secret" ]]
+	        then
+	                echo "export GI_IBM_SECRET='$GI_IBM_SECRET'" >> $file
+	        else
+	                echo "export GI_IBM_SECRET='$ibm_secret'" >> $file
+	        fi
+	fi
 	declare -a gi_sizes=(values-dev values-small)
 	while [[ ( -z $gi_size_selected ) || ! " ${gi_sizes[@]} " =~ " ${gi_sizes[$gi_size_selected]} " ]]
         do
