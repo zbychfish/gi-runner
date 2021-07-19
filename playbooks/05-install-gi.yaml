@@ -109,7 +109,7 @@
     delay: 20
     when: internet_type == 'A' and is_one_node == 'N'
 
-  - name: GI preinstall task
+  - name: GI download case file
     shell:
       cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_case_archive }} --outputdir ../gi-temp/{{ offline_inventory }} --tolerance 1"
     when: internet_type != 'A'
@@ -118,9 +118,15 @@
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes }}.{{ domain }} -t false\""
 
-  - name: Install GI catalog
+  - name: Install GI catalog in air-gapped
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir ../gi-temp/{{ offline_inventory }}\""
+    when: internet_type == 'A'
+
+  - name: Install GI catalog online
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry docker.io\""
+    when: internet_type != 'A'
 
   - name: Wait for GI catalog (part1)
     shell:
@@ -145,7 +151,7 @@
 
   - name: Install GI operators online
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user icp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
     when: internet_type != 'A'
 
   - name: Wait for GI operators
