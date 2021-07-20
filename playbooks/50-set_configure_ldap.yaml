@@ -31,60 +31,10 @@
       state: latest
     when: internet_type != 'A'
 
-  - name: Add community.general modules to ansible
-    shell:
-      cmd: "ansible-galaxy collection install community.general"
-    when: internet_type != 'A'
-
   - name: Create LDAP directory
     file:
       path: ../ldap
       state: directory
-
-  - name: Add Sofl repo
-    get_url:
-      url: https://repo.symas.com/configs/SOFL/rhel8/sofl.repo
-      dest: /etc/yum.repos.d/sofl.repo
-    when: internet_type != 'A'
-
-  - name: Get installed software facts
-    package_facts:
-      manager: "auto"
-
-  - name: Stop OpenLDAP server if started
-    service:
-      name: slapd
-      state: stopped
-      enabled: no
-    when: "'symas-openldap-servers' in ansible_facts.packages and internet_type != 'A'"
-
-  - name: Uninstall OpenLDAP if installed
-    yum:
-      name: "{{ item }}"
-      state: absent
-      autoremove: yes
-    loop:
-      - symas-openldap-clients
-      - symas-openldap-servers
-    when: "'symas-openldap-servers' in ansible_facts.packages and internet_type != 'A'"
-
-  - name: Remove OpenLDAP configs
-    file:
-      path: "{{ item }}"
-      state: absent
-    loop:
-      - /etc/openldap
-      - /var/lib/ldap
-    when: "'symas-openldap-servers' in ansible_facts.packages and internet_type != 'A'"
-
-  - name: Install OpenLDAP
-    yum:
-      name: "{{ item }}"
-      state: present
-    loop:
-      - symas-openldap-clients
-      - symas-openldap-servers
-    when: internet_type != 'A'
 
   - name: Set SELINUX for OpenLDAP
     shell:
