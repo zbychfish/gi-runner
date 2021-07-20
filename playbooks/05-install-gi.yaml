@@ -213,4 +213,4 @@
         - Update the hosts file on your web browser workstation
         - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} insights.apps.{{ domain }}"
         - "Login to GI console as admin/{{ ics_admin_password }} - https://insights.apps.{{ domain }}"
-        - "You can deploy on bastion the OpenLDAP and use it to add functional identities to GI, script \"playbooks/50-set_configure_ldap.yaml.sh\""
+        - "You can deploy on bastion the OpenLDAP and use it to add functional identities to GI, script 'playbooks/50-set_configure_ldap.yaml.sh'"
