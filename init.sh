@@ -1120,7 +1120,7 @@ then
 	                echo "export GI_IBM_SECRET='$ibm_secret'" >> $file
 	        fi
 	fi
-	declare -a gi_sizes=(values-dev values-small)
+	declare -a gi_sizes=(values-poc-lite values-dev values-small)
 	while [[ ( -z $gi_size_selected ) || ! " ${gi_sizes[@]} " =~ " ${gi_sizes[$gi_size_selected]} " ]]
         do
 		echo "Select GI deployment size:"
