@@ -23,6 +23,9 @@ mkdir -p $temp_dir
 echo `cat /etc/system-release|sed -e "s/ /_/g"` > $air_dir/os_release.txt
 # Gets kernel version
 echo `uname -r` > $air_dir/kernel.txt
+# Downloads gi-runner archive
+wget -P $air_dir https://github.com/zbychfish/gi-runner/archive/refs/heads/main.zip
+check_exit_code $? "Cannot download gi-runner package" 
 # Install tar and creates tar.cpio in case of base os where tar is not available
 echo -e "\nPrepare TAR and UNZIP package for base OS ..."
 cd $temp_dir
