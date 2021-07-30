@@ -23,9 +23,6 @@ mkdir -p $temp_dir
 echo `cat /etc/system-release|sed -e "s/ /_/g"` > $air_dir/os_release.txt
 # Gets kernel version
 echo `uname -r` > $air_dir/kernel.txt
-# Downloads gi-runner archive
-wget -P $air_dir https://github.com/zbychfish/gi-runner/archive/refs/heads/main.zip
-check_exit_code $? "Cannot download gi-runner package" 
 # Install tar and creates tar.cpio in case of base os where tar is not available
 echo -e "\nPrepare TAR and UNZIP package for base OS ..."
 cd $temp_dir
@@ -81,4 +78,8 @@ rm -f *
 mv $temp_dir/os*tar .
 cd $local_directory
 rm -rf $temp_dir
-echo "OS files - copy $air_dir/os-`cat /etc/system-release|sed -e "s/ /_/g"`-`date +%Y-%m-%d`.tar to the air-gap bastion machine"
+# Downloads gi-runner archive
+wget -P $air_dir https://github.com/zbychfish/gi-runner/archive/refs/heads/main.zip
+check_exit_code $? "Cannot download gi-runner package" 
+mv $air_dir/main.zip $air_dir/gi-runner.zip
+echo "OS files - copy $air_dir/gi-runner.zip and $air_dir/os-`cat /etc/system-release|sed -e "s/ /_/g"`-`date +%Y-%m-%d`.tar to the air-gapped bastion machine"
