@@ -4,7 +4,7 @@ function check_exit_code() {
         if [[ $1 -ne 0 ]]
         then
 		echo $2
-		echo "Please check the reason of problem and set machine to initial state - this scripts must be run in exactly this same state as air-gapped bastion"
+		echo "Please check the reason of problem and set machine to initial state - this script must be run in exactly this same state as air-gapped bastion"
 		exit 1
 	else
 		echo "OK"
