@@ -6,6 +6,8 @@ function check_exit_code() {
 		echo $2
 		echo "Please check the reason of problem and set machine to initial state - this scripts must be run in exactly this same state as air-gapped bastion"
 		exit 1
+	else
+		echo "OK"
 	fi
 }
 
