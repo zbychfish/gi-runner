@@ -39,6 +39,7 @@ ics_version_selected=$(($ics_version_selected-1))
 dnf -qy install python3 podman wget
 check_exit_code $? "Cannot download image registry"
 # - cleanup repository if exists
+echo "Installing local image registry ..."
 podman stop bastion-registry
 podman container prune <<< 'Y'
 rm -rf /opt/registry
