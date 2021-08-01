@@ -61,6 +61,7 @@ semanage permissive -a NetworkManager_t
 echo "Starting mirror image registry ..."
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2.6
 check_exit_code $? "Cannot start temporary image registry"
+echo "Downloading OCP tools ..."
 cd $temp_dir
 rm -f openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img matchbox-v0.9.0-linux-amd64.tar.gz opm-linux.tar.gz
 # Download external tools and software (OCP, ICS, matchbox)
