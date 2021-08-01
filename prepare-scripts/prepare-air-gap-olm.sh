@@ -21,7 +21,7 @@ mkdir -p $air_dir
 mkdir -p $temp_dir
 # Gets list of parameters to create repo  
 echo "To check the latest stable OCP release go to https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.X, where X is 6 or 7"
-read -p "Insert OCP release to mirror images: " ocp_release
+read -p "Insert OCP release to mirror images: " ocp_version
 ocp_major_release=`echo $ocp_version|cut -f -2 -d .`
 read -sp "Insert RedHat pull secret: " pull_secret
 echo -e '\n'
