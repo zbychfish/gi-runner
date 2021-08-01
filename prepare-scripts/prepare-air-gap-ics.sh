@@ -45,15 +45,17 @@ podman container prune <<< 'Y'
 rm -rf /opt/registry
 # - Pulls image of portable registry and save it 
 podman pull docker.io/library/registry:2.6
-check_exit_code $? "Cannot install httpd-tools"
+check_exit_code $? "Cannot download image registry image"
 # - Prepares portable registry directory structure
 mkdir -p /opt/registry/{auth,certs,data}
 # - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
 openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:`hostname --long`"
+check_exit_code $? "Cannot create SSl certificate"
 cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
 update-ca-trust extract
 # - Creates user to get access to portable repository
 dnf -qy install httpd-tools
+check_exit_code $? "Cannot install httpd-tools"
 htpasswd -bBc /opt/registry/auth/htpasswd admin guardium
 # - Sets firewall settings
 systemctl enable firewalld
