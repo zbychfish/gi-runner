@@ -1,11 +1,24 @@
 #!/bin/bash
 
+function check_exit_code() {
+        if [[ $1 -ne 0 ]]
+        then
+                echo $2
+                echo "Please check the reason of problem and restart script"
+                exit 1
+        else
+                echo "OK"
+        fi
+}
+
+echo "Setting environment"
 local_directory=`pwd`
 host_fqdn=$( hostname --long )
 air_dir=$local_directory/air-gap
 # Creates temporary directory
 mkdir -p $air_dir
 dnf -qy install python3 podman wget
+check_exit_code $? "Cannot install required OS packages"
 echo "Setup mirror image registry ..."
 # - cleanup repository if exists
 podman stop bastion-registry
@@ -13,14 +26,17 @@ podman container prune <<< 'Y'
 rm -rf /opt/registry
 # - Pulls image of portable registry and save it 
 podman pull docker.io/library/registry:2.6
+check_exit_code $? "Cannot download image registry"
 # - Prepares portable registry directory structure
 mkdir -p /opt/registry/{auth,certs,data}
 # - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
 openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:`hostname --long`"
+check_exit_code $? "Cannot create certificate for temporary image registry"
 cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
 update-ca-trust extract
 # - Creates user to get access to portable repository
 dnf -qy install httpd-tools
+check_exit_code $? "Cannot install httpd-tools"
 htpasswd -bBc /opt/registry/auth/htpasswd admin guardium
 # - Sets firewall settings
 systemctl enable firewalld
@@ -31,7 +47,9 @@ firewall-cmd --reload
 # - Sets SE Linux for NetworkManager
 semanage permissive -a NetworkManager_t
 # - Starts portable registry
+echo "Starting mirror image registry ..."
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2.6
+check_exit_code $? "Cannot start temporary image registry"
 # Packs together centos updates, packages, python libraries and portable image
 # Mirroring Rook-Ceph images (old version for all in one)
 echo "Mirroring open source rook-ceph for onenode installation version 1.1.7 ..."
@@ -40,6 +58,7 @@ for image in $images
 do
         echo $image
         podman pull $image
+	check_exit_code $? "Cannot pull image $image"
         tag=`echo "$image" | awk -F '/' '{print $NF}'`
         echo "TAG: $tag"
         podman save -o image.tar $image
@@ -56,6 +75,7 @@ for image in $images
 do
 	echo $image
         podman pull $image
+	check_exit_code $? "Cannot pull image $image"
         tag=`echo "$image" | awk -F '/' '{print $NF}'`
         echo "TAG: $tag"
 	podman push --creds admin:guardium $image `hostname --long`:5000/rook/$tag
