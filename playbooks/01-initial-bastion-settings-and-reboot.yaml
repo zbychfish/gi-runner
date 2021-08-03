@@ -26,7 +26,7 @@
         - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
         - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
-        - { name: "GI_INSTALL_GI", value: "{{ install_gi }}"
+        - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
 
     - name: Upgrade system
       dnf:
