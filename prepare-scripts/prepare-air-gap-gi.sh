@@ -1,5 +1,17 @@
 #!/bin/bash
 
+function check_exit_code() {
+        if [[ $1 -ne 0 ]]
+        then
+                echo $2
+                echo "Please check the reason of problem, you can continue image mirroring using 'repeat' argument"
+                exit 1
+        else
+                echo "OK"
+        fi
+}
+
+echo "Setting environment"
 if [[ $# -ne 0 && $1 != "repeat" ]]
 then
 	echo "To restart mirroring process use paramater 'repeat'"
@@ -36,20 +48,25 @@ if [ $# -eq 0 ]
 then
 	# Gets source bastion release (supported CentOS 8)
 	dnf -qy install python3 podman wget
+	check_exit_code $? "Cannot download OS packages"
+	echo "Installing local image registry ..."
 	# - cleanup repository if exists
 	podman stop bastion-registry
 	podman container prune <<< 'Y'
 	rm -rf /opt/registry
 	# - Pulls image of portable registry and save it 
 	podman pull docker.io/library/registry:2.6
+	check_exit_code $? "Cannot download image registry image"
 	# - Prepares portable registry directory structure
 	mkdir -p /opt/registry/{auth,certs,data}
 	# - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
 	openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:`hostname --long`"
+	check_exit_code $? "Cannot create SSl certificate"
 	cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
 	update-ca-trust extract
 	# - Creates user to get access to portable repository
 	dnf -qy install httpd-tools
+	check_exit_code $? "Cannot install httpd-tools"
 	htpasswd -bBc /opt/registry/auth/htpasswd admin guardium
 	# - Sets firewall settings
 	systemctl enable firewalld
@@ -61,27 +78,29 @@ then
 	semanage permissive -a NetworkManager_t
 	# - Starts portable registry
 	podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2.6
+	check_exit_code $? "Cannot start temporary image registry"
 	# Packs together centos updates, packages, python libraries and portable image
 	cd $air_dir
-	wget "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" > /dev/null
-	wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz"
+	declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
+	for file in ${ocp_files[@]}
+	do
+        	wget $file > /dev/null
+	        check_exit_code $? "Cannot donwload $file"
+	done
 	tar xf cloudctl-linux-amd64.tar.gz -C /usr/local/bin
 	tar xf openshift-client-linux.tar.gz -C /usr/local/bin
 	rm -f openshift-client-linux.tar.gz
 	mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
 	# Mirrors GI images to portable repository
 	dnf -qy install jq
+	check_exit_code $? "Cannot install jq package"
+	dnf -qy install skopeo
+	check_exit_code $? "Cannot install skopeo package"
 fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
 # Mirroring ICS images
 echo "Mirroring GI ${gi_versions[${gi_version_selected}]}"
-if [ $# -eq 0 ]
-then
-	# - install Skopeo utility
-	dnf -qy install skopeo
-	# - declares cases files per ICS release
-fi
 declare -a cases=(ibm-guardium-insights-2.0.0.tgz)
 # - declares variables
 CASE_ARCHIVE=${cases[${ics_version_selected}]}
@@ -90,12 +109,14 @@ CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
 if [ $# -eq 0 ]
 then
 	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $temp_dir/gi_offline
+	check_exit_code $? "Cannot download GI case file"
 	# - authenticates in external repositories
 	sites="cp.icr.io"
 	for site in $sites
 	do
 		echo $site
 	        cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory install --args "--registry $site --user cp --pass $ibm_account_key"
+		check_exit_code $? "Cannot configure credentials for site $site"
 	done
 	cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory install --args "--registry `hostname --long`:5000 --user admin --pass guardium"
 fi

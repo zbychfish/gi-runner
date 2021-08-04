@@ -285,9 +285,9 @@ fi
 # Install software on OS
 if [[ $use_air_gap == 'N' ]]
 then
-        echo "*** Update CentOS ***"
+        echo "*** Update Fedora ***"
         dnf -qy update
-        echo "*** Installing Ansible and other CentOS packages ***"
+        echo "*** Installing Ansible and other Fedora packages ***"
         #dnf -qy install epel-release <<< y
         dnf -qy install ansible haproxy openldap perl podman-docker ipxe-bootimgs chrony dnsmasq unzip wget jq httpd-tools policycoreutils-python-utils python3-ldap openldap-servers openldap-clients
         dnf -qy install ansible skopeo

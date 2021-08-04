@@ -7,7 +7,7 @@
     repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
     repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
     ocp_release: "{{ lookup('env','GI_OCP_RELEASE') }}"
-    install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}
+    install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
 
   tasks:
     - name: Check configuration parameters
@@ -26,7 +26,7 @@
         - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
         - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
-        - { name: "GI_INSTALL_GI", value: "{{ install_gi }}"
+        - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
 
     - name: Upgrade system
       dnf:

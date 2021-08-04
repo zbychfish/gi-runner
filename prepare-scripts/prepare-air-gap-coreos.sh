@@ -1,5 +1,16 @@
 #!/bin/bash
 
+function check_exit_code() {
+        if [[ $1 -ne 0 ]]
+        then
+                echo $2
+                echo "Please check the reason of problem and restart script"
+                exit 1
+        else
+                echo "OK"
+        fi
+}
+echo "Setting environment"
 local_directory=`pwd`
 host_fqdn=$( hostname --long )
 temp_dir=$local_directory/gi-temp
@@ -9,9 +20,11 @@ mkdir -p $air_dir
 # Creates temporary directory
 mkdir -p $temp_dir
 # Gets list of parameters 
+echo "To check the latest stable OCP release go to https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.X, where X is 6 or 7"
 read -p "Insert OCP release to mirror images: " ocp_release
 ocp_major_release=`echo $ocp_release|cut -f -2 -d .`
-read -p "Insert RedHat pull secret: " pull_secret
+read -sp "Insert RedHat pull secret: " pull_secret
+echo -e '\n'
 echo "$pull_secret" > $temp_dir/pull-secret.txt
 read -p "Insert your mail address to authenticate in RedHat Network: " mail
 echo -e "\n"
@@ -22,16 +35,19 @@ podman container prune <<< 'Y'
 rm -rf /opt/registry
 # - Pulls image of portable registry and save it 
 podman pull docker.io/library/registry:2.6
+check_exit_code $? "Cannot download image registry"
 rm -f $air_dir/oc-registry.tar
 podman save -o $air_dir/oc-registry.tar docker.io/library/registry:2.6
 # - Prepares portable registry directory structure
 mkdir -p /opt/registry/{auth,certs,data}
 # - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
 openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:`hostname --long`"
+check_exit_code $? "Cannot create certificate for temporary image registry"
 cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
 update-ca-trust extract
 # - Creates user to get access to portable repository
 dnf -qy install httpd-tools
+check_exit_code $? "Cannot install httpd-tools"
 htpasswd -bBc /opt/registry/auth/htpasswd admin guardium
 # - Sets firewall settings
 systemctl enable firewalld
@@ -42,18 +58,20 @@ firewall-cmd --reload
 # - Sets SE Linux for NetworkManager
 semanage permissive -a NetworkManager_t
 # - Starts portable registry
+echo "Starting mirror image registry ..."
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2.6
+check_exit_code $? "Cannot start temporary image registry"
+echo "Downloading OCP tools ..."
 cd $temp_dir
 rm -f openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img matchbox-v0.9.0-linux-amd64.tar.gz opm-linux.tar.gz
 # Download external tools and software (OCP, ICS, matchbox)
 echo "Download OCP tools and CoreOS installation files ..."
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-client-linux.tar.gz" > /dev/null
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-install-linux.tar.gz" > /dev/null
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-initramfs.x86_64.img" > /dev/null
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-kernel-x86_64" > /dev/null
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-rootfs.x86_64.img" > /dev/null
-wget "https://github.com/poseidon/matchbox/releases/download/v0.9.0/matchbox-v0.9.0-linux-amd64.tar.gz" > /dev/null
-wget "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz" > /dev/null
+declare -a ocp_files=("https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-client-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-install-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-initramfs.x86_64.img" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-kernel-x86_64" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-rootfs.x86_64.img" "https://github.com/poseidon/matchbox/releases/download/v0.9.0/matchbox-v0.9.0-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz")
+for file in ${ocp_files[@]}
+do
+	wget $file > /dev/null
+	check_exit_code $? "Cannot donwload $file"
+done
 rm -r $air_dir/tools.tar
 tar cf $air_dir/tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v0.9.0-linux-amd64.tar.gz
 # Install OCP tools
@@ -62,6 +80,7 @@ tar xf opm-linux.tar.gz -C /usr/local/bin
 # Mirrors OCP images to portable repository
 echo "Mirroring OCP ${ocp_version} images ..."
 dnf -qy install jq
+check_exit_code $? "Cannot install jq package"
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
 jq ".auths += $AUTHSTRING" < $temp_dir/pull-secret.txt > $temp_dir/pull-secret-update.txt
@@ -72,6 +91,7 @@ RELEASE_NAME="ocp-release"
 LOCAL_SECRET_JSON=$temp_dir/pull-secret-update.txt
 ARCHITECTURE=x86_64
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_release}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_release}-${ARCHITECTURE}
+check_exit_code $? "Cannot mirror OCP images"
 # Mirrors OCP operators
 podman stop bastion-registry
 cd /opt/registry
