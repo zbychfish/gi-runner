@@ -1137,7 +1137,7 @@ then
 	echo "export GI_VERSION=3.0" >> $file
 	echo "export GI_INSTALL_GI=$gi_install" >> $file
 	echo "export GI_ICS_VERSION=2" >> $file
-	echo "export GI_ICS_OPERANDS=N,Y,Y,Y,Y,Y,Y" >> $file
+	echo "export GI_ICS_OPERANDS=N,N,Y,Y,N,Y,N" >> $file
 	echo "export GI_ICS=Y" >> $file
 	while [[ $ics_password == '' ]]
         do
