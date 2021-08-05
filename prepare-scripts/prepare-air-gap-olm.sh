@@ -78,10 +78,31 @@ echo "Mirroring OLM ${ocp_version} images ..."
 dnf -qy install jq
 check_exit_code $? "Cannot install jq package"
 LOCAL_REGISTRY="$host_fqdn:5000"
-REDHAT_OPERATORS="local-storage-operator,ocs-operator"
-CERTIFIED_OPERATORS="portworx-certified"
-MARKETPLACE_OPERATORS="mongodb-enterprise-rhmp"
-COMMUNITY_OPERATORS="portworx-essentials"
+if [[ ! -z "$REDHAT_OPERATORS" ]]
+then
+	REDHAT_OPERATORS=$REDHAT_OPERATOR_OVERRIDE
+else
+
+	REDHAT_OPERATORS="local-storage-operator,ocs-operator"
+fi
+if [[ ! -z "$REDHAT_OPERATORS" ]]
+then
+	CERTIFIED_OPERATORS=$CERTIFIED_OPERATORS_OVERRIDE
+else
+	CERTIFIED_OPERATORS="portworx-certified"
+fi
+if [[ ! -z "$REDHAT_OPERATORS" ]]
+then
+	MARKETPLACE_OPERATORS=$MARKETPLACE_OPERATORS_OVERRIDE
+else
+	MARKETPLACE_OPERATORS="mongodb-enterprise-rhmp"
+fi
+if [[ ! -z "$REDHAT_OPERATORS" ]]
+then
+	COMMUNITY_OPERATORS=$COMMUNITY_OPERATORS_OVERRIDE
+else
+	COMMUNITY_OPERATORS="portworx-essentials"
+fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
 jq ".auths += $AUTHSTRING" < $temp_dir/pull-secret.txt > $temp_dir/pull-secret-update.txt
