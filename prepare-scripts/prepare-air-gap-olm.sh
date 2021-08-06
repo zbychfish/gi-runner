@@ -78,26 +78,26 @@ echo "Mirroring OLM ${ocp_version} images ..."
 dnf -qy install jq
 check_exit_code $? "Cannot install jq package"
 LOCAL_REGISTRY="$host_fqdn:5000"
-if [[ ! -z "$REDHAT_OPERATORS" ]]
+if [[ ! -z "$REDHAT_OPERATORS_OVERRIDE" ]]
 then
 	REDHAT_OPERATORS=$REDHAT_OPERATOR_OVERRIDE
 else
 
 	REDHAT_OPERATORS="local-storage-operator,ocs-operator"
 fi
-if [[ ! -z "$REDHAT_OPERATORS" ]]
+if [[ ! -z "$CERTIFIED_OPERATORS_OVERRIDE" ]]
 then
 	CERTIFIED_OPERATORS=$CERTIFIED_OPERATORS_OVERRIDE
 else
 	CERTIFIED_OPERATORS="portworx-certified"
 fi
-if [[ ! -z "$REDHAT_OPERATORS" ]]
+if [[ ! -z "$MARKETPLACE_OPERATORS_OVERRIDE" ]]
 then
 	MARKETPLACE_OPERATORS=$MARKETPLACE_OPERATORS_OVERRIDE
 else
 	MARKETPLACE_OPERATORS="mongodb-enterprise-rhmp"
 fi
-if [[ ! -z "$REDHAT_OPERATORS" ]]
+if [[ ! -z "$COMMUNITY_OPERATORS_OVERRIDE" ]]
 then
 	COMMUNITY_OPERATORS=$COMMUNITY_OPERATORS_OVERRIDE
 else
