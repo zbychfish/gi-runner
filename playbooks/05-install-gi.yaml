@@ -165,7 +165,7 @@
       - { operator_pattern: "db2u-operator-manager" }
       - { operator_pattern: "ibm-cloud-databases-redis-operator" }
       - { operator_pattern: "mongodb-kubernetes-operator" }
-      - { operator_pattern: "mongodb-kubernetes-operator" }
+      - { operator_pattern: "guardiuminsights-controller-manager" }
 
   - name: Generate GI deployment file
     template:
