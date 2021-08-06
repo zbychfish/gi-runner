@@ -78,13 +78,15 @@ echo "Mirroring OLM ${ocp_version} images ..."
 dnf -qy install jq
 check_exit_code $? "Cannot install jq package"
 LOCAL_REGISTRY="$host_fqdn:5000"
+echo $REDHAT_OPERATORS_OVERRIDE
 if [[ ! -z "$REDHAT_OPERATORS_OVERRIDE" ]]
 then
-	REDHAT_OPERATORS=$REDHAT_OPERATOR_OVERRIDE
+	REDHAT_OPERATORS="$REDHAT_OPERATOR_OVERRIDE"
 else
 
 	REDHAT_OPERATORS="local-storage-operator,ocs-operator"
 fi
+echo $REDHAT_OPERATORS
 if [[ ! -z "$CERTIFIED_OPERATORS_OVERRIDE" ]]
 then
 	CERTIFIED_OPERATORS=$CERTIFIED_OPERATORS_OVERRIDE
