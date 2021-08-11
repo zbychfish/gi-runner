@@ -4,8 +4,6 @@
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
     bas_name:  "{{ lookup('env','GI_BASTION_NAME') }}"
     domain:  "{{ lookup('env','GI_DOMAIN') }}"
-    repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
-    repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
     ocp_release: "{{ lookup('env','GI_OCP_RELEASE') }}"
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
 
@@ -15,18 +13,26 @@
       when: item.value == ""
       loop:
         - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
+        - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
+        - { name: "GI_BASTION_NAME", value: "{{ bas_name }}" }
+        - { name: "GI_DOMAIN", value: "{{ domain }}" }
+        - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
+        - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
+
+    - name: Set parameters for air-gapped installation
+      set_fact:
+        archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
+        repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
+        repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
+      when: internet_type == 'A'
 
     - name: Check configuration parameters for air-gapped installation
       fail: msg="Variable {{ item.name }} is not set"
       when: item.value == "" and internet_type == 'A'
       loop:
-        - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
-        - { name: "GI_BASTION_NAME", value: "{{ bas_name }}" }
-        - { name: "GI_DOMAIN", value: "{{ domain }}" }
         - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
         - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
-        - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
-        - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
+        - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
 
     - name: Upgrade system
       dnf:
@@ -105,13 +111,13 @@
 
     - name: Extract coreos archive
       unarchive:
-        src: "../download/coreos-registry-{{ ocp_release }}.tar"
+        src: "{{ archives_dir }}/coreos-registry-{{ ocp_release }}.tar"
         dest: ../gi-temp
       when: internet_type == 'A'
       
     - name: Find olm package
       find:
-        paths: "../download"
+        paths: "{{ archives_dir }}"
         patterns: "olm-registry*tar"
       register: find_result
       when: internet_type == 'A'
@@ -125,7 +131,7 @@
 
     - name: Find rook package
       find:
-        paths: "../download"
+        paths: "{{ archives_dir }}"
         patterns: "rook-registry*tar"
       register: rook_archive
       when: internet_type == 'A'
