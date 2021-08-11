@@ -148,12 +148,14 @@ then
         fi
 fi
 # Check bastion OS 
-echo "*** Checking OS version ***"
+echo "*** Checking OS release ***"
 if [ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]
 then
         echo "*** ERROR ***"
         echo "Your bastion machine is not Fedora OS - please use the supported Operating System"
         exit 1
+else
+	echo "Your system is `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` - progressing ..."
 fi
 # Check tar availability on OS
 if [ `dnf list tar --installed 2>/dev/null|tail -n1|wc -l` -eq 0 ]
@@ -165,14 +167,19 @@ fi
 # Unpack air-gap archives
 if [[ $use_air_gap == 'Y' ]]
 then
+	printf "Where are located the offline archives? - default value is download subdirectory in the current folder or insert full path to directory: "
+        read gi_archives
+        gi_archives=${gi_archives:-$GI_HOME/download}
+	echo "Offline archives located in $gi_archives - progressing ..."
+	echo export GI_ARCHIVES_DIR=${gi_archives} >> $file
         echo "*** Extracting OS files ***"
-        if [[ `ls $GI_HOME/download/os*.tar|wc -l` -ne 1 ]]
+        if [[ `ls $gi_archives/os*.tar|wc -l` -ne 1 ]]
         then
-                echo "You did not upload os-<version>.tar to download directory on bastion"
+                echo "You did not upload os-<version>.tar to $gi_archives directory on bastion"
                 exit 1
         else
-                cd download
-                tar xf $GI_HOME/download/os*.tar -C $GI_TEMP
+                cd $gi_archives
+                tar xf ${gi_archives}/os*.tar -C $GI_TEMP
                 cd $GI_TEMP
 	fi
 	echo "*** Checking source and target kernel ***"
@@ -1361,6 +1368,7 @@ fi
 #systemctl stop libvirtd > /dev/null 2>&1
 #systemctl disable libvirtd > /dev/null 2>&1
 # Display information
+echo "Copy SSH keys ~/.ssh/cluster_id_rsa and ~/.ssh/cluster_id_rsa.pub, each init.sh execution replace them!!!"
 echo "*** Execute commands below ***"
 echo "- import variables: \". $file\""
 echo "- start first playbook: \"ansible-playbook playbooks/01-initial-bastion-settings-and-reboot.yaml\""
