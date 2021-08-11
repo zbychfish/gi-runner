@@ -40,8 +40,10 @@ dnf update -qy --downloadonly --downloaddir os-updates
 check_exit_code $? "Cannot download update packages" 
 tar cf $air_dir/os-updates-`date +%Y-%m-%d`.tar os-updates
 echo "Update system ..."
-dnf -qy --disablerepo=* localinstall $air_dir/os-updates/*rpm --allowerasing
-check_exit_code $? "Cannot update system" 
+cd os-updates
+dnf -qy localinstall * --allowerasing
+check_exit_code $? "Cannot update system"
+cd ..
 rm -rf os-updates
 # Download all OS packages required to install OCP, ICS and GI in air-gap env, some of them from epel (python3 always available on CentOS 8)
 echo "Downloading additional OS packages ..."
