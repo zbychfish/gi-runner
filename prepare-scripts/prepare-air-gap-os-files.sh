@@ -39,10 +39,10 @@ echo -e "Downloading OS updates ..."
 dnf update -qy --downloadonly --downloaddir os-updates
 check_exit_code $? "Cannot download update packages" 
 tar cf $air_dir/os-updates-`date +%Y-%m-%d`.tar os-updates
-rm -rf os-updates
 echo "Update system ..."
-dnf -qy update
+dnf -qy --disablerepo=* localinstall $air_dir/os-updates/*rpm --allowerasing
 check_exit_code $? "Cannot update system" 
+rm -rf os-updates
 # Download all OS packages required to install OCP, ICS and GI in air-gap env, some of them from epel (python3 always available on CentOS 8)
 echo "Downloading additional OS packages ..."
 packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd-tools podman python3 python3-ldap openldap-servers openldap-clients"
@@ -51,6 +51,7 @@ for package in $packages
 do
         dnf download -qy --downloaddir os-packages $package --resolve
 	check_exit_code $? "Cannot download $package package" 
+	echo "Downloaded: $package"
 done
 tar cf $air_dir/os-packages-`date +%Y-%m-%d`.tar os-packages
 rm -rf os-packages
@@ -65,6 +66,7 @@ for package in $packages
 do
         python3 -m pip download --only-binary=:all: $package -d ansible > /dev/null 2>&1
 	check_exit_code $? "Cannot download Ansible extension $package" 
+	echo "Downloaded: $package"
 done
 tar cf $air_dir/ansible-`date +%Y-%m-%d`.tar ansible
 rm -rf ansible
