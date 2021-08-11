@@ -504,7 +504,7 @@ else
         #db_tainted='N'
         #echo export GI_DB2_HA_SIZE=0 >> $file
 fi
-echo export GI_STORAGE=$storage_type >> $file
+#echo export GI_STORAGE=$storage_type >> $file
 #echo export GI_DB2_HA=$db2_ha >> $file
 echo export GI_OCS_TAINTED=$ocs_tainted >> $file
 #echo export GI_DB2_TAINTED=$db2_tainted >> $file
