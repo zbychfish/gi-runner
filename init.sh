@@ -218,6 +218,7 @@ then
         mkdir -p /etc/ansible
         echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
 	rm -rf $GI_TEMP/*
+        echo "*** OS software update and installation successfully finished ***"
 fi
 # Time settings
 while ! [[ $install_ntpd == 'Y' || $install_ntpd == 'N' ]]
@@ -269,6 +270,7 @@ do
 done
 if [ $install_ntpd == 'Y' ]
 then
+        echo "*** Configuring NTP server on bastion - stratum 10 ***"
 	while ! [[ $is_td_ok == 'Y' ]]
 	do
         	read -p "Current local time is `date`, is it correct one [Y/N]: " is_td_ok
@@ -334,7 +336,7 @@ if [[ $use_air_gap == 'Y' ]]
 then
         if [[ ! -z "$GI_REPO_USER" ]]
         then
-                read -p "Bastion portable repository account name is set to [$GI_REPO_USER] - insert new or confirm existing one <ENTER>: " new_repo_admin
+                read -p "Bastion image repository account name is set to [$GI_REPO_USER] - insert new or confirm existing one <ENTER>: " new_repo_admin
                 if [[ $new_repo_admin != '' ]]
                 then
                         repo_admin=$new_repo_admin
@@ -342,7 +344,7 @@ then
         else
                 while [[ $repo_admin == '' ]]
                 do
-                        read -p "Insert bastion portable admin account name [admin]: " repo_admin
+                        read -p "Insert new bastion image repository admin account name [admin]: " repo_admin
                         repo_admin=${repo_admin:-admin}
                 done
         fi
@@ -354,7 +356,7 @@ then
         fi
         while [[ $repo_password == '' ]]
         do
-                read -sp "Insert bastion image repository $repo_admin password: " repo_password
+                read -sp "Insert new bastion image repository $repo_admin password: " repo_password
                 echo -e '\n'
         done
         echo "export GI_REPO_USER_PWD='$repo_password'" >> $file
@@ -375,7 +377,7 @@ if [[ $is_onenode == 'N' ]]
 then
         while ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
         do
-                printf "Is your installation the 3 nodes only (master only)? (\e[4mN\e[0m)o/(Y)es: "
+                printf "Is your installation the 3 nodes only (masters only)? (\e[4mN\e[0m)o/(Y)es: "
                 read is_master_only
                 is_master_only=${is_master_only:-N}
                 if ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
@@ -589,7 +591,7 @@ then
 else
         while [[ $dns_forwarding == '' ]]
         do
-                read -p "Point DNS server to resolve public names: " dns_forwarding
+		read -p "Point DNS internal server to resolve public names: " dns_forwarding
         done
 fi
 if [[ -z "$dns_forwarding" ]]
@@ -774,7 +776,7 @@ then
         #        IFS=',' read -r -a db2_name_arr <<< $db2_name
         #        GI_DB2_NAME=$DB2_name
         #done
-	echo export GI_DB2_NAME=$db2_name >> $file
+	#echo export GI_DB2_NAME=$db2_name >> $file
         if [[ $ocs_tainted == 'Y' ]]
         then
                 declare -a ocs_ip_arr
@@ -850,7 +852,7 @@ then
         while ! [[ $w_number -ge $m_worker_number ]]
         do
 
-                printf "How many workers the additional workers will you deploy [$m_worker_number]?: "
+                printf "How many additional workers will you deploy [$m_worker_number]?: "
                 read w_number
                 w_number=${w_number:-$m_worker_number}
                 if ! [[ $w_number -ge $m_worker_number ]]
@@ -966,7 +968,7 @@ then
 else
         while [[ $machine_nic == '' ]]
         do
-                read -p "Provide bootstrap and cluster node booting NIC device (for instance ens192): " machine_nic
+                read -p "Provide bootstrap and cluster node booting NIC device name (for instance ens192): " machine_nic
         done
 fi
 if [[ -z "$machine_nic" ]]
@@ -986,7 +988,7 @@ then
 else
         while [[ $machine_disk == '' ]]
         do
-                read -p "Provide bootstrap and cluster node root disk device for Core OS installation (for instance sdb or nvme0n1): " machine_disk
+                read -p "Provide bootstrap and cluster node root disk device for Core OS installation (for instance sda or nvme0n0): " machine_disk
         done
 fi
 if [[ -z "$machine_disk" ]]
@@ -1072,7 +1074,7 @@ then
 else
         while [[ $ocp_admin == '' ]]
         do
-                read -p "Insert OpenShift admin account name [ocadmin]: " ocp_admin
+                read -p "Insert a new OpenShift admin account name [ocadmin]: " ocp_admin
                 ocp_admin=${ocp_admin:-ocadmin}
         done
 fi
@@ -1084,7 +1086,7 @@ else
 fi
 while [[ $ocp_password == '' ]]
 do
-        read -sp "Insert OpenShift $ocp_admin password: " ocp_password
+        read -sp "Insert a new OpenShift $ocp_admin password: " ocp_password
         echo -e '\n'
 done
 echo "export GI_OCADMIN_PWD='$ocp_password'" >> $file
@@ -1360,7 +1362,6 @@ if [[ $use_proxy == 'P' ]]
 then
         echo "export GI_NOPROXY_NET=$no_proxy" >> $file
         echo "export GI_PROXY_URL=$proxy_ip:$proxy_port" >> $file
-        echo "- import PROXY settings: \". /etc/profile\""
 else
         echo "export GI_PROXY_URL=NO_PROXY" >> $file
 fi
@@ -1370,6 +1371,10 @@ fi
 # Display information
 echo "Copy SSH keys ~/.ssh/cluster_id_rsa and ~/.ssh/cluster_id_rsa.pub, each init.sh execution replace them!!!"
 echo "*** Execute commands below ***"
+if [[ $use_proxy == 'P' ]]
+then
+	echo "- import PROXY settings: \". /etc/profile\""
+fi
 echo "- import variables: \". $file\""
-echo "- start first playbook: \"ansible-playbook playbooks/01-initial-bastion-settings-and-reboot.yaml\""
+echo "- start first playbook: \"ansible-playbook playbooks/01-finalize-bastion-setup.yaml\""
 
