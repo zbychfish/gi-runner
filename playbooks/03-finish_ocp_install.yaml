@@ -4,7 +4,7 @@
     is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
     is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
     internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
-    storage_type:  "{{ lookup('env','GI_STORAGE') }}"
+    storage_type:  "{{ lookup('env','GI_STORAGE_TYPE') }}"
     boot_name: "{{ lookup('env','GI_BOOTSTRAP_NAME') }}"
     domain:  "{{ lookup('env','GI_DOMAIN') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
@@ -26,7 +26,7 @@
       - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
       - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
       - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
-      - { name: "GI_STORAGE", value: "{{ storage_type }}" }
+      - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
       - { name: "GI_BOOTSTRAP_NAME", value: "{{ boot_name }}" }
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
       - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }

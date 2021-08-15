@@ -471,6 +471,12 @@
         - { id: "master", name: "OCP master", ign_file: "master.ign", dom: "{{ domain }}" }
         - { id: "worker", name: "OCP worker", ign_file: "worker.ign", dom: "{{ domain }}" }
 
+    - name: Prepare PTR name for bastion
+      shell: >
+        echo "{{ bas_ip }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
+      register: bas_ptr
+      when: true
+
     - name: Prepare PTR name for boot
       shell: >
         echo "{{ boot_ip }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
@@ -560,6 +566,7 @@
         - "address=/registry.{{ domain }}/{{ bas_ip }}"
         - "address=/{{ boot_name }}.{{ domain }}/{{ boot_ip }}"
         - "ptr-record={{ boot_ptr.stdout }},{{ boot_name }}.{{ domain }}"
+        - "ptr-record={{ bas_ptr.stdout }},{{ bas_name }}.{{ domain }}"
         - "address=/matchbox.{{ domain }}/{{ bas_ip }}"
         - "address=/api.{{ domain }}/{{ bas_ip }}"
         - "address=/api-int.{{ domain }}/{{ bas_ip }}"
