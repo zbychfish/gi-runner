@@ -80,6 +80,7 @@
 
     - name: Set parameters for air-gapped installation
       set_fact:
+        archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
         repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
         repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
       when: internet_type == 'A'
@@ -90,6 +91,7 @@
       loop:
         - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
         - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+        - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
 
     - name: Set parameters for proxy installation
       set_fact:
@@ -190,7 +192,6 @@
       with_items:
         - { path: "/etc/systemd/resolved.conf", regexp: "^#DNS=", line: "DNS={{ bas_ip}} {{ dns_forwarder }}" }
         - { path: "/etc/nsswitch.conf", regexp: "^hosts:.*", line: "hosts:      files dns hostname resolve [!UNAVAIL=return]" }
-
 
     - name: Unlink resolv.conf
       file:
