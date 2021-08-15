@@ -56,6 +56,7 @@
 
   - name: Set parameters for air-gapped installation
     set_fact:
+      archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
       repo_user: "{{ lookup('env','GI_REPO_USER') }}"
       repo_user_password: "{{ lookup('env','GI_REPO_USER_PWD') }}"
     when: internet_type == 'A'
@@ -63,6 +64,7 @@
   - name: Check configuration parameters for air-gapped installation
     fail: msg="Variable {{ item.name }} is not set"
     loop:
+      - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
       - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
       - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
     when: internet_type == 'A' and item.value == ""
