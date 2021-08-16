@@ -43,6 +43,7 @@
 
   - name: Set parameters for air-gapped installation
     set_fact:
+      archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
       repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
       repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
 
@@ -52,6 +53,7 @@
     fail: msg="Variable {{ item.name }} is not set"
     when: internet_type == 'A' and item.value == ""
     loop:
+      - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
       - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
       - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
 
@@ -71,24 +73,27 @@
       ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
       ics_operands_arr: "{{ lookup('env', 'GI_ICS_OPERANDS').split(',') }}"
 
-  - debug:
-      var: ics_case
+  - name: Set GI installation variables
+    set_fact:
+      gi_case_inventory_setup: "install"
+      gi_case_archive: "ibm-guardium-insights-2.0.0.tgz"
+    when: internet_type == 'A' and install_gi == 'Y'
 
   - name: Extract ICS archive
     unarchive:
-      src: "../download/ics_registry-{{ ics_version }}.tar"
+      src: "{{ archives_dir }}/ics_registry-{{ ics_version }}.tar"
       dest: ../gi-temp
     when: internet_type == 'A' and install_gi == 'N'
 
   - name: Extract GI archive
     unarchive:
-      src: "../download/gi_registry-{{ gi_version }}.tar"
+      src: "{{ archives_dir }}/gi_registry-{{ gi_version }}.tar"
       dest: ../gi-temp
     when: false and internet_type == 'A' and install_gi == 'Y' #ansible creates 2 copies of huge file
 
   - name: Extract GI archive (using direct tar)
     shell:
-      cmd: "tar xf ../download/gi_registry-{{ gi_version }}.tar -C ../gi-temp"
+      cmd: "tar xf {{ archives_dir }}/gi_registry-{{ gi_version }}.tar -C ../gi-temp"
     when: internet_type == 'A' and install_gi == 'Y'
     ignore_errors: yes
 
@@ -96,7 +101,7 @@
     file:
       path: "../download/gi_registry-{{ gi_version }}.tar"
       state: absent
-    when: internet_type == 'A' and install_gi == 'Y'
+    when: false and internet_type == 'A' and install_gi == 'Y'
     ignore_errors: yes
 
   - name: Create ICS operator namespace
@@ -184,6 +189,11 @@
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ offline_inventory }}\""
     when: internet_type == 'A'
+
+  - name: Switch GI inventory to portable registry
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir ../gi-temp/{{ offline_inventory }}\""
+    when: internet_type == 'A' and install_gi == 'Y'
 
   - name: Wait for cluster reconfiguration
     pause:
