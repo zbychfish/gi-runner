@@ -12,7 +12,6 @@
     db2_nodes: "{{ lookup('env','GI_DB2_NODES') }}"
     gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
     storage_type:  "{{ lookup('env','GI_STORAGE') }}"
-    ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -30,7 +29,6 @@
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_DB2_NODES", value: "{{ db2_nodes }}" }
       - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
-      - { name: "GI_IBM_SECRET", value: "{{ ibm_secret }}" }
 
   - name: Set parameters for non air-gapped installation
     set_fact:
