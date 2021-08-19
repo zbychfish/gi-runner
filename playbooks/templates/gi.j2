@@ -28,7 +28,7 @@ spec:
         namespace: ibm-common-services
         registry: common-service
     #storageClassName: Change this to a ReadWriteMany StorageClass!!!
-    storageClassName: "{{ storage_class_fs }}"
+    #storageClassName: "{{ storage_class_fs }}"
   dependency-db2:
     #image:
       #insightsPullSecret needs to be set to the following developer/QA workflow
@@ -55,8 +55,6 @@ spec:
     storage:
       - metadata:
           name: data-volume
-        spec:
-          storageClassName: "{{ storage_class_fs }}"
       - metadata:
           name: logs-volume
         spec:
