@@ -102,12 +102,12 @@
   - name: Switch GI inventory to portable registry
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir ../gi-temp/{{ offline_inventory }}\""
-    when: internet_type == 'A'
+    when:  false and internet_type == 'A'
 
   - name: Wait for cluster reconfiguration
     pause:
       minutes: 3
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: false and internet_type == 'A' and is_one_node == 'N'
 
   - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
     shell:
@@ -116,7 +116,7 @@
     until: "co_status.stdout == \"0\""
     retries: 150
     delay: 20
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: false and internet_type == 'A' and is_one_node == 'N'
 
   - name: GI download case file
     shell:
