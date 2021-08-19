@@ -1215,7 +1215,7 @@ else
 	echo "export GI_ICS=$ics_install" >> $file
 	if [[ $ics_install == 'Y' ]]
 	then
-	        declare -a ics_versions=(3.7.1 3.7.2 3.7.4 3.8.1)
+	        declare -a ics_versions=(3.7.1 3.7.2 3.7.4 3.8.1 3.9.1 3.10.1)
 	        while [[ ( -z $ics_version_selected ) || ( $ics_version_selected -lt 1 || $ics_version_selected -gt $i ) ]]
 	        do
 	                echo "Select ICS version to mirror:"
