@@ -11,7 +11,7 @@
     gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
     db2_nodes: "{{ lookup('env','GI_DB2_NODES') }}"
     gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
-    storage_type:  "{{ lookup('env','GI_STORAGE') }}"
+    storage_type:  "{{ lookup('env','GI_STORAGE_TYPE') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -29,6 +29,7 @@
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_DB2_NODES", value: "{{ db2_nodes }}" }
       - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
+      - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
 
   - name: Set parameters for non air-gapped installation
     set_fact:
