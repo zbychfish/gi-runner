@@ -12,6 +12,7 @@
     db2_nodes: "{{ lookup('env','GI_DB2_NODES') }}"
     gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
     storage_type:  "{{ lookup('env','GI_STORAGE_TYPE') }}"
+    gi_ds_size:  "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -30,6 +31,7 @@
       - { name: "GI_DB2_NODES", value: "{{ db2_nodes }}" }
       - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
       - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
+      - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
 
   - name: Set parameters for non air-gapped installation
     set_fact:

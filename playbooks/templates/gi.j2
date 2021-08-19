@@ -35,21 +35,9 @@ spec:
       #insightsPullSecret: ibm-entitlement-key
     db2:
       size: 1
-      resources:
-        requests:
-          cpu: "4"
-          memory: "32Gi"
-        limits:
-          cpu: "5"
-          memory: "40Gi"
       storage:
       - name: meta
         spec:
-          accessModes:
-          - ReadWriteMany
-          resources:
-            requests:
-              storage: "30Gi"
           storageClassName: "{{ storage_class_fs }}"
         type: create
       - name: data
@@ -58,7 +46,7 @@ spec:
           - ReadWriteOnce
           resources:
             requests:
-              storage: "150Gi"
+              storage: "{{ gi_ds_size }}Gi"
         type: template
     mln:
       distribution: 0:0
@@ -68,20 +56,10 @@ spec:
       - metadata:
           name: data-volume
         spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 50Gi
           storageClassName: "{{ storage_class_fs }}"
       - metadata:
           name: logs-volume
         spec:
-          accessModes:
-            - ReadWriteMany
-          resources:
-            requests:
-              storage: 30Gi
           storageClassName: "{{ storage_class_fs }}"
   mini-snif:
     persistentVolumesClaims:
