@@ -1142,6 +1142,20 @@ then
                 read -p "Your choice?: " gi_size_selected
 		gi_size_selected=$(($gi_size_selected-1))
         done
+	while [[ $gi_ds_size == '' || -z "$gi_ds_size" ]]
+        do
+		if [[ ! -z "$GI_DATA_STORAGE_SIZE" ]]
+                then
+                        read -p "Size of GI data PVC is set to [$GI_DATA_STORAGE_SIZE] GB, insert new value (in GB, it should be not larger than 70% of total cluster storage size) or confirm existing one <ENTER>: " gi_ds_size
+                        if [[ $gi_ds_size == '' ]]
+                        then
+                                gi_ds_size=$GI_DATA_STORAGE_SIZE
+                        fi
+                else
+                        read -p "Provide size of GI data PVC (for example 300, should not exceed 70% of total cluster storage size) in GB: " gi_ds_size
+                fi
+        done
+        echo "export GI_DATA_STORAGE_SIZE=$gi_ds_size" >> $file
 	echo "export GI_SIZE_GI=${gi_sizes[$gi_size_selected]}" >> $file
 	echo "export GI_VERSION=3.0" >> $file
 	echo "export GI_INSTALL_GI=$gi_install" >> $file
