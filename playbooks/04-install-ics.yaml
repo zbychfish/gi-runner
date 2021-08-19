@@ -188,7 +188,7 @@
   - name: Switch ICS inventory to portable registry
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ offline_inventory }}\""
-    when: internet_type == 'A'
+    when: internet_type == 'A' and install_gi == 'N'
 
   - name: Switch GI inventory to portable registry
     shell:
