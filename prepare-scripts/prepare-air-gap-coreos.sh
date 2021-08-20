@@ -28,6 +28,7 @@ echo -e '\n'
 echo "$pull_secret" > $temp_dir/pull-secret.txt
 read -p "Insert your mail address to authenticate in RedHat Network: " mail
 echo -e "\n"
+dnf -y install podman
 # Setup portable registry
 echo "Setup mirror image registry ..."
 podman stop bastion-registry
