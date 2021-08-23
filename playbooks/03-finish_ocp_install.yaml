@@ -245,7 +245,7 @@
 
   - name: Wait for cluster operators
     shell:
-      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
+      cmd: "oc get co --kubeconfig=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
     register: co_status
     until: "co_status.stdout == \"0\""
     retries: 80
@@ -263,7 +263,7 @@
 
   - name: Wait for cluster operators
     shell:
-      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
+      cmd: "oc get co --kubeconfig=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
     register: co_status
     until: "co_status.stdout == \"0\""
     retries: 80
@@ -366,7 +366,7 @@
 
   - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
     shell:
-      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
+      cmd: "oc get co --kubeconfig=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
     register: co_status
     until: "co_status.stdout == \"0\""
     retries: 150
