@@ -248,7 +248,7 @@
       cmd: "oc get co --kubeconfig=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
     register: co_status
     until: "co_status.stdout == \"0\""
-    retries: 80
+    retries: 150
     delay: 10
     when: is_one_node == 'Y'
 
@@ -266,8 +266,8 @@
       cmd: "oc get co --kubeconfig=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
     register: co_status
     until: "co_status.stdout == \"0\""
-    retries: 80
-    delay: 20
+    retries: 150 
+    delay: 10
     when: true
 
   - name: Create htpasswd file
