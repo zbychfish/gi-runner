@@ -197,7 +197,7 @@
 
   - name: Wait for cluster reconfiguration
     pause:
-      minutes: 3
+      minutes: 8
     when: internet_type == 'A' and is_one_node == 'N'
 
   - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
@@ -206,7 +206,7 @@
     register: co_status
     until: "co_status.stdout == \"0\""
     retries: 150
-    delay: 20
+    delay: 30
     when: internet_type == 'A' and is_one_node == 'N'
 
   - name: Create ICS catalog file
