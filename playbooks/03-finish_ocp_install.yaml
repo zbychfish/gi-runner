@@ -361,7 +361,7 @@
     register: cluster_health_operators
     until: cluster_health_operators.stdout == "0"
     retries: 100
-    delay: 20
+    delay: 30
     when: internet_type == 'A' and is_one_node == 'N'
 
   - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
@@ -370,7 +370,7 @@
     register: co_status
     until: "co_status.stdout == \"0\""
     retries: 150
-    delay: 20
+    delay: 30
     when: false and internet_type == 'A' and is_one_node == 'N'
 
   - name: Configure OCS nodes on workers
@@ -514,7 +514,7 @@
       cmd: "oc get pvc -n openshift-storage --no-headers | grep localblock-sc | grep Bound | wc -l"
     register: ocs_status
     until: "ocs_status.stdout|int >= 3"
-    retries: 60
+    retries: 100
     delay: 15
     when: storage_type == "O"
 
