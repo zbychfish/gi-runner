@@ -24,6 +24,8 @@ air_dir=$local_directory/air-gap
 # Creates target download directory
 if [ $# -eq 0 ]
 then
+	echo "Cleanup temp directory $temp_dir"
+	rm -rf $temp_dir
 	mkdir -p $temp_dir
 	# Creates temporary directory
 	mkdir -p $air_dir
@@ -103,8 +105,7 @@ LOCAL_REGISTRY="$host_fqdn:5000"
 echo "Mirroring GI ${gi_versions[${gi_version_selected}]}"
 # - declares variables
 CASE_ARCHIVE=${cases[${gi_version_selected}]}
-echo $CASE_ARCHIVE
-CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
+CASE_INVENTORY_SETUP=install
 # - downloads manifests
 if [ $# -eq 0 ]
 then
@@ -115,13 +116,13 @@ then
 	for site in $sites
 	do
 		echo $site
-	        cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory install --args "--registry $site --user cp --pass $ibm_account_key"
+	        cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry $site --user cp --pass $ibm_account_key"
 		check_exit_code $? "Cannot configure credentials for site $site"
 	done
-	cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory install --args "--registry `hostname --long`:5000 --user admin --pass guardium"
+	cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium"
 fi
 # - mirrors ICS images
-cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory install --args "--registry `hostname --long`:5000 --inputDir $temp_dir/gi_offline"
+cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $temp_dir/gi_offline"
 mirror_status=$?
 # - archives ICS manifests
 echo "Mirroring status: $mirror_status"
