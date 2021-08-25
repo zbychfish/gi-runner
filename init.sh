@@ -1104,6 +1104,20 @@ done
 echo "export GI_INSTALL_GI=$gi_install" >> $file
 if [[ $gi_install == 'Y' ]]
 then
+	declare -a gi_versions=(3.0.0 3.0.1)
+        while [[ ( -z $gi_version_selected ) || ( $gi_version_selected -lt 1 || $gi_version_selected -gt $i ) ]]
+        do
+	        echo "Select GI version:"
+                i=1
+                for gi_version in "${gi_versions[@]}"
+        	do
+                	echo "$i - $gi_version"
+                        i=$((i+1))
+                done
+                read -p "Your choice?: " gi_version_selected
+        done
+        gi_version_selected=$(($gi_version_selected-1))
+        echo "export GI_VERSION=$gi_version_selected" >> $file
 	# Gets IBM Cloud Pull Secret
 	if [[ $use_air_gap == 'N' ]]
 	then
@@ -1157,9 +1171,13 @@ then
         done
         echo "export GI_DATA_STORAGE_SIZE=$gi_ds_size" >> $file
 	echo "export GI_SIZE_GI=${gi_sizes[$gi_size_selected]}" >> $file
-	echo "export GI_VERSION=3.0" >> $file
 	echo "export GI_INSTALL_GI=$gi_install" >> $file
-	echo "export GI_ICS_VERSION=2" >> $file
+	if [[ $gi_version_selected == '2' ]]
+	then
+		echo "export GI_ICS_VERSION=2" >> $file
+	else
+		echo "export GI_ICS_VERSION=4" >> $file
+	fi
 	echo "export GI_ICS_OPERANDS=N,N,Y,Y,N,Y,N" >> $file
 	echo "export GI_ICS=Y" >> $file
 	while [[ $ics_password == '' ]]
