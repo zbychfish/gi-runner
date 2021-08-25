@@ -102,7 +102,8 @@ LOCAL_REGISTRY="$host_fqdn:5000"
 # Mirroring ICS images
 echo "Mirroring GI ${gi_versions[${gi_version_selected}]}"
 # - declares variables
-CASE_ARCHIVE=${cases[${ics_version_selected}]}
+CASE_ARCHIVE=${cases[${gi_version_selected}]}
+echo $CASE_ARCHIVE
 CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
 # - downloads manifests
 if [ $# -eq 0 ]
