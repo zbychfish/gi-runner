@@ -30,19 +30,19 @@ then
 	#read -p "Insert RH account name: " rh_account
 fi
 read -sp "Insert your IBM Cloud Key: " ibm_account_key
-declare -a gi_versions=(3.0 3.1)
-gi_version_selected=1
-#while [[ ( -z $gi_version_selected ) || ( $gi_version_selected -lt 1 || $gi_version_selected -gt $i ) ]]
-#do
-#	echo "Select GI version to mirror:"
-#        i=1
-#        for gi_version in "${gi_versions[@]}"
-#        do
-#        	echo "$i - $gi_version"
-#                i=$((i+1))
-#        done
-#        read -p "Your choice?: " gi_version_selected
-#done
+declare -a gi_versions=(3.0.0 3.0.1)
+declare -a cases=(ibm-guardium-insights-2.0.0.tgz ibm-guardium-insights-2.0.1.tgz)
+while [[ ( -z $gi_version_selected ) || ( $gi_version_selected -lt 1 || $gi_version_selected -gt $i ) ]]
+do
+	echo "Select GI version to mirror:"
+        i=1
+        for gi_version in "${gi_versions[@]}"
+        do
+        	echo "$i - $gi_version"
+                i=$((i+1))
+        done
+        read -p "Your choice?: " gi_version_selected
+done
 gi_version_selected=$(($gi_version_selected-1))
 if [ $# -eq 0 ]
 then
@@ -101,7 +101,6 @@ b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
 # Mirroring ICS images
 echo "Mirroring GI ${gi_versions[${gi_version_selected}]}"
-declare -a cases=(ibm-guardium-insights-2.0.0.tgz)
 # - declares variables
 CASE_ARCHIVE=${cases[${ics_version_selected}]}
 CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
