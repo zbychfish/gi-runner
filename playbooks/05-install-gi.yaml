@@ -70,6 +70,7 @@
       offline_inventory: "gi_offline"
       ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
       storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
+      storage_class_block: " {{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-block' }}"
 
   - name: Check presence of cloudctl tool
     stat:

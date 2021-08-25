@@ -33,6 +33,7 @@
         - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
         - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
         - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
+      when: internet_type == 'A'
 
     - name: Upgrade system
       dnf:
