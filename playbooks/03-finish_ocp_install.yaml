@@ -353,7 +353,7 @@
 
   - name: Wait - cluster stabilization
     pause:
-      minutes: 3
+      minutes: 8
     when: internet_type == 'A' and is_one_node == 'N'
 
   - name: Check cluster nodes health after Content Source Policy change
