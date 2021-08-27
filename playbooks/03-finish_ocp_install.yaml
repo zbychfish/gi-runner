@@ -686,7 +686,7 @@
     register: image_registry_status
     until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
     retries: 60
-    delay: 15
+    delay: 30
     when: true
 
   - debug:
