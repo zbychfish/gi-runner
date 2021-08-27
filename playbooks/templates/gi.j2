@@ -4,7 +4,7 @@ metadata:
   #name: This must be 10 or less characters
   name: {{ gi_namespace }}
 spec:
-  version: 3.0.0
+  version: {{ gi_version }}
   license:
     accept: true
     licenseType: "L-OOLE-C2ASKR"
@@ -28,16 +28,49 @@ spec:
         namespace: ibm-common-services
         registry: common-service
     #storageClassName: Change this to a ReadWriteMany StorageClass!!!
-    storageClassName: "{{ storage_class_block }}"
+    storageClassName: "{{ storage_class_fs }}"
+  dependency-kafka:
+    kafka:
+      storage:
+        class: "{{ storage_class_block }}"
+    zookeeper:
+      storage:
+        class: "{{ storage_class_block }}"
+  dependency-redis:
+    size: 3
+    persistence:
+      enabled: true
+      storageClass: "{{ storage_class_block }}"
+  dependency-mongodb:
+    storage:
+    - metadata:
+        name: data-volume
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        #resources:
+          #requests:
+            #storage: 100Gi
+        storageClassName: "{{ storage_class_block }}"
+    - metadata:
+        name: logs-volume
+      spec:
+        accessModes:
+        - ReadWriteMany
+        #resources:
+          #requests:
+            #storage: 100Gi
+        storageClassName: "{{ storage_class_fs }}"
   dependency-db2:
-    #image:
-      #insightsPullSecret needs to be set to the following developer/QA workflow
-      #insightsPullSecret: ibm-entitlement-key
     db2:
-      size: 1
       storage:
       - name: meta
         spec:
+          accessModes:
+          - ReadWriteMany
+          #resources:
+            #requests:
+              #storage: "100Gi"
           storageClassName: "{{ storage_class_fs }}"
         type: create
       - name: data
@@ -47,6 +80,7 @@ spec:
           resources:
             requests:
               storage: "{{ gi_ds_size }}Gi"
+          storageClassName: "{{ storage_class_block }}"
         type: template
     mln:
       distribution: 0:0
@@ -75,5 +109,3 @@ spec:
     persistentVolumesClaims:
       ticketing-keystore:
         storageClassName: "{{ storage_class_fs }}"
-  dependency-redis:
-    size: 3
