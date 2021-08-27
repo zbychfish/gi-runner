@@ -67,7 +67,7 @@
   - name: Set GI installation variables
     set_fact:
       gi_case_inventory_setup: "install"
-      gi_case_archive: "ibm-guardium-insights-2.0.0.tgz"
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' }}"
       offline_inventory: "gi_offline"
       storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
       storage_class_block: " {{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-block' }}"
