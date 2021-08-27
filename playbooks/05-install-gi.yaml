@@ -33,7 +33,6 @@
       - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
       - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
-      - { name: "GI_SIZE_GI", value: "{{ gi_size }}" }
 
   - name: Set parameters for non air-gapped installation
     set_fact:
