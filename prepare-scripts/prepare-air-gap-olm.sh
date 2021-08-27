@@ -10,7 +10,8 @@ function check_exit_code() {
                 echo "OK"
         fi
 }
-
+echo "Install os packages"
+dnf -y install podman
 echo "Setting environment"
 local_directory=`pwd`
 host_fqdn=$( hostname --long )
