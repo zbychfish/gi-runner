@@ -201,6 +201,14 @@
       minutes: 8
     when: internet_type == 'A' and is_one_node == 'N'
 
+  - name: Check cluster nodes health after Content Source Policy change
+    shell: ../scripts/check_cluster_health_operators.sh
+    register: cluster_health_operators
+    until: cluster_health_operators.stdout == "0"
+    retries: 100
+    delay: 30
+    when: internet_type == 'A' and is_one_node == 'N'
+
   - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
     shell:
       cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
