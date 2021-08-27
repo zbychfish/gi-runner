@@ -1172,7 +1172,7 @@ then
         echo "export GI_DATA_STORAGE_SIZE=$gi_ds_size" >> $file
 	echo "export GI_SIZE_GI=${gi_sizes[$gi_size_selected]}" >> $file
 	echo "export GI_INSTALL_GI=$gi_install" >> $file
-	if [[ $gi_version_selected == '2' ]]
+	if [[ $gi_version_selected == '1' ]]
 	then
 		echo "export GI_ICS_VERSION=2" >> $file
 	else
