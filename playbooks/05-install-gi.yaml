@@ -3,7 +3,6 @@
     internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     domain: "{{ lookup('env','GI_DOMAIN') }}"
     is_one_node: "{{ lookup('env','GI_ONENODE') }}"
-    ics_size_hint: "{{ lookup('env','GI_ICS_SIZE') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
@@ -13,6 +12,7 @@
     gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
     storage_type:  "{{ lookup('env','GI_STORAGE_TYPE') }}"
     gi_ds_size:  "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
+    gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -32,6 +32,8 @@
       - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
       - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
       - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
+      - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+      - { name: "GI_SIZE_GI", value: "{{ gi_size }}" }
 
   - name: Set parameters for non air-gapped installation
     set_fact:
@@ -52,10 +54,10 @@
 
   - name: Check configuration parameters for air-gapped installation
     fail: msg="Variable {{ item.name }} is not set"
-    when: internet_type == 'A' and item.value == ""
     loop:
       - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
       - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+    when: internet_type == 'A' and item.value == ""
 
   - name: Set masters array
     set_fact:
@@ -68,9 +70,9 @@
       gi_case_inventory_setup: "install"
       gi_case_archive: "ibm-guardium-insights-2.0.0.tgz"
       offline_inventory: "gi_offline"
-      ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
       storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
       storage_class_block: " {{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-block' }}"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' }}"
 
   - name: Check presence of cloudctl tool
     stat:
@@ -136,10 +138,15 @@
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir ../gi-temp/{{ offline_inventory }}\""
     when: internet_type == 'A'
 
-  - name: Install GI catalog online
+  - name: Install GI catalog online (3.0.0)
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry docker.io\""
-    when: internet_type != 'A'
+    when: internet_type != 'A' and gi_version == '3.0.0'
+
+  - name: Install GI catalog online (3.0.1+)
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1"
+    when: internet_type != 'A' and gi_version != '3.0.0'
 
   - name: Wait for GI catalog (part1)
     shell:
@@ -199,10 +206,12 @@
     until: "db2u_initiated.stdout == \"1\""
     retries: 80
     delay: 20
+    when: gi_version == '3.0.0'
 
   - name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part2)
     shell:
       cmd: "oc patch sts c-{{ gi_namespace }}-db2-db2u -p='{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"db2u\",\"tty\":false}]}}}}}'"
+    when: gi_version == '3.0.0'
 
   - name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part3)
     shell:
@@ -211,6 +220,7 @@
     until: "db2u_initiated.stdout == \"1\""
     retries: 80
     delay: 20
+    when: gi_version == '3.0.0'
 
   - name: Wait for successful GI deployment (takes 20-60 minutes)
     shell:
