@@ -77,7 +77,7 @@
   - name: Set GI installation variables
     set_fact:
       gi_case_inventory_setup: "install"
-      gi_case_archive: "ibm-guardium-insights-2.0.0.tgz"
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' }}"
     when: internet_type == 'A' and install_gi == 'Y'
 
   - name: Extract ICS archive
