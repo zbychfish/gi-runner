@@ -101,7 +101,7 @@ then
 fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
-# Mirroring ICS images
+# Mirroring GI images
 echo "Mirroring GI ${gi_versions[${gi_version_selected}]}"
 # - declares variables
 CASE_ARCHIVE=${cases[${gi_version_selected}]}
@@ -121,10 +121,10 @@ then
 	done
 	cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium"
 fi
-# - mirrors ICS images
+# - mirrors GI images
 cloudctl case launch --case $temp_dir/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $temp_dir/gi_offline"
 mirror_status=$?
-# - archives ICS manifests
+# - archives GI manifests
 echo "Mirroring status: $mirror_status"
 if [ $mirror_status -ne 0 ]
 then
@@ -139,7 +139,6 @@ cd /opt/registry
 tar cf ${air_dir}/gi_images.tar data
 cd $air_dir
 rm -rf /opt/registry
-#tar czpvf - *.tar | split -d -b 10G - ics_registry-${ics_version}.tar
 tar cf gi_registry-${gi_versions[${gi_version_selected}]}.tar gi_images.tar gi_offline.tar cloudctl-linux-amd64.tar.gz
 rm -f gi_offline.tar cloudctl-linux-amd64.tar.gz gi_images.tar
 cd $local_directory
