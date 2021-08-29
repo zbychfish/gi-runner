@@ -167,9 +167,18 @@ fi
 # Unpack air-gap archives
 if [[ $use_air_gap == 'Y' ]]
 then
-	printf "Where are located the offline archives? - default value is download subdirectory in the current folder or insert full path to directory: "
-        read gi_archives
-        gi_archives=${gi_archives:-$GI_HOME/download}
+	gi_archives=''
+	while [[ $gi_archives == '' ]]
+	do
+		printf "Where are located the offline archives? - default value is download subdirectory in the current folder or insert full path to directory: "
+        	read gi_archives
+        	gi_archives=${gi_archives:-$GI_HOME/download}
+		if [[ ! -d $gi_archives ]]
+		then
+			echo "Directory does not exist!"
+			gi_archives=''
+		fi
+	done
 	echo "Offline archives located in $gi_archives - progressing ..."
 	echo export GI_ARCHIVES_DIR=${gi_archives} >> $file
         echo "*** Extracting OS files ***"
