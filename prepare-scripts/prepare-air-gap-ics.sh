@@ -22,7 +22,8 @@ mkdir -p $temp_dir
 mkdir -p $air_dir
 read -p "Insert RH account name: " rh_account
 read -sp "Insert RH account password: " rh_account_pwd
-declare -a ics_versions=(3.7.1 3.7.2 3.7.4 3.8.1 3.9.1 3.10.0)
+declare -a ics_versions=(3.7.1 3.7.2 3.7.4 3.8.1 3.9.0 3.9.1 3.10.0)
+declare -a cases=(ibm-cp-common-services-1.3.1.tgz ibm-cp-common-services-1.3.2.tgz ibm-cp-common-services-1.3.4.tgz ibm-cp-common-services-1.4.1.tgz ibm-cp-common-services-1.5.0.tgz ibm-cp-common-services-1.5.1.tgz ibm-cp-common-services-1.6.0.tgz)
 while [[ ( -z $ics_version_selected ) || ( $ics_version_selected -lt 1 || $ics_version_selected -gt $i ) ]]
 do
 	echo "Select ICS version to mirror:"
@@ -92,7 +93,6 @@ LOCAL_REGISTRY="$host_fqdn:5000"
 # Mirroring ICS images
 # - install Skopeo utility
 # - declares cases files per ICS release
-declare -a cases=(ibm-cp-common-services-1.3.1.tgz ibm-cp-common-services-1.3.2.tgz ibm-cp-common-services-1.3.4.tgz ibm-cp-common-services-1.4.1.tgz ibm-cp-common-services-1.5.1.tgz ibm-cp-common-services-1.6.0.tgz)
 # - declares variables
 CASE_ARCHIVE=${cases[${ics_version_selected}]}
 CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup

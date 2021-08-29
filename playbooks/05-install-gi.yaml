@@ -225,7 +225,7 @@
     shell:
       cmd: "oc get guardiuminsights -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
     register: gi_deployment_status
-    until: "gi_deployment_status.stdout == \"3.0.0\""
+    until: "gi_deployment_status.stdout == \"{{ gi_version }}\""
     retries: 100
     delay: 60
 
