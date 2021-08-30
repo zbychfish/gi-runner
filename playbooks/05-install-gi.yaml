@@ -261,13 +261,13 @@
     register: ssh_node_port
 
   - name: Open ssh-service port on bastion
-      firewalld:
-        port: "{{ item.port }}/{{ item.type }}"
-        permanent: yes
-        immediate: yes
-        state: enabled
-      with_items:
-        - { port: "{{ ssh_node_port }}", type: "tcp" }
+    firewalld:
+      port: "{{ item.port }}/{{ item.type }}"
+      permanent: yes
+      immediate: yes
+      state: enabled
+    with_items:
+      - { port: "{{ ssh_node_port }}", type: "tcp" }
 
   - name: Create HA Proxy config file with ssh-service
     template:
