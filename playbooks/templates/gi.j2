@@ -63,6 +63,7 @@ spec:
         storageClassName: "{{ storage_class_fs }}"
   dependency-db2:
     db2:
+      encryption: "{{ db2_enc }}"
       storage:
       - name: meta
         spec:
