@@ -1227,6 +1227,33 @@ then
         	read -p "Insert DB2 nodes list (comma separated): " db2_nodes
         fi
         echo export GI_DB2_NODES=$db2_nodes >> $file
+	while ! [[ $db2_enc == 'Y' || $db2_enc == 'N' ]]
+	do
+		if [[ $gi_version_selected != '0' ]]
+		then
+			if [[ ! -z "$GI_DB2_ENCRYPTED" ]]
+		        then
+				read -p "DB2 encryption is set to [$GI_DB2_ENCRYPTED] - should be DB2u tablespace encrypted (YES/NO) or confirm current value <ENTER>: " new_db2_enc
+                		if [[ $new_db2_enc != '' ]]
+                		then
+                        		db2_enc=$new_db2_enc
+                		else
+                        		db2_enc=$GI_DB2_ENCRYPTED
+                		fi
+        		else
+               			printf "Should be DB2u tablespace encrypted? (\e[4mN\e[0m)o/(Y)es: "
+				read db2_enc
+				db2_enc=${db2_enc:-N}
+			fi
+			if ! [[ $db2_enc == 'Y' || $db2_enc == 'N' ]]
+                	then
+                        	echo "Incorrect value"
+                	fi
+		else
+			db2_enc='Y'
+		fi
+	done
+        echo export GI_DB2_ENCRYPTED=$db2_enc >> $file
 else
 	# ICS installation
 	while ! [[ $ics_install == 'Y' || $ics_install == 'N' ]] # While string is different or empty...

@@ -13,6 +13,7 @@
     storage_type:  "{{ lookup('env','GI_STORAGE_TYPE') }}"
     gi_ds_size:  "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
     gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
+    is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -33,6 +34,7 @@
       - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
       - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+      - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
 
   - name: Set parameters for non air-gapped installation
     set_fact:
@@ -63,6 +65,27 @@
       node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
       node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
       node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
+
+  - name: Set OCS array
+    set_fact:
+      ocs_ip: "{{ lookup('env', 'GI_OCS_IP').split(',') }}"
+      ocs_mac: "{{ lookup('env', 'GI_OCS_MAC_ADDRESS').split(',') }}"
+      ocs_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
+    when: is_ocs_tainted == 'Y'
+
+  - name: Set workers arrays
+    set_fact:
+      worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
+      worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
+      worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
+    when: is_one_node == 'N' and is_master_only == 'N'
+
+  - name: Iterates all workers in one array
+    vars:
+      nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
+      ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
+    debug:
+      msg: "{{ nodes|zip(ips)|list }}"
 
   - name: Set GI installation variables
     set_fact:
@@ -234,14 +257,38 @@
       cmd: "oc get services -n {{ gi_namespace }} {{ gi_namespace }}-ssh-service -o json|jq .spec.ports[0].nodePort"
     register: ssh_node_port
 
-  - name: Create HA Proxy part for ssh
-      template:
-        src: haproxy_with_ssh.j2
-        dest: ../gi-temp/haproxy_with_ssh.yaml
+  - name: Open ssh-service port on bastion
+      firewalld:
+        port: "{{ item.port }}/{{ item.type }}"
+        permanent: yes
+        immediate: yes
+        state: enabled
+      with_items:
+        - { port: "{{ ssh_node_port }}", type: "tcp" }
 
-  - name: Modify HA Proxy config file
-    shell:
-      cmd: "cat ../gi-temp/haproxy_with_ssh.yaml >> /etc/haproxy/haproxy.cfg"
+  - name: Create HA Proxy config file with ssh-service
+    template:
+      src: haproxy_with_ssh.j2
+      dest: /etc/haproxy/haproxy.cfg
+    vars:
+      masters: "{{ node_name|zip(node_ip)|list }}"
+      nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
+      ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
+      workers: "{{ nodes|zip(ips)|list }}"
+    when: is_one_node == 'N' and is_master_only == 'N'
+
+  - name: Create HA Proxy config file with ssh-service (no dedicated workers)
+    template:
+      src: haproxy_with_ssh.j2
+      dest: /etc/haproxy/haproxy.cfg
+    vars:
+      masters: "{{ node_name|zip(node_ip)|list }}"
+    when: is_one_node == 'Y' or is_master_only == 'Y'
+
+  - name: Restart HA Proxy
+    service:
+      name: haproxy
+      state: restarted
 
   - debug:
       msg:
@@ -249,4 +296,5 @@
         - Update the hosts file on your web browser workstation
         - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} insights.apps.{{ domain }}"
         - "Login to GI console as admin/{{ ics_admin_password }} - https://insights.apps.{{ domain }}"
+        - "SSH port {{ ssh_node_port }} integration with GDP routed and opened on bastion"
         - "You can deploy on bastion the OpenLDAP and use it to add functional identities to GI, script 'playbooks/50-set_configure_ldap.yaml.sh'"
