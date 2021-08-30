@@ -269,7 +269,7 @@
       immediate: yes
       state: enabled
     with_items:
-      - { port: "{{ ssh_node_port }}", type: "tcp" }
+      - { port: "{{ ssh_node_port|string }}", type: "tcp" }
 
   - name: Create HA Proxy config file with ssh-service
     template:
