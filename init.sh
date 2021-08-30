@@ -182,7 +182,7 @@ then
 	echo "Offline archives located in $gi_archives - progressing ..."
 	echo export GI_ARCHIVES_DIR=${gi_archives} >> $file
         echo "*** Extracting OS files ***"
-        if [[ `ls $gi_archives/os*.tar|wc -l` -ne 1 ]]
+        if [[ `ls $gi_archives/os*.tar 2>/dev/null|wc -l` -ne 1 ]]
         then
                 echo "You did not upload os-<version>.tar to $gi_archives directory on bastion"
                 exit 1
