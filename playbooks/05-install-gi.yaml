@@ -99,7 +99,7 @@
       storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
       storage_class_block: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-block' }}"
       gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' }}"
-      db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
+      db2_enc: "\"{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}\""
 
   - name: Check presence of cloudctl tool
     stat:

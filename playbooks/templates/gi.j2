@@ -39,7 +39,6 @@ spec:
   dependency-redis:
     size: 3
     persistence:
-      enabled: true
       storageClass: "{{ storage_class_block }}"
   dependency-mongodb:
     storage:
@@ -64,7 +63,11 @@ spec:
   dependency-db2:
     db2:
       dbSettings:
-        encrypt: "{{ db2_enc }}"
+{% if db2_enc %}
+        encrypt: "YES"
+{% else %}
+        encrypt: "NO"
+{% endif %}
       storage:
       - name: meta
         spec:
