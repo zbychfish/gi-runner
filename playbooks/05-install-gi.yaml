@@ -15,6 +15,7 @@
     gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
     is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
     db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
+    is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -37,6 +38,7 @@
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
       - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
       - { name: "GI_DB2_ENCRYPTED", value: "{{ db2_enc_hint }}" }
+      - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
 
   - name: Set parameters for non air-gapped installation
     set_fact:
