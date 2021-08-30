@@ -284,7 +284,7 @@
 
   - name: Create HA Proxy config file with ssh-service (no dedicated workers)
     template:
-      src: haproxy_with_ssh.j2
+      src: haproxy_with_ssh_masters_only.j2
       dest: /etc/haproxy/haproxy.cfg
     vars:
       masters: "{{ node_name|zip(node_ip)|list }}"
