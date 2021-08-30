@@ -234,6 +234,15 @@
       cmd: "oc get services -n {{ gi_namespace }} {{ gi_namespace }}-ssh-service -o json|jq .spec.ports[0].nodePort"
     register: ssh_node_port
 
+  - name: Create HA Proxy part for ssh
+      template:
+        src: haproxy_with_ssh.j2
+        dest: ../gi-temp/haproxy_with_ssh.yaml
+
+  - name: Modify HA Proxy config file
+    shell:
+      cmd: "cat ../gi-temp/haproxy_with_ssh.yaml >> /etc/haproxy/haproxy.cfg"
+
   - debug:
       msg:
         - "GI version {{ gi_version }} installation finished"
