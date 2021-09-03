@@ -8,7 +8,6 @@
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
     gi_version:  "{{ lookup('env','GI_VERSION') }}"
     gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
-    db2_nodes: "{{ lookup('env','GI_DB2_NODES') }}"
     db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
     gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
     storage_type:  "{{ lookup('env','GI_STORAGE_TYPE') }}"
@@ -32,7 +31,7 @@
       - { name: "GI_VERSION", value: "{{ gi_version }}" }
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
-      - { name: "GI_DB2_NODES", value: "{{ db2_nodes }}" }
+      - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
       - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
       - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
       - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
@@ -92,11 +91,6 @@
     debug:
       msg: "{{ nodes|zip(ips)|list }}"
 
-  - name: Set DB2 nodes list
-    set_fact:
-      db2_nodes_full_name: "{{ item }}.{{ domain }}"
-    loop: "{{ db2_nodes_array }}"
-
   - name: Set GI installation variables
     set_fact:
       gi_case_inventory_setup: "install"
@@ -106,7 +100,7 @@
       storage_class_block: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-block' }}"
       gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' }}"
       db2_enc: "\"{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}\""
-      db2_list: "{{ db2_nodes_full_name|join(',') }}"
+      db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
 
   - name: Check presence of cloudctl tool
     stat:
@@ -165,7 +159,7 @@
 
   - name: GI preinstall task
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes }}.{{ domain }} -t false\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes_list }}.{{ domain }} -t false\""
 
   - name: Install GI catalog in air-gapped
     shell:
