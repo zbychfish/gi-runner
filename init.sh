@@ -110,7 +110,7 @@ then
                 read -p "HTTP Proxy port: " proxy_port
         done
 	read -p "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxed (do not need provide here cluster addresses): " no_proxy_add
-        no_proxy="127.0.0.1,*.$ocp_somain,$no_proxy_add"
+        no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy_add"
         echo "Your proxy settings are:"
         echo "Proxy URL: http://$proxy_ip:$proxy_port"
         echo "OCP domain $ocp_domain"
