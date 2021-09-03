@@ -115,32 +115,32 @@ then
         echo "OCP domain $ocp_domain"
         echo "Setting your HTTP proxy environment on bastion"
         echo "- Modyfying /etc/profile"
-        if [ `cat /etc/profile | grep "export http_proxy=" | wc -l` -ne 0 ]
+        if [[ `cat /etc/profile | grep "export http_proxy=" | wc -l` -ne 0 ]]
         then
                 sed -i "s/^export http_proxy=.*/export http_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
         else
                 echo "export http_proxy=\"http:\/\/$proxy_ip:$proxy_port\"" >> /etc/profile
         fi
-        if [ `cat /etc/profile | grep "export https_proxy=" | wc -l` -ne 0 ]
+        if [[ `cat /etc/profile | grep "export https_proxy=" | wc -l` -ne 0 ]]
         then
                 sed -i "s/^export https_proxy=.*/export https_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
         else
                 echo "export https_proxy=\"http:\/\/$proxy_ip:$proxy_port\"" >> /etc/profile
         fi
-        if [ `cat /etc/profile | grep "export ftp_proxy=" | wc -l` -ne 0 ]
+        if [[ `cat /etc/profile | grep "export ftp_proxy=" | wc -l` -ne 0 ]]
         then
                 sed -i "s/^export ftp_proxy=.*/export ftp_proxy=\"$proxy_ip:$proxy_port\"/g" /etc/profile
         else
                 echo "export ftp_proxy=\"$proxy_ip:$proxy_port\"" >> /etc/profile
         fi
-        if [ `cat /etc/profile | grep "export no_proxy=" | wc -l` -ne 0 ]
+        if [[ `cat /etc/profile | grep "export no_proxy=" | wc -l` -ne 0 ]]
         then
                 sed -i "s/^export no_proxy=.*/export no_proxy=\"127.0.0.1,localhost,*.$ocp_domain,$no_proxy\"/g" /etc/profile
         else
                 echo "export no_proxy=\"127.0.0.1,localhost,*.$ocp_domain,$no_proxy\"" >> /etc/profile
         fi
         echo "- Add proxy settings to DNF config file"
-        if [ `cat /etc/dnf/dnf.conf | grep "proxy=" | wc -l` -ne 0 ]
+        if [[ `cat /etc/dnf/dnf.conf | grep "proxy=" | wc -l` -ne 0 ]]
         then
                 sed -i "s/^proxy=.*/proxy=http:\/\/$proxy_ip:$proxy_port/g" /etc/dnf/dnf.conf
         else
@@ -149,7 +149,7 @@ then
 fi
 # Check bastion OS 
 echo "*** Checking OS release ***"
-if [ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]
+if [[ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]]
 then
         echo "*** ERROR ***"
         echo "Your bastion machine is not Fedora OS - please use the supported Operating System"
@@ -158,7 +158,7 @@ else
 	echo "Your system is `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` - progressing ..."
 fi
 # Check tar availability on OS
-if [ `dnf list tar --installed 2>/dev/null|tail -n1|wc -l` -eq 0 ]
+if [[ `dnf list tar --installed 2>/dev/null|tail -n1|wc -l` -eq 0 ]]
 then
 	echo "You do not have tar tool installed!."
 	echo "Execute 'scripts/install-tar.sh' and restart init.sh"
