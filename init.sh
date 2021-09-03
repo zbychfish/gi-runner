@@ -109,7 +109,8 @@ then
         do
                 read -p "HTTP Proxy port: " proxy_port
         done
-	read -p "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxed (do not need provide here cluster addresses): " no_proxy
+	read -p "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxed (do not need provide here cluster addresses): " no_proxy_add
+        no_proxy="127.0.0.1,*.$ocp_somain,$no_proxy_add"
         echo "Your proxy settings are:"
         echo "Proxy URL: http://$proxy_ip:$proxy_port"
         echo "OCP domain $ocp_domain"
@@ -135,9 +136,9 @@ then
         fi
         if [[ `cat /etc/profile | grep "export no_proxy=" | wc -l` -ne 0 ]]
         then
-                sed -i "s/^export no_proxy=.*/export no_proxy=\"127.0.0.1,localhost,*.$ocp_domain,$no_proxy\"/g" /etc/profile
+                sed -i "s/^export no_proxy=.*/export no_proxy=\"$no_proxy\"/g" /etc/profile
         else
-                echo "export no_proxy=\"127.0.0.1,localhost,*.$ocp_domain,$no_proxy\"" >> /etc/profile
+                echo "export no_proxy=\"$no_proxy\"" >> /etc/profile
         fi
         echo "- Add proxy settings to DNF config file"
         if [[ `cat /etc/dnf/dnf.conf | grep "proxy=" | wc -l` -ne 0 ]]
