@@ -119,13 +119,13 @@ then
         then
                 sed -i "s/^export http_proxy=.*/export http_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
         else
-                echo "export http_proxy=\"http:\/\/$proxy_ip:$proxy_port\"" >> /etc/profile
+                echo "export http_proxy=\"http://$proxy_ip:$proxy_port\"" >> /etc/profile
         fi
         if [[ `cat /etc/profile | grep "export https_proxy=" | wc -l` -ne 0 ]]
         then
                 sed -i "s/^export https_proxy=.*/export https_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
         else
-                echo "export https_proxy=\"http:\/\/$proxy_ip:$proxy_port\"" >> /etc/profile
+                echo "export https_proxy=\"http://$proxy_ip:$proxy_port\"" >> /etc/profile
         fi
         if [[ `cat /etc/profile | grep "export ftp_proxy=" | wc -l` -ne 0 ]]
         then
@@ -314,8 +314,8 @@ then
                 pip3 install passlib
                 pip3 install dnspython
         else
-                pip3 install passlib --proxy $proxy_ip:$proxy_port
-                pip3 install dnspython --proxy $proxy_ip:$proxy_port
+                pip3 install passlib --proxy http://$proxy_ip:$proxy_port
+                pip3 install dnspython --proxy http://$proxy_ip:$proxy_port
         fi
 	# Configure Ansible
 	mkdir -p /etc/ansible
