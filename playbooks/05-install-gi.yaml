@@ -95,8 +95,7 @@
   - name: Set DB2 nodes list
     set_fact:
       db2_nodes_full_name: "{{ item }}.{{ domain }}"
-    loop:
-      - { "{{ db2_nodes_array|list }}" }
+    loop: "{{ db2_nodes_array }}"
 
   - name: Set GI installation variables
     set_fact:
