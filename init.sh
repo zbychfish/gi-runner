@@ -311,11 +311,11 @@ then
         dnf -qy install ansible skopeo
         if [[ $use_proxy == 'D' ]]
         then
-                pip3 install passlib > 2>&1
-                pip3 install dnspython > 2>&1
+                pip3 install passlib
+                pip3 install dnspython
         else
-                pip3 install passlib --proxy $proxy_ip:$proxy_port > 2>&1
-                pip3 install dnspython --proxy $proxy_ip:$proxy_port > 2>&1
+                pip3 install passlib --proxy $proxy_ip:$proxy_port
+                pip3 install dnspython --proxy $proxy_ip:$proxy_port
         fi
 	# Configure Ansible
 	mkdir -p /etc/ansible
