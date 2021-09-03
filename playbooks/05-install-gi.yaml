@@ -9,6 +9,7 @@
     gi_version:  "{{ lookup('env','GI_VERSION') }}"
     gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
     db2_nodes: "{{ lookup('env','GI_DB2_NODES') }}"
+    db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
     gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
     storage_type:  "{{ lookup('env','GI_STORAGE_TYPE') }}"
     gi_ds_size:  "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"

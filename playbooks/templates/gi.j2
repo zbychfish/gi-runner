@@ -62,6 +62,7 @@ spec:
         storageClassName: "{{ storage_class_fs }}"
   dependency-db2:
     db2:
+      size: "{{ db2_nodes_array|length }}"
       dbSettings:
 {% if db2_enc %}
         encrypt: "YES"
@@ -87,9 +88,9 @@ spec:
               storage: "{{ gi_ds_size }}Gi"
           storageClassName: "{{ storage_class_block }}"
         type: template
-    mln:
-      distribution: 0:0
-      total: 1
+    #mln:
+      #distribution: 0:0
+      #total: 1
   dependency-mongodb:
     storage:
       - metadata:
