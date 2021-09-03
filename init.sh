@@ -117,15 +117,15 @@ then
         echo "- Modyfying /etc/profile"
         if [ `cat /etc/profile | grep "export http_proxy=" | wc -l` -ne 0 ]
         then
-                sed -i "s/^export http_proxy=.*/export http_proxy=\"$proxy_ip:$proxy_port\"/g" /etc/profile
+                sed -i "s/^export http_proxy=.*/export http_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
         else
-                echo "export http_proxy=\"$proxy_ip:$proxy_port\"" >> /etc/profile
+                echo "export http_proxy=\"http:\/\/$proxy_ip:$proxy_port\"" >> /etc/profile
         fi
         if [ `cat /etc/profile | grep "export https_proxy=" | wc -l` -ne 0 ]
         then
-                sed -i "s/^export https_proxy=.*/export https_proxy=\"$proxy_ip:$proxy_port\"/g" /etc/profile
+                sed -i "s/^export https_proxy=.*/export https_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
         else
-                echo "export https_proxy=\"$proxy_ip:$proxy_port\"" >> /etc/profile
+                echo "export https_proxy=\"http:\/\/$proxy_ip:$proxy_port\"" >> /etc/profile
         fi
         if [ `cat /etc/profile | grep "export ftp_proxy=" | wc -l` -ne 0 ]
         then
@@ -311,11 +311,11 @@ then
         dnf -qy install ansible skopeo
         if [[ $use_proxy == 'D' ]]
         then
-                pip3 install passlib > /dev/null 2>&1
-                pip3 install dnspython > /dev/null 2>&1
+                pip3 install passlib > 2>&1
+                pip3 install dnspython > 2>&1
         else
-                pip3 install passlib --proxy $proxy_ip:$proxy_port > /dev/null 2>&1
-                pip3 install dnspython --proxy $proxy_ip:$proxy_port > /dev/null 2>&1
+                pip3 install passlib --proxy $proxy_ip:$proxy_port > 2>&1
+                pip3 install dnspython --proxy $proxy_ip:$proxy_port > 2>&1
         fi
 	# Configure Ansible
 	mkdir -p /etc/ansible
