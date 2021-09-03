@@ -152,6 +152,8 @@
         Content-Type: 'application/json'
       validate_certs: no
       use_proxy: no
+    environment:
+      no_proxy: cp-console.apps.{{ domain }}
     register: result
 
   - debug:
