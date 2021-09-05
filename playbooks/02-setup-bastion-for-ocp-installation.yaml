@@ -192,6 +192,7 @@
       with_items:
         - { path: "/etc/systemd/resolved.conf", regexp: "^#DNS=", line: "DNS={{ bas_ip}} {{ dns_forwarder }}" }
         - { path: "/etc/nsswitch.conf", regexp: "^hosts:.*", line: "hosts:      files dns hostname resolve [!UNAVAIL=return]" }
+      when: false
 
     - name: Unlink resolv.conf
       file:
