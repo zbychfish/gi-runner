@@ -603,12 +603,12 @@
         path: /etc/dnsmasq.conf
         line: "server={{ dns_forwarder }}"
 
-    - name: Clean up DNS for interface
+    - name: Set self DNS for interface
       command:
         cmd: "{{ item }}"
       with_items:
         #- "nmcli c modify {{ bas_int }} ipv4.ignore-auto-dns yes"
-        - "nmcli c modify {{ bas_int }} ipv4.dns \"\"" 
+        - "nmcli c modify {{ bas_int }} ipv4.dns \"{{ bas_ip }}\"" 
 
     - name: Start and enable dnsmasq
       service:
