@@ -205,25 +205,6 @@
         dest: "/etc/resolv.conf"
         state: link
 
-    - name: Restart systemd-resolved
-      service:
-        name: systemd-resolved
-        state: restarted
-
-    - name: Set Bastion DNS
-      command:
-        cmd: "{{ item }}"
-      with_items:
-        - "nmcli c modify {{ bas_int }} ipv4.ignore-auto-dns yes"
-        - "nmcli c modify {{ bas_int }} ipv4.dns \"127.0.0.1 {{ dns_forwarder }}\"" 
-      when: false
-
-    - name: Restart Network Manager
-      service:
-        name: NetworkManager
-        state: restarted
-      when: false
-
     - name: Clean TFTP directory
       file:
         path: "/var/lib/tftp"
@@ -617,11 +598,33 @@
         line: "{{ item.stdout }}"
       with_items: "{{ srv_dns.results }}"
 
+    - name: Add DNS forwarder to dnsmasq.conf
+      lineinfile:
+        path: /etc/dnsmasq.conf
+        line: "server={{ dns_forwarder }}"
+
+    - name: Clean up DNS for interface
+      command:
+        cmd: "{{ item }}"
+      with_items:
+        #- "nmcli c modify {{ bas_int }} ipv4.ignore-auto-dns yes"
+        - "nmcli c modify {{ bas_int }} ipv4.dns \"\"" 
+
     - name: Start and enable dnsmasq
       service:
         name: dnsmasq
         state: restarted
         enabled: yes
+
+    - name: Restart systemd-resolved
+      service:
+        name: systemd-resolved
+        state: restarted
+
+    - name: Restart Network Manager
+      service:
+        name: NetworkManager
+        state: restarted
 
     - name: Resolve some luster names to check DNS state
       debug:
