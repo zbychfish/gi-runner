@@ -1114,7 +1114,7 @@ done
 echo "export GI_INSTALL_GI=$gi_install" >> $file
 if [[ $gi_install == 'Y' ]]
 then
-	declare -a gi_versions=(3.0.0 3.0.1)
+	declare -a gi_versions=(3.0.0 3.0.1 3.0.2)
         while [[ ( -z $gi_version_selected ) || ( $gi_version_selected -lt 1 || $gi_version_selected -gt $i ) ]]
         do
 	        echo "Select GI version:"
