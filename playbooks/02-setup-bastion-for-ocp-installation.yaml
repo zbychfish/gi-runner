@@ -332,7 +332,7 @@
     - name: Set SE Linux for chronyd
       shell:
         cmd: semanage permissive -a chronyd_t
-      when: ntp_server == bas_ip
+      when: ntp_server == bas_ip and false
 
     - name: Start and enable chronyd
       service:
