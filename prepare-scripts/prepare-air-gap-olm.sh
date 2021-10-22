@@ -90,7 +90,7 @@ if [[ ! -z "$CERTIFIED_OPERATORS_OVERRIDE" ]]
 then
 	CERTIFIED_OPERATORS=$CERTIFIED_OPERATORS_OVERRIDE
 else
-	CERTIFIED_OPERATORS="portworx-certified"
+	CERTIFIED_OPERATORS="cic-operator,portworx-certified"
 fi
 if [[ ! -z "$MARKETPLACE_OPERATORS_OVERRIDE" ]]
 then
