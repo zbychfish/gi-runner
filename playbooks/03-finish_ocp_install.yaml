@@ -94,7 +94,7 @@
     when: internet_type != 'A' and is_one_node == 'Y' and storage_type == 'R'
 
   - set_fact:
-      rook_registry: "ceph/ceph:v16.2.5"
+      rook_registry: "ceph/ceph:v16.2.6"
     when: internet_type != 'A' and is_one_node == 'N' and storage_type == 'R'
 
   - set_fact:
@@ -102,7 +102,7 @@
     when: internet_type == 'A' and is_one_node == 'Y' and storage_type == 'R'
 
   - set_fact:
-      rook_registry: "registry.{{ domain }}:5000/rook/ceph:v16.2.5"
+      rook_registry: "registry.{{ domain }}:5000/rook/ceph:v16.2.6"
     when: internet_type == 'A' and is_one_node == 'N' and storage_type == 'R'
 
   - name: Modify etcd settings in bootstrap phase for allinone configuration
