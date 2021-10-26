@@ -93,7 +93,7 @@
     when: internet_type != 'A' and is_one_node == 'Y' and storage_type == 'R'
 
   - set_fact:
-      rook_registry: "ceph/ceph:v16.2.6"
+      rook_registry: "quay.io/ceph/ceph:v16.2.6"
     when: internet_type != 'A' and is_one_node == 'N' and storage_type == 'R'
 
   - set_fact:
