@@ -106,6 +106,13 @@ else
                 echo "export GI_ICS_VERSION=$ics_version_selected" >> $file
 	fi
 fi
-echo ${ocp_supported_by_gi[$gi_version_selected]}
-IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
-echo ${ocp_versions[@]}
+# OCP selection
+if [[ $gi_install == 'Y' ]]
+then
+	IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
+elif [[ $ics_install == 'Y' ]]
+	IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_ics[$ics_version_selected]}
+else
+	declare -a ocp_versions=(0 1 2 3)
+fi
+echo ${ocp_version[@])
