@@ -69,7 +69,7 @@ then
                 read -p "Your choice?: " gi_version_selected
         	gi_version_selected=$(($gi_version_selected-1))
 		(for e in "${gi_versions[@]}"; do [[ "$e" == "${gi_versions[$gi_version_selected]}" ]] && exit 0; done) && is_correct_selection=0 || is_correct_selection=1
-	        if [[ $is_correct_selection -ne 0 || $gi_version_selected -lt 1 ]]
+	        if [[ $is_correct_selection -ne 0 || $gi_version_selected -lt 0 ]]
         	then
                 	gi_version_selected=''
 	                echo "Incorrect choice"
@@ -109,8 +109,8 @@ else
                         done
                         read -p "Your choice?: " ics_version_selected
                 	ics_version_selected=$(($ics_version_selected-1))
-			(for e in "${ics_versions[@]}"; do [[ "$e" == "$ics_version_selected" ]] && exit 0; done) && is_correct_selection=0 || is_correct_selection=1
-	                if [[ $is_correct_selection -eq 1 ]]
+			(for e in "${ics_versions[@]}"; do [[ "$e" == "${ics_versions[$ics_version_selected]}" ]] && exit 0; done) && is_correct_selection=0 || is_correct_selection=1
+	                if [[ $is_correct_selection -eq 1 || ics_version_selected -lt 0 ]]
         	        then
                 	        ics_version_selected=''
 	                echo "Incorrect choice"
@@ -141,7 +141,7 @@ do
 	read -p "Your choice?: " ocp_major_version
 	ocp_major_version=$(($ocp_major_version-1))
 	(for e in "${ocp_versions[@]}"; do [[ "$e" == "$ocp_major_version" ]] && exit 0; done) && is_correct_selection=0 || is_correct_selection=1
-	if [[ $is_correct_selection -eq 1 ]]
+	if [[ $is_correct_selection -eq 1 || ocp_major_version -lt 0 ]]
 	then
 		ocp_major_version=''
 		echo "Incorrect choice"
