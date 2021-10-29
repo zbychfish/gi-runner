@@ -6,6 +6,7 @@ mkdir -p $GI_TEMP
 file=variables.sh
 declare -a gi_versions=(3.0.0 3.0.1 3.0.2)
 declare -a ics_versions=(3.7.4 3.8.1 3.9.1 3.10.0 3.11.0 3.12.0)
+declare -a bundled_in_gi_ics_versions=(0 2 3)
 
 echo "# Guardium Insights installation parameters" > $file
 # Get information about environment type (Air-Gapped, Proxy, Direct access to the internet)
@@ -72,6 +73,8 @@ then
 	echo "In case of air-gapped installation you must install the bundled ICS version"
         gi_version_selected=$(($gi_version_selected-1))
 	echo "export GI_VERSION=$gi_version_selected" >> $file
+	ics_version_selected=${bundled_in_gi_ics_versions[$gi_version_selected]}
+        echo "export GI_ICS_VERSION=$ics_version_selected" >> $file
 else
 	while ! [[ $ics_install == 'Y' || $ics_install == 'N' ]] # While string is different or empty...
         do
