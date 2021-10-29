@@ -111,7 +111,8 @@ fi
 if [[ $gi_install == 'Y' ]]
 then
 	IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
-else if [[ $ics_install == 'Y' ]]
+elif [[ $ics_install == 'Y' ]]
+then
 	IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_ics[$ics_version_selected]}
 else
 	declare -a ocp_versions=(0 1 2 3)
