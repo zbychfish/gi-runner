@@ -68,11 +68,11 @@ then
                 done
                 read -p "Your choice?: " gi_version_selected
         	gi_version_selected=$(($gi_version_selected-1))
-		(for e in "${gi_versions[@]}"; do [[ "$e" == "$gi_version_selected" ]] && exit 0; done) && is_correct_selection=0 || is_correct_selection=1
+		(for e in "${gi_versions[@]}"; do [[ "$e" == "${gi_versions[$gi_version_selected]}" ]] && exit 0; done) && is_correct_selection=0 || is_correct_selection=1
 	        if [[ $is_correct_selection -eq 1 ]]
         	then
                 	gi_version_selected=''
-                echo "Incorrect choice"
+	                echo "Incorrect choice"
         	fi
         done
 	echo "Guardium Insights installation choice assumes installation of bundled version of ICS"
