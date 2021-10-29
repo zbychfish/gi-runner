@@ -70,6 +70,8 @@ then
 	echo "- ICS 3.10.0 for GI 3.0.2"
 	echo "If you would like install different ICS version (supported by selected GI) please modify variable.sh file before starting playbooks"
 	echo "In case of air-gapped installation you must install the bundled ICS version"
+        gi_version_selected=$(($gi_version_selected-1))
+	echo "export GI_VERSION=$gi_version_selected" >> $file
 else
 	while ! [[ $ics_install == 'Y' || $ics_install == 'N' ]] # While string is different or empty...
         do
