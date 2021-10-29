@@ -116,5 +116,5 @@ then
 	IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_ics[$ics_version_selected]}
 else
 	declare -a ocp_versions=(0 1 2 3)
-fi
-echo ${ocp_version[@])
+if
+echo ${ocp_versions[@]}
