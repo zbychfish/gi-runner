@@ -32,8 +32,8 @@ then
 	#read -p "Insert RH account name: " rh_account
 fi
 read -sp "Insert your IBM Cloud Key: " ibm_account_key
-declare -a gi_versions=(3.0.0 3.0.1)
-declare -a cases=(ibm-guardium-insights-2.0.0.tgz ibm-guardium-insights-2.0.1.tgz)
+declare -a gi_versions=(3.0.0 3.0.1 3.0.2)
+declare -a cases=(ibm-guardium-insights-2.0.0.tgz ibm-guardium-insights-2.0.1.tgz ibm-guardium-insights-2.0.2.tgz)
 while [[ ( -z $gi_version_selected ) || ( $gi_version_selected -lt 1 || $gi_version_selected -gt $i ) ]]
 do
 	echo "Select GI version to mirror:"

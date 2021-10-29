@@ -40,18 +40,17 @@
   - set_fact:
       operator: "registry.{{ domain }}:5000/rook/ceph:v1.1.7"
     when: is_one_node == 'Y'
-
       
   - set_fact:
       image: "{{ 'rook/ceph:v1.1.7' if internet_type != 'A' else operator }}"
     when: is_one_node == 'Y'
 
   - set_fact:
-      operator: "registry.{{ domain }}:5000/rook/ceph:v1.6.7"
+      operator: "registry.{{ domain }}:5000/rook/ceph:v1.7.6"
     when: is_one_node == 'N'
 
   - set_fact:
-      image: "{{ 'rook/ceph:v1.6.7' if internet_type != 'A' else operator }}"
+      image: "{{ 'rook/ceph:v1.7.6' if internet_type != 'A' else operator }}"
     when: is_one_node == 'N'
 
   - name: Set parameters for air-gapped installation
@@ -94,7 +93,7 @@
     when: internet_type != 'A' and is_one_node == 'Y' and storage_type == 'R'
 
   - set_fact:
-      rook_registry: "ceph/ceph:v15.2.13"
+      rook_registry: "quay.io/ceph/ceph:v16.2.6"
     when: internet_type != 'A' and is_one_node == 'N' and storage_type == 'R'
 
   - set_fact:
@@ -102,7 +101,7 @@
     when: internet_type == 'A' and is_one_node == 'Y' and storage_type == 'R'
 
   - set_fact:
-      rook_registry: "registry.{{ domain }}:5000/rook/ceph:v15.2.13"
+      rook_registry: "registry.{{ domain }}:5000/rook/ceph:v16.2.6"
     when: internet_type == 'A' and is_one_node == 'N' and storage_type == 'R'
 
   - name: Modify etcd settings in bootstrap phase for allinone configuration
