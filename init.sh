@@ -127,6 +127,10 @@ do
 		i=$((i+1))
 	done
 	read -p "Your choice?: " ocp_major_version
+	ocp_major_version=$(($ocp_major_version-1))
+	if [[ (for e in "${ocp_versions[@]}"; do [[ "$e" == "$ocp_major_version" ]] && exit 0; done) && echo "found" || echo "not found" == "not found" ]]
+	then
+		ocp_major_version=''
+	fi
 done
-ocp_major_version=$(($ocp_major_version-1))
 echo $ocp_major_version
