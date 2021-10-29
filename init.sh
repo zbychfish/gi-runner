@@ -1114,7 +1114,7 @@ done
 echo "export GI_INSTALL_GI=$gi_install" >> $file
 if [[ $gi_install == 'Y' ]]
 then
-	declare -a gi_versions=(3.0.0 3.0.1)
+	declare -a gi_versions=(3.0.0 3.0.1 3.0.2)
         while [[ ( -z $gi_version_selected ) || ( $gi_version_selected -lt 1 || $gi_version_selected -gt $i ) ]]
         do
 	        echo "Select GI version:"
@@ -1270,7 +1270,7 @@ else
 	echo "export GI_ICS=$ics_install" >> $file
 	if [[ $ics_install == 'Y' ]]
 	then
-	        declare -a ics_versions=(3.7.1 3.7.2 3.7.4 3.8.1 3.9.1 3.10.1)
+	        declare -a ics_versions=(3.7.4 3.8.1 3.9.1 3.10.0, 3.11.0, 3.12.0)
 	        while [[ ( -z $ics_version_selected ) || ( $ics_version_selected -lt 1 || $ics_version_selected -gt $i ) ]]
 	        do
 	                echo "Select ICS version to mirror:"

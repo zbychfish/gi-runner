@@ -6,7 +6,6 @@
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
-    gi_version:  "{{ lookup('env','GI_VERSION') }}"
     gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
     db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
     gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
@@ -28,7 +27,6 @@
       - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
-      - { name: "GI_VERSION", value: "{{ gi_version }}" }
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
@@ -94,11 +92,11 @@
   - name: Set GI installation variables
     set_fact:
       gi_case_inventory_setup: "install"
-      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' }}"
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' }}"
       offline_inventory: "gi_offline"
       storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
       storage_class_block: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' }}"
-      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' }}"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' }}"
       db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
       db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
 
