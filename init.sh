@@ -128,7 +128,7 @@ do
 	done
 	read -p "Your choice?: " ocp_major_version
 	ocp_major_version=$(($ocp_major_version-1))
-	is_correct_selection=(for e in "${ocp_versions[@]}"; do [[ "$e" == "$ocp_major_version" ]] && exit 0; done) && echo "found" || echo "not found"
+	(for e in "${ocp_versions[@]}"; do [[ "$e" == "$ocp_major_version" ]] && exit 0; done) && is_correct_selection="found" || is_correct_selection="not found"
 	if [[ $is_correct_selection == "not found" ]]
 	then
 		ocp_major_version=''
