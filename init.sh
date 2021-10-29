@@ -147,4 +147,27 @@ do
 		echo "Incorrect choice"
 	fi
 done
-echo $ocp_major_version
+while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
+do
+        printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
+        read ocp_release_decision
+        ocp_release_decision=${ocp_release_decision:-E}
+        if [[ $ocp_release_decision == 'E' ]]
+        then
+                while [[ $ocp_release_minor == '' ]]
+                do
+			read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
+                        #if [[ `echo $ocp_release|cut -f -2 -d .` != "4.6" && `echo $ocp_release|cut -f -2 -d .` != "4.7" ]]
+                        #then
+                        #        ocp_release=''
+                        #fi
+                done
+		ocp_release="${ocp_major_version}.${ocp_release_minor}"
+        elif [[ $ocp_release_decision == 'S' ]]
+        then
+		ocp_release="${ocp_major_version}.latest"
+        fi
+done
+echo $ocp_release
+echo "export GI_OCP_RELEASE=$ocp_release" >> $file
+
