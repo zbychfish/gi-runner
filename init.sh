@@ -9,6 +9,7 @@ declare -a ics_versions=(3.7.4 3.8.1 3.9.1 3.10.0 3.11.0 3.12.0)
 declare -a bundled_in_gi_ics_versions=(0 2 3)
 declare -a ocp_versions=(4.6 4.7 4.8 4.9)
 declare -a ocp_supported_by_gi=(0 0:1 0:2)
+declare -a ocp_supported_by_ics=(0:1 0:1 0:2 0:2 0:2 0:3)
 
 echo "# Guardium Insights installation parameters" > $file
 # Get information about environment type (Air-Gapped, Proxy, Direct access to the internet)
