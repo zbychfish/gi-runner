@@ -57,7 +57,7 @@ done
 echo "export GI_INSTALL_GI=$gi_install" >> $file
 if [[ $gi_install == 'Y' ]]
 then
-        while [[ ( -z $gi_version_selected ) || ( $gi_version_selected -lt 1 || $gi_version_selected -gt $i ) ]]
+        while [[ $gi_version_selected == '' ]]
         do
                 echo "Select GI version:"
                 i=1
@@ -67,6 +67,13 @@ then
                         i=$((i+1))
                 done
                 read -p "Your choice?: " gi_version_selected
+        	gi_version_selected=$(($gi_version_selected-1))
+		(for e in "${gi_versions[@]}"; do [[ "$e" == "$gi_version_selected" ]] && exit 0; done) && is_correct_selection=0 || is_correct_selection=1
+	        if [[ $is_correct_selection -eq 1 ]]
+        	then
+                	gi_version_selected=''
+                echo "Incorrect choice"
+        	fi
         done
 	echo "Guardium Insights installation choice assumes installation of bundled version of ICS"
 	echo "- ICS 3.7.4 for GI 3.0.0"
@@ -74,7 +81,6 @@ then
 	echo "- ICS 3.10.0 for GI 3.0.2"
 	echo "If you would like install different ICS version (supported by selected GI) please modify variable.sh file before starting playbooks"
 	echo "In case of air-gapped installation you must install the bundled ICS version"
-        gi_version_selected=$(($gi_version_selected-1))
 	echo "export GI_VERSION=$gi_version_selected" >> $file
 	ics_version_selected=${bundled_in_gi_ics_versions[$gi_version_selected]}
         echo "export GI_ICS_VERSION=$ics_version_selected" >> $file
@@ -92,7 +98,7 @@ else
         echo "export GI_ICS=$ics_install" >> $file
 	if [[ $ics_install == 'Y' ]]
         then
-                while [[ ( -z $ics_version_selected ) || ( $ics_version_selected -lt 1 || $ics_version_selected -gt $i ) ]]
+                while [[ $ics_version_selected == '' ]]
                 do
                         echo "Select ICS version to mirror:"
                         i=1
@@ -102,8 +108,14 @@ else
                                 i=$((i+1))
                         done
                         read -p "Your choice?: " ics_version_selected
+                	ics_version_selected=$(($ics_version_selected-1))
+			(for e in "${ics_versions[@]}"; do [[ "$e" == "$ics_version_selected" ]] && exit 0; done) && is_correct_selection=0 || is_correct_selection=1
+	                if [[ $is_correct_selection -eq 1 ]]
+        	        then
+                	        ics_version_selected=''
+	                echo "Incorrect choice"
+        	        fi
                 done
-                ics_version_selected=$(($ics_version_selected-1))
                 echo "export GI_ICS_VERSION=$ics_version_selected" >> $file
 	fi
 fi
@@ -128,10 +140,11 @@ do
 	done
 	read -p "Your choice?: " ocp_major_version
 	ocp_major_version=$(($ocp_major_version-1))
-	(for e in "${ocp_versions[@]}"; do [[ "$e" == "$ocp_major_version" ]] && exit 0; done) && is_correct_selection="found" || is_correct_selection="not found"
-	if [[ $is_correct_selection == "not found" ]]
+	(for e in "${ocp_versions[@]}"; do [[ "$e" == "$ocp_major_version" ]] && exit 0; done) && is_correct_selection=0 || is_correct_selection=1
+	if [[ $is_correct_selection -eq 1 ]]
 	then
 		ocp_major_version=''
+		echo "Incorrect choice"
 	fi
 done
 echo $ocp_major_version
