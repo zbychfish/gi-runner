@@ -7,7 +7,7 @@ file=variables.sh
 declare -a gi_versions=(3.0.0 3.0.1 3.0.2)
 declare -a ics_versions=(3.7.4 3.8.1 3.9.1 3.10.0 3.11.0 3.12.0)
 declare -a bundled_in_gi_ics_versions=(0 2 3)
-declare -a ocp_versions=(4.6 4.7 4.8 4.9)
+declare -a ocp_major_versions=(4.6 4.7 4.8 4.9)
 declare -a ocp_supported_by_gi=(0 0:1 0:2)
 declare -a ocp_supported_by_ics=(0:1 0:1 0:2 0:2 0:2 0:3)
 
@@ -117,4 +117,16 @@ then
 else
 	declare -a ocp_versions=(0 1 2 3)
 fi
-echo ${ocp_versions[@]}
+while [[ $ocp_major_release == '' ]]
+do
+	echo "Select OCP version:"
+	i=1
+	for ocp_version in "${ocp_versions[@]}"
+	do
+		echo "$i - ${ocp_major_versions[$ocp_version]}"
+		i=$((i+1))
+	done
+	read -p "Your choice?: " ocp_major_version
+done
+ocp_major_version=$(($ocp_major_version-1))
+echo $ocp_major_version
