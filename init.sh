@@ -408,9 +408,9 @@ do
                 read -p "Current list of master node(s) IP is [$GI_MASTER_IP] - insert three IP's (comma separated) or confirm existing <ENTER>: " new_master_ip
                 if [[ $new_master_ip != '' ]]
                 then
-                        node_ip=$new_master_ip
+                        master_ip=$new_master_ip
                 else
-                        node_ip=$GI_MASTER_IP
+                        master_ip=$GI_MASTER_IP
                 fi
         else
                 read -p "Insert three IP address(es) of master node(s) (comma separated): " master_ip
