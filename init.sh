@@ -1182,11 +1182,158 @@ else
 		mv -f /etc/dnf/dnf.conf.gi_no_proxy /etc/dnf/dnf.conf
 	fi
 fi
-# Check tar availability on OS
-if [[ `dnf list tar --installed 2>/dev/null|tail -n1|wc -l` -eq 0 ]]
+if [[ $use_proxy == 'P' ]]
 then
-        echo "You do not have tar tool installed!."
-        echo "Execute 'scripts/install-tar.sh' and restart init.sh"
-        exit 1
+        echo "export GI_NOPROXY_NET=$no_proxy" >> $file
+        echo "export GI_PROXY_URL=$proxy_ip:$proxy_port" >> $file
+else
+        echo "export GI_PROXY_URL=NO_PROXY" >> $file
 fi
-
+# Install software on OS in non-airgapped env
+if [[ $use_air_gap == 'N' ]]
+then
+        echo "*** Update Fedora ***"
+        dnf -qy update
+        echo "*** Installing Ansible and other Fedora packages ***"
+        dnf -qy install tar ansible haproxy openldap perl podman-docker ipxe-bootimgs chrony dnsmasq unzip wget jq httpd-tools policycoreutils-python-utils python3-ldap openldap-servers openldap-clients
+        dnf -qy install ansible skopeo
+        if [[ $use_proxy == 'D' ]]
+        then
+                pip3 install passlib
+                pip3 install dnspython
+        else
+                pip3 install passlib --proxy http://$proxy_ip:$proxy_port
+                pip3 install dnspython --proxy http://$proxy_ip:$proxy_port
+        fi
+        # Configure Ansible
+        mkdir -p /etc/ansible
+        if [[ $use_proxy == 'P' ]]
+        then
+                echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts
+        elif [[ $use_proxy == 'D' ]]
+        then
+                echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
+        fi
+	# Save pull secret in separate file
+	if [ $use_air_gap == 'N' ]
+	then
+        	echo "pullSecret: '$rhn_secret'" > scripts/pull_secret.tmp
+	fi
+fi
+# Prepare for air-gapp installation
+if [[ $use_air_gap == 'Y' ]]
+then
+	if [[ `dnf list tar --installed 2>/dev/null|tail -n1|wc -l` -eq 0 ]]
+	then
+        	echo "You do not have tar tool installed!."
+        	echo "Execute 'scripts/install-tar.sh' and restart init.sh"
+        	exit 1
+	fi
+        gi_archives=''
+        while [[ $gi_archives == '' ]]
+        do
+                printf "Where are located the offline archives? - default value is download subdirectory in the current folder or insert full path to directory: "
+                read gi_archives
+                gi_archives=${gi_archives:-$GI_HOME/download}
+                if [[ ! -d $gi_archives ]]
+                then
+                        echo "Directory does not exist!"
+                        gi_archives=''
+                fi
+        done
+        echo "Offline archives located in $gi_archives - progressing ..."
+        echo export GI_ARCHIVES_DIR=${gi_archives} >> $file
+        echo "*** Extracting OS files ***"
+        if [[ `ls $gi_archives/os*.tar 2>/dev/null|wc -l` -ne 1 ]]
+        then
+                echo "You did not upload os-<version>.tar to $gi_archives directory on bastion"
+                exit 1
+        else
+                cd $gi_archives
+                tar xf ${gi_archives}/os*.tar -C $GI_TEMP
+                cd $GI_TEMP
+        fi
+        echo "*** Checking source and target kernel ***"
+        if [[ `uname -r` != `cat $GI_TEMP/kernel.txt` ]]
+        then
+                echo "Kernel of air-gap bastion differs from air-gap file generator!"
+                read -p "Have you updated system before, would you like to continue (Y/N)?: " is_updated
+                if [ $is_updated != 'N' ]
+                then
+                        echo "Upload air-gap files corresponding to bastion kernel or generate files for bastion environment."
+                        exit 1
+                fi
+        fi
+        # Install software for air-gap installation
+        echo "*** Installing OS updates ***"
+        tar xf ${GI_TEMP}/os-updates*.tar -C ${GI_TEMP} > /dev/null
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os-updates/*rpm --allowerasing
+        rm -rf ${GI_TEMP}/os-updates
+        echo "*** Installing OS packages ***"
+        tar xf ${GI_TEMP}/os-packages*.tar -C ${GI_TEMP}  > /dev/null
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os-packages/*rpm --allowerasing
+        rm -rf ${GI_TEMP}/os-packages
+        echo "*** Installing Ansible and python modules ***"
+        tar xf ${GI_TEMP}/ansible-*.tar -C ${GI_TEMP} > /dev/null
+        cd ${GI_TEMP}/ansible
+        pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
+        cd $GI_HOME
+        rm -rf ${GI_TEMP}/ansible
+        tar xf ${GI_TEMP}/galaxy-*.tar -C ${GI_TEMP} > /dev/null
+        cd ${GI_TEMP}/galaxy
+        ansible-galaxy collection install community-general-3.3.2.tar.gz
+        cd $GI_HOME
+        rm -rf ${GI_TEMP}/galaxy
+        # Configure Ansible
+        mkdir -p /etc/ansible
+        echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
+        rm -rf $GI_TEMP/*
+        echo "*** OS software update and installation successfully finished ***"
+	if [[ ! -z "$GI_REPO_USER" ]]
+        then
+                read -p "Bastion image repository account name is set to [$GI_REPO_USER] - insert new or confirm existing one <ENTER>: " new_repo_admin
+                if [[ $new_repo_admin != '' ]]
+                then
+                        repo_admin=$new_repo_admin
+                fi
+        else
+                while [[ $repo_admin == '' ]]
+                do
+                        read -p "Insert new bastion image repository admin account name [admin]: " repo_admin
+                        repo_admin=${repo_admin:-admin}
+                done
+        fi
+        if [[ -z "$repo_admin" ]]
+        then
+                echo export GI_REPO_USER=$GI_REPO_USER >> $file
+        else
+                echo export GI_REPO_USER=$repo_admin >> $file
+        fi
+        while [[ $repo_password == '' ]]
+        do
+                read -sp "Insert new bastion image repository $repo_admin password: " repo_password
+                echo -e '\n'
+        done
+        echo "export GI_REPO_USER_PWD='$repo_password'" >> $file
+fi
+# Create cluster ssh-key
+echo "*** Add a new RSA SSH key ***"
+cluster_id=`mktemp -u -p ~/.ssh/ cluster_id_rsa.XXXXXXXXXXXX`
+echo "*** Cluster key: ~/.ssh/${cluster_id}, public key: ~/.ssh/${cluster_id}.pub ***"
+ssh-keygen -N '' -f ${cluster_id} -q <<< y > /dev/null
+echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
+cat ${cluster_id}.pub >> /root/.ssh/authorized_keys
+# Copy ssh public key to variable
+echo "export GI_SSH_KEY='`cat $cluster_id`'" >> $file
+# Set KUBECONFIG
+echo "export KUBECONFIG=$GI_HOME/ocp/auth/kubeconfig" >> $file
+# Display information
+echo "Save SSH keys names: ${cluster_id} and ${cluster_id}.pub, each init.sh execution create new with random name"
+echo "*** Execute commands below ***"
+if [[ $use_proxy == 'P' ]]
+then
+        echo "- import PROXY settings: \". /etc/profile\""
+fi
+echo "- import variables: \". $file\""
+echo "- start first playbook: \"ansible-playbook playbooks/01-finalize-bastion-setup.yaml\""
