@@ -162,10 +162,10 @@ do
                         #        ocp_release=''
                         #fi
                 done
-		ocp_release="${ocp_major_version}.${ocp_release_minor}"
+		ocp_release="${ocp_versions[${ocp_major_version}]}.${ocp_release_minor}"
         elif [[ $ocp_release_decision == 'S' ]]
         then
-		ocp_release="${ocp_major_version}.latest"
+		ocp_release="${ocp_versions[${ocp_major_version}]}.latest"
         fi
 done
 echo $ocp_release
