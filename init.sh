@@ -654,4 +654,176 @@ then
         done
         echo export GI_WORKER_NAME=$worker_name >> $file
 fi
+# Defines DHCP IP range
+if [[ ! -z "$GI_DHCP_RANGE_START" ]]
+then
+        read -p "First DHCP lease address is set to [$GI_DHCP_RANGE_START] - insert new or confirm existing one <ENTER>: " new_dhcp_start
+        if [[ $new_dhcp_start != '' ]]
+        then
+                dhcp_start=$new_dhcp_start
+        fi
+else
+        while [[ $dhcp_start == '' ]]
+        do
+                read -p "Insert first IP address served by DHCP server (range must include bootstrap and ocp IP's): " dhcp_start
+        done
+fi
+if [[ -z "$dhcp_start" ]]
+then
+        echo export GI_DHCP_RANGE_START=$GI_DHCP_RANGE_START>> $file
+else
+        echo export GI_DHCP_RANGE_START=$dhcp_start >> $file
+fi
+if [[ ! -z "$GI_DHCP_RANGE_STOP" ]]
+then
+        read -p "Last DHCP lease address is set to [$GI_DHCP_RANGE_STOP] - insert new or confirm existing one <ENTER>: " new_dhcp_end
+        if [[ $new_dhcp_end != '' ]]
+        then
+                dhcp_end=$new_dhcp_end
+        fi
+else
+        while [[ $dhcp_end == '' ]]
+        do
+                read -p "Insert last IP address served by DHCP server (range must include bootstrap and ocp IP's): " dhcp_end
+        done
+fi
+if [[ -z "$dhcp_end" ]]
+then
+        echo export GI_DHCP_RANGE_STOP=$GI_DHCP_RANGE_STOP >> $file
+else
+        echo export GI_DHCP_RANGE_STOP=$dhcp_end >> $file
+fi
+# Defines network boot device
+if [[ ! -z "$GI_NETWORK_INTERFACE" ]]
+then
+        read -p "Bootstrap and cluster node booting NIC device is set to [$GI_NETWORK_INTERFACE] - insert new or confirm existing one <ENTER>: " new_machine_nic
+        if [[ $new_machine_nic != '' ]]
+        then
+                machine_nic=$new_machine_nic
+        fi
+else
+        while [[ $machine_nic == '' ]]
+        do
+                read -p "Provide bootstrap and cluster node booting NIC device name (for instance ens192): " machine_nic
+        done
+fi
+if [[ -z "$machine_nic" ]]
+then
+        echo export GI_NETWORK_INTERFACE=$GI_NETWORK_INTERFACE >> $file
+else
+        echo export GI_NETWORK_INTERFACE=$machine_nic >> $file
+fi
+# Defines machine boot disk device
+if [[ ! -z "$GI_BOOT_DEVICE" ]]
+then
+        read -p "Bootstrap and cluster nodes root disk device is set to [$GI_BOOT_DEVICE] - insert new or confirm existing one <ENTER>: " new_machine_disk
+        if [[ $new_machine_disk != '' ]]
+        then
+                machine_disk=$new_machine_disk
+        fi
+else
+        while [[ $machine_disk == '' ]]
+        do
+                read -p "Provide bootstrap and cluster node root disk device for Core OS installation (for instance sda or nvme0n0): " machine_disk
+        done
+fi
+if [[ -z "$machine_disk" ]]
+then
+        echo export GI_BOOT_DEVICE=$GI_BOOT_DEVICE >> $file
+else
+        echo export GI_BOOT_DEVICE=$machine_disk >> $file
+fi
+# Defines inter-cluster network
+if [[ ! -z "$GI_OCP_CIDR" ]]
+then
+        read -p "Inter-cluster CIDR is set to [$GI_OCP_CIDR] - insert new or confirm existing one <ENTER>: " new_ocp_cidr
+        if [[ $new_ocp_cidr != '' ]]
+        then
+                ocp_cidr=$new_ocp_cidr
+        fi
+else
+        while [[ $ocp_cidr == '' ]]
+        do
+                read -p "Insert inter-cluster CIDR [10.128.0.0/16]: " ocp_cidr
+                ocp_cidr=${ocp_cidr:-10.128.0.0/16}
+        done
+fi
+if [[ -z "$ocp_cidr" ]]
+then
+        echo export GI_OCP_CIDR=$GI_OCP_CIDR >> $file
+else
+        echo export GI_OCP_CIDR=$ocp_cidr >> $file
+fi
+if [[ ! -z "$GI_OCP_CIDR_MASK" ]]
+then
+        read -p "Inter-cluster CIDR subnet mask is set to [$GI_OCP_CIDR_MASK] - insert new or confirm existing one <ENTER>: " new_ocp_cidr_mask
+        if [[ $new_ocp_cidr_mask != '' ]]
+        then
+                ocp_cidr_mask=$new_ocp_cidr_mask
+        fi
+else
+        while [[ $ocp_cidr_mask == '' ]]
+        do
+                read -p "Insert pod's subnet mask [23]: " ocp_cidr_mask
+                ocp_cidr_mask=${ocp_cidr_mask:-23}
+        done
+fi
+if [[ -z "$ocp_cidr_mask" ]]
+then
+        echo export GI_OCP_CIDR_MASK=$GI_OCP_CIDR_MASK >> $file
+else
+        echo export GI_OCP_CIDR_MASK=$ocp_cidr_mask >> $file
+fi
+# Gets Redhat Pull Secret
+if [[ $use_air_gap == 'N' ]]
+then
+        if [[ ! -z "$GI_RHN_SECRET" ]]
+        then
+                read -p "RedHat pull secret is set to [$GI_RHN_SECRET] - insert new or confirm existing one <ENTER>: " new_rhn_secret
+                if [[ $new_rhn_secret != '' ]]
+                then
+                        rhn_secret=$new_rhn_secret
+                else
+                        rhn_secret=$GI_RHN_SECRET
+                fi
+        else
+                while [[ $rhn_secret == '' ]]
+                do
+                        read -p "Insert RedHat pull secret (use this link to get access to it https://cloud.redhat.com/openshift/install): " rhn_secret
+                done
+        fi
+        if [[ -z "$rhn_secret" ]]
+        then
+                echo "export GI_RHN_SECRET='$GI_RHN_SECRET'" >> $file
+        else
+                echo "export GI_RHN_SECRET='$rhn_secret'" >> $file
+        fi
+fi
+# Gets OCP credentials created during installation (to avoid use the kubesystem account)
+if [[ ! -z "$GI_OCADMIN" ]]
+then
+        read -p "OpenShift admin account name is set to [$GI_OCADMIN] - insert new or confirm existing one <ENTER>: " new_ocp_admin
+        if [[ $new_ocp_admin != '' ]]
+        then
+                ocp_admin=$new_ocp_admin
+        fi
+else
+        while [[ $ocp_admin == '' ]]
+        do
+                read -p "Insert a new OpenShift admin account name [ocadmin]: " ocp_admin
+                ocp_admin=${ocp_admin:-ocadmin}
+        done
+fi
+if [[ -z "$ocp_admin" ]]
+then
+        echo export GI_OCADMIN=$GI_OCADMIN >> $file
+else
+        echo export GI_OCADMIN=$ocp_admin >> $file
+fi
+while [[ $ocp_password == '' ]]
+do
+        read -sp "Insert a new OpenShift $ocp_admin password: " ocp_password
+        echo -e '\n'
+done
+echo "export GI_OCADMIN_PWD='$ocp_password'" >> $file
 
