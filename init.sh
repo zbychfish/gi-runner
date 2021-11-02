@@ -500,7 +500,7 @@ do
         fi
 done
 echo export GI_STORAGE_DEVICE_SIZE=$storage_device_size >> $file
-if [ $storage_type == "O" ]
+if [[ $storage_type == "O" && $is_master_only == 'N' ]]
 then
 	while ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]
         do
@@ -516,3 +516,142 @@ else
         ocs_tainted="N"
 fi
 echo export GI_OCS_TAINTED=$ocs_tainted >> $file
+if [[ $is_master_only == 'N' ]]
+then
+	if [[ $ocs_tainted == 'Y' ]]
+        then
+                declare -a ocs_ip_arr
+                while [[ ${#ocs_ip_arr[@]} -ne 3 ]]
+                do
+                        if [ ! -z "$GI_OCS_IP" ]
+                        then
+                                read -p "Current OCS node IP list is set to [$GI_OCS_IP] - insert 3 IP's (comma separated) or confirm existing <ENTER>: " new_ocs_ip
+                                if [[ $new_ocs_ip != '' ]]
+                                then
+                                        ocs_ip=$new_ocs_ip
+                                else
+                                        ocs_ip=$GI_OCS_IP
+                                fi
+                        else
+                                read -p "Insert 3 IP addresses of OCS nodes (comma separated): " ocs_ip
+                        fi
+                        IFS=',' read -r -a ocs_ip_arr <<< $ocs_ip
+                        GI_OCS_IP=$ocs_ip
+                done
+                echo export GI_OCS_IP=$ocs_ip >> $file
+                declare -a ocs_mac_arr
+                while [[ ${#ocs_mac_arr[@]} -ne 3 ]]
+                do
+                        if [ ! -z "$GI_OCS_MAC_ADDRESS" ]
+                        then
+                                read -p "Current OCS MAC address list is set to [$GI_OCS_MAC_ADDRESS] - insert 3 MAC addresses or confirm existing one <ENTER>: " new_ocs_mac
+                                if [[ $new_ocs_mac != '' ]]
+                                then
+                                        ocs_mac=$new_ocs_mac
+                                else
+                                        ocs_mac=$GI_OCS_MAC_ADDRESS
+                                fi
+                        else
+                                read -p "Insert 3 MAC addresses of OCS nodes (comma separated): " ocs_mac
+                        fi
+                        IFS=',' read -r -a ocs_mac_arr <<< $ocs_mac
+                        GI_OCS_MAC_ADDRESS=$ocs_mac
+                done
+                echo export GI_OCS_MAC_ADDRESS=$ocs_mac >> $file
+                declare -a ocs_name_arr
+                while [[ ${#ocs_name_arr[@]} -ne 3 ]]
+                do
+                        if [ ! -z "$GI_OCS_NAME" ]
+                        then
+                                read -p "Current OCS node name list is set to [$GI_OCS_NAME] - insert 3 OCS node names or confirm existing one <ENTER>: " new_ocs_name
+                                if [[ $new_ocs_name != '' ]]
+                                then
+                                        ocs_name=$new_ocs_name
+                                else
+                                        ocs_name=$GI_OCS_NAME
+                                fi
+                        else
+                                read -p "Insert 3 OCS node names (comma separated): " ocs_name
+                        fi
+                        IFS=',' read -r -a ocs_name_arr <<< $ocs_name
+                        GI_OCS_NAME=$ocs_name
+                done
+                echo export GI_OCS_NAME=$ocs_name >> $file
+        fi
+        if [[ ocs_tainted == 'N' ]]
+        then
+                m_worker_number=3
+        else
+                m_worker_number=2
+        fi
+	echo "Define number of workers, you must set minimum $m_worker_number of workers."
+        while ! [[ $w_number -ge $m_worker_number ]]
+        do
+
+                printf "How many additional workers will you deploy [$m_worker_number]?: "
+                read w_number
+                w_number=${w_number:-$m_worker_number}
+                if ! [[ $w_number -ge $m_worker_number ]]
+                then
+                        echo "Incorrect value"
+                fi
+        done
+        declare -a worker_ip_arr
+        while [[ $w_number != ${#worker_ip_arr[@]} ]]
+        do
+                if [ ! -z "$GI_WORKER_IP" ]
+                then
+                        read -p "Current list of worker nodes IP list is set to [$GI_WORKER_IP] - insert $w_number IP's (comma separated) or confirm existing <ENTER>: " new_worker_ip
+                        if [[ $new_worker_ip != '' ]]
+                        then
+                                worker_ip=$new_worker_ip
+                        else
+                                worker_ip=$GI_WORKER_IP
+                        fi
+                else
+                        read -p "Insert $w_number IP addresses of worker nodes (comma separated): " worker_ip
+                fi
+                IFS=',' read -r -a worker_ip_arr <<< $worker_ip
+                GI_WORKER_IP=$worker_ip
+        done
+        echo export GI_WORKER_IP=$worker_ip >> $file
+        declare -a worker_mac_arr
+        while [[ $w_number != ${#worker_mac_arr[@]} ]]
+        do
+                if [ ! -z "$GI_WORKER_MAC_ADDRESS" ]
+                then
+                        read -p "Current worker node MAC address list is set to [$GI_WORKER_MAC_ADDRESS] - insert $w_number MAC addresses or confirm existing one <ENTER>: " new_worker_mac
+                        if [[ $new_worker_mac != '' ]]
+                        then
+                                worker_mac=$new_worker_mac
+                        else
+                                worker_mac=$GI_WORKER_MAC_ADDRESS
+                        fi
+                else
+                        read -p "Insert $w_number MAC addresses of worker nodes: " worker_mac
+                fi
+                IFS=',' read -r -a worker_mac_arr <<< $worker_mac
+                GI_WORKER_MAC_ADDRESS=$worker_mac
+        done
+	echo export GI_WORKER_MAC_ADDRESS=$worker_mac >> $file
+        declare -a worker_name_arr
+        while [[ $w_number != ${#worker_name_arr[@]} ]]
+        do
+                if [ ! -z "$GI_WORKER_NAME" ]
+                then
+                        read -p "Current worker node name list is set to [$GI_WORKER_NAME] - insert $w_number worker names or confirm existing one <ENTER>: " new_worker_name
+                        if [[ $new_worker_name != '' ]]
+                        then
+                                worker_name=$new_worker_name
+                        else
+                                worker_name=$GI_WORKER_NAME
+                        fi
+                else
+                        read -p "Insert $w_number worker node names: " worker_name
+                fi
+                IFS=',' read -r -a worker_name_arr <<< $worker_name
+                GI_WORKER_NAME=$worker_name
+        done
+        echo export GI_WORKER_NAME=$worker_name >> $file
+fi
+
