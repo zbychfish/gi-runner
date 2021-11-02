@@ -147,7 +147,7 @@ do
 		echo "Incorrect choice"
 	fi
 done
-echo $ocp_versions
+echo $ocp_major_versions
 while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
 do
         printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
@@ -163,10 +163,10 @@ do
                         #        ocp_release=''
                         #fi
                 done
-		ocp_release="${ocp_versions[${ocp_major_version}]}.${ocp_release_minor}"
+		ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
         elif [[ $ocp_release_decision == 'S' ]]
         then
-		ocp_release="${ocp_versions[${ocp_major_version}]}.latest"
+		ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
         fi
 done
 echo $ocp_release
