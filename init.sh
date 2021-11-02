@@ -12,6 +12,42 @@ declare -a ocp_supported_by_gi=(0 0:1 0:1:2)
 declare -a ocp_supported_by_ics=(0:1 0:1 0:1:2 0:1:2 0:1:2 0:1:2:3)
 declare -a gi_sizes=(values-poc-lite values-dev values-small)
 
+function get_ocp_domain() {
+        if [[ ! -z "$GI_DOMAIN" ]]
+        then
+                read -p "Cluster domain is set to [$GI_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ocp_domain
+                if [[ $new_ocp_domain != '' ]]
+                then
+                        ocp_domain=$new_ocp_domain
+                else
+                        ocp_domain=$GI_DOMAIN
+                fi
+        else
+                while [[ $ocp_domain == '' ]]
+                do
+                        read -p "Insert cluster domain (your private domain name), like ocp.io.priv: " ocp_domain
+                        ocp_domain=${ocp_domain:-ocp.io.priv}
+                done
+        fi
+        if [[ -z "$ocp_domain" ]]
+        then
+                echo export GI_DOMAIN=$GI_DOMAIN >> $file
+        else
+                echo export GI_DOMAIN=$ocp_domain >> $file
+        fi
+}
+
+# Check bastion OS
+echo "*** Checking OS release ***"
+if [[ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]]
+then
+        echo "*** ERROR ***"
+        echo "Your bastion machine is not Fedora OS - please use the supported Operating System"
+        exit 1
+else
+        echo "Your system is `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` - progressing ..."
+fi
+
 echo "# Guardium Insights installation parameters" > $file
 # Get information about environment type (Air-Gapped, Proxy, Direct access to the internet)
 echo "*** Air-Gapped Setup ***"
@@ -177,6 +213,7 @@ do
  	       echo "Incorrect value"
         fi
 done
+get_ocp_domain
 echo export GI_MASTER_ONLY=$is_master_only >> $file
 # Time settings
 while ! [[ $install_ntpd == 'Y' || $install_ntpd == 'N' ]]
@@ -1083,5 +1120,22 @@ then
                 echo -e '\n'
         done
         echo "export GI_LDAP_USERS_PWD='$ldap_password'" >> $file
+fi
+# Check bastion OS
+echo "*** Checking OS release ***"
+if [[ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]]
+then
+        echo "*** ERROR ***"
+        echo "Your bastion machine is not Fedora OS - please use the supported Operating System"
+        exit 1
+else
+        echo "Your system is `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` - progressing ..."
+fi
+# Check tar availability on OS
+if [[ `dnf list tar --installed 2>/dev/null|tail -n1|wc -l` -eq 0 ]]
+then
+        echo "You do not have tar tool installed!."
+        echo "Execute 'scripts/install-tar.sh' and restart init.sh"
+        exit 1
 fi
 
