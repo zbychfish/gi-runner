@@ -6,6 +6,7 @@
     domain:  "{{ lookup('env','GI_DOMAIN') }}"
     ocp_release: "{{ lookup('env','GI_OCP_RELEASE') }}"
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
+    install_ldap:  "{{ lookup('env','GI_INSTALL_LDAP') }}"
 
   tasks:
     - name: Check configuration parameters
@@ -18,6 +19,7 @@
         - { name: "GI_DOMAIN", value: "{{ domain }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
         - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
+        - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
 
     - name: Set parameters for air-gapped installation
       set_fact:
@@ -59,7 +61,7 @@
 
     - name: Create certificate for portable registry
       shell:
-              cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ domain }}\" -addext \"subjectAltName = DNS:registry.{{ domain }}\""
+        cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ domain }}\" -addext \"subjectAltName = DNS:registry.{{ domain }}\""
       when: internet_type == 'A'
 
     - name: Copy CA cert to Centos PKI
@@ -187,7 +189,7 @@
     - name: Install ansible ldap reqs
       shell:
         cmd: ansible-galaxy collection install community.general
-      when: install_gi == 'Y' and internet_type != 'A'
+      when: install_ldap == 'Y' and internet_type != 'A'
 
     - debug:
         msg:

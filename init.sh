@@ -1065,7 +1065,6 @@ then
          ics_ops+=($op_option)
          op_option=''
          echo export GI_ICS_OPERANDS=`echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1'` >> $file
-
 fi
 while ! [[ $install_ldap == 'Y' || $install_ldap == 'N' ]] # While string is different or empty...
 do
@@ -1077,6 +1076,7 @@ do
                 echo "Incorrect value"
         fi
 done
+echo "export GI_INSTALL_LDAP=${install_ldap}" >> $file
 if [ $install_ldap == 'Y' ]
 then
         if [[ ! -z "$GI_LDAP_DOMAIN" ]]
@@ -1325,7 +1325,7 @@ ssh-keygen -N '' -f ${cluster_id} -q <<< y > /dev/null
 echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
 cat ${cluster_id}.pub >> /root/.ssh/authorized_keys
 # Copy ssh public key to variable
-echo "export GI_SSH_KEY='`cat $cluster_id`'" >> $file
+echo "export GI_SSH_KEY='`cat ${cluster_id}.pub`'" >> $file
 # Set KUBECONFIG
 echo "export KUBECONFIG=$GI_HOME/ocp/auth/kubeconfig" >> $file
 # Display information
