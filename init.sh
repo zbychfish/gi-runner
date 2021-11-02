@@ -1325,7 +1325,7 @@ ssh-keygen -N '' -f ${cluster_id} -q <<< y > /dev/null
 echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
 cat ${cluster_id}.pub >> /root/.ssh/authorized_keys
 # Copy ssh public key to variable
-echo "export GI_SSH_KEY='`cat ${cluster_id}.pub`'" >> $file
+echo "export GI_SSH_KEY=${cluster_id}" >> $file
 # Set KUBECONFIG
 echo "export KUBECONFIG=$GI_HOME/ocp/auth/kubeconfig" >> $file
 # Display information
