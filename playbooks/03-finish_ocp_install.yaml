@@ -63,12 +63,12 @@
       master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
 
   - name: Check master configuration
-      fail: msg="Variable {{ item.name }} is not set"
-      when: item.value == ""
-      loop:
-        - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
-        - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
-        - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
+      - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
+      - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
 
   - name: Set OCS array
     set_fact:
