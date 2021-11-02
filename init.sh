@@ -147,6 +147,7 @@ do
 		echo "Incorrect choice"
 	fi
 done
+echo $ocp_versions
 while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
 do
         printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
