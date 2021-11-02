@@ -3,7 +3,6 @@
   vars:
     internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
-    is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
     is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
     bas_int:  "{{ lookup('env','GI_NETWORK_INTERFACE') }}"
     dns_forwarder:  "{{ lookup('env','GI_DNS_FORWARDER') }}"
@@ -33,7 +32,6 @@
       loop:
         - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
         - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
-        - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
         - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
         - { name: "GI_NETWORK_INTERFACE", value: "{{ bas_int }}" }
         - { name: "GI_DNS_FORWARDER", value: "{{ dns_forwarder }}" }
@@ -108,9 +106,16 @@
 
     - name: Set masters array
       set_fact:
-        node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
-        node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
-        node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
+        master_ip: "{{ lookup('env', 'GI_MASTER_IP').split(',') }}"
+        master_mac: "{{ lookup('env', 'GI_MASTER_MAC_ADDRESS').split(',') }}"
+        master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
+
+    - name: Check master configuration
+      fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
+        - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
+        - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
 
     - name: Set OCS array
       set_fact:
@@ -124,7 +129,7 @@
         worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
         worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
         worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
-      when: is_one_node == 'N' and is_master_only == 'N'
+      when: is_master_only == 'N'
 
     - name: Iterates all workers in one array
       vars:
@@ -132,35 +137,6 @@
         ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
       debug:
         msg: "{{ nodes|zip(ips)|list }}"
-
-    - name: Check original NIC config file existence
-      stat:
-        path: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
-      register: nic_config_presence
-      when: false
-
-    - name: Restore original NIC config file
-      copy:
-        src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
-        dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
-      when: false and nic_config_presence.stat.exists == true
-
-    - name: Copy original NIC config file
-      copy:
-        src: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
-        dest: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}.orig"
-      when: false and nic_config_presence.stat.exists == false
-
-    - name: Switch off peer DNS configuration
-      lineinfile:
-        path: "/etc/sysconfig/network-scripts/ifcfg-{{ bas_int }}"
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-      with_items:
-        - { regexp: "^PEERDNS=", line: "PEERDNS=\"yes\"" }
-        - { regexp: "^DNS1=", line: "DNS1=\"127.0.0.1\"" }
-        - { regexp: "^DNS2=", line: "DNS2=\"{{ dns_forwarder }}\"" }
-      when: false #no ifcfg in Fedora use nmcli
 
     - name: Check original resolved.conf file existence
       stat:
@@ -183,16 +159,6 @@
         src: "/etc/nsswitch.conf.orig"
         dest: "/etc/nsswitch.conf"
       when: nsswitch_config_presence.stat.exists == true
-
-    - name: Set DNS configuration for systemd (Fedora)
-      lineinfile:
-        path: "{{ item.path }}"
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-      with_items:
-        - { path: "/etc/systemd/resolved.conf", regexp: "^#DNS=", line: "DNS={{ bas_ip}} {{ dns_forwarder }}" }
-        - { path: "/etc/nsswitch.conf", regexp: "^hosts:.*", line: "hosts:      files dns hostname resolve [!UNAVAIL=return]" }
-      when: false
 
     - name: Unlink resolv.conf
       file:
@@ -411,7 +377,7 @@
         profile: "master"
         mac: "{{ item }}"
       with_items:
-        - "{{ node_mac|list }}"
+        - "{{ master_mac|list }}"
 
     - name: Matchbox ocs group json
       template:
@@ -437,7 +403,7 @@
         mac: "{{ item }}"
       with_items:
         - "{{ worker_mac|list }}"
-      when: is_one_node == 'N' and is_master_only == 'N'
+      when: is_master_only == 'N'
 
     - name: Matchbox profiles files
       vars:
@@ -470,39 +436,39 @@
         echo "ptr-record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ item.1 }}.{{ domain }}"
       register: node_ptr
       with_together:
-        - "{{ node_ip+worker_ip|default([])+ocs_ip|default([]) }}"
-        - "{{ node_name+worker_name|default([])+ocs_name|default([]) }}"
+        - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+        - "{{ master_name+worker_name|default([])+ocs_name|default([]) }}"
 
     - name: Prepare DHCP entries for nodes
       shell: >
         echo "dhcp-host={{ item.0 }},{{ item.1 }},12h"
       register: node_dhcp
       with_together:
-        - "{{ node_mac+worker_mac|default([])+ocs_mac|default([]) }}"
-        - "{{ node_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+        - "{{ master_mac+worker_mac|default([])+ocs_mac|default([]) }}"
+        - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
 
     - name: Prepare DNS entries for nodes
       shell: >
         echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
       register: node_dns
       with_together:
-        - "{{ node_name+worker_name|default([])+ocs_name|default([]) }}"
-        - "{{ node_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+        - "{{ master_name+worker_name|default([])+ocs_name|default([]) }}"
+        - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
 
     - name: Prepare ETCD entries for master nodes in no onenode
       shell: >
         echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
       register: etcd_dns
       with_together:
-        - "{{ [ 'etcd-0', 'etcd-1', 'etcd-2' ] if is_one_node == 'N' else [ 'etcd-0' ] }}"
-        - "{{ node_ip }}"
+        - "{{ [ 'etcd-0', 'etcd-1', 'etcd-2' ] }}"
+        - "{{ master_ip }}"
 
     - name: Prepare SRV entries for master nodes
       shell: >
         echo "srv-host=_etcd-server-ssl._tcp,{{ item.0 }}.{{ domain }},2380"
       register: srv_dns
       with_together:
-        - "{{ [ 'etcd-0', 'etcd-1', 'etcd-2' ] if is_one_node == 'N' else [ 'etcd-0' ] }}"
+        - "{{ [ 'etcd-0', 'etcd-1', 'etcd-2' ] }}"
 
     - name: Check original dnsmasq config file existence
       stat:
@@ -607,7 +573,6 @@
       command:
         cmd: "{{ item }}"
       with_items:
-        #- "nmcli c modify {{ bas_int }} ipv4.ignore-auto-dns yes"
         - "nmcli c modify {{ bas_int }} ipv4.dns \"{{ bas_ip }}\"" 
 
     - name: Start and enable dnsmasq
@@ -721,7 +686,6 @@
         - { file: "openshift-install" }
         - { file: "oc" }
         - { file: "kubectl" }
-      when: false
 
     - name: Define base domain
       debug:
@@ -751,7 +715,7 @@
         dest: ../ocp/install-config.yaml
       vars:
         n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
-        n_masters: "{{ node_ip|length }}"
+        n_masters: "{{ master_ip|length }}"
       when: internet_type == 'A'
 
     - name: Create OCP config for standard deployment
@@ -760,7 +724,7 @@
         dest: ../ocp/install-config.yaml
       vars:
         n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
-        n_masters: "{{ node_ip|length }}"
+        n_masters: "{{ master_ip|length }}"
       when: internet_type == 'D'
 
     - name: Create OCP config file with proxy
@@ -769,7 +733,7 @@
         dest: ../ocp/install-config.yaml
       vars:
         n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
-        n_masters: "{{ node_ip|length }}"
+        n_masters: "{{ master_ip|length }}"
       when: internet_type == 'P'
 
     - name: Add RHN Pull Secret - ansible replaces /" to /'
@@ -812,7 +776,6 @@
       stat:
         path: "/etc/haproxy/haproxy.cfg.orig"
       register: haproxy_config_presence
-      when: true
 
     - name: Restore original HA Proxy config file
       copy:
@@ -830,7 +793,7 @@
         src: haproxy.j2
         dest: /etc/haproxy/haproxy.cfg
       vars:
-        masters: "{{ node_name|zip(node_ip)|list }}"
+        masters: "{{ master_name|zip(master_ip)|list }}"
         nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
         ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
         workers: "{{ nodes|zip(ips)|list }}"
@@ -841,8 +804,8 @@
         src: haproxy-onenode.j2
         dest: /etc/haproxy/haproxy.cfg
       vars:
-        masters: "{{ node_name|zip(node_ip)|list }}"
-      when: is_one_node == 'Y' or is_master_only == 'Y'
+        masters: "{{ master_name|zip(master_ip)|list }}"
+      when: is_master_only == 'Y'
 
     - name: Set SELinux for HA Proxy
       command:
@@ -850,7 +813,6 @@
       with_items:
         - { cmd: "setsebool -P haproxy_connect_any=1" }
         - { cmd: "semanage permissive -a haproxy_t" }
-      when: true
 
     - name: Start and enable HA Proxy
       service:
