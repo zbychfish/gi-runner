@@ -83,6 +83,7 @@ then
 	echo "In case of air-gapped installation you must install the bundled ICS version"
 	echo "export GI_VERSION=$gi_version_selected" >> $file
 	ics_version_selected=${bundled_in_gi_ics_versions[$gi_version_selected]}
+	ics_install='Y'
         echo "export GI_ICS_VERSION=$ics_version_selected" >> $file
 else
 	while ! [[ $ics_install == 'Y' || $ics_install == 'N' ]] # While string is different or empty...
@@ -95,7 +96,6 @@ else
                         echo "Incorrect value"
                 fi
         done
-        echo "export GI_ICS=$ics_install" >> $file
 	if [[ $ics_install == 'Y' ]]
         then
                 while [[ $ics_version_selected == '' ]]
@@ -119,6 +119,7 @@ else
                 echo "export GI_ICS_VERSION=$ics_version_selected" >> $file
 	fi
 fi
+echo "export GI_ICS=$ics_install" >> $file
 # OCP selection
 if [[ $gi_install == 'Y' ]]
 then
@@ -147,7 +148,6 @@ do
 		echo "Incorrect choice"
 	fi
 done
-echo $ocp_major_versions
 while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
 do
         printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
@@ -158,10 +158,6 @@ do
                 while [[ $ocp_release_minor == '' ]]
                 do
 			read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
-                        #if [[ `echo $ocp_release|cut -f -2 -d .` != "4.6" && `echo $ocp_release|cut -f -2 -d .` != "4.7" ]]
-                        #then
-                        #        ocp_release=''
-                        #fi
                 done
 		ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
         elif [[ $ocp_release_decision == 'S' ]]
@@ -169,6 +165,312 @@ do
 		ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
         fi
 done
-echo $ocp_release
 echo "export GI_OCP_RELEASE=$ocp_release" >> $file
+while ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
+do
+	printf "Is your installation the 3 nodes only (masters only)? (\e[4mN\e[0m)o/(Y)es: "
+        read is_master_only
+        is_master_only=${is_master_only:-N}
+        if ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
+        then
+ 	       echo "Incorrect value"
+        fi
+done
+echo export GI_MASTER_ONLY=$is_master_only >> $file
+# Time settings
+while ! [[ $install_ntpd == 'Y' || $install_ntpd == 'N' ]]
+do
+        printf "Would you like setup NTP server on bastion? (\e[4mY\e[0m)es/(N)o: "
+        read install_ntpd
+        install_ntpd=${install_ntpd:-Y}
+        if ! [[ $install_ntpd == 'Y' || $install_ntpd == 'N' ]]
+        then
+                echo "Incorrect value"
+        fi
+done
+if [[ $install_ntpd == 'N' ]]
+then
+        if [[ ! -z "$GI_NTP_SRV" ]]
+        then
+                read -p "Provide NTP server IP address [$GI_NTP_SRV] - insert new or confirm existing one <ENTER>: " new_ntp_server
+                if [[ $new_ntp_server != '' ]]
+                then
+                        ntp_server=$new_ntp_server
+                else
+                        ntp_server=$GI_NTP_SRV
+                fi
+        else
+                while [[ $ntp_server == '' ]]
+                do
+                        read -p "Insert NTP server IP address: " ntp_server
+                done
+        fi
+        sed -i "s/^pool .*/pool $ntp_server iburst/g" /etc/chrony.conf
+        systemctl enable chronyd
+        systemctl restart chronyd
+fi
+while ! [[ $is_tz_ok == 'Y' ]]
+do
+        read -p "Your Timezone on bastion is set to `timedatectl show|grep Timezone|awk -F '=' '{ print $2 }'`, is it correct one [Y/N]: " is_tz_ok
+        if [[ $is_tz_ok == 'N' ]]
+        then
+                read -p "Insert your Timezone in Linux format (i.e. Europe/Berlin): " new_tz
+                timedatectl set-timezone $new_tz 2>/dev/null
+                if [[ $? -eq 0 ]]
+                then
+                        is_tz_ok='Y'
+                else
+                        echo "You have inserted incorrect timezone specification, try again"
+                fi
+        fi
+
+done
+if [ $install_ntpd == 'Y' ]
+then
+        echo "*** Configuring NTP server on bastion - stratum 10 ***"
+        while ! [[ $is_td_ok == 'Y' ]]
+        do
+                read -p "Current local time is `date`, is it correct one [Y/N]: " is_td_ok
+                if [[ $is_td_ok == 'N' ]]
+                then
+                        read -p "Insert correct date and time in format \"2012-10-30 18:17:16\": " new_td
+                        timedatectl set-ntp false
+                        echo "NTP client is turned off"
+                        timedatectl set-time "$new_td" 2>/dev/null
+                        if [[ $? -eq 0 ]]
+                        then
+                                is_td_ok='Y'
+                        else
+                                echo "You have inserted incorrect time and date specification, try again"
+                        fi
+                fi
+        done
+else
+        echo "Your current time is: `date`"
+fi
+# Collects Bastion and Subnet information
+if [[ ! -z "$GI_BASTION_IP" ]]
+then
+        read -p "Bastion IP is set to [$GI_BASTION_IP] - insert new or confirm existing one <ENTER>: " new_bastion_ip
+        if [[ $new_bastion_ip != '' ]]
+        then
+                bastion_ip=$new_bastion_ip
+        fi
+else
+        while [[ $bastion_ip == '' ]]
+        do
+                read -p "Insert Bastion IP used to communicate with your OCP cluster: " bastion_ip
+        done
+fi
+if [[ -z "$bastion_ip" ]]
+then
+        echo export GI_BASTION_IP=$GI_BASTION_IP >> $file
+else
+        echo export GI_BASTION_IP=$bastion_ip >> $file
+fi
+# Set NTP server variable
+if [[ $install_ntpd == 'Y' && -z $bastion_ip ]]
+then
+        ntp_server=$GI_BASTION_IP
+elif [[ $install_ntpd == 'Y' && ! -z $bastion_ip ]]
+then
+        ntp_server=$bastion_ip
+fi
+if [[ -z "$ntp_server" ]]
+then
+        echo export GI_NTP_SRV=$GI_NTP_SRV >> $file
+else
+        echo export GI_NTP_SRV=$ntp_server >> $file
+fi
+if [[ ! -z "$GI_BASTION_NAME" ]]
+then
+        read -p "Bastion name is set to [$GI_BASTION_NAME] - insert new or confirm existing one <ENTER>: " new_bastion_name
+        if [[ $new_bastion_name != '' ]]
+        then
+                bastion_name=$new_bastion_name
+        fi
+else
+        while [[ $bastion_name == '' ]]
+        do
+                read -p "Insert Bastion name used to communicate with Bootstrap server: " bastion_name
+        done
+fi
+if [[ -z "$bastion_name" ]]
+then
+        echo export GI_BASTION_NAME=$GI_BASTION_NAME >> $file
+else
+        echo export GI_BASTION_NAME=$bastion_name >> $file
+fi
+if [[ ! -z "$GI_GATEWAY" ]]
+then
+        read -p "Current subnet gateway is [$GI_GATEWAY] - insert new or confirm existing one <ENTER>: " new_subnet_gateway
+        if [[ $new_subnet_gateway != '' ]]
+        then
+                subnet_gateway=$new_subnet_gateway
+        fi
+else
+        while [[ $subnet_gateway == '' ]]
+        do
+                read -p "Provide subnet gateway (default router): " subnet_gateway
+        done
+fi
+if [[ -z "$subnet_gateway" ]]
+then
+        echo export GI_GATEWAY=$GI_GATEWAY >> $file
+else
+        echo export GI_GATEWAY=$subnet_gateway >> $file
+fi
+
+if [[ ! -z "$GI_DNS_FORWARDER" ]]
+then
+        read -p "Current DNS forwarder is set to [$GI_DNS_FORWARDER] - insert new or confirm existing one <ENTER>: " new_dns_forwarding
+        if [[ $new_dns_forwarding != '' ]]
+        then
+                dns_forwarding=$new_dns_forwarding
+        fi
+else
+        while [[ $dns_forwarding == '' ]]
+        do
+                read -p "Point DNS internal server to resolve public names: " dns_forwarding
+        done
+fi
+if [[ -z "$dns_forwarding" ]]
+then
+        echo export GI_DNS_FORWARDER=$GI_DNS_FORWARDER >> $file
+else
+        echo export GI_DNS_FORWARDER=$dns_forwarding >> $file
+fi
+# Defines Bootstrap parameters
+if [[ ! -z "$GI_BOOTSTRAP_IP" ]]
+then
+        read -p "Current Bootstrap IP is set to [$GI_BOOTSTRAP_IP] - insert new or confirm existing one <ENTER>: " new_boot_ip
+        if [[ $new_boot_ip != '' ]]
+        then
+                boot_ip=$new_boot_ip
+        fi
+else
+        while [[ $boot_ip == '' ]]
+        do
+                read -p "Insert Bootstrap IP: " boot_ip
+        done
+fi
+if [[ -z "$boot_ip" ]]
+then
+        echo export GI_BOOTSTRAP_IP=$GI_BOOTSTRAP_IP >> $file
+else
+        echo export GI_BOOTSTRAP_IP=$boot_ip >> $file
+fi
+if [[ ! -z "$GI_BOOTSTRAP_MAC_ADDRESS" ]]
+then
+        read -p "Current Bootstrap MAC address is set to [$GI_BOOTSTRAP_MAC_ADDRESS] - insert new or confirm existing one <ENTER>: " new_boot_mac
+        if [[ $new_boot_mac != '' ]]
+        then
+                boot_mac=$new_boot_mac
+        fi
+else
+        while [[ $boot_mac == '' ]]
+        do
+                read -p "Insert Bootstrap MAC address: " boot_mac
+        done
+fi
+if [[ -z "$boot_mac" ]]
+then
+        echo export GI_BOOTSTRAP_MAC_ADDRESS=$GI_BOOTSTRAP_MAC_ADDRESS >> $file
+else
+        echo export GI_BOOTSTRAP_MAC_ADDRESS=$boot_mac >> $file
+fi
+if [[ ! -z "$GI_BOOTSTRAP_NAME" ]]
+then
+        read -p "Current bootstrap name is set to [$GI_BOOTSTRAP_NAME] - insert new or confirm existing one <ENTER>: " new_boot_name
+        if [[ $new_boot_name != '' ]]
+        then
+                boot_name=$new_boot_name
+        fi
+else
+        while [[ $boot_name == '' ]]
+        do
+                read -p "Insert OCP bootstrap name [boot]: " boot_name
+                boot_name=${boot_name:-boot}
+        done
+fi
+if [[ -z $boot_name ]]
+then
+        echo export GI_BOOTSTRAP_NAME=$GI_BOOTSTRAP_NAME >> $file
+else
+        echo export GI_BOOTSTRAP_NAME=$boot_name >> $file
+fi
+# Defines master nodes parameters
+declare -a master_ip_arr
+while [[ ${#master_ip_arr[@]} -ne 3 ]]
+do
+        if [ ! -z "$GI_MASTER_IP" ]
+        then
+                read -p "Current list of master node(s) IP is [$GI_MASTER_IP] - insert three IP's (comma separated) or confirm existing <ENTER>: " new_master_ip
+                if [[ $new_master_ip != '' ]]
+                then
+                        node_ip=$new_master_ip
+                else
+                        node_ip=$GI_MASTER_IP
+                fi
+        else
+                read -p "Insert three IP address(es) of master node(s) (comma separated): " master_ip
+        fi
+        IFS=',' read -r -a master_ip_arr <<< $master_ip
+        GI_MASTER_IP=$master_ip
+done
+echo export GI_MASTER_IP=$master_ip >> $file
+declare -a master_mac_arr
+while [[ ${#master_mac_arr[@]} -ne 3 ]]
+do
+        if [ ! -z "$GI_MASTER_MAC_ADDRESS" ]
+        then
+                read -p "Current master node MAC address list is set to [$GI_MASTER_MAC_ADDRESS] - insert three MAC address(es) or confirm existing one <ENTER>: " new_master_mac
+                if [[ $new_master_mac != '' ]]
+                then
+                        master_mac=$new_master_mac
+                else
+                        master_mac=$GI_MASTER_MAC_ADDRESS
+                fi
+        else
+                read -p "Insert three MAC address(es) of master node(s): " master_mac
+        fi
+        IFS=',' read -r -a master_mac_arr <<< $master_mac
+        GI_MASTER_MAC_ADDRESS=$master_mac
+done
+echo export GI_MASTER_MAC_ADDRESS=$node_mac >> $file
+declare -a master_name_arr
+while [[ ${#master_name_arr[@]} -ne 3 ]]
+do
+        if [ ! -z "$GI_MASTER_NAME" ]
+        then
+                read -p "Current master node name list is set to [$GI_MASTER_NAME] - insert three master name(s) or confirm existing one <ENTER>: " new_master_name
+                if [[ $new_master_name != '' ]]
+                then
+                        master_name=$new_master_name
+                else
+                        master_name=$GI_MASTER_NAME
+                fi
+        else
+                read -p "Insert three master node name(s): " master_name
+        fi
+        IFS=',' read -r -a master_name_arr <<< $master_name
+        GI_MASTER_NAME=$master_name
+done
+echo export GI_MASTER_NAME=$master_name >> $file
+
+
+
+while [[ $storage_type != 'O' && "$storage_type" != 'R' ]]
+do
+	if [[ ! -z "$GI_STORAGE_TYPE" ]]
+        then
+        	read -p "Cluster storage is set to [$GI_STORAGE_TYPE], insert (R) for Rook-Ceph, (O) for OCS or confirm current selection <ENTER>: " storage_type
+                if [[ $storage_type == '' ]]
+                then
+                	storage_type=$GI_STORAGE_TYPE
+                fi
+        else
+                read -p "What kind of cluster storage type will be deployed (O) for OCS (OpenShift Cluster Storage) or (R) for Rook-Ceph: " storage_type
+        fi
+done
 
