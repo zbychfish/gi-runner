@@ -437,7 +437,7 @@ do
         IFS=',' read -r -a master_mac_arr <<< $master_mac
         GI_MASTER_MAC_ADDRESS=$master_mac
 done
-echo export GI_MASTER_MAC_ADDRESS=$node_mac >> $file
+echo export GI_MASTER_MAC_ADDRESS=$master_mac >> $file
 declare -a master_name_arr
 while [[ ${#master_name_arr[@]} -ne 3 ]]
 do
@@ -457,9 +457,7 @@ do
         GI_MASTER_NAME=$master_name
 done
 echo export GI_MASTER_NAME=$master_name >> $file
-
-
-
+# Collects storage information
 while [[ $storage_type != 'O' && "$storage_type" != 'R' ]]
 do
 	if [[ ! -z "$GI_STORAGE_TYPE" ]]
@@ -473,4 +471,48 @@ do
                 read -p "What kind of cluster storage type will be deployed (O) for OCS (OpenShift Cluster Storage) or (R) for Rook-Ceph: " storage_type
         fi
 done
-
+echo export GI_STORAGE_TYPE=$storage_type >> $file
+while [[ $storage_device == '' || -z "$storage_device" ]]
+do
+	if [[ ! -z "$GI_STORAGE_DEVICE" ]]
+        then
+        	read -p "Cluster device for storage virtualization set to [$GI_STORAGE_DEVICE], insert new cluster storage device specification or confirm existing one <ENTER>: " storage_device
+                if [[ $storage_device == '' ]]
+                then
+                	storage_device=$GI_STORAGE_DEVICE
+                fi
+        else
+                read -p "Provide cluster device specification for storage virtualization (for example sdb or nvmne1): " storage_device
+        fi
+done
+echo export GI_STORAGE_DEVICE=$storage_device >> $file
+while [[ $storage_device_size == '' || -z "$storage_device_size" ]]
+do
+	if [[ ! -z "$GI_STORAGE_DEVICE_SIZE" ]]
+        then
+        	read -p "Maximum space for available for for storage virtualization on all disks is set to [$GI_STORAGE_DEVICE_SIZE] GB, insert new maximum space on cluster device for virtualization (in GB) or confirm existing one <ENTER>: " storage_device_size
+                if [[ $storage_device_size == '' ]]
+                then
+                	storage_device_size=$GI_STORAGE_DEVICE_SIZE
+                fi
+        else
+        	read -p "Provide maximum space on cluster devices for storage virtualization (for example 300) in GB: " storage_device_size
+        fi
+done
+echo export GI_STORAGE_DEVICE_SIZE=$storage_device_size >> $file
+if [ $storage_type == "O" ]
+then
+	while ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]
+        do
+        	printf "Would you like isolate (taint) OCS nodes in the OCP cluster (\e[4mN\e[0m)o/(Y)es?: "
+                read ocs_tainted
+                ocs_tainted=${ocs_tainted:-N}
+                if ! [[ $ocs_tainted == "Y" || $ocs_tainted == "N" ]]
+                then
+                	echo "Incorrect value, insert Y or N"
+                fi
+	done
+else
+        ocs_tainted="N"
+fi
+echo export GI_OCS_TAINTED=$ocs_tainted >> $file
