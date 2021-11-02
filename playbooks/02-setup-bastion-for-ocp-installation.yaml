@@ -677,17 +677,6 @@
         - { src: "openshift-client-linux.tar.gz" }
         - { src: "openshift-install-linux.tar.gz" }
 
-    - name: Set correct rights for RHCOS tools in /usr/local/bin
-      file:
-        path: "/usr/local/bin/{{ item.file }}"
-        owner: root
-        group: root
-        mode: 0755
-      with_items:
-        - { file: "openshift-install" }
-        - { file: "oc" }
-        - { file: "kubectl" }
-
     - name: Define base domain
       debug:
         msg: "{{ domain.split('.')[1:] | join('.') }}"
