@@ -949,6 +949,85 @@ then
                 fi
         done
         echo export GI_DB2_ENCRYPTED=$db2_enc >> $file
-else
-	echo 0
+elif [[ $gi_install=='N' && $ics_install == 'Y' ]]
+then
+	 ics_sizes="S M L"
+         while [[ ( -z $size_selected ) || ! " ${ics_sizes[@]} " =~ " ${size_selected} " ]]
+         do
+	         printf "Select ICS deployment size (\e[4mS\e[0m)mall/(M)edium/(L)arge: "
+                 read size_selected
+                 size_selected=${size_selected:-S}
+                 if ! [[ " ${ics_sizes[@]} " =~ " ${size_selected} " ]]
+                 then
+         	        echo "Incorrect value"
+                fi
+         done
+         echo "export GI_ICS_SIZE=$size_selected" >> $file
+         while [[ $ics_password == '' ]]
+         do
+         	read -sp "Insert IBM Common Services admin user password: " ics_password
+                echo -e '\n'
+         done
+         echo "export GI_ICSADMIN_PWD='$ics_password'" >> $file
+         # Define ICS operand list
+         declare -a ics_ops
+	 while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
+         do
+	         printf "Would you like to install zen operand with ICS?: (\e[4mN\e[0m)o/(Y)es: "
+                 read op_option
+                 op_option=${op_option:-N}
+         done
+         ics_ops+=($op_option)
+         op_option=''
+         while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
+         do
+         	printf "Would you like to install Monitoring operand with ICS?: (N)o/(\e[4mY\e[0m)es: "
+                read op_option
+                op_option=${op_option:-Y}
+         done
+         ics_ops+=($op_option)
+         op_option=''
+         while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
+         do
+         	printf "Would you like to install Event Streams operand with ICS?: (N)o/(\e[4mY\e[0m)es: "
+                read op_option
+                op_option=${op_option:-Y}
+         done
+         ics_ops+=($op_option)
+         op_option=''
+         while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
+         do
+         	printf "Would you like to install Logging operand with ICS?: (N)o/(\e[4mY\e[0m)es: "
+                read op_option
+                op_option=${op_option:-Y}
+         done
+         ics_ops+=($op_option)
+         op_option=''
+         while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
+         do
+         	printf "Would you like to install Metering operand with ICS?: (N)o/(\e[4mY\e[0m)es: "
+                read op_option
+                op_option=${op_option:-Y}
+         done
+         ics_ops+=($op_option)
+         op_option=''
+         while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
+         do
+         	printf "Would you like to install MongoDB operand with ICS?: (N)o/(\e[4mY\e[0m)es: "
+                read op_option
+                op_option=${op_option:-Y}
+         done
+         ics_ops+=($op_option)
+         op_option=''
+         while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
+         do
+         	printf "Would you like to install ElasticSearch operand with ICS?: (N)o/(\e[4mY\e[0m)es: "
+                read op_option
+                op_option=${op_option:-Y}
+         done
+         ics_ops+=($op_option)
+         op_option=''
+         echo export GI_ICS_OPERANDS=`echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1'` >> $file
+
 fi
+
