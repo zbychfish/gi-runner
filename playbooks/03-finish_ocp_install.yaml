@@ -1,7 +1,6 @@
 - hosts: bastion
   vars:
     is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
-    is_one_node:  "{{ lookup('env','GI_ONENODE') }}"
     is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
     internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     storage_type:  "{{ lookup('env','GI_STORAGE_TYPE') }}"
@@ -23,7 +22,6 @@
     when: item.value == ""
     loop:
       - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
-      - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
       - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
       - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
       - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
@@ -38,20 +36,10 @@
       - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
 
   - set_fact:
-      operator: "registry.{{ domain }}:5000/rook/ceph:v1.1.7"
-    when: is_one_node == 'Y'
-      
-  - set_fact:
-      image: "{{ 'rook/ceph:v1.1.7' if internet_type != 'A' else operator }}"
-    when: is_one_node == 'Y'
-
-  - set_fact:
       operator: "registry.{{ domain }}:5000/rook/ceph:v1.7.6"
-    when: is_one_node == 'N'
 
   - set_fact:
       image: "{{ 'rook/ceph:v1.7.6' if internet_type != 'A' else operator }}"
-    when: is_one_node == 'N'
 
   - name: Set parameters for air-gapped installation
     set_fact:
@@ -70,9 +58,17 @@
 
   - name: Set masters array
     set_fact:
-      node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
-      node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
-      node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
+      master_ip: "{{ lookup('env', 'GI_MASTER_IP').split(',') }}"
+      master_mac: "{{ lookup('env', 'GI_MASTER_MAC_ADDRESS').split(',') }}"
+      master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
+
+  - name: Check master configuration
+      fail: msg="Variable {{ item.name }} is not set"
+      when: item.value == ""
+      loop:
+        - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
+        - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
+        - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
 
   - name: Set OCS array
     set_fact:
@@ -86,32 +82,15 @@
       worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
       worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
       worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
-    when: is_one_node == 'N' and is_master_only == 'N'
-
-  - set_fact:
-      rook_registry: "rook/ceph:v1.1.7"
-    when: internet_type != 'A' and is_one_node == 'Y' and storage_type == 'R'
+    when: is_master_only == 'N'
 
   - set_fact:
       rook_registry: "quay.io/ceph/ceph:v16.2.6"
-    when: internet_type != 'A' and is_one_node == 'N' and storage_type == 'R'
-
-  - set_fact:
-      rook_registry: "registry.{{ domain }}:5000/rook/ceph:v1.1.7"
-    when: internet_type == 'A' and is_one_node == 'Y' and storage_type == 'R'
+    when: internet_type != 'A' and storage_type == 'R'
 
   - set_fact:
       rook_registry: "registry.{{ domain }}:5000/rook/ceph:v16.2.6"
-    when: internet_type == 'A' and is_one_node == 'N' and storage_type == 'R'
-
-  - name: Modify etcd settings in bootstrap phase for allinone configuration
-    shell:
-      cmd: "oc patch etcd cluster -p='{\"spec\": {\"unsupportedConfigOverrides\": {\"useUnsupportedUnsafeNonHANonProductionUnstableEtcd\": true}}}' --type=merge"
-    register: patch_status
-    until: patch_status.stdout == "etcd.operator.openshift.io/cluster patched (no change)"
-    retries: 80
-    delay: 10
-    when: is_one_node == 'Y'
+    when: internet_type == 'A' and storage_type == 'R'
 
   - name: Waiting for OCP cluster deployment (it takes 15-40 minutes)
     command: openshift-install --dir=../ocp wait-for bootstrap-complete
@@ -134,17 +113,6 @@
     pause:
       minutes: 1
     when: boot_availability.rc != 2 and boot_availability.rc != 1
-
-  - name: Reconfigure DNS records
-    lineinfile:
-      path: /etc/dnsmasq.conf
-      regexp: "{{ item.regexp }}"
-      line: "{{ item.line }}"
-    with_items:
-      - { regexp: "^address=/api.{{ domain }}/{{ bas_ip }}", line: "address=/api.{{ domain }}/{{ node_ip[0] }}" }
-      - { regexp: "^address=/api-int.{{ domain }}/{{ bas_ip }}", line: "address=/api-int.{{ domain }}/{{ node_ip[0] }}" }
-      - { regexp: "^address=/.apps.{{ domain }}/{{ bas_ip }}", line: "address=/.apps.{{ domain }}/{{ node_ip[0] }}" }
-    when: is_one_node == 'Y'
 
   - name: Remove DNS records
     lineinfile:
@@ -175,15 +143,6 @@
     with_items:
       - { name: "matchbox" }
 
-  - name: Stop unused services
-    service:
-      name: "{{ item.name }}"
-      state: stopped
-      enabled: no
-    with_items:
-      - { name: "haproxy" }
-    when: is_one_node == 'Y'
-
   - name: Reconfigure HA Proxy
     lineinfile:
       path: /etc/haproxy/haproxy.cfg
@@ -191,69 +150,16 @@
       state: absent
     with_items:
       - { regexp: '^ server m0' }
-    when: is_one_node == 'N'
 
   - name: Restart HA Proxy
     service:
       name: haproxy
       state: restarted
       enabled: yes
-    when: is_one_node == 'N'
-
-  - name: Wait - cluster stabilization
-    pause:
-      minutes: 15
-    when: is_one_node == 'Y'
-
-  - name: Modify etcd_quorum for all in one
-    shell:
-      cmd: "oc patch clusterversion version --type json -p \"$(cat ../scripts/all-in-one-etcd.yaml)\""
-    when: is_one_node == 'Y'
-
-  - name: Wait - cluster stabilization
-    pause:
-      minutes: 5
-    when: is_one_node == 'Y'
-
-  - name: Scale all in one
-    shell:
-      cmd: "{{ item }}"
-    with_items:
-      - oc scale --replicas=1 deployment/etcd-quorum-guard -n openshift-etcd
-      - oc scale --replicas=1 ingresscontroller/default -n openshift-ingress-operator
-      - oc scale --replicas=1 deployment.apps/console -n openshift-console
-      - oc scale --replicas=1 deployment.apps/downloads -n openshift-console
-      - oc scale --replicas=1 deployment.apps/oauth-openshift -n openshift-authentication
-      - oc scale --replicas=1 deployment.apps/packageserver -n openshift-operator-lifecycle-manager
-      - oc scale --replicas=1 deployment.apps/prometheus-adapter -n openshift-monitoring
-      - oc scale --replicas=1 deployment.apps/thanos-querier -n openshift-monitoring
-      - oc scale --replicas=1 statefulset.apps/prometheus-k8s -n openshift-monitoring
-      - oc scale --replicas=1 statefulset.apps/alertmanager-main -n openshift-monitoring
-    when: is_one_node == 'Y'
-
-  - name: Wait - cluster stabilization
-    pause:
-      minutes: 5
-    when: is_one_node == 'Y'
-
-  - name: Modify authentication operator for all in one
-    shell:
-      cmd: "oc apply -f ../scripts/all-in-one-auth.yaml"
-    ignore_errors: yes
-    when: is_one_node == 'Y'
-
-  - name: Wait for cluster operators
-    shell:
-      cmd: "oc get co --kubeconfig=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
-    register: co_status
-    until: "co_status.stdout == \"0\""
-    retries: 150
-    delay: 10
-    when: is_one_node == 'Y'
 
   - name: Check cluster nodes health and approve CSR's if needed
     vars:
-      node_number: "{{ node_ip|length+worker_ip|default([])|length+ocs_ip|default([])|length }}"
+      node_number: "{{ master_ip|length+worker_ip|default([])|length+ocs_ip|default([])|length }}"
     shell: ../scripts/check_cluster_health.sh
     register: cluster_health
     until: node_number == cluster_health.stdout
@@ -267,7 +173,6 @@
     until: "co_status.stdout == \"0\""
     retries: 150 
     delay: 10
-    when: true
 
   - name: Create htpasswd file
     htpasswd:
@@ -282,7 +187,6 @@
       - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocadmin.htpasswd -n openshift-config --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc apply -f ../scripts/oauth_provider.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocadmin }} --kubeconfig ../ocp/auth/kubeconfig" }
-    when: true
     ignore_errors: yes #if htpasswd has been imported before
 
   - name: Disable default image sources
@@ -294,13 +198,13 @@
     shell:
       cmd: tar xf ../gi-temp/manifests.tar -C ../gi-temp
       warn: false
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Identify image registry name in the import
     shell:
       cmd: "cd  ../gi-temp/manifests-redhat-operator-index;cat catalogSource.yaml | grep image | awk '{print $2}'| awk -F':' '{print $1}'"
     register: old_registry_name
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Set correct image registry mirror name in catalogSources
     shell:
@@ -312,7 +216,7 @@
       - manifests-certified-operator-index
       - manifests-redhat-marketplace-index
       - manifests-community-operator-index
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Set correct image registry mirror name in imageContentSourcePolicy
     shell:
@@ -324,7 +228,7 @@
       - manifests-certified-operator-index
       - manifests-redhat-marketplace-index
       - manifests-community-operator-index
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Configure mirrored catalogSources
     shell:
@@ -336,7 +240,7 @@
       - manifests-certified-operator-index
       - manifests-redhat-marketplace-index
       - manifests-community-operator-index
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Configure mirrored imageContentSourcePolicy.yaml
     shell:
@@ -348,12 +252,12 @@
       - manifests-certified-operator-index
       - manifests-redhat-marketplace-index
       - manifests-community-operator-index
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Wait - cluster stabilization
     pause:
       minutes: 8
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Check cluster nodes health after Content Source Policy change
     shell: ../scripts/check_cluster_health_operators.sh
@@ -361,7 +265,7 @@
     until: cluster_health_operators.stdout == "0"
     retries: 100
     delay: 30
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
     shell:
@@ -370,7 +274,7 @@
     until: "co_status.stdout == \"0\""
     retries: 150
     delay: 30
-    when: false and internet_type == 'A' and is_one_node == 'N'
+    when: false and internet_type == 'A'
 
   - name: Configure OCS nodes on workers
     shell:
@@ -388,7 +292,7 @@
   - name: Configure OCS nodes on masters
     shell:
       cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --kubeconfig ../ocp/auth/kubeconfig --overwrite=true"
-    with_items: "{{ node_name|list }}"
+    with_items: "{{ master_name|list }}"
     when: storage_type == "O" and is_master_only == 'Y'
 
   - name: Create OCS namespaces
@@ -442,7 +346,7 @@
 
   - name: Configure local storage deployment file with masters only
     vars:
-      nodes: "{{ node_name|list }}"
+      nodes: "{{ master_name|list }}"
     template:
       src: "local-storage-vol.j2"
       dest: "../scripts/local-storage-vol.yaml"
@@ -529,74 +433,51 @@
       - { cmd: "oc patch storageclass ocs-storagecluster-cephfs --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "O"
 
-  - name: Configure rook-ceph nodes
-    shell:
-      cmd: "oc label node {{ node_name[0] }}.{{ domain }} role=storage-node --kubeconfig ../ocp/auth/kubeconfig --overwrite=true"
-    when: storage_type == "R" and is_one_node == 'Y'
-
   - name: Configure rook-ceph CRD's
     shell:
       cmd: "oc apply -f ../scripts/rook-latest-crds.yaml --kubeconfig ../ocp/auth/kubeconfig"
-    when: storage_type == "R" and is_one_node == 'N'
+    when: storage_type == "R"
 
   - name: Configure common rook settings
     shell:
-      cmd: "oc apply -f ../scripts/{{ 'rook-common.yaml' if is_one_node == 'Y' else 'rook-latest-common.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
+      cmd: "oc apply -f ../scripts/rook-latest-common.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
   - name: Configure rook-ceph cluster file
     vars:
-      multiple_per_node: "{{ 'false' if is_one_node == 'N' else 'true' }}"
+      multiple_per_node: "true"
     template:
-      src: "{{ 'rook-cluster.j2' if is_one_node == 'Y' else 'rook-latest-cluster.j2' }}"
+      src: "rook-latest-cluster.j2"
       dest: "../scripts/rook-cluster.yaml"
     when: storage_type == "R"
 
   - name: Configure rook-ceph-rbd-sc file
     vars:
-      replica_size: "{{ 2 if is_one_node == 'N' else 1 }}"
-      requires_replica: "{{ 'true' if is_one_node == 'N' else 'false' }}"
+      replica_size: "2"
+      requires_replica: "true"
     template:
       src: "rook-storage_class_rbd.j2"
       dest: "../scripts/rook-storage_class_rbd.yaml"
     when: storage_type == "R"
 
-  - name: Add CEPH image variables for air-gapp installation for one node
-    lineinfile:
-      path: ../scripts/rook-operator.yaml
-      insertbefore: "# To disable RBAC, uncomment the following:"
-      line: "{{ item }}"
-    loop:
-      - '        - name: ROOK_CSI_PROVISIONER_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/csi-provisioner:v1.3.0"'
-      - '        - name: ROOK_CSI_REGISTRAR_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/csi-node-driver-registrar:v1.1.0"'
-      - '        - name: ROOK_CSI_ATTACHER_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/csi-attacher:v1.2.0"'
-      - '        - name: ROOK_CSI_CEPH_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/cephcsi:v1.2.1"'
-      - '        - name: ROOK_CSI_SNAPSHOTTER_IMAGE'
-      - '          value: "registry.{{ domain }}:5000/rook/csi-snapshotter:v1.2.0"'
-    when: internet_type == 'A' and storage_type == "R" and is_one_node == 'Y'
-
   - name: Configure rook operator file offline
     template:
       src: "rook-latest-operator-offline.j2"
       dest: "../scripts/rook-latest-operator.yaml"
-    when: internet_type == 'A' and storage_type == "R" and is_one_node == 'N'
+    when: internet_type == 'A' and storage_type == "R"
 
   - name: Configure rook operator file online
     template:
       src: "rook-latest-operator.j2"
       dest: "../scripts/rook-latest-operator.yaml"
-    when: internet_type != 'A' and storage_type == "R" and is_one_node == 'N'
+    when: internet_type != 'A' and storage_type == "R"
 
   - name: Configure rook operator
     shell:
       cmd: "{{ item }}"
     loop:
-      - "oc apply -f ../scripts/{{ 'rook-operator.yaml' if is_one_node == 'Y' else 'rook-latest-operator.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
-      - "oc apply -f ../scripts/{{ 'rook-filesystem.yaml' if is_one_node == 'Y' else 'rook-latest-filesystem.yaml' }} --kubeconfig ../ocp/auth/kubeconfig"
+      - "oc apply -f ../scripts/rook-latest-operator.yaml --kubeconfig ../ocp/auth/kubeconfig"
+      - "oc apply -f ../scripts/rook-latest-filesystem.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
   - name: Wait for Rook operator
@@ -692,7 +573,7 @@
         msg:
           - "OpenShift {{ ocp_release }} cluster installation finished"
           - Add to hosts on your web browser workstation this line
-          - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }}"
+          - "{{ bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }}"
           - "Login to OCP console as {{ ocadmin }} user - https://console-openshift-console.apps.{{ domain }}"  
 
   - debug:
