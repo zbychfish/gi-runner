@@ -1030,4 +1030,58 @@ then
          echo export GI_ICS_OPERANDS=`echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1'` >> $file
 
 fi
+while ! [[ $install_ldap == 'Y' || $install_ldap == 'N' ]] # While string is different or empty...
+do
+        printf "Would you like install OpenLDAP for example as Guardium Insights identity source? (\e[4mY\e[0m)es/(N)o: "
+        read install_ldap
+        install_ldap=${install_ldap:-Y}
+        if ! [[ $install_ldap == 'Y' || $install_ldap == 'N' ]]
+        then
+                echo "Incorrect value"
+        fi
+done
+if [ $install_ldap == 'Y' ]
+then
+        if [[ ! -z "$GI_LDAP_DOMAIN" ]]
+        then
+                read -p "LDAP organization DN is set to [$GI_LDAP_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ldap_domain
+                if [[ $new_ldap_domain != '' ]]
+                then
+                        ldap_domain=$new_ldap_domain
+                fi
+        else
+                read -p "Insert LDAP orgnization DN (for example: DC=io,DC=priv): " ldap_domain
+        fi
+        if [[ -z "$ldap_domain" ]]
+        then
+                echo export GI_LDAP_DOMAIN=$GI_LDAP_DOMAIN >> $file
+        else
+                echo export GI_LDAP_DOMAIN=$ldap_domain >> $file
+        fi
+        if [[ ! -z "$GI_LDAP_USERS" ]]
+        then
+                read -p "LDAP users list is set to [$GI_LDAP_USERS] - insert new or confirm existing one <ENTER>: " new_ldap_users
+                if [[ $new_ldap_users != '' ]]
+                then
+                        ldap_users=$new_ldap_users
+                fi
+        else
+                while [[ $ldap_users == '' ]]
+                do
+                        read -p "Insert insert comma separated list of user names to create them in LDAP (i.e. user1,user2,user2): " ldap_users
+                done
+        fi
+        if [[ -z "$ldap_users" ]]
+        then
+                echo export GI_LDAP_USERS=$GI_LDAP_USERS >> $file
+        else
+                echo export GI_LDAP_USERS=$ldap_users >> $file
+        fi
+        while [[ $ldap_password == '' ]]
+        do
+                read -sp "Insert password for LDAP users: " ldap_password
+                echo -e '\n'
+        done
+        echo "export GI_LDAP_USERS_PWD='$ldap_password'" >> $file
+fi
 
