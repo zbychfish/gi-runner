@@ -10,6 +10,7 @@ declare -a bundled_in_gi_ics_versions=(0 2 3)
 declare -a ocp_major_versions=(4.6 4.7 4.8 4.9)
 declare -a ocp_supported_by_gi=(0 0:1 0:1:2)
 declare -a ocp_supported_by_ics=(0:1 0:1 0:1:2 0:1:2 0:1:2 0:1:2:3)
+declare -a gi_sizes=(values-poc-lite values-dev values-small)
 
 echo "# Guardium Insights installation parameters" > $file
 # Get information about environment type (Air-Gapped, Proxy, Direct access to the internet)
@@ -826,4 +827,128 @@ do
         echo -e '\n'
 done
 echo "export GI_OCADMIN_PWD='$ocp_password'" >> $file
-
+# GI parameters
+if [[ $gi_install == 'Y' ]]
+then
+	if [[ $use_air_gap == 'N' ]]
+        then
+                if [[ ! -z "$GI_IBM_SECRET" ]]
+                then
+                        read -p "IBM Cloud secret is set to [$GI_IBM_SECRET] - insert new or confirm existing one <ENTER>: " new_ibm_secret
+                        if [[ $new_ibm_secret != '' ]]
+                        then
+                                ibm_secret=$new_ibm_secret
+                        else
+                                ibm_secret=$GI_IBM_SECRET
+                        fi
+                else
+                        while [[ $ibm_secret == '' ]]
+                        do
+                                read -p "Insert IBM Cloud secret: " ibm_secret
+                        done
+                fi
+                if [[ -z "$ibm_secret" ]]
+                then
+                        echo "export GI_IBM_SECRET='$GI_IBM_SECRET'" >> $file
+                else
+                        echo "export GI_IBM_SECRET='$ibm_secret'" >> $file
+                fi
+        fi
+        while [[ ( -z $gi_size_selected ) || ! " ${gi_sizes[@]} " =~ " ${gi_sizes[$gi_size_selected]} " ]]
+        do
+                echo "Select GI deployment size:"
+                i=1
+                for gi_size in "${gi_sizes[@]}"
+                do
+                        echo "$i - $gi_size"
+                        i=$((i+1))
+                done
+                read -p "Your choice?: " gi_size_selected
+                gi_size_selected=$(($gi_size_selected-1))
+        done
+	while [[ $gi_ds_size == '' || -z "$gi_ds_size" ]]
+        do
+                if [[ ! -z "$GI_DATA_STORAGE_SIZE" ]]
+                then
+                        read -p "Size of GI data PVC is set to [$GI_DATA_STORAGE_SIZE] GB, insert new value (in GB, it should be not larger than 70% of total cluster storage size) or confirm existing one <ENTER>: " gi_ds_size
+                        if [[ $gi_ds_size == '' ]]
+                        then
+                                gi_ds_size=$GI_DATA_STORAGE_SIZE
+                        fi
+                else
+                        read -p "Provide size of GI data PVC (for example 300, should not exceed 70% of total cluster storage size) in GB: " gi_ds_size
+                fi
+        done
+        echo "export GI_DATA_STORAGE_SIZE=$gi_ds_size" >> $file
+        echo "export GI_SIZE_GI=${gi_sizes[$gi_size_selected]}" >> $file
+        #echo "export GI_INSTALL_GI=$gi_install" >> $file
+        echo "export GI_ICS_OPERANDS=N,N,Y,Y,N,Y,N" >> $file
+        #echo "export GI_ICS=Y" >> $file
+        while [[ $ics_password == '' ]]
+        do
+                read -sp "Insert IBM Common Services admin user password: " ics_password
+                echo -e '\n'
+        done
+        echo "export GI_ICSADMIN_PWD='$ics_password'" >> $file
+        if [[ ! -z "$GI_NAMESPACE_GI" ]]
+        then
+                read -p "Guardium Insights namespace is set to [$GI_NAMESPACE_GI] - insert new or confirm existing one <ENTER>: " new_gi_namespace
+                if [[ $new_gi_namespace != '' ]]
+                then
+                        gi_namespace=$new_gi_namespace
+                fi
+        else
+                while [[ $gi_namespace == '' ]]
+                do
+                        read -p "Insert Guardium Insights namespace name (maximum 10 characters): " gi_namespace
+                done
+        fi
+	if [[ -z "$gi_namespace" ]]
+        then
+                echo export GI_NAMESPACE_GI=$GI_NAMESPACE_GI >> $file
+        else
+                echo export GI_NAMESPACE_GI=$gi_namespace >> $file
+        fi
+        if [[ ! -z "$GI_DB2_NODES" ]]
+        then
+                read -p "Current list of DB2 nodes is set to [$GI_DB2_NODES] - insert list of DB2 nodes (comma separated) or confirm existing <ENTER>: " new_db2_nodes
+                if [[ $new_db2_nodes != '' ]]
+                then
+                        db2_nodes=$new_db2_nodes
+                else
+                        db2_nodes=$GI_DB2_NODES
+                fi
+        else
+                read -p "Insert DB2 nodes list (comma separated): " db2_nodes
+        fi
+        echo export GI_DB2_NODES=$db2_nodes >> $file
+        while ! [[ $db2_enc == 'Y' || $db2_enc == 'N' ]]
+        do
+                if [[ $gi_version_selected != '0' ]]
+                then
+                        if [[ ! -z "$GI_DB2_ENCRYPTED" ]]
+                        then
+                                read -p "DB2 encryption is set to [$GI_DB2_ENCRYPTED] - should be DB2u tablespace encrypted (YES/NO) or confirm current value <ENTER>: " new_db2_enc
+                                if [[ $new_db2_enc != '' ]]
+                                then
+                                        db2_enc=$new_db2_enc
+                                else
+                                        db2_enc=$GI_DB2_ENCRYPTED
+                                fi
+                        else
+                                printf "Should be DB2u tablespace encrypted? (\e[4mN\e[0m)o/(Y)es: "
+                                read db2_enc
+                                db2_enc=${db2_enc:-N}
+                        fi
+                        if ! [[ $db2_enc == 'Y' || $db2_enc == 'N' ]]
+                        then
+                                echo "Incorrect value"
+                        fi
+                else
+                        db2_enc='Y'
+                fi
+        done
+        echo export GI_DB2_ENCRYPTED=$db2_enc >> $file
+else
+	echo 0
+fi
