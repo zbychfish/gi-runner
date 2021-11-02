@@ -1121,15 +1121,66 @@ then
         done
         echo "export GI_LDAP_USERS_PWD='$ldap_password'" >> $file
 fi
-# Check bastion OS
-echo "*** Checking OS release ***"
-if [[ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]]
+# Configure bastion to use proxy
+if [[ $use_proxy == 'P' ]]
 then
-        echo "*** ERROR ***"
-        echo "Your bastion machine is not Fedora OS - please use the supported Operating System"
-        exit 1
+        while [[ $proxy_ip == '' ]]
+        do
+                read -p "HTTP Proxy ip address: " proxy_ip
+        done
+        while [[ $proxy_port == '' ]]
+        do
+                read -p "HTTP Proxy port: " proxy_port
+        done
+        read -p "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxed (do not need provide here cluster addresses): " no_proxy_add
+        no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy_add"
+        echo "Your proxy settings are:"
+        echo "Proxy URL: http://$proxy_ip:$proxy_port"
+        echo "OCP domain $ocp_domain"
+        echo "Setting your HTTP proxy environment on bastion"
+        echo "- Modyfying /etc/profile"
+	cp -f /etc/profile /etc/profile.gi_no_proxy
+        if [[ `cat /etc/profile | grep "export http_proxy=" | wc -l` -ne 0 ]]
+        then
+                sed -i "s/^export http_proxy=.*/export http_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
+        else
+                echo "export http_proxy=\"http://$proxy_ip:$proxy_port\"" >> /etc/profile
+        fi
+        if [[ `cat /etc/profile | grep "export https_proxy=" | wc -l` -ne 0 ]]
+        then
+                sed -i "s/^export https_proxy=.*/export https_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
+        else
+                echo "export https_proxy=\"http://$proxy_ip:$proxy_port\"" >> /etc/profile
+        fi
+        if [[ `cat /etc/profile | grep "export ftp_proxy=" | wc -l` -ne 0 ]]
+        then
+                sed -i "s/^export ftp_proxy=.*/export ftp_proxy=\"$proxy_ip:$proxy_port\"/g" /etc/profile
+        else
+                echo "export ftp_proxy=\"$proxy_ip:$proxy_port\"" >> /etc/profile
+        fi
+        if [[ `cat /etc/profile | grep "export no_proxy=" | wc -l` -ne 0 ]]
+        then
+                sed -i "s/^export no_proxy=.*/export no_proxy=\"$no_proxy\"/g" /etc/profile
+        else
+                echo "export no_proxy=\"$no_proxy\"" >> /etc/profile
+        fi
+        echo "- Add proxy settings to DNF config file"
+	cp -f /etc/dnf/dnf.conf /etc/dnf/dnf.conf.gi_no_proxy
+        if [[ `cat /etc/dnf/dnf.conf | grep "proxy=" | wc -l` -ne 0 ]]
+        then
+                sed -i "s/^proxy=.*/proxy=http:\/\/$proxy_ip:$proxy_port/g" /etc/dnf/dnf.conf
+        else
+                echo "proxy=http://$proxy_ip:$proxy_port" >> /etc/dnf/dnf.conf
+        fi
 else
-        echo "Your system is `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` - progressing ..."
+	if [[ -f /etc/profile.gi_no_proxy ]]
+	then
+		mv -f /etc/profile.gi_no_proxy /etc/profile
+	fi
+	if [[ -f /etc/dnf/dnf.conf.gi_no_proxy ]]
+	then
+		mv -f /etc/dnf/dnf.conf.gi_no_proxy /etc/dnf/dnf.conf
+	fi
 fi
 # Check tar availability on OS
 if [[ `dnf list tar --installed 2>/dev/null|tail -n1|wc -l` -eq 0 ]]
