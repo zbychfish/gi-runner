@@ -2,7 +2,6 @@
   vars:
     internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     domain: "{{ lookup('env','GI_DOMAIN') }}"
-    is_one_node: "{{ lookup('env','GI_ONENODE') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
@@ -23,7 +22,6 @@
     loop:
       - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
-      - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
       - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
@@ -64,9 +62,9 @@
 
   - name: Set masters array
     set_fact:
-      node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
-      node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
-      node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
+      master_ip: "{{ lookup('env', 'GI_MASTER_IP').split(',') }}"
+      master_mac: "{{ lookup('env', 'GI_MASTER_MAC_ADDRESS').split(',') }}"
+      master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
 
   - name: Set OCS array
     set_fact:
@@ -80,7 +78,7 @@
       worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
       worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
       worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
-    when: is_one_node == 'N' and is_master_only == 'N'
+    when: is_master_only == 'N'
 
   - name: Iterates all workers in one array
     vars:
@@ -134,12 +132,12 @@
   - name: Switch GI inventory to portable registry
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir ../gi-temp/{{ offline_inventory }}\""
-    when:  false and internet_type == 'A'
+    when: internet_type == 'A'
 
   - name: Wait for cluster reconfiguration
     pause:
       minutes: 3
-    when: false and internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
     shell:
@@ -148,7 +146,7 @@
     until: "co_status.stdout == \"0\""
     retries: 150
     delay: 20
-    when: false and internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: GI download case file
     shell:
@@ -275,19 +273,19 @@
       src: haproxy_with_ssh.j2
       dest: /etc/haproxy/haproxy.cfg
     vars:
-      masters: "{{ node_name|zip(node_ip)|list }}"
+      masters: "{{ master_name|zip(master_ip)|list }}"
       nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
       ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
       workers: "{{ nodes|zip(ips)|list }}"
-    when: is_one_node == 'N' and is_master_only == 'N'
+    when: is_master_only == 'N'
 
   - name: Create HA Proxy config file with ssh-service (no dedicated workers)
     template:
       src: haproxy_with_ssh_masters_only.j2
       dest: /etc/haproxy/haproxy.cfg
     vars:
-      masters: "{{ node_name|zip(node_ip)|list }}"
-    when: is_one_node == 'Y' or is_master_only == 'Y'
+      masters: "{{ master_name|zip(master_ip)|list }}"
+    when: is_master_only == 'Y'
 
   - name: Restart HA Proxy
     service:
@@ -298,7 +296,7 @@
       msg:
         - "GI version {{ gi_version }} installation finished"
         - Update the hosts file on your web browser workstation
-        - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} insights.apps.{{ domain }}"
+        - "{{ bas_ip }} insights.apps.{{ domain }}"
         - "Login to GI console as admin/{{ ics_admin_password }} - https://insights.apps.{{ domain }}"
         - "SSH port {{ ssh_node_port.stdout }} integration with GDP routed and opened on bastion"
         - "You can deploy on bastion the OpenLDAP and use it to add functional identities to GI, script 'playbooks/50-set_configure_ldap.yaml.sh'"

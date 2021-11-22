@@ -55,12 +55,6 @@
       - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
       - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
 
-  - name: Set masters array
-    set_fact:
-      node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
-      node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
-      node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
-
   - name: Set ICS installation variables
     set_fact:
       ics_operator_namespace: "common-service"
@@ -333,5 +327,5 @@
       msg:
         - "IBM Common Services {{ ics_version }} installation finished"
         - Update the hosts file on your web browser workstation
-        - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} cp-console.apps.{{ domain }}"
+        - "{{ bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} cp-console.apps.{{ domain }}"
         - "Login to ICS console as admin user - https://cp-console.apps.{{ domain }}"
