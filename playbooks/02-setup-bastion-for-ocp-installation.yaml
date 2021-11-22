@@ -78,7 +78,7 @@
 
     - name: Set variable for public SSH key
       shell: >
-        echo "{{ ssh_key }}.pub"
+        cat "{{ ssh_key }}.pub"
       register: ssh_pub_key 
 
 
