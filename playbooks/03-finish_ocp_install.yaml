@@ -274,7 +274,7 @@
     until: "co_status.stdout == \"0\""
     retries: 150
     delay: 30
-    when: false and internet_type == 'A'
+    when: internet_type == 'A'
 
   - name: Configure OCS nodes on workers
     shell:
