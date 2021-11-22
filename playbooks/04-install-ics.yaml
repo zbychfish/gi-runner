@@ -5,7 +5,6 @@
     ics_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
     ics_versions: [ "3.7.4","3.8.1","3.9.0","3.9.1","3.10.0","3.11.0","3.12.0" ]
     ics_cases: [ "ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz","ibm-cp-common-services-1.5.0.tgz","ibm-cp-common-services-1.5.1.tgz","ibm-cp-common-services-1.6.0.tgz","ibm-cp-common-services-1.7.0.tgz","ibm-cp-common-services-1.8.0.tgz" ]
-    is_one_node: "{{ lookup('env','GI_ONENODE') }}"
     ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
@@ -19,7 +18,6 @@
       - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
       - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
-      - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
       - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
       - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
@@ -47,7 +45,6 @@
       archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
       repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
       repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
-
     when: internet_type == 'A'
 
   - name: Check configuration parameters for air-gapped installation
@@ -173,6 +170,7 @@
     set_fact:
       offline_archive: "{{ '../gi-temp/ics_images.tar' if install_gi == 'N' else '../gi-temp/gi_images.tar' }}"
       offline_inventory: "{{ '../gi-temp/ics_offline' if install_gi == 'N' else '../gi-temp/gi_offline' }}"
+    when: internet_type == 'A'
 
   - name: Extract registry
     shell:
