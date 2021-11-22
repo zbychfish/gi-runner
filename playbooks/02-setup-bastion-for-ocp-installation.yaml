@@ -469,6 +469,7 @@
       with_together:
         - "{{ [ 'etcd-0', 'etcd-1', 'etcd-2' ] }}"
         - "{{ master_ip }}"
+      when: false
 
     - name: Prepare SRV entries for master nodes
       shell: >
@@ -476,6 +477,7 @@
       register: srv_dns
       with_together:
         - "{{ [ 'etcd-0', 'etcd-1', 'etcd-2' ] }}"
+      when: false
 
     - name: Check original dnsmasq config file existence
       stat:
@@ -564,12 +566,14 @@
         path: /etc/dnsmasq.conf
         line: "{{ item.stdout }}"
       with_items: "{{ etcd_dns.results }}"
+      when: false
 
     - name: Add SRV lines to dnsmasq.conf
       lineinfile:
         path: /etc/dnsmasq.conf
         line: "{{ item.stdout }}"
       with_items: "{{ srv_dns.results }}"
+      when: false
 
     - name: Add DNS forwarder to dnsmasq.conf
       lineinfile:
