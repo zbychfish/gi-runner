@@ -76,6 +76,12 @@
         - { path: "/var/lib/tftp" }
         - { path: "../ocp" }
 
+    - name: Set variable for public SSH key
+      shell: >
+        echo "{{ ssh_key }}.pub"
+      register: ssh_pub_key 
+
+
     - name: Set parameters for air-gapped installation
       set_fact:
         archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
