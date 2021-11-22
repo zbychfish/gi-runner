@@ -14,6 +14,7 @@
     is_ics: "{{ lookup('env','GI_ICS') }}"
     ocp_release:  "{{ lookup('env','GI_OCP_RELEASE') }}"
     ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}"
+    ssh_key:  "{{ lookup('env','GI_SSH_KEY') }}"
 
 
   tasks:
@@ -34,6 +35,7 @@
       - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
       - { name: "GI_ICS", value: "{{ is_ics }}" }
       - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
+      - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
 
   - set_fact:
       operator: "registry.{{ domain }}:5000/rook/ceph:v1.7.6"
@@ -103,7 +105,7 @@
 
   - name: Stop bootstrap
     shell:
-      cmd: "ssh -l core {{ boot_name }}.{{ domain }} -i ~/.ssh/cluster_id_rsa sudo shutdown -h +1"
+      cmd: "ssh -l core {{ boot_name }}.{{ domain }} -i {{ ssh_key }} sudo shutdown -h +1"
     remote_user: core
     args:
       warn: false
