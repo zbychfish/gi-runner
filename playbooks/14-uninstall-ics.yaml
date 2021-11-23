@@ -5,6 +5,9 @@
     ics_cases: [ "ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz","ibm-cp-common-services-1.5.1.tgz","ibm-cp-common-services-1.6.0.tgz","ibm-cp-common-services-1.7.0.tgz","ibm-cp-common-services-1.8.1.tgz","ibm-cp-common-services-1.9.0.tgz" ]
     ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+    ocadmin:  "{{ lookup('env','GI_OCADMIN') }}"
+    ocadmin_password:  "{{ lookup('env','GI_OCADMIN_PWD') }}"
+    domain:  "{{ lookup('env','GI_DOMAIN') }}"
 
 
   tasks:
@@ -33,6 +36,10 @@
     shell:
       cmd: 'for operator in `oc get OperandRequest -n ibm-common-services -o name`; do oc delete $operator -n ibm-common-services;done'
     ignore_errors: yes #some operands remove other so the list is dynamic
+
+  - name: Login to OCP after ICS Authorization removal
+    shell:
+      cmd: "oc login https://api.{{ domain }}:6443 -u {{ ocadmin }} -p {{ ocadmin_password }} --insecure-skip-tls-verify=true"
 
   - name: Delete operand configs
     shell:
