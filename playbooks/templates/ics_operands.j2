@@ -13,11 +13,14 @@ spec:
         - name: ibm-licensing-operator
         - name: ibm-commonui-operator
         - name: ibm-platform-api-operator
-{% if  ics_cases[ics_version_hint|int] != 5 %}
+{% if  ics_cases[ics_version_hint|int] <= 5 %}
         - name: ibm-ingress-nginx-operator
 {% endif %}
 {% if ics_operands[0] == 'Y' %}
         - name: ibm-zen-operator
+   {% if ics_cases[ics_version_hint|int] >= 5 %}
+        - name: zen-cpp-operator
+   {% endif %}
 {% endif %}
 {% if ics_operands[1] == 'Y' %}
         - name: ibm-monitoring-exporters-operator
@@ -30,7 +33,7 @@ spec:
 {% if ics_operands[3] == 'Y' %}
         - name: ibm-auditlogging-operator
 {% endif %}
-{% if ics_operands[4] == 'Y' %}
+{% if ics_operands[4] == 'Y' and ics_cases[ics_version_hint|int] == 1 %}
         - name: ibm-metering-operator
 {% endif %}
 {% if ics_operands[5] == 'Y' %}
@@ -38,5 +41,10 @@ spec:
 {% endif %}
 {% if ics_operands[6] == 'Y' %}
         - name: ibm-elastic-stack-operator
+{% endif %}
+{% if ics_cases[ics_version_hint|int] >= 5 %}
+        - name: ibm-user-data-services-operator
+        - name: ibm-cpd-ae-operator
+        - ibm-apicatalog-operator
 {% endif %}
       registry: common-service
