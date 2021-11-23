@@ -380,6 +380,7 @@
   - name: Configure OCS operator file
     vars:
       operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
+      ocs_stable: "{{ '4.8' if ocp_major_release == '4.9' else ocp_major_release }}"
     template:
       src: "ocs-op.j2"
       dest: "../scripts/ocs-op.yaml"
