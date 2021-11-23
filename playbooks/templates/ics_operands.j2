@@ -18,9 +18,9 @@ spec:
 {% endif %}
 {% if ics_operands[0] == 'Y' %}
         - name: ibm-zen-operator
-   {% if ics_cases[ics_version_hint|int] >= 5 %}
+{% endif %}
+{% if ics_cases[ics_version_hint|int] >= 5 and ics_operands[0] == 'Y' %}
         - name: zen-cpp-operator
-   {% endif %}
 {% endif %}
 {% if ics_operands[1] == 'Y' %}
         - name: ibm-monitoring-exporters-operator
