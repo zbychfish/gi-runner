@@ -1,10 +1,11 @@
 <B>OpenShift Cluster installation automation on bare metal</B>
 <HR>
+Automates OCP installation for OCP 4.6, 4.7, 4.8, 4.9
+Support installation with direct access to the Internet, using proxy and air-gapped (restricted) approach
 Implemented OCP architectures:
-<LI>Air-gap installation for 3 masters and 3+n workers with OCS 4.6
-<LI>Air-gap installation for 3 masters only with OCS 4.6
-<LI>Air-gap installation for 3 masters and 3+n workers and OCS 4.6 tainted on 3 additional infra nodes
-<LI>Air-gap installation on one node only with open source rook-ceph 1.1.7 (not supported OCP architecture for production)
+<LI>3 masters and 3+n workers with OCS or rook-ceph
+<LI>3 masters only with OCS 4.6 with OCS or rook-ceph
+<LI>3 masters and 3+n workers and OCS tainted on 3 additional infra nodes
 <HR>
 OCP installation with direct access to the internet
 <UL>
