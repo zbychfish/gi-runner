@@ -13,7 +13,7 @@ spec:
         - name: ibm-licensing-operator
         - name: ibm-commonui-operator
         - name: ibm-platform-api-operator
-{% if  ics_cases[ics_version_hint|int] == 5 %}
+{% if  ics_cases[ics_version_hint|int] in [0 1 2 3 4] %}
         - name: ibm-ingress-nginx-operator
 {% endif %}
 {% if ics_operands[0] == 'Y' %}
