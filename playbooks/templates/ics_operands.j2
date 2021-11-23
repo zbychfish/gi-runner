@@ -33,22 +33,19 @@ spec:
 {% if ics_operands[3] == 'Y' %}
         - name: ibm-auditlogging-operator
 {% endif %}
-{% if ics_operands[4] == 'Y' and ics_cases[ics_version_hint|int] == 1 %}
-        - name: ibm-metering-operator
-{% endif %}
-{% if ics_operands[5] == 'Y' %}
+{% if ics_operands[4] == 'Y' %}
         - name: ibm-mongodb-operator
 {% endif %}
-{% if ics_operands[6] == 'Y' %}
-        - name: ibm-elastic-stack-operator
-{% endif %}
-{% if ics_cases[ics_version_hint|int] not in [0, 1, 2, 3, 4] and ics_operands[7] == 'Y' %}
+{% if ics_cases[ics_version_hint|int] not in [0, 1, 2, 3, 4] and ics_operands[5] == 'Y' %}
         - name: ibm-user-data-services-operator
 {% endif %}
-{% if ics_cases[ics_version_hint|int] not in [0, 1, 2, 3, 4] and ics_operands[8] == 'Y' %}
+{% if ics_cases[ics_version_hint|int] not in [0, 1, 2, 3, 4] and ics_operands[6] == 'Y' %}
         - name: ibm-cpd-ae-operator
 {% endif %}
-{% if ics_cases[ics_version_hint|int] not in [0, 1, 2, 3, 4] and ics_operands[9] == 'Y' %}
+{% if ics_cases[ics_version_hint|int] not in [0, 1, 2, 3, 4] and ics_operands[7] == 'Y' %}
         - name: ibm-apicatalog-operator
+{% endif %}
+{% if ics_cases[ics_version_hint|int] not in [0, 1, 2, 3, 4, 5] and ics_operands[8] == 'Y' %}
+        - name: ibm-bts-operator
 {% endif %}
       registry: common-service
