@@ -40,6 +40,11 @@
   - name: Login to OCP after ICS Authorization removal
     shell:
       cmd: "oc login https://api.{{ domain }}:6443 -u {{ ocadmin }} -p {{ ocadmin_password }} --insecure-skip-tls-verify=true"
+    register: login_status
+    until: "login_status.stdout == \"0\""
+    retries: 150
+    delay: 3
+
 
   - name: Delete operand configs
     shell:
