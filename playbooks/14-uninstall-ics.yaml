@@ -73,6 +73,14 @@
       - 'oc delete namespace services'
       - 'oc delete nss --all'
 
+  - name: Delete ICS crd's
+    shell:
+      cmd: 'for crd in `oc get crd -o name| grep ibm.com`;do oc delete $crd;done'
+
+  - name: Delete ICS catalog
+    shell:
+      cmd: 'oc delete -f ../gi-temp/ics_catalog.yaml'
+
   - debug:
         msg:
           - "ICS uninstalled with success."
