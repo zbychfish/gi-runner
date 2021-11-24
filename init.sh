@@ -1047,7 +1047,7 @@ then
                 op_option=${op_option:-Y}
         done
         ics_ops+=($op_option)
-	if [[ $ics_version_selected >= 5 ]]
+	if [[ $ics_version_selected -ge 5 ]]
 	then
         	op_option=''
 		while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
@@ -1060,7 +1060,7 @@ then
 	else
 		ics_ops+=("N")
 	fi
-	if [[ $ics_version_selected >= 5 ]]
+	if [[ $ics_version_selected -ge 5 ]]
         then
         	op_option=''
 		while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
@@ -1073,7 +1073,7 @@ then
 	else
 		ics_ops+=("N")
 	fi
-	if [[ $ics_version_selected >= 5 ]]
+	if [[ $ics_version_selected -ge 5 ]]
         then
        		op_option=''
 		while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
@@ -1086,7 +1086,7 @@ then
 	else
 		ics_ops+=("N")
 	fi
-	if [[ $ics_version_selected >= 6 ]]
+	if [[ $ics_version_selected -ge 6 ]]
         then
                 op_option=''
                 while ! [[ $op_option == 'Y' || $op_option == 'N' ]]
