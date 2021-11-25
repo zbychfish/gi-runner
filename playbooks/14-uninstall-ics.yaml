@@ -53,8 +53,8 @@
       cmd: 'oc get OperandRequest -n ibm-common-services -o name|wc -l'
     register: operands_number
     until: "operands_number.stdout == \"0\""
-    retries: 20
-    delay: 1
+    retries: 30
+    delay: 30
 
   - name: Delete operand configs
     shell:
