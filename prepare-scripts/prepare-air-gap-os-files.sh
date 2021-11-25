@@ -24,15 +24,12 @@ echo `cat /etc/system-release|sed -e "s/ /_/g"` > $air_dir/os_release.txt
 # Gets kernel version
 echo `uname -r` > $air_dir/kernel.txt
 # Install tar and creates tar.cpio in case of base os where tar is not available
-echo -e "\nPrepare TAR and UNZIP package for base OS ..."
+echo -e "\nPrepare BSDTAR package ..."
 cd $temp_dir
-dnf download -qy --downloaddir . tar --resolve
-check_exit_code $? "Cannot download TAR package" 
-# - archives ICS manifests
-dnf download -qy --downloaddir . unzip --resolve
-check_exit_code $? "Cannot download UNZIP package" 
-tar cf $air_dir/tar.cpio *rpm
-rm -f *rpm
+dnf download -qy --downloaddir bsdtar bsdtar --resolve
+check_exit_code $? "Cannot download BSDTAR package" 
+tar cf $air_dir/bsdtar.tar bsdtar
+rm -rf bsdtar 
 dnf -qy install tar
 # Install all required software
 echo -e "Downloading OS updates ..."
@@ -47,8 +44,7 @@ cd ..
 rm -rf os-updates
 # Download all OS packages required to install OCP, ICS and GI in air-gap env, some of them from epel (python3 always available on CentOS 8)
 echo "Downloading additional OS packages ..."
-packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd-tools podman python3 python3-ldap openldap-servers openldap-clients"
-#dnf -qy install epel-release
+packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd-tools podman python3 python3-ldap openldap-servers openldap-clients bsdtar"
 for package in $packages
 do
         dnf download -qy --downloaddir os-packages $package --resolve

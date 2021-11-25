@@ -185,23 +185,32 @@ do
 		echo "Incorrect choice"
 	fi
 done
-while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
-do
-        printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
-        read ocp_release_decision
-        ocp_release_decision=${ocp_release_decision:-E}
-        if [[ $ocp_release_decision == 'E' ]]
-        then
-                while [[ $ocp_release_minor == '' ]]
-                do
-			read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
-                done
-		ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
-        elif [[ $ocp_release_decision == 'S' ]]
-        then
-		ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
-        fi
-done
+if [[ $use_air_gap != 'Y' ]]
+then
+	while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
+	do
+        	printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
+        	read ocp_release_decision
+        	ocp_release_decision=${ocp_release_decision:-E}
+        	if [[ $ocp_release_decision == 'E' ]]
+        	then
+                	while [[ $ocp_release_minor == '' ]]
+               		do
+				read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
+                	done
+			ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
+        	elif [[ $ocp_release_decision == 'S' ]]
+        	then
+			ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
+        	fi
+	done
+else
+	while [[ $ocp_release_minor == '' ]]
+        do
+        	read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
+        done
+        ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
+fi
 echo "export GI_OCP_RELEASE=$ocp_release" >> $file
 while ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
 do
@@ -1279,17 +1288,20 @@ then
         done
         echo "Offline archives located in $gi_archives - progressing ..."
         echo export GI_ARCHIVES_DIR=${gi_archives} >> $file
-        echo "*** Extracting OS files ***"
+        echo "*** Check OS files archive existence ***"
         if [[ `ls $gi_archives/os*.tar 2>/dev/null|wc -l` -ne 1 ]]
         then
                 echo "You did not upload os-<version>.tar to $gi_archives directory on bastion"
                 exit 1
-        else
-                cd $gi_archives
-                tar xf ${gi_archives}/os*.tar -C $GI_TEMP
-                cd $GI_TEMP
         fi
+        echo "*** Installing BSDTAR  ***"
+	tar -C ${GI_TEMP} -xf $gi_archives/os*.tar bsdtar.tar
+	tar -C ${GI_TEMP} -xf ${GI_TEMP}/bsdtar.tar
+	cd ${GI_TEMP}
+	dnf -qy --disablerepo=* localinstall ${GI_TEMP}/bsdtar/*rpm --allowerasing
+	rm -rf ${GI_TEMP}/bsdtar
         echo "*** Checking source and target kernel ***"
+	bsdtar -C $GI_TEMP -xf $gi_archives/os*.tar kernel.txt
         if [[ `uname -r` != `cat $GI_TEMP/kernel.txt` ]]
         then
                 echo "Kernel of air-gap bastion differs from air-gap file generator!"
@@ -1300,23 +1312,25 @@ then
                         exit 1
                 fi
         fi
+	rm -f $GI_TEMP/kernel.txt
         # Install software for air-gap installation
         echo "*** Installing OS updates ***"
-        tar xf ${GI_TEMP}/os-updates*.tar -C ${GI_TEMP} > /dev/null
+	bsdtar -O -xf $gi_archives/os*.tar --include=os-updates*.tar|tar -C ${GI_TEMP} -xf -
         dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os-updates/*rpm --allowerasing
         rm -rf ${GI_TEMP}/os-updates
         echo "*** Installing OS packages ***"
-        tar xf ${GI_TEMP}/os-packages*.tar -C ${GI_TEMP}  > /dev/null
+	bsdtar -O -xf $gi_archives/os*.tar --include=os-packages*.tar|tar -C ${GI_TEMP} -xf -
         dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os-packages/*rpm --allowerasing
         rm -rf ${GI_TEMP}/os-packages
         echo "*** Installing Ansible and python modules ***"
-        tar xf ${GI_TEMP}/ansible-*.tar -C ${GI_TEMP} > /dev/null
+	bsdtar -O -xf $gi_archives/os*.tar --include=ansible-*.tar|tar -C ${GI_TEMP} -xf -
         cd ${GI_TEMP}/ansible
         pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
         cd $GI_HOME
         rm -rf ${GI_TEMP}/ansible
         tar xf ${GI_TEMP}/galaxy-*.tar -C ${GI_TEMP} > /dev/null
+	bsdtar -O -xf $gi_archives/os*.tar --include=galaxy-*.tar|tar -C ${GI_TEMP} -xf -
         cd ${GI_TEMP}/galaxy
         ansible-galaxy collection install community-general-3.3.2.tar.gz
         cd $GI_HOME
