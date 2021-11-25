@@ -133,7 +133,7 @@
 
     - name: Extract OCP, OLM, ROOK archives
       shell:
-        cmd: "bsdtar -O -xf /mnt/GI_ARCH/{{ item.archive }} {{ item.file }}|tar -C /opt/registry xf -"
+        cmd: "bsdtar -O -xf /mnt/GI_ARCH/{{ item.archive }} {{ item.file }}|tar -C /opt/registry -xf -"
       with_items:
         - { archive: 'olm-registry-*.tar', file: 'olm-registry.tar' }
       when: internet_type == 'A'
