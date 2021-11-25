@@ -1123,7 +1123,7 @@ then
                         ldap_domain=$new_ldap_domain
                 fi
         else
-                read -p "Insert LDAP orgnization DN (for example: DC=io,DC=priv): " ldap_domain
+                read -p "Insert LDAP organization DN (for example: DC=io,DC=priv): " ldap_domain
         fi
         if [[ -z "$ldap_domain" ]]
         then
