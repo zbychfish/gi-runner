@@ -59,8 +59,12 @@
         - { path: "../ssl/csr" }
       when: internet_type == 'A'
 
-    - name: Create certificate for portable registry
+    - name: Create gi-temp directory
+      file:
+        path: "../gi-temp"
+        state: directory
       shell:
+
         cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ domain }}\" -addext \"subjectAltName = DNS:registry.{{ domain }}\""
       when: internet_type == 'A'
 
@@ -126,6 +130,13 @@
         path: oc-registry.tar
         state: absent
 
+    - name: Extract OCP, OLM, ROOK archives
+      shell:
+        cmd: "bsdtar -O -xf /mnt/GI_ARCH/{{ item.0 }} {{ item.1 }}|tar -C /opt/registry xf -"
+      with_items:
+        - [ "olm-registry-*.tar", "olm-registry.tar" ]
+      when: internet_type == 'A'
+      
     - meta: end_play
 
     - name: Find olm package
