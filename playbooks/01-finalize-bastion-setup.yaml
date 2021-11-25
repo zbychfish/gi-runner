@@ -134,7 +134,7 @@
 
     - name: Extract OCP, OLM images
       shell:
-        cmd: "bsdtar -O -xf {{ archives_dir }}/{{ item.archive }} {{ item.file }}|tar -C /opt/registry -xf -"
+        cmd: "bsdtar -O -xf {{ archives_dir }}/{{ item.archive }} {{ item.file }}|bsdtar -C /opt/registry -xf -"
       with_items:
         - { archive: 'coreos-registry-*.tar', file: 'coreos-registry.tar' }
         - { archive: 'olm-registry-*.tar', file: 'olm-registry.tar' }
@@ -145,8 +145,6 @@
         cmd: "bsdtar -C /opt/registry -xf {{ archives_dir }}/rook-registry-*.tar"
       when: internet_type == 'A'
       
-    - meta: end_play
-
     - name: Check image repository existence
       shell:
         cmd: podman ps -a|grep bastion-registry|wc -l
