@@ -96,6 +96,15 @@
     shell:
       cmd: 'oc delete -f ../gi-temp/ics_catalog.yaml'
 
+  - name: Delete ICS installation files
+    file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+      - '../gi-temp/cloudctl-linux-amd64.tar.gz'
+      - '../gi-temp/ics_operands.yaml'
+      - '../gi-temp/ics_catalog.yaml'
+
   - debug:
         msg:
           - "ICS uninstalled with success."
