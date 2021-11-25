@@ -40,7 +40,7 @@
     pause:
       minutes: 5
 
-  - name: Login to OCP after ICS Authorization removal
+  - name: Login to OCP after ICS API removal
     shell:
       cmd: "oc login https://api.{{ domain }}:6443 -u {{ ocadmin }} -p {{ ocadmin_password }} --insecure-skip-tls-verify=true"
     register: login_status
@@ -48,12 +48,12 @@
     retries: 5 
     delay: 3
 
-  - name: Check that operands are removed operands 
+  - name: Check that operands are removed 
     shell:
       cmd: 'oc get OperandRequest -n ibm-common-services -o name|wc -l'
     register: operands_number
     until: "operands_number.stdout == \"0\""
-    retries: 10
+    retries: 20
     delay: 1
 
   - name: Delete operand configs
