@@ -36,6 +36,10 @@
     shell:
       cmd: 'oc delete operandrequest.operator.ibm.com/common-service -n ibm-common-services'
 
+  - name: Wait for operands removal
+    pause:
+      minutes: 5
+
   - name: Login to OCP after ICS Authorization removal
     shell:
       cmd: "oc login https://api.{{ domain }}:6443 -u {{ ocadmin }} -p {{ ocadmin_password }} --insecure-skip-tls-verify=true"
@@ -44,10 +48,13 @@
     retries: 5 
     delay: 3
 
-  - name: Delete other operands 
+  - name: Check that operands are removed operands 
     shell:
-      cmd: 'for operand in `oc get OperandRequest -n ibm-common-services -o name`; do oc delete $operand -n ibm-common-services;done'
-    ignore_errors: yes #some operands remove other so the list is dynamic
+      cmd: 'oc get OperandRequest -n ibm-common-services -o name|wc -l'
+    register: operands_number
+    until: "operands_number.stdout == \"0\""
+    retries: 10
+    delay: 1
 
   - name: Delete operand configs
     shell:
