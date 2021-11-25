@@ -7,6 +7,7 @@
     ocp_release: "{{ lookup('env','GI_OCP_RELEASE') }}"
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
     install_ldap:  "{{ lookup('env','GI_INSTALL_LDAP') }}"
+    registry_vaersion: "2.7.1"
 
   tasks:
     - name: Check configuration parameters
@@ -131,54 +132,20 @@
         path: oc-registry.tar
         state: absent
 
-    - name: Extract OCP, OLM, ROOK archives
+    - name: Extract OCP, OLM images
       shell:
-        cmd: "bsdtar -O -xf /mnt/GI_ARCH/{{ item.archive }} {{ item.file }}|tar -C /opt/registry -xf -"
+        cmd: "bsdtar -O -xf {{ archives_dir }}/{{ item.archive }} {{ item.file }}|tar -C /opt/registry -xf -"
       with_items:
+        - { archive: 'coreos-registry-*.tar', file: 'coreos-registry.tar' }
         - { archive: 'olm-registry-*.tar', file: 'olm-registry.tar' }
       when: internet_type == 'A'
       
+    - name: Extract ROOK images
+      shell:
+        cmd: "bsdtar -C /opt/registry -xf {{ archives_dir }}/rook-registry-*.tar"
+      when: internet_type == 'A'
+      
     - meta: end_play
-
-    - name: Find olm package
-      find:
-        paths: "{{ archives_dir }}"
-        patterns: "olm-registry*tar"
-      register: find_result
-      when: internet_type == 'A'
-
-    - name: Extract OLM archive
-      unarchive:
-        src: "{{ item.path }}"
-        dest: ../gi-temp
-      with_items: "{{ find_result.files }}"
-      when: internet_type == 'A'
-
-    - name: Find rook package
-      find:
-        paths: "{{ archives_dir }}"
-        patterns: "rook-registry*tar"
-      register: rook_archive
-      when: internet_type == 'A'
-
-    - name: Extract CoreOS registry for release {{ ocp_release }}
-      unarchive:
-        src: "../gi-temp/coreos-registry.tar"
-        dest: /opt/registry
-      when: internet_type == 'A'
-
-    - name: Extract OLM registry for release {{ ocp_release }}
-      unarchive:
-        src: "../gi-temp/olm-registry.tar"
-        dest: /opt/registry
-      when: internet_type == 'A'
-
-    - name: Load rook-ceph registry into local repository
-      unarchive:
-        src: "{{ item.path }}"
-        dest: /opt/registry
-      with_items: "{{ rook_archive.files }}"
-      when: internet_type == 'A'
 
     - name: Check image repository existence
       shell:
@@ -196,7 +163,7 @@
 
     - name: Setup image registry
       shell:
-        cmd: 'podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/bastion.repo.htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2.6'
+        cmd: 'podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/bastion.repo.htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:{{ registry_version }}'
         chdir: /opt/registry
       when: internet_type == 'A'
 
