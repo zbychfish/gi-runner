@@ -1299,7 +1299,7 @@ then
 	tar -C ${GI_TEMP} -xf ${GI_TEMP}/bsdtar.tar
 	cd ${GI_TEMP}
 	dnf -qy --disablerepo=* localinstall ${GI_TEMP}/bsdtar/*rpm --allowerasing
-	rm -rf ${GI_TEMP}/bsdtar
+	rm -rf ${GI_TEMP}/bsdtar ${GI_TEMP}/bsdtar.tar
         echo "*** Checking source and target kernel ***"
 	bsdtar -C $GI_TEMP -xf $gi_archives/os*.tar kernel.txt
         if [[ `uname -r` != `cat $GI_TEMP/kernel.txt` ]]
@@ -1329,7 +1329,6 @@ then
         pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
         cd $GI_HOME
         rm -rf ${GI_TEMP}/ansible
-        tar xf ${GI_TEMP}/galaxy-*.tar -C ${GI_TEMP} > /dev/null
 	bsdtar -O -xf $gi_archives/os*.tar --include=galaxy-*.tar|tar -C ${GI_TEMP} -xf -
         cd ${GI_TEMP}/galaxy
         ansible-galaxy collection install community-general-3.3.2.tar.gz

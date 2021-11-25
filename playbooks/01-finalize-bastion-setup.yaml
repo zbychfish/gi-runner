@@ -111,12 +111,23 @@
         permanent: yes
         state: enabled
 
-    - name: Extract coreos archive
-      unarchive:
-        src: "{{ archives_dir }}/coreos-registry-{{ ocp_release }}.tar"
-        dest: ../gi-temp
+    - name: Extract registry archive
+      shell:
+        cmd: "bsdtar -C ../gi-temp -xf {{ archives_dir }}/coreos-registry-{{ ocp_release }}.tar oc-registry.tar"
       when: internet_type == 'A'
       
+    - name: Load image registry into local repository
+      shell:
+        cmd: podman load -i ../gi-temp/oc-registry.tar
+      when: internet_type == 'A'
+
+    - name: Remove oc-registry archive
+      file:
+        path: oc-registry.tar
+        state: absent
+
+    - meta: end_play
+
     - name: Find olm package
       find:
         paths: "{{ archives_dir }}"
@@ -136,11 +147,6 @@
         paths: "{{ archives_dir }}"
         patterns: "rook-registry*tar"
       register: rook_archive
-      when: internet_type == 'A'
-
-    - name: Load image registry into local repository
-      shell:
-        cmd: podman load -i ../gi-temp/oc-registry.tar
       when: internet_type == 'A'
 
     - name: Extract CoreOS registry for release {{ ocp_release }}
