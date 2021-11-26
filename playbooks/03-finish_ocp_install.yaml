@@ -574,6 +574,10 @@
     delay: 30
     when: true
 
+  - name: Cleanup temp directory
+      shell:
+        cmd: rm -rf ../gi-temp/*
+
   - debug:
         msg:
           - "OpenShift {{ ocp_release }} cluster installation finished"
