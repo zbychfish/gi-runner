@@ -189,11 +189,13 @@
         state: directory
         mode: '0755'
 
-    - name: Unpack tools
+    - name: Unpack OCP tools
       command:
-        cmd: tar xf ../gi-temp/tools.tar -C ../gi-temp
-      args:
-        warn: false
+        cmd: "{{ item }}"
+      with_items:
+        - "bsdtar -C ../gi_temp -xf {{ archives_dir }}/coreos-registry-*.tar tools.tar"
+        - "bsdtar -C ../gi_temp -xf ../gi_temp/tools.tar"
+        - "rm -f ../gi_temp/tools.tar"
       when: internet_type == 'A'
 
     - name: Add the user 'matchbox'

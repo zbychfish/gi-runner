@@ -7,7 +7,7 @@
     ocp_release: "{{ lookup('env','GI_OCP_RELEASE') }}"
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
     install_ldap:  "{{ lookup('env','GI_INSTALL_LDAP') }}"
-    registry_vaersion: "2.7.1"
+    registry_version: "2.7.1"
 
   tasks:
     - name: Check configuration parameters
