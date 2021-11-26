@@ -62,7 +62,7 @@
       repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
       repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
       ics_registry: "{{ 'ics_registry-'+ics_version+'.tar' if install_gi == 'N' else 'gi_registry-'+gi_version+'.tar' }}"
-      ics_manifest: "{{ 'ics_offline.tar' if install_gi == 'N' else 'gi_offline.tar' }}"
+      ics_manifest: "{{ 'gi_offline/*' if install_gi == 'N' else 'ics_offline/*' }}"
       offline_archive: "{{ 'ics_images.tar' if install_gi == 'N' else 'gi_images.tar' }}"
       offline_inventory: "{{ '../gi-temp/ics_offline' if install_gi == 'N' else '../gi-temp/gi_offline' }}"
     when: internet_type == 'A'
@@ -82,7 +82,7 @@
 
   - name: Extract cloudctl and manifest from archive
     shell:
-      cmd: "bsdtar -C ../gi-temp -qxf {{ archives_dir }}/{{ ics_registry }} cloudctl-linux-amd64.tar.gz {{ ics_manifest }}"
+      cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/{{ ics_registry }} cloudctl-linux-amd64.tar.gz {{ ics_manifest }}"
     when: internet_type == 'A'
 
   - name: Check presence of cloudctl tool
@@ -125,12 +125,6 @@
     with_items:
       - { file: "cloudctl" }
 
-  - name: Unpack ICS manifests
-    unarchive:
-      src: "../gi-temp/{{ ics_manifest }}"
-      dest: ../gi-temp
-    when: internet_type == 'A'
-
   - name: Stop portable registry
     shell:
       cmd: "{{ item }}"
@@ -140,7 +134,7 @@
 
   - name: Extract registry
     shell:
-      cmd: "bsdtar -O -qxf {{ archives_dir }}/{{ ics_registry }} {{ offline_archive }}|bsdtar -C /opt/registry -xf -"
+      cmd: "tar -C /opt/registry -xf {{ archives_dir }}/{{ ics_registry }} data/*"
     when: internet_type == 'A'
 
   - name: Start portable registry
