@@ -83,6 +83,7 @@
   - name: Extract cloudctl and manifest from archive
     shell:
       cmd: "bsdtar -C ../gi-temp -qxf {{ archives_dir }}/{{ ics_registry }} cloudctl-linux-amd64.tar.gz {{ ics_manifest }}"
+    when: internet_type == 'A'
 
   - name: Check presence of cloudctl tool
     stat:
@@ -128,17 +129,13 @@
     unarchive:
       src: "../gi-temp/{{ ics_manifest }}"
       dest: ../gi-temp
-    when: internet_type == 'A' and install_gi == 'N'
+    when: internet_type == 'A'
 
   - name: Stop portable registry
     shell:
       cmd: "{{ item }}"
     loop:
       - podman stop bastion-registry
-    when: internet_type == 'A'
-
-  - name: Set archive and repository for offline installation
-    set_fact:
     when: internet_type == 'A'
 
   - name: Extract registry
