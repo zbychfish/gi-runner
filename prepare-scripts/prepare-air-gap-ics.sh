@@ -72,7 +72,7 @@ echo "Starting mirror image registry ..."
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version}
 check_exit_code $? "Cannot start temporary image registry"
 # Packs together centos updates, packages, python libraries and portable image
-cd $air_dir
+cd $temp_dir
 declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
 for file in ${ocp_files[@]}
 do
@@ -112,17 +112,11 @@ cloudctl case launch --case $temp_dir/ics_offline/${CASE_ARCHIVE} --inventory ${
 # - mirrors ICS images
 cloudctl case launch --case $temp_dir/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir $temp_dir/ics_offline"
 check_exit_code $? "Cannot mirror ICS images"
-# - archives ICS manifests
-cd $temp_dir
-tar cf $air_dir/ics_offline.tar ics_offline
-rm -rf ics_offline
 podman stop bastion-registry
 cd /opt/registry
-tar cf ${air_dir}/ics_images.tar data
-cd $air_dir
-#tar czpvf - *.tar | split -d -b 10G - ics_registry-${ics_version}.tar
-tar cf ics_registry-${ics_versions[${ics_version_selected}]}.tar ics_images.tar ics_offline.tar cloudctl-linux-amd64.tar.gz
-rm -f ics_offline.tar cloudctl-linux-amd64.tar.gz ics_images.tar
+tar cf ${air_dir}/ics_registry-${ics_versions[${ics_version_selected}]}.tar data
+cd $temp_dir
+tar -rf ${air_dir}/ics_registry-${ics_versions[${ics_version_selected}]}.tar ics_offline cloudctl-linux-amd64.tar.gz
 cd $local_directory
 # Cleanup gi-temp, portable-registry
 podman rm bastion-registry
