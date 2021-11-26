@@ -143,17 +143,17 @@ mv manifests-certified-operator-index-* manifests-certified-operator-index
 mv manifests-redhat-marketplace-index-* manifests-redhat-marketplace-index
 mv manifests-community-operator-index-* manifests-community-operator-index
 # - Archvining manifests
-tar cf $air_dir/manifests.tar manifests-*
 # - Clean up
-rm -rf manifests-*
 podman stop bastion-registry
-cd /opt/registry
-tar cf $air_dir/olm-registry.tar data
-cd $air_dir
 ocp_major_release=`echo $ocp_version|awk -F'.' '{print $1"."$2}'`
-tar cf olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar olm-registry.tar manifests.tar operators.txt
-rm -f olm-registry.tar manifests.tar operators.txt
+cd /opt/registry
+tar cf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar data
+cd $temp_dir
+tar -rf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar manifests-*
+cd $air_dir
+tar -rf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar operators.txt
 rm -rf $temp_dir
+rm -f  $air_dir/operators.txt
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
