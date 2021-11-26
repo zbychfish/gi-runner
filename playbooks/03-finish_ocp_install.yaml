@@ -195,7 +195,7 @@
     shell:
       cmd: "{{ item }}"
     with_items:
-      - "bsdtar -C ../gi-temp -xf {{ archives_dir }}/olm-registry-*.tar manifests.tar"
+      - "bsdtar -C ../gi-temp -qxf {{ archives_dir }}/olm-registry-*.tar manifests.tar"
       - "bsdtar -C ../gi-temp -xf ../gi-temp/manifests.tar"
     when: internet_type == 'A'
 

@@ -119,7 +119,7 @@
 
     - name: Extract registry archive
       shell:
-        cmd: "bsdtar -C ../gi-temp -xf {{ archives_dir }}/coreos-registry-{{ ocp_release }}.tar oc-registry.tar"
+        cmd: "bsdtar -C ../gi-temp -qxf {{ archives_dir }}/coreos-registry-{{ ocp_release }}.tar oc-registry.tar"
       when: internet_type == 'A'
       
     - name: Load image registry into local repository
@@ -134,7 +134,7 @@
 
     - name: Extract OCP, OLM images
       shell:
-        cmd: "bsdtar -O -xf {{ archives_dir }}/{{ item.archive }} {{ item.file }}|bsdtar -C /opt/registry -xf -"
+        cmd: "bsdtar -O -qxf {{ archives_dir }}/{{ item.archive }} {{ item.file }}|bsdtar -C /opt/registry -xf -"
       with_items:
         - { archive: 'coreos-registry-*.tar', file: 'coreos-registry.tar' }
         - { archive: 'olm-registry-*.tar', file: 'olm-registry.tar' }

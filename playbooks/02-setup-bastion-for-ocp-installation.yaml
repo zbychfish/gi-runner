@@ -193,7 +193,7 @@
       shell:
         cmd: "{{ item }}"
       with_items:
-        - "bsdtar -C ../gi-temp -xf {{ archives_dir }}/coreos-registry-*.tar tools.tar"
+        - "bsdtar -C ../gi-temp -qxf {{ archives_dir }}/coreos-registry-*.tar tools.tar"
         - "bsdtar -C ../gi-temp -xf ../gi-temp/tools.tar"
         - "rm -f ../gi-temp/tools.tar"
       when: internet_type == 'A'
@@ -790,9 +790,8 @@
         enabled: yes
 
     - name: Cleanup temp directory
-      file:
-        path: ../gi-temp/*
-        state: absent
+      shell:
+        cmd: rm -rf ../gi-temp/*
 
     - debug:
         msg:
