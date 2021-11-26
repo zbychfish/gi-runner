@@ -141,7 +141,7 @@
   - name: Extract registry
     shell:
       cmd: "bsdtar -O -qxf {{ archives_dir }}/{{ ics_registry }} {{ offline_archive }}|bsdtar -C /opt/registry -xf -"
-    when: internet_type == 'A'
+    when: false and internet_type == 'A'
 
   - name: Start portable registry
     shell:
@@ -149,8 +149,6 @@
     loop:
       - podman start bastion-registry
     when: internet_type == 'A'
-
-  - meta: end_play
 
   - name: Switch ICS inventory to portable registry
     shell:
