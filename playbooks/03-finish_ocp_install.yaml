@@ -258,8 +258,8 @@
     when: internet_type == 'A'
 
   - name: Clean manifests in temp directory
-      shell:
-        cmd: "rm -rf ../gi-temp/manifests-*"
+    shell:
+      cmd: "rm -rf ../gi-temp/manifests-*"
 
   - name: Wait - cluster stabilization
     pause:
