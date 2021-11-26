@@ -191,15 +191,17 @@
       - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocadmin }} --kubeconfig ../ocp/auth/kubeconfig" }
     ignore_errors: yes #if htpasswd has been imported before
 
+  - name: Unpack OLM manifests
+    shell:
+      cmd: "{{ item }}"
+    with_items:
+      - "bsdtar -C ../gi-temp -xf {{ archives_dir }}/olm-registry-*.tar manifests.tar"
+      - "bsdtar -C ../gi-temp -xf ../gi-temp/manifests.tar"
+    when: internet_type == 'A'
+
   - name: Disable default image sources
     shell:
       cmd: "oc patch OperatorHub cluster --type json -p '[{\"op\": \"add\", \"path\": \"/spec/disableAllDefaultSources\", \"value\": true}]'"
-    when: internet_type == 'A'
-
-  - name: Unpack OLM manifests
-    shell:
-      cmd: tar xf ../gi-temp/manifests.tar -C ../gi-temp
-      warn: false
     when: internet_type == 'A'
 
   - name: Identify image registry name in the import
