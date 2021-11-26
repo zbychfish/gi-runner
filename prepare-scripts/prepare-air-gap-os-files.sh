@@ -58,9 +58,8 @@ done
 wget -P galaxy https://galaxy.ansible.com/download/community-general-3.3.2.tar.gz
 check_exit_code $? "Cannot download Ansible Galaxy packages" 
 tar cf $air_dir/os-`cat /etc/system-release|sed -e "s/ /_/g"`-`date +%Y-%m-%d`.tar os-updates os-packages ansible galaxy os_release.txt kernel.txt
-#rm -rf *
 cd $local_directory
-#rm -rf $temp_dir
+rm -rf $temp_dir
 # Downloads gi-runner archive
 wget -P $air_dir https://github.com/zbychfish/gi-runner/archive/refs/heads/main.zip
 check_exit_code $? "Cannot download gi-runner package" 
