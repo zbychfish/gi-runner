@@ -141,7 +141,7 @@
   - name: Extract registry
     shell:
       cmd: "bsdtar -O -qxf {{ archives_dir }}/{{ ics_registry }} {{ offline_archive }}|bsdtar -C /opt/registry -xf -"
-    when: false and internet_type == 'A'
+    when: internet_type == 'A'
 
   - name: Start portable registry
     shell:

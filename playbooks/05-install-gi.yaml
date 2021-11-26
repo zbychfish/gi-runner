@@ -121,8 +121,7 @@
 
   - name: Create GI operator namespace
     shell:
-      cmd: "oc create namespace {{ gi_namespace }}"
-    ignore_errors: yes
+      cmd: "oc create namespace {{ gi_namespace }}||true"
 
   - name: Save portable repo credentials
     shell:
