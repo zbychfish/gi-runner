@@ -163,7 +163,7 @@
   - name: Wait for cluster reconfiguration
     pause:
       minutes: 8
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Check cluster nodes health after Content Source Policy change
     shell: ../scripts/check_cluster_health_operators.sh
@@ -171,7 +171,7 @@
     until: cluster_health_operators.stdout == "0"
     retries: 100
     delay: 30
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
     shell:
@@ -180,7 +180,7 @@
     until: "co_status.stdout == \"0\""
     retries: 150
     delay: 30
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Create ICS catalog file
     template:
