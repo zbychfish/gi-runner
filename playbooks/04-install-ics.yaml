@@ -77,7 +77,7 @@
 
   - name: Create ICS operator namespace
     shell:
-      cmd: "oc create namespace {{ ics_operator_namespace }}"
+      cmd: "oc create namespace {{ ics_operator_namespace }} || echo 'Namespace exists'"
     ignore_errors: yes
 
   - name: Extract cloudctl and manifest from archive
