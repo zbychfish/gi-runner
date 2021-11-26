@@ -140,7 +140,7 @@
 
   - name: Extract registry
     shell:
-      cmd: "bsdtar -O -qxf {{ offline_archive }}/{{ ics_registry }} {{ offline_archive }}|bsdtar -C /opt/registry -xf -"
+      cmd: "bsdtar -O -qxf {{ archives_dir }}/{{ ics_registry }} {{ offline_archive }}|bsdtar -C /opt/registry -xf -"
     when: internet_type == 'A'
 
   - name: Start portable registry
