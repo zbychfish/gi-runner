@@ -17,6 +17,7 @@ then
 	echo "To restart mirroring process use paramater 'repeat'"
 	exit 1
 fi
+registry_version=2.7.1
 local_directory=`pwd`
 host_fqdn=$( hostname --long )
 temp_dir=$local_directory/gi-temp
@@ -56,7 +57,7 @@ then
 	podman container prune <<< 'Y'
 	rm -rf /opt/registry
 	# - Pulls image of portable registry and save it 
-	podman pull docker.io/library/registry:2.6
+	podman pull docker.io/library/registry:${registry_version}
 	check_exit_code $? "Cannot download image registry image"
 	# - Prepares portable registry directory structure
 	mkdir -p /opt/registry/{auth,certs,data}
@@ -78,7 +79,7 @@ then
 	# - Sets SE Linux for NetworkManager
 	semanage permissive -a NetworkManager_t
 	# - Starts portable registry
-	podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2.6
+	podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version}
 	check_exit_code $? "Cannot start temporary image registry"
 	# Packs together centos updates, packages, python libraries and portable image
 	cd $temp_dir
