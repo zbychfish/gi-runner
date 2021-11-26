@@ -190,7 +190,7 @@
         mode: '0755'
 
     - name: Unpack OCP tools
-      command:
+      shell:
         cmd: "{{ item }}"
       with_items:
         - "bsdtar -C ../gi-temp -xf {{ archives_dir }}/coreos-registry-*.tar tools.tar"
