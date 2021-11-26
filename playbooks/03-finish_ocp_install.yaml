@@ -195,8 +195,7 @@
     shell:
       cmd: "{{ item }}"
     with_items:
-      - "bsdtar -C ../gi-temp -qxf {{ archives_dir }}/olm-registry-*.tar manifests.tar"
-      - "bsdtar -C ../gi-temp -xf ../gi-temp/manifests.tar"
+      - "tar -C ../gi-temp -xf {{ archives_dir }}/olm-registry-*.tar manifests-*"
     when: internet_type == 'A'
 
   - name: Disable default image sources
@@ -257,6 +256,10 @@
       - manifests-redhat-marketplace-index
       - manifests-community-operator-index
     when: internet_type == 'A'
+
+  - name: Clean manifests in temp directory
+      shell:
+        cmd: "rm -rf ../gi-temp/manifests-*"
 
   - name: Wait - cluster stabilization
     pause:

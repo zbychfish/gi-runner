@@ -132,14 +132,14 @@ then
 	exit 1
 fi
 podman stop bastion-registry
+tar cf ${air_dir}/gi_registry-${gi_versions[${gi_version_selected}]}.tar gi_offline cloudctl-linux-amd64.tar.gz
 cd /opt/registry
-tar cf ${air_dir}/gi_registry-${gi_versions[${gi_version_selected}]}.tar data
+tar -rf ${air_dir}/gi_registry-${gi_versions[${gi_version_selected}]}.tar data
 cd $temp_dir
 rm -rf /opt/registry
-tar -rf gi_registry-${gi_versions[${gi_version_selected}]}.tar gi_offline cloudctl-linux-amd64.tar.gz
 cd $local_directory
 # Cleanup gi-temp, portable-registry
 podman rm bastion-registry
 podman rmi --all
-rm -rf $temp_dir
+#rm -rf $temp_dir
 echo "GI ${gi_versions[${gi_version_selected}]} files prepared - copy $air_dir/gi_registry-${gi_versions[${gi_version_selected}]}.tar to air-gapped bastion machine"
