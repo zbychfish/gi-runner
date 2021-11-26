@@ -189,15 +189,6 @@
         state: directory
         mode: '0755'
 
-    - name: Unpack OCP tools
-      shell:
-        cmd: "{{ item }}"
-      with_items:
-        - "bsdtar -C ../gi-temp -qxf {{ archives_dir }}/coreos-registry-*.tar tools.tar"
-        - "bsdtar -C ../gi-temp -xf ../gi-temp/tools.tar"
-        - "rm -f ../gi-temp/tools.tar"
-      when: internet_type == 'A'
-
     - name: Add the user 'matchbox'
       user:
         name: matchbox
@@ -347,6 +338,15 @@
         owner: matchbox
         group: matchbox
         state: hard
+      with_items:
+        - { name: "rhcos-live-initramfs.x86_64.img" }
+        - { name: "rhcos-live-kernel-x86_64" }
+        - { name: "rhcos-live-rootfs.x86_64.img" }
+
+    - name: Clean coreos images in temp directory
+      file:
+        path: "../gi-temp/{{ item.name }}"
+        state: absent
       with_items:
         - { name: "rhcos-live-initramfs.x86_64.img" }
         - { name: "rhcos-live-kernel-x86_64" }
@@ -655,6 +655,14 @@
       with_items:
         - { src: "openshift-client-linux.tar.gz" }
         - { src: "openshift-install-linux.tar.gz" }
+
+    - name: Clean OCP in temp directory
+      file:
+        path: "../gi-temp/{{ item.name }}"
+        state: absent
+      with_items:
+        - { name: "openshift-client-linux.tar.gz" }
+        - { name: "openshift-install-linux.tar.gz" }
 
     - name: Define base domain
       debug:

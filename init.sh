@@ -1294,14 +1294,8 @@ then
                 echo "You did not upload os-<version>.tar to $gi_archives directory on bastion"
                 exit 1
         fi
-        echo "*** Installing BSDTAR  ***"
-	tar -C ${GI_TEMP} -xf $gi_archives/os*.tar bsdtar.tar
-	tar -C ${GI_TEMP} -xf ${GI_TEMP}/bsdtar.tar
-	cd ${GI_TEMP}
-	dnf -qy --disablerepo=* localinstall ${GI_TEMP}/bsdtar/*rpm --allowerasing
-	rm -rf ${GI_TEMP}/bsdtar ${GI_TEMP}/bsdtar.tar
         echo "*** Checking source and target kernel ***"
-	bsdtar -C $GI_TEMP -xf $gi_archives/os*.tar kernel.txt
+	tar -C $GI_TEMP -xf ${gi_archives}/os*.tar kernel.txt ansible/* galaxy/* os-packages/* os-updates/*
         if [[ `uname -r` != `cat $GI_TEMP/kernel.txt` ]]
         then
                 echo "Kernel of air-gap bastion differs from air-gap file generator!"
@@ -1315,21 +1309,17 @@ then
 	rm -f $GI_TEMP/kernel.txt
         # Install software for air-gap installation
         echo "*** Installing OS updates ***"
-	bsdtar -O -xf $gi_archives/os*.tar --include=os-updates*.tar|tar -C ${GI_TEMP} -xf -
         dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os-updates/*rpm --allowerasing
         rm -rf ${GI_TEMP}/os-updates
         echo "*** Installing OS packages ***"
-	bsdtar -O -xf $gi_archives/os*.tar --include=os-packages*.tar|tar -C ${GI_TEMP} -xf -
         dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os-packages/*rpm --allowerasing
         rm -rf ${GI_TEMP}/os-packages
         echo "*** Installing Ansible and python modules ***"
-	bsdtar -O -xf $gi_archives/os*.tar --include=ansible-*.tar|tar -C ${GI_TEMP} -xf -
         cd ${GI_TEMP}/ansible
         pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
         cd $GI_HOME
         rm -rf ${GI_TEMP}/ansible
-	bsdtar -O -xf $gi_archives/os*.tar --include=galaxy-*.tar|tar -C ${GI_TEMP} -xf -
         cd ${GI_TEMP}/galaxy
         ansible-galaxy collection install community-general-3.3.2.tar.gz
         cd $GI_HOME

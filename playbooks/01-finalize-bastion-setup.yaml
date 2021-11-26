@@ -119,7 +119,7 @@
 
     - name: Extract registry archive
       shell:
-        cmd: "bsdtar -C ../gi-temp -qxf {{ archives_dir }}/coreos-registry-{{ ocp_release }}.tar oc-registry.tar"
+        cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/coreos-registry-{{ ocp_release }}.tar oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v0.9.0-linux-amd64.tar.gz"
       when: internet_type == 'A'
       
     - name: Load image registry into local repository
@@ -132,17 +132,13 @@
         path: oc-registry.tar
         state: absent
 
-    - name: Extract OCP, OLM images
+    - name: Extract OCP, OLM, ROOK images
       shell:
-        cmd: "bsdtar -O -qxf {{ archives_dir }}/{{ item.archive }} {{ item.file }}|bsdtar -C /opt/registry -xf -"
+        cmd: "tar -C /opt/registry -xf {{ archives_dir }}/{{ item.archive }} data/*"
       with_items:
-        - { archive: 'coreos-registry-*.tar', file: 'coreos-registry.tar' }
-        - { archive: 'olm-registry-*.tar', file: 'olm-registry.tar' }
-      when: internet_type == 'A'
-      
-    - name: Extract ROOK images
-      shell:
-        cmd: "bsdtar -C /opt/registry -xf {{ archives_dir }}/rook-registry-*.tar"
+        - { archive: 'coreos-registry-*.tar' }
+        - { archive: 'olm-registry-*.tar' }
+        - { archive: 'rook-registry-*.tar' }
       when: internet_type == 'A'
       
     - name: Check image repository existence
