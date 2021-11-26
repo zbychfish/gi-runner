@@ -21,6 +21,7 @@ air_dir=$local_directory/air-gap
 # Creates target download directory
 mkdir -p $air_dir
 # Creates temporary directory
+rm -rf $temp_dir
 mkdir -p $temp_dir
 # Gets list of parameters to create repo  
 echo "To check the latest stable OCP release go to https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.X, where X is 6, 7, 8 or 9"

@@ -29,7 +29,6 @@ then
 	mkdir -p $temp_dir
 	# Creates temporary directory
 	mkdir -p $air_dir
-	#read -p "Insert RH account name: " rh_account
 fi
 read -sp "Insert your IBM Cloud Key: " ibm_account_key
 declare -a gi_versions=(3.0.0 3.0.1 3.0.2)
@@ -131,16 +130,12 @@ then
 	echo "Mirroring process failed, restart script with parameter repeat to finish"
 	exit 1
 fi
-cd $temp_dir
-tar cf $air_dir/gi_offline.tar gi_offline
-rm -rf gi_offline
 podman stop bastion-registry
 cd /opt/registry
-tar cf ${air_dir}/gi_images.tar data
-cd $air_dir
+tar cf ${air_dir}/gi_registry-${gi_versions[${gi_version_selected}]}.tar data
+cd $temp_dir
 rm -rf /opt/registry
-tar cf gi_registry-${gi_versions[${gi_version_selected}]}.tar gi_images.tar gi_offline.tar cloudctl-linux-amd64.tar.gz
-rm -f gi_offline.tar cloudctl-linux-amd64.tar.gz gi_images.tar
+tar -rf gi_registry-${gi_versions[${gi_version_selected}]}.tar gi_offline cloudctl-linux-amd64.tar.gz
 cd $local_directory
 # Cleanup gi-temp, portable-registry
 podman rm bastion-registry
