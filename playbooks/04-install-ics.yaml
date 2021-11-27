@@ -62,7 +62,7 @@
       repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
       repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
       ics_registry: "{{ 'ics_registry-'+ics_version+'.tar' if install_gi == 'N' else 'gi_registry-'+gi_version+'.tar' }}"
-      ics_manifest: "{{ 'gi_offline/*' if install_gi == 'N' else 'ics_offline/*' }}"
+      ics_manifest: "{{ 'gi_offline/*' if install_gi == 'Y' else 'ics_offline/*' }}"
       offline_archive: "{{ 'ics_images.tar' if install_gi == 'N' else 'gi_images.tar' }}"
       offline_inventory: "{{ '../gi-temp/ics_offline' if install_gi == 'N' else '../gi-temp/gi_offline' }}"
     when: internet_type == 'A'
