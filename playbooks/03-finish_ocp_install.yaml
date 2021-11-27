@@ -578,8 +578,8 @@
     when: true
 
   - name: Cleanup temp directory
-      shell:
-        cmd: rm -rf ../gi-temp/*
+    shell:
+      cmd: rm -rf ../gi-temp/*
 
   - debug:
         msg:
