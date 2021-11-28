@@ -48,7 +48,7 @@ dnf -qy install python3 podman wget
 check_exit_code $? "Cannot install some packages" 
 # Download some Python libraries (in wheel format) required by gi-runner Ansible playbooks
 echo "Downloading python packages for Ansible extensions ..."
-packages="passlib dnspython"
+packages="passlib dnspython beautifulsoup4"
 for package in $packages
 do
         python3 -m pip download --only-binary=:all: $package -d ansible > /dev/null 2>&1

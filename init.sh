@@ -960,7 +960,14 @@ then
                 read -p "Current list of DB2 nodes is set to [$GI_DB2_NODES] - insert list of DB2 nodes (comma separated) or confirm existing <ENTER>: " new_db2_nodes
                 if [[ $new_db2_nodes != '' ]]
                 then
-                        db2_nodes=$new_db2_nodes
+			declare -a db2_nodes_arr=()
+                	while [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
+                	do
+                        	declare -a db2_nodes_arr=()
+                        	read -p "Insert DB2 nodes list (comma separated): " db2_nodes
+                        	IFS=","
+                        	for element in $db2_nodes;do db2_nodes_arr+=( $element );done
+                	done
                 else
                         db2_nodes=$GI_DB2_NODES
                 fi
@@ -1253,9 +1260,11 @@ then
         then
                 pip3 install passlib
                 pip3 install dnspython
+		pip3 install beautifulsoup4
         else
                 pip3 install passlib --proxy http://$proxy_ip:$proxy_port
                 pip3 install dnspython --proxy http://$proxy_ip:$proxy_port
+		pip3 install beautifulsoup4 --proxy http://$proxy_ip:$proxy_port
         fi
         # Configure Ansible
         mkdir -p /etc/ansible
