@@ -43,7 +43,7 @@
 
   - name: Get OCP login token
     shell:
-      cmd: "../scripts/get_ocp_token.py ocadmin ocadmin_password domain"
+      cmd: "python3 ../scripts/get_ocp_token.py ocadmin ocadmin_password domain"
     register: ocp_token
 
   - name: Login to OCP after ICS API removal
