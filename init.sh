@@ -965,7 +965,14 @@ then
                         db2_nodes=$GI_DB2_NODES
                 fi
         else
-                read -p "Insert DB2 nodes list (comma separated): " db2_nodes
+		declare -a db2_nodes_arr=()
+		while [[ ${#db2_nodes_arr[@]} -ge 1 && ${#db2_nodes_arr[@]} -le 3 ]]
+		do
+			declare -a db2_nodes_arr=()
+                	read -p "Insert DB2 nodes list (comma separated): " db2_nodes
+			IFS=","
+			for element in $db2_nodes;do db2_nodes_arr+=( $element );done
+		done
         fi
         echo export GI_DB2_NODES=$db2_nodes >> $file
         while ! [[ $db2_enc == 'Y' || $db2_enc == 'N' ]]
