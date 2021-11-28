@@ -41,14 +41,14 @@
     pause:
       minutes: 5
 
+  - name: Get OCP login token
+    shell:
+      cmd: "../scripts/get_ocp_token.py ocadmin ocadmin_password domain"
+    register: ocp_token
+
   - name: Login to OCP after ICS API removal
     shell:
-      cmd: "oc login https://api.{{ domain }}:6443 -u {{ ocadmin }} -p {{ ocadmin_password }} --insecure-skip-tls-verify=true"
-    register: login_status
-    until: "login_status.stderr == \"\""
-    retries: 5 
-    delay: 3
-    when: false
+      cmd: "oc login --token={{ ocp_token.stdout }} --server=https://api.{{ domain }}:6443"
 
   - name: Check that operands are removed 
     shell:
