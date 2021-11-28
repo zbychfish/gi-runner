@@ -48,6 +48,7 @@
     until: "login_status.stderr == \"\""
     retries: 5 
     delay: 3
+    when: false
 
   - name: Check that operands are removed 
     shell:
