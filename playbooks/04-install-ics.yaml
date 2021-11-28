@@ -29,6 +29,13 @@
       gi_size:  "{{ lookup('env','GI_SIZE_GI') }}"
     when: install_gi == 'Y'
 
+  - name: Check GI configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: install_gi == 'Y' and item.value == ""
+    loop:
+      - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+      - { name: "GI_SIZE_GI", value: "{{ gi_size }}" }
+
   - name: Set parameters for ICS with GI (part2)
     set_fact:
       ics_size_hint: "{{ 'S' if gi_size == 'values-dev' else 'S' if gi_size == 'values-poc-lite' else 'M' }}"
@@ -39,6 +46,12 @@
     set_fact:
       ics_size_hint: "{{ lookup('env','GI_ICS_SIZE') }}"
     when: install_gi == 'N'
+
+  - name: Check GI configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: install_gi == 'N' and item.value == ""
+    loop:
+      - { name: "GI_ICS_SIZE", value: "{{ ics_size_hint }}" }
 
   - name: Set ICS installation variables
     set_fact:
