@@ -27,7 +27,7 @@
   - name: Delete ICS operator
     shell:
       cmd: "oc delete {{ ics_operator.stdout }} -n ibm-common-services"
-    when: "{{ ics_operator.stdout }} != 'none'"
+    when: ics_operator.stdout != 'none'"
 
   - name: Delete common-service project
     shell:
