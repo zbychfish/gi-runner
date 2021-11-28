@@ -302,6 +302,14 @@
     retries: 80
     delay: 20
 
+  - name: Copy ICS config files to ocp directory
+    shell:
+      cmd: cp ../gi-temp/ics_catalog.yaml ../gi-temp/ics_operands.yaml ../ocp
+
+  - name: Cleanup temp directory
+    shell:
+      cmd: rm -rf ../gi-temp/*
+
   - debug:
       msg:
         - "IBM Common Services {{ ics_version }} installation finished"

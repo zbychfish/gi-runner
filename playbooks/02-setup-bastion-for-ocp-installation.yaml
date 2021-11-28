@@ -51,9 +51,6 @@
         - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
 
-    - debug:
-        msg: "{{ ocp_minor_release }}"
-
     - name: Check mirror image registry status
       shell:
         cmd: podman ps|grep bastion-registry|wc -l

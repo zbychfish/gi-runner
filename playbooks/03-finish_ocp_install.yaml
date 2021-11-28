@@ -575,7 +575,6 @@
     until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
     retries: 20
     delay: 10
-    when: true
 
   - name: Set public route for image registry
     shell:
@@ -591,7 +590,6 @@
     until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
     retries: 60
     delay: 30
-    when: true
 
   - name: Cleanup temp directory
     shell:
