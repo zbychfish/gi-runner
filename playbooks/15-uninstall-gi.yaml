@@ -51,93 +51,18 @@
     shell:
       cmd: "oc delete $(oc get pvc -n gi -oname) -n {{ gi_namespace }}||true "
 
-  - name: Delete tenant sniffer instance
+  - name: Uninstall GI operator
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --namespace {{ gi_namespace }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --tolerance 1"
 
-  - meta: end_play
-
-  - name: Delete ICS operator
+  - name: Uninstall GI catalog #generates error til 3.0.2 should be corrected in 3.1
     shell:
-      cmd: "oc delete {{ ics_operator.stdout }} -n ibm-common-services"
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --namespace openshift-marketplace --inventory {{ gi_case_inventory_setup }} --action uninstallCatalog --tolerance 1"
 
-  - name: Delete common-service project
+  - name: Delete GI namespace
     shell:
-      cmd: oc delete project common-service
-
-  - name: Delete operand common-service
-    shell:
-      cmd: 'oc delete operandrequest.operator.ibm.com/common-service -n ibm-common-services'
-
-  - name: Wait for operands removal
-    pause:
-      minutes: 5
-
-  - name: Login to OCP after ICS API removal
-    shell:
-      cmd: "oc login https://api.{{ domain }}:6443 -u {{ ocadmin }} -p {{ ocadmin_password }} --insecure-skip-tls-verify=true"
-    register: login_status
-    until: "login_status.stderr == \"\""
-    retries: 5 
-    delay: 3
-
-  - name: Check that operands are removed 
-    shell:
-      cmd: 'oc get OperandRequest -n ibm-common-services -o name|wc -l'
-    register: operands_number
-    until: "operands_number.stdout == \"0\""
-    retries: 30
-    delay: 30
-
-  - name: Delete operand configs
-    shell:
-      cmd: 'for config in `oc get OperandConfig -n ibm-common-services -o name`; do oc delete $config -n ibm-common-services;done'
-
-  - name: Delete operand registries
-    shell:
-      cmd: 'for registry in `oc get OperandRegistry -n ibm-common-services -o name`; do oc delete $registry -n ibm-common-services;done'
-   
-  - name: Delete operand namespacescopes
-    shell:
-      cmd: 'for nscope in `oc get NamespaceScope -n ibm-common-services -o name`; do oc delete $nscope -n ibm-common-services;done'
-
-  - name: Delete remaining ICS operators
-    shell:
-      cmd: 'for operator in `oc get  ClusterServiceVersion -n ibm-common-services -o name`;do oc delete $operator -n ibm-common-services;done'
-
-  - name: Delete ibm-common-services project
-    shell:
-      cmd: oc delete project ibm-common-services
-
-  - name: Delete remaining objects
-    shell:
-      cmd: "{{ item }}"
-    with_items:
-      - 'oc -n kube-system delete secret icp-metering-api-secret --ignore-not-found'
-      - 'oc -n kube-public delete configmap ibmcloud-cluster-info --ignore-not-found'
-      - 'oc -n kube-public delete secret ibmcloud-cluster-ca-cert --ignore-not-found'
-      - 'oc delete ValidatingWebhookConfiguration cert-manager-webhook ibm-cs-ns-mapping-webhook-configuration --ignore-not-found'
-      - 'oc delete MutatingWebhookConfiguration cert-manager-webhook ibm-common-service-webhook-configuration ibm-operandrequest-webhook-configuration namespace-admission-config --ignore-not-found'
-      - 'oc delete namespace services'
-      - 'oc delete nss --all'
-
-  - name: Delete ICS crd's
-    shell:
-      cmd: 'for crd in `oc get crd -o name| grep ibm.com`;do oc delete $crd;done'
-
-  - name: Delete ICS catalog
-    shell:
-      cmd: 'oc delete -f ../gi-temp/ics_catalog.yaml'
-
-  - name: Delete ICS installation files
-    file:
-      path: "{{ item }}"
-      state: absent
-    with_items:
-      - '../gi-temp/cloudctl-linux-amd64.tar.gz'
-      - '../gi-temp/ics_operands.yaml'
-      - '../gi-temp/ics_catalog.yaml'
+      cmd: "oc delete namespace {{ gi_namespace }}||true "
 
   - debug:
         msg:
-          - "ICS uninstalled with success."
+          - "GI uninstalled with success."
