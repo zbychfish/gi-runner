@@ -37,6 +37,15 @@ function get_ocp_domain() {
         fi
 }
 
+function switch_dnf_sync_off() {
+	if [[ `grep "metadata_timer_sync=" /etc/dnf/dnf.conf|wc -l` -eq 0 ]]
+	then
+		echo "metadata_timer_sync=0" >> /etc/dnf/dnf.conf
+	else
+		sed 's/.*metadata_timer_sync=.*/metadata_timer_sync=0/' /etc/dnf/dnf.conf
+	fi
+}
+
 # Check bastion OS
 echo "*** Checking OS release ***"
 if [[ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]]
@@ -63,7 +72,9 @@ do
 done
 if [ $use_air_gap == 'Y' ]
 then
+	switch_dnf_sync_off
         echo "export GI_INTERNET_ACCESS=A" >> $file
+
 fi
 if [[ $use_air_gap == 'N' ]]
 then
