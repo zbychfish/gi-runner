@@ -31,13 +31,13 @@
     shell:
       cmd: "oc delete guardiuminisghts {{ gi_namespace }} -n {{ gi_namespace }}||true "
 
+  - name: Delete tenant sniffer instance
+    shell:
+      cmd: "oc delete tenantminisnif --all -n {{ gi_namespace }}||true "
+
   - name: Wait for cleanup
     pause:
       minutes: 2
-
-  - name: Delete tenant sniffer instance
-    shell:
-      cmd: "oc delete tenantminisnif --all||true "
 
   - name: Wait for API server successful reconfiguration
     shell:
@@ -46,6 +46,14 @@
     until: "gi_pods.stdout == \"0\""
     retries: 20
     delay: 20
+
+  - name: Delete GI pvc's
+    shell:
+      cmd: "oc delete $(oc get pvc -n gi -oname) -n {{ gi_namespace }}||true "
+
+  - name: Delete tenant sniffer instance
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --namespace {{ gi_namespace }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --tolerance 1"
 
   - meta: end_play
 
