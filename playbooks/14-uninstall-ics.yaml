@@ -21,12 +21,13 @@
 
   - name: Get ICS operator name
     shell:
-      cmd: oc get  ClusterServiceVersion -n ibm-common-services -o name|grep ibm-common-service-operator
+      cmd: oc get  ClusterServiceVersion -n ibm-common-services -o name|grep ibm-common-service-operator||echo "none"
     register: ics_operator
 
   - name: Delete ICS operator
     shell:
-      cmd: "oc delete {{ ics_operator.stdout }} -n ibm-common-services||true"
+      cmd: "oc delete {{ ics_operator.stdout }} -n ibm-common-services"
+    when: "{{ ics_operator.stdout }} != 'none'"
 
   - name: Delete common-service project
     shell:
