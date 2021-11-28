@@ -38,6 +38,7 @@
         - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
         - { name: "GI_NTP_SRV", value: "{{ ntp_server }}" }
         - { name: "GI_BOOTSTRAP_MAC_ADDRESS", value: "{{ boot_mac }}" }
+        - { name: "GI_BOOTSTRAP_IP", value: "{{ boot_ip }}" }
         - { name: "GI_DOMAIN", value: "{{ domain }}" }
         - { name: "GI_BOOT_DEVICE", value: "{{ boot_disk }}" }
         - { name: "GI_GATEWAY", value: "{{ bas_gw }}" }
@@ -131,12 +132,28 @@
         ocs_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
       when: is_ocs_tainted == 'Y'
 
+    - name: Check OCS configuration
+      fail: msg="Variable {{ item.name }} is not set"
+      when: is_ocs_tainted == 'Y' and item.value == ""
+      loop:
+        - { name: "GI_OCS_IP", value: "{{ ocs_ip }}" }
+        - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
+        - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
+
     - name: Set workers arrays
       set_fact:
         worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
         worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
         worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
       when: is_master_only == 'N'
+
+    - name: Check workers configuration
+      fail: msg="Variable {{ item.name }} is not set"
+      when: is_master_only == 'N' and item.value == ""
+      loop:
+        - { name: "GI_WORKER_IP", value: "{{ worker_ip }}" }
+        - { name: "GI_WORKER_MAC_ADDRESS", value: "{{ worker_mac }}" }
+        - { name: "GI_WORKER_NAME", value: "{{ worker_name }}" }
 
     - name: Iterates all workers in one array
       vars:
