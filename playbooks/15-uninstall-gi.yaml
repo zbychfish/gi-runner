@@ -29,7 +29,7 @@
 
   - name: Delete GI operator instance
     shell:
-      cmd: "oc delete guardiuminisghts {{ gi_namespace }} -n {{ gi_namespace }}"
+      cmd: "oc delete guardiuminisghts {{ gi_namespace }} -n {{ gi_namespace }} --ignore-not-found=true"
 
   - name: Wait for cleanup
     pause:
@@ -37,7 +37,7 @@
 
   - name: Delete tenant sniffer instance
     shell:
-      cmd: "oc delete tenantminisnif --all"
+      cmd: "oc delete tenantminisnif --all --ignore-not-found=true"
 
   - name: Wait for API server successful reconfiguration
     shell:
