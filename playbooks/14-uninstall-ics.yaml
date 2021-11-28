@@ -26,15 +26,15 @@
 
   - name: Delete ICS operator
     shell:
-      cmd: "oc delete {{ ics_operator.stdout }} -n ibm-common-services"
+      cmd: "oc delete {{ ics_operator.stdout }} -n ibm-common-services||true"
 
   - name: Delete common-service project
     shell:
-      cmd: oc delete project common-service
+      cmd: oc delete project common-service||true
 
   - name: Delete operand common-service
     shell:
-      cmd: 'oc delete operandrequest.operator.ibm.com/common-service -n ibm-common-services'
+      cmd: 'oc delete operandrequest.operator.ibm.com/common-service -n ibm-common-services||true'
 
   - name: Wait for operands removal
     pause:

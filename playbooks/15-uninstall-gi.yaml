@@ -39,9 +39,9 @@
     pause:
       minutes: 2
 
-  - name: Wait for API server successful reconfiguration
+  - name: Wait for GI pods removal
     shell:
-      cmd: "oc get pods -n gi --no-headers|grep -v Running|wc -l"
+      cmd: "oc get pods -n gi --no-headers|grep -v -e Running -e Completed|wc -l"
     register: gi_pods
     until: "gi_pods.stdout == \"0\""
     retries: 20
