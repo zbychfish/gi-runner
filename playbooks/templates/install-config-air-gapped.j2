@@ -21,7 +21,7 @@ platform:
  none: {}
 pullSecret: '{"auths":{"registry.{{ domain }}:5000": {"auth": "{{ repo_cred_base64.stdout}}","email": "noemail@localhost"}}}'
 fips: false
-sshKey: {{ ssh_key }}
+sshKey: {{ ssh_pub_key.stdout }}
 additionalTrustBundle: |
 {{ repo_cert.stdout }}
 imageContentSources:

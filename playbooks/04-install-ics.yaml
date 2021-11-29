@@ -3,9 +3,8 @@
     internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     domain: "{{ lookup('env','GI_DOMAIN') }}"
     ics_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
-    ics_versions: [ "3.7.4","3.8.1","3.9.0","3.9.1","3.10.0","3.11.0","3.12.0" ]
-    ics_cases: [ "ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz","ibm-cp-common-services-1.5.0.tgz","ibm-cp-common-services-1.5.1.tgz","ibm-cp-common-services-1.6.0.tgz","ibm-cp-common-services-1.7.0.tgz","ibm-cp-common-services-1.8.0.tgz" ]
-    is_one_node: "{{ lookup('env','GI_ONENODE') }}"
+    ics_versions: [ "3.7.4","3.8.1","3.9.1","3.10.0","3.11.0","3.12.1","3.13.0" ]
+    ics_cases: [ "ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz","ibm-cp-common-services-1.5.1.tgz","ibm-cp-common-services-1.6.0.tgz","ibm-cp-common-services-1.7.0.tgz","ibm-cp-common-services-1.8.1.tgz","ibm-cp-common-services-1.9.0.tgz" ]
     ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
@@ -19,7 +18,6 @@
       - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
       - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
-      - { name: "GI_ONENODE", value: "{{ is_one_node }}" }
       - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
       - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
@@ -30,6 +28,13 @@
       gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
       gi_size:  "{{ lookup('env','GI_SIZE_GI') }}"
     when: install_gi == 'Y'
+
+  - name: Check GI configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: install_gi == 'Y' and item.value == ""
+    loop:
+      - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+      - { name: "GI_SIZE_GI", value: "{{ gi_size }}" }
 
   - name: Set parameters for ICS with GI (part2)
     set_fact:
@@ -42,27 +47,11 @@
       ics_size_hint: "{{ lookup('env','GI_ICS_SIZE') }}"
     when: install_gi == 'N'
 
-  - name: Set parameters for air-gapped installation
-    set_fact:
-      archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
-      repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
-      repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
-
-    when: internet_type == 'A'
-
-  - name: Check configuration parameters for air-gapped installation
+  - name: Check GI configuration parameters
     fail: msg="Variable {{ item.name }} is not set"
-    when: internet_type == 'A' and item.value == ""
+    when: install_gi == 'N' and item.value == ""
     loop:
-      - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
-      - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
-      - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
-
-  - name: Set masters array
-    set_fact:
-      node_ip: "{{ lookup('env', 'GI_NODE_IP').split(',') }}"
-      node_mac: "{{ lookup('env', 'GI_NODE_MAC_ADDRESS').split(',') }}"
-      node_name: "{{ lookup('env', 'GI_NODE_NAME').split(',') }}"
+      - { name: "GI_ICS_SIZE", value: "{{ ics_size_hint }}" }
 
   - name: Set ICS installation variables
     set_fact:
@@ -80,35 +69,34 @@
       gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' }}"
     when: internet_type == 'A' and install_gi == 'Y'
 
-  - name: Extract ICS archive
-    unarchive:
-      src: "{{ archives_dir }}/ics_registry-{{ ics_version }}.tar"
-      dest: ../gi-temp
-    when: internet_type == 'A' and install_gi == 'N'
+  - name: Set parameters for air-gapped installation
+    set_fact:
+      archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
+      repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
+      repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
+      ics_registry: "{{ 'ics_registry-'+ics_version+'.tar' if install_gi == 'N' else 'gi_registry-'+gi_version+'.tar' }}"
+      ics_manifest: "{{ 'gi_offline/*' if install_gi == 'Y' else 'ics_offline/*' }}"
+      offline_archive: "{{ 'ics_images.tar' if install_gi == 'N' else 'gi_images.tar' }}"
+      offline_inventory: "{{ '../gi-temp/ics_offline' if install_gi == 'N' else '../gi-temp/gi_offline' }}"
+    when: internet_type == 'A'
 
-  - name: Extract GI archive
-    unarchive:
-      src: "{{ archives_dir }}/gi_registry-{{ gi_version }}.tar"
-      dest: ../gi-temp
-    when: false and internet_type == 'A' and install_gi == 'Y' #ansible creates 2 copies of huge file
-
-  - name: Extract GI archive (using direct tar)
-    shell:
-      cmd: "tar xf {{ archives_dir }}/gi_registry-{{ gi_version }}.tar -C ../gi-temp"
-    when: internet_type == 'A' and install_gi == 'Y'
-    ignore_errors: yes
-
-  - name: Remove GI archive to safe storage on bastion
-    file:
-      path: "../download/gi_registry-{{ gi_version }}.tar"
-      state: absent
-    when: false and internet_type == 'A' and install_gi == 'Y'
-    ignore_errors: yes
+  - name: Check configuration parameters for air-gapped installation
+    fail: msg="Variable {{ item.name }} is not set"
+    when: internet_type == 'A' and item.value == ""
+    loop:
+      - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
+      - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
+      - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
 
   - name: Create ICS operator namespace
     shell:
-      cmd: "oc create namespace {{ ics_operator_namespace }}"
+      cmd: "oc create namespace {{ ics_operator_namespace }} || echo 'Namespace exists'"
     ignore_errors: yes
+
+  - name: Extract cloudctl and manifest from archive
+    shell:
+      cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/{{ ics_registry }} cloudctl-linux-amd64.tar.gz {{ ics_manifest }}"
+    when: internet_type == 'A'
 
   - name: Check presence of cloudctl tool
     stat:
@@ -150,18 +138,6 @@
     with_items:
       - { file: "cloudctl" }
 
-  - name: Unpack ICS manifests
-    unarchive:
-      src: "../gi-temp/ics_offline.tar"
-      dest: ../gi-temp
-    when: internet_type == 'A' and install_gi == 'N'
-
-  - name: Unpack GI manifests
-    unarchive:
-      src: "../gi-temp/gi_offline.tar"
-      dest: ../gi-temp
-    when: internet_type == 'A' and install_gi == 'Y'
-
   - name: Stop portable registry
     shell:
       cmd: "{{ item }}"
@@ -169,14 +145,9 @@
       - podman stop bastion-registry
     when: internet_type == 'A'
 
-  - name: Set archive and repository for offline installation
-    set_fact:
-      offline_archive: "{{ '../gi-temp/ics_images.tar' if install_gi == 'N' else '../gi-temp/gi_images.tar' }}"
-      offline_inventory: "{{ '../gi-temp/ics_offline' if install_gi == 'N' else '../gi-temp/gi_offline' }}"
-
   - name: Extract registry
     shell:
-      cmd: "tar xf {{ offline_archive }} -C /opt/registry"
+      cmd: "tar -C /opt/registry -xf {{ archives_dir }}/{{ ics_registry }} data/*"
     when: internet_type == 'A'
 
   - name: Start portable registry
@@ -199,7 +170,7 @@
   - name: Wait for cluster reconfiguration
     pause:
       minutes: 8
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Check cluster nodes health after Content Source Policy change
     shell: ../scripts/check_cluster_health_operators.sh
@@ -207,7 +178,7 @@
     until: cluster_health_operators.stdout == "0"
     retries: 100
     delay: 30
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
     shell:
@@ -216,7 +187,7 @@
     until: "co_status.stdout == \"0\""
     retries: 150
     delay: 30
-    when: internet_type == 'A' and is_one_node == 'N'
+    when: internet_type == 'A'
 
   - name: Create ICS catalog file
     template:
@@ -331,9 +302,17 @@
     retries: 80
     delay: 20
 
+  - name: Copy ICS config files to ocp directory
+    shell:
+      cmd: cp ../gi-temp/ics_catalog.yaml ../gi-temp/ics_operands.yaml ../ocp
+
+  - name: Cleanup temp directory
+    shell:
+      cmd: rm -rf ../gi-temp/*
+
   - debug:
       msg:
         - "IBM Common Services {{ ics_version }} installation finished"
         - Update the hosts file on your web browser workstation
-        - "{{ node_ip[0] if is_one_node == 'Y' else bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} cp-console.apps.{{ domain }}"
+        - "{{ bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }} cp-console.apps.{{ domain }}"
         - "Login to ICS console as admin user - https://cp-console.apps.{{ domain }}"

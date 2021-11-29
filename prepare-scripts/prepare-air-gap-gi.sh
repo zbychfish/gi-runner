@@ -17,6 +17,7 @@ then
 	echo "To restart mirroring process use paramater 'repeat'"
 	exit 1
 fi
+registry_version=2.7.1
 local_directory=`pwd`
 host_fqdn=$( hostname --long )
 temp_dir=$local_directory/gi-temp
@@ -29,7 +30,6 @@ then
 	mkdir -p $temp_dir
 	# Creates temporary directory
 	mkdir -p $air_dir
-	#read -p "Insert RH account name: " rh_account
 fi
 read -sp "Insert your IBM Cloud Key: " ibm_account_key
 declare -a gi_versions=(3.0.0 3.0.1 3.0.2)
@@ -57,7 +57,7 @@ then
 	podman container prune <<< 'Y'
 	rm -rf /opt/registry
 	# - Pulls image of portable registry and save it 
-	podman pull docker.io/library/registry:2.6
+	podman pull docker.io/library/registry:${registry_version}
 	check_exit_code $? "Cannot download image registry image"
 	# - Prepares portable registry directory structure
 	mkdir -p /opt/registry/{auth,certs,data}
@@ -79,10 +79,10 @@ then
 	# - Sets SE Linux for NetworkManager
 	semanage permissive -a NetworkManager_t
 	# - Starts portable registry
-	podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2.6
+	podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version}
 	check_exit_code $? "Cannot start temporary image registry"
 	# Packs together centos updates, packages, python libraries and portable image
-	cd $air_dir
+	cd $temp_dir
 	declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
 	for file in ${ocp_files[@]}
 	do
@@ -131,19 +131,15 @@ then
 	echo "Mirroring process failed, restart script with parameter repeat to finish"
 	exit 1
 fi
-cd $temp_dir
-tar cf $air_dir/gi_offline.tar gi_offline
-rm -rf gi_offline
 podman stop bastion-registry
+tar cf ${air_dir}/gi_registry-${gi_versions[${gi_version_selected}]}.tar gi_offline cloudctl-linux-amd64.tar.gz
 cd /opt/registry
-tar cf ${air_dir}/gi_images.tar data
-cd $air_dir
+tar -rf ${air_dir}/gi_registry-${gi_versions[${gi_version_selected}]}.tar data
+cd $temp_dir
 rm -rf /opt/registry
-tar cf gi_registry-${gi_versions[${gi_version_selected}]}.tar gi_images.tar gi_offline.tar cloudctl-linux-amd64.tar.gz
-rm -f gi_offline.tar cloudctl-linux-amd64.tar.gz gi_images.tar
 cd $local_directory
 # Cleanup gi-temp, portable-registry
 podman rm bastion-registry
 podman rmi --all
-rm -rf $temp_dir
+#rm -rf $temp_dir
 echo "GI ${gi_versions[${gi_version_selected}]} files prepared - copy $air_dir/gi_registry-${gi_versions[${gi_version_selected}]}.tar to air-gapped bastion machine"

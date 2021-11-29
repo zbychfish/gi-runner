@@ -1,48 +1,39 @@
-<B>OpenShift Cluster installation automation on bare metal</B>
+<B>OpenShift Cluster, IBM Common Services and Guardium Insights installation automation on bare metal</B>
 <HR>
-Implemented OCP architectures:
-<LI>Air-gap installation for 3 masters and 3+n workers with OCS 4.6
-<LI>Air-gap installation for 3 masters only with OCS 4.6
-<LI>Air-gap installation for 3 masters and 3+n workers and OCS 4.6 tainted on 3 additional infra nodes
-<LI>Air-gap installation on one node only with open source rook-ceph 1.1.7 (not supported OCP architecture for production)
+<P>Automates OCP installation for releases: 4.6, 4.7, 4.8, 4.9
+<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0
+<P>Automates GI installation for releases: 3.0.0, 3.0.1, 3.0.2
+<P>Support installation with direct access to the Internet, using proxy and air-gapped (restricted) approach
+<P>Implemented OCP architectures:
+<LI>3 masters and 3+n workers with OCS or rook-ceph
+<LI>3 masters only with OCS or rook-ceph
+<LI>3 masters and 3+n workers and OCS tainted on 3 additional infra nodes
 <HR>
-OCP installation with direct access to the internet
-<UL>
-<LI> Clone gi-runner to your bastion. Automation tested on CentOS 8.3.x and CentOS Streams 8. Should work without problem on RedHat 8, other Linux distribution require some modifications
-<LI> Prepare your OCP cluster nodes templates (check section OCP nodes)
-<LI> Execute init.sh script in the gi-runner home directory
-<UL>
-  <LI> Insert OCP minor number, for instance 4.6.20 - "Insert OCP version to install:"
-  <LI> Answer N for question about air-gap installation - "Is your environment air-gapped? (N)o/(Y)es:"
-  <LI> Answer D for question about Direct or Proxy access to the intenet - "Has your environment direct access to the internet or use HTTP proxy? (D)irect/(P)roxy:"
-  <LI>Decide which NTP server should be used by OCP cluster, external (N) or installed on bastion (Y) - "Would you like setup NTP server on bastion? (Y)es/(N)o:"
-  <LI>In case of external NTP server insert its IP address - "Insert NTP server IP address"
-  <LI>Confirm the time zone on bastion (Y) or correct it (N) - "Your Timezone on bastion is set to America/New_York, is it correct one [Y/N]:"
-  <LI>In case of NTP server installed on bastion confirm the time and date (Y) or correct it (N) - "Current local time is Tue Mar 23 18:25:17 CET 2021, is it correct one [Y/N]"
-  <LI>Insert cluster domain, it should be dedicated domain like <cluster_domain>.<corporate_domain>. Domain will be managed on bastion - "Insert cluster domain (your private domain name), like ocp.io.priv:"
-  <LI>Accept or reject one node OCP installation - "Is your installation the one node (allinone)? (Y)es/(N)o:"
-  <UL>In case of multinode installation:
-    <li>Accept or reject 3 nodes OCP installation - "Is your installation the 3 nodes only (master only)? (Y)es/(N)o:"
-    <li>Provide second disk specification for OpenShift Container Storage (OCS) - "Provide cluster device specification for storage virtualization (for example sdb):"
-    <li>Provide size of disk attached to OCS nodes - "Provide maximum space on cluster devices for storage virtualization (for example 300) in GB:"
-    <UL>For installation with separate workers:
-      <li>Decide if the DB2 database will be installed in HA cluster, only for Guardium Insights installation - "Would you like install DB2 in HA configuration (N)o/(Y)es?:"
-      <li>Specify separation of OCS workers from other, it installs OCS in taint, you need minimum 4 workers in this case - "Would you like isolate (taint) OCS nodes in the OCP cluster (N)o/(Y)es?:"
-      <li>Decide if the DB2 workers should be separated from other services, only for Guardium Insights installation - "Would you like isolate (taint) DB2 node/s in the OCP cluster (N)o/(Y)es?:"
-    </UL>
-  </UL>
-  <li>Provide bastion IP, in case of two or more interfaces it defines used for cluster management - "Insert Bastion IP used to communicate with your OCP cluster:"
-  <LI>Insert bastion name (without domain) - "Insert Bastion name used to communicate with Bootstrap server:"
-  <li>Provide default gateway of cluster network - "Provide subnet gateway (default router):"
-  <li>Provide IP address of DNS forwarder (corporate DNS) - "Point DNS server to resolve public names:"
-  <li>Insert bootstrap IP address - "Insert Bootstrap IP:"
-  <li>Insert bootstrap MAC address - "Insert Bootstrap MAC address:"
-  <li>Insert bootstrap name (without domain) - "Insert OCP bootstrap name [boot]:"
-  <UL>In case of one node installation
-    <li>Insert master IP, MAC address and name
-  </UL>
-  <UL>In multi-master installation
-    <li>Insert 3 master IP, MAC addresses and names
-  </UL>
-</UL>
-
+Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
+<HR>
+Releases:
+<P>v0.4
+<LI> init.sh changed to provide simpler decision model for installation flow - all archives for air-gapped installation MUST be rebuild
+<LI> added support for OCP 4.8 and 4.9
+<LI> added support for ICS 3.11.0, 3.12.1, 3.13.0
+<LI> added playbooks for deinstallation of GI and ICS
+<LI> README.md finally updated
+<HR>
+Files:
+<LI>init.sh - configures installation parameters
+<LI>playbook/01-finalize-bastion-setup.yaml - Ansible playbook to configure bastion with Fedora OS onboard (will restart bastion in case of kernel update)
+<LI>playbook/02-setup-bastion-for-ocp-installation.yaml - Ansible playbook to setup bastion to boot OCP cluster
+<LI>playbook/03-finish_ocp_install.yaml - Ansible playbook to finalize OCP installation and setup cluster storage (OCS or rook-ceph)
+<LI>playbook/04-install-ics.yaml - Ansible playbook to install IBM Common Services
+<LI>playbook/05-install-gi.yaml - Ansible playbook to install Guardium Insights
+<LI>playbook/50-set_configure_ldap.yaml - Ansible playbook to setup on bastion OpenLDAP instance
+<LI>playbook/14-uninstall-ics.yaml - Ansible playbook to uninstall ICS
+<LI>playbook/15-uninstall-gi.yaml - Ansible playbook to uninstall GI
+<LI>variables.sh - shell script with OCP environment variables, should loaded after login to bastion (. variables.sh)
+<LI>prepare-scripts/prepare-air-gap-os-files.sh - script to gather software and OS packaged to setup bastion in air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-coreos.sh - script to gather OCP installation tools and container images to install OCP in air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-olm.sh - script to gather OLM catalogs and selected operator imaged to install OCP in air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-rook.sh - script to gather Rook-Ceph images to install Rook in the air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-ics.sh - script to gather ICS images to install ICS in air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-gi.sh - script to gather GI images to install GI in air-gapped environment
+<LI>scripts/login_to_ocp.sh - logs admin to OCP cluster with new token

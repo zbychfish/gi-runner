@@ -13,6 +13,7 @@ function check_exit_code() {
 echo "Install os packages"
 dnf -y install podman
 echo "Setting environment"
+registry_version=2.7.1
 local_directory=`pwd`
 host_fqdn=$( hostname --long )
 temp_dir=$local_directory/gi-temp
@@ -20,9 +21,10 @@ air_dir=$local_directory/air-gap
 # Creates target download directory
 mkdir -p $air_dir
 # Creates temporary directory
+rm -rf $temp_dir
 mkdir -p $temp_dir
 # Gets list of parameters to create repo  
-echo "To check the latest stable OCP release go to https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.X, where X is 6 or 7"
+echo "To check the latest stable OCP release go to https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.X, where X is 6, 7, 8 or 9"
 read -p "Insert OCP release to mirror images: " ocp_version
 ocp_major_release=`echo $ocp_version|cut -f -2 -d .`
 read -sp "Insert RedHat pull secret: " pull_secret
@@ -37,7 +39,7 @@ podman stop bastion-registry
 podman container prune <<< 'Y'
 rm -rf /opt/registry
 # - Pulls image of portable registry and save it
-podman pull docker.io/library/registry:2.6
+podman pull docker.io/library/registry:${registry_version}
 check_exit_code $? "Cannot download image registry"
 # - Prepares portable registry directory structure
 mkdir -p /opt/registry/{auth,certs,data}
@@ -60,7 +62,7 @@ firewall-cmd --reload
 semanage permissive -a NetworkManager_t
 # - Starts portable registry
 echo "Starting mirror image registry ..."
-podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2.6
+podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version}
 check_exit_code $? "Cannot start temporary image registry"
 # Get tools
 echo "Downloading OCP tools ..."
@@ -142,17 +144,17 @@ mv manifests-certified-operator-index-* manifests-certified-operator-index
 mv manifests-redhat-marketplace-index-* manifests-redhat-marketplace-index
 mv manifests-community-operator-index-* manifests-community-operator-index
 # - Archvining manifests
-tar cf $air_dir/manifests.tar manifests-*
 # - Clean up
-rm -rf manifests-*
 podman stop bastion-registry
-cd /opt/registry
-tar cf $air_dir/olm-registry.tar data
-cd $air_dir
 ocp_major_release=`echo $ocp_version|awk -F'.' '{print $1"."$2}'`
-tar cf olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar olm-registry.tar manifests.tar operators.txt
-rm -f olm-registry.tar manifests.tar operators.txt
+cd /opt/registry
+tar cf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar data
+cd $temp_dir
+tar -rf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar manifests-*
+cd $air_dir
+tar -rf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar operators.txt
 rm -rf $temp_dir
+rm -f  $air_dir/operators.txt
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
