@@ -17,6 +17,7 @@ Releases:
 <LI> added support for OCP 4.8 and 4.9
 <LI> added support for ICS 3.11.0, 3.12.1, 3.13.0
 <LI> added playbooks for deinstallation of GI and ICS
+<LI> README.md finally updated
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
