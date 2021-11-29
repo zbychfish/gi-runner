@@ -96,16 +96,15 @@
 
   - name: Delete ICS catalog
     shell:
-      cmd: 'oc delete -f ../gi-temp/ics_catalog.yaml'
+      cmd: 'oc delete -f ../ocp/ics_catalog.yaml'
 
   - name: Delete ICS installation files
     file:
       path: "{{ item }}"
       state: absent
     with_items:
-      - '../gi-temp/cloudctl-linux-amd64.tar.gz'
-      - '../gi-temp/ics_operands.yaml'
-      - '../gi-temp/ics_catalog.yaml'
+      - '../ocp/ics_operands.yaml'
+      - '../ocp/ics_catalog.yaml'
 
   - debug:
         msg:
