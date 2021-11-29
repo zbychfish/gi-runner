@@ -129,7 +129,7 @@
 
   - name: Encode Base64 ldap admin password
     shell:
-      cmd: "echo -n {{ ics_password }} | base64"
+      cmd: "echo -n {{ ldap_password }} | base64"
     register: ldap_password_base64
 
   - name: Login to ICS

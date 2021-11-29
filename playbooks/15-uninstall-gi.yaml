@@ -29,7 +29,7 @@
 
   - name: Delete GI operator instance
     shell:
-      cmd: "oc delete guardiuminisghts {{ gi_namespace }} -n {{ gi_namespace }}||true "
+      cmd: "oc delete guardiuminsights {{ gi_namespace }} -n {{ gi_namespace }}||true "
 
   - name: Delete tenant sniffer instance
     shell:
