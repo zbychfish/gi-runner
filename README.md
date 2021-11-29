@@ -12,7 +12,7 @@
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
 Releases:
-<P>4.0 - main
+<P>v0.4
 <LI> init.sh changed to provide simpler decision model for installation flow - all archives for air-gapped installation MUST be rebuild
 <LI> added support for OCP 4.8 and 4.9
 <LI> added support for ICS 3.11.0, 3.12.1, 3.13.0
