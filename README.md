@@ -32,7 +32,7 @@ Files:
 <LI>variables.sh - shell script with OCP environment variables, should loaded after login to bastion (. variables.sh)
 <LI>prepare-scripts/prepare-air-gap-os-files.sh - script to gather software and OS packaged to setup bastion in air-gapped environment
 <LI>prepare-scripts/prepare-air-gap-coreos.sh - script to gather OCP installation tools and container images to install OCP in air-gapped environment
-<LI>prepare-scripts/prepare-air-gap-olm.sh - script to gather OLM catalogs and selected operator imaged to install OCP in air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-olm.sh - script to gather OLM catalogs and selected operator images to install OCP in air-gapped environment
 <LI>prepare-scripts/prepare-air-gap-rook.sh - script to gather Rook-Ceph images to install Rook in the air-gapped environment
 <LI>prepare-scripts/prepare-air-gap-ics.sh - script to gather ICS images to install ICS in air-gapped environment
 <LI>prepare-scripts/prepare-air-gap-gi.sh - script to gather GI images to install GI in air-gapped environment
