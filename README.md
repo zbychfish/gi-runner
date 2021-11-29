@@ -17,5 +17,22 @@ Releases:
 <LI> added support for OCP 4.8 and 4.9
 <LI> added support for ICS 3.11.0, 3.12.1, 3.13.0
 <LI> added playbooks for deinstallation of GI and ICS
-
-
+<HR>
+Files:
+<LI>init.sh - configures installation parameters
+<LI>playbook/01-finalize-bastion-setup.yaml - Ansible playbook to configure bastion with Fedora OS onboard (will restart bastion in case of kernel update)
+<LI>playbook/02-setup-bastion-for-ocp-installation.yaml - Ansible playbook to setup bastion to boot OCP cluster
+<LI>playbook/03-finish_ocp_install.yaml - Ansible playbook to finalize OCP installation and setup cluster storage (OCS or rook-ceph)
+<LI>playbook/04-install-ics.yaml - Ansible playbook to install IBM Common Services
+<LI>playbook/05-install-gi.yaml - Ansible playbook to install Guardium Insights
+<LI>playbook/50-set_configure_ldap.yaml - Ansible playbook to setup on bastion OpenLDAP instance
+<LI>playbook/14-uninstall-ics.yaml - Ansible playbook to uninstall ICS
+<LI>playbook/15-uninstall-gi.yaml - Ansible playbook to uninstall GI
+<LI>variables.sh - shell script with OCP environment variables, should loaded after login to bastion (. variables.sh)
+<LI>prepare-scripts/prepare-air-gap-os-files.sh - script to gather software and OS packaged to setup bastion in air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-coreos.sh - script to gather OCP installation tools and container images to install OCP in air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-olm.sh - script to gather OLM catalogs and selected operator imaged to install OCP in air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-rook.sh - script to gather Rook-Ceph images to install Rook in the air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-ics.sh - script to gather ICS images to install ICS in air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-gi.sh - script to gather GI images to install GI in air-gapped environment
+<LI>scripts/login_to_ocp.sh - logs admin to OCP cluster with new token
