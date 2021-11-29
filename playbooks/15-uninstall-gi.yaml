@@ -1,0 +1,68 @@
+- hosts: bastion
+  vars:
+    ics_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
+    ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
+    ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+    ocadmin:  "{{ lookup('env','GI_OCADMIN') }}"
+    ocadmin_password:  "{{ lookup('env','GI_OCADMIN_PWD') }}"
+    domain:  "{{ lookup('env','GI_DOMAIN') }}"
+    gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
+    gi_namespace: "{{ lookup('env', 'GI_NAMESPACE_GI') }}"
+
+  tasks:
+  - name: Check other configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
+      - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
+      - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
+      - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+      - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
+
+  - name: Set GI installation variables
+    set_fact:
+      gi_case_inventory_setup: "install"
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' }}"
+      offline_inventory: "gi_offline"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' }}"
+
+  - name: Delete GI operator instance
+    shell:
+      cmd: "oc delete guardiuminisghts {{ gi_namespace }} -n {{ gi_namespace }}||true "
+
+  - name: Delete tenant sniffer instance
+    shell:
+      cmd: "oc delete tenantminisnif --all -n {{ gi_namespace }}||true "
+
+  - name: Wait for cleanup
+    pause:
+      minutes: 2
+
+  - name: Wait for GI pods removal
+    shell:
+      cmd: "oc get pods -n gi --no-headers|grep -v -e Running -e Completed|wc -l"
+    register: gi_pods
+    until: "gi_pods.stdout == \"0\""
+    retries: 20
+    delay: 20
+
+  - name: Delete GI pvc's
+    shell:
+      cmd: "oc delete $(oc get pvc -n gi -oname) -n {{ gi_namespace }}||true "
+
+  - name: Uninstall GI operator
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --namespace {{ gi_namespace }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --tolerance 1"
+
+  - name: Uninstall GI catalog #generates error til 3.0.2 should be corrected in 3.1
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --namespace openshift-marketplace --inventory {{ gi_case_inventory_setup }} --action uninstallCatalog --tolerance 1"
+
+  - name: Delete GI namespace
+    shell:
+      cmd: "oc delete namespace {{ gi_namespace }}||true "
+
+  - debug:
+        msg:
+          - "GI uninstalled with success."

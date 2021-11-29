@@ -20,66 +20,44 @@ mkdir -p $air_dir
 # Creates temporary directory
 mkdir -p $temp_dir
 # Gets source bastion release (supported Fedora)
-echo `cat /etc/system-release|sed -e "s/ /_/g"` > $air_dir/os_release.txt
+echo `cat /etc/system-release|sed -e "s/ /_/g"` > $temp_dir/os_release.txt
 # Gets kernel version
-echo `uname -r` > $air_dir/kernel.txt
-# Install tar and creates tar.cpio in case of base os where tar is not available
-echo -e "\nPrepare TAR and UNZIP package for base OS ..."
-cd $temp_dir
-dnf download -qy --downloaddir . tar --resolve
-check_exit_code $? "Cannot download TAR package" 
-# - archives ICS manifests
-dnf download -qy --downloaddir . unzip --resolve
-check_exit_code $? "Cannot download UNZIP package" 
-tar cf $air_dir/tar.cpio *rpm
-rm -f *rpm
-dnf -qy install tar
+echo `uname -r` > $temp_dir/kernel.txt
 # Install all required software
 echo -e "Downloading OS updates ..."
+cd $temp_dir
 dnf update -qy --downloadonly --downloaddir os-updates
 check_exit_code $? "Cannot download update packages" 
-tar cf $air_dir/os-updates-`date +%Y-%m-%d`.tar os-updates
 echo "Update system ..."
 cd os-updates
 dnf -qy localinstall * --allowerasing
 check_exit_code $? "Cannot update system"
 cd ..
-rm -rf os-updates
 # Download all OS packages required to install OCP, ICS and GI in air-gap env, some of them from epel (python3 always available on CentOS 8)
 echo "Downloading additional OS packages ..."
-packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd-tools podman python3 python3-ldap openldap-servers openldap-clients"
-#dnf -qy install epel-release
+packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd-tools podman python3 python3-ldap openldap-servers openldap-clients vim"
 for package in $packages
 do
         dnf download -qy --downloaddir os-packages $package --resolve
 	check_exit_code $? "Cannot download $package package" 
 	echo "Downloaded: $package"
 done
-tar cf $air_dir/os-packages-`date +%Y-%m-%d`.tar os-packages
-rm -rf os-packages
 # Install packages
 echo "Installing missing packages ..."
 dnf -qy install python3 podman wget
 check_exit_code $? "Cannot install some packages" 
 # Download some Python libraries (in wheel format) required by gi-runner Ansible playbooks
 echo "Downloading python packages for Ansible extensions ..."
-packages="passlib dnspython"
+packages="passlib dnspython beautifulsoup4"
 for package in $packages
 do
         python3 -m pip download --only-binary=:all: $package -d ansible > /dev/null 2>&1
 	check_exit_code $? "Cannot download Ansible extension $package" 
 	echo "Downloaded: $package"
 done
-tar cf $air_dir/ansible-`date +%Y-%m-%d`.tar ansible
-rm -rf ansible
 wget -P galaxy https://galaxy.ansible.com/download/community-general-3.3.2.tar.gz
 check_exit_code $? "Cannot download Ansible Galaxy packages" 
-tar cf $air_dir/galaxy-`date +%Y-%m-%d`.tar galaxy
-rm -rf galaxy
-cd $air_dir
-tar cf $temp_dir/os-`cat /etc/system-release|sed -e "s/ /_/g"`-`date +%Y-%m-%d`.tar *
-rm -f *
-mv $temp_dir/os*tar .
+tar cf $air_dir/os-`cat /etc/system-release|sed -e "s/ /_/g"`-`date +%Y-%m-%d`.tar os-updates os-packages ansible galaxy os_release.txt kernel.txt
 cd $local_directory
 rm -rf $temp_dir
 # Downloads gi-runner archive

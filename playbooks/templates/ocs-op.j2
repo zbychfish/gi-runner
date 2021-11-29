@@ -13,7 +13,7 @@ metadata:
   name: ocs-subscription
   namespace: openshift-storage
 spec:
-  channel: stable-4.6
+  channel: stable-{{ ocs_stable }}
   name: ocs-operator
   source: {{ operator_source }}
   sourceNamespace: openshift-marketplace

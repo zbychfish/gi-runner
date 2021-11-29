@@ -12,6 +12,7 @@ function check_exit_code() {
 }
 
 echo "Setting environment"
+registry_version=2.7.1
 local_directory=`pwd`
 host_fqdn=$( hostname --long )
 temp_dir=$local_directory/gi-temp
@@ -22,8 +23,8 @@ mkdir -p $temp_dir
 mkdir -p $air_dir
 read -p "Insert RH account name: " rh_account
 read -sp "Insert RH account password: " rh_account_pwd
-declare -a ics_versions=(3.7.4 3.8.1 3.9.0 3.9.1 3.10.0 3.11.0 3.12.0)
-declare -a cases=(ibm-cp-common-services-1.3.4.tgz ibm-cp-common-services-1.4.1.tgz ibm-cp-common-services-1.5.0.tgz ibm-cp-common-services-1.5.1.tgz ibm-cp-common-services-1.6.0.tgz ibm-cp-common-services-1.7.0.tgz ibm-cp-common-services-1.8.0.tgz)
+declare -a declare -a ics_versions=(3.7.4 3.8.1 3.9.1 3.10.0 3.11.0 3.12.1 3.13.0)
+declare -a cases=(ibm-cp-common-services-1.3.4.tgz ibm-cp-common-services-1.4.1.tgz ibm-cp-common-services-1.5.1.tgz ibm-cp-common-services-1.6.0.tgz ibm-cp-common-services-1.7.0.tgz ibm-cp-common-services-1.8.1.tgz ibm-cp-common-services-1.9.0.tgz)
 while [[ ( -z $ics_version_selected ) || ( $ics_version_selected -lt 1 || $ics_version_selected -gt $i ) ]]
 do
 	echo "Select ICS version to mirror:"
@@ -45,7 +46,7 @@ podman stop bastion-registry
 podman container prune <<< 'Y'
 rm -rf /opt/registry
 # - Pulls image of portable registry and save it 
-podman pull docker.io/library/registry:2.6
+podman pull docker.io/library/registry:${registry_version}
 check_exit_code $? "Cannot download image registry image"
 # - Prepares portable registry directory structure
 mkdir -p /opt/registry/{auth,certs,data}
@@ -68,10 +69,10 @@ firewall-cmd --reload
 semanage permissive -a NetworkManager_t
 # - Starts portable registry
 echo "Starting mirror image registry ..."
-podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:2.6
+podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version}
 check_exit_code $? "Cannot start temporary image registry"
 # Packs together centos updates, packages, python libraries and portable image
-cd $air_dir
+cd $temp_dir
 declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
 for file in ${ocp_files[@]}
 do
@@ -111,17 +112,11 @@ cloudctl case launch --case $temp_dir/ics_offline/${CASE_ARCHIVE} --inventory ${
 # - mirrors ICS images
 cloudctl case launch --case $temp_dir/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir $temp_dir/ics_offline"
 check_exit_code $? "Cannot mirror ICS images"
-# - archives ICS manifests
-cd $temp_dir
-tar cf $air_dir/ics_offline.tar ics_offline
-rm -rf ics_offline
 podman stop bastion-registry
 cd /opt/registry
-tar cf ${air_dir}/ics_images.tar data
-cd $air_dir
-#tar czpvf - *.tar | split -d -b 10G - ics_registry-${ics_version}.tar
-tar cf ics_registry-${ics_versions[${ics_version_selected}]}.tar ics_images.tar ics_offline.tar cloudctl-linux-amd64.tar.gz
-rm -f ics_offline.tar cloudctl-linux-amd64.tar.gz ics_images.tar
+tar cf ${air_dir}/ics_registry-${ics_versions[${ics_version_selected}]}.tar data
+cd $temp_dir
+tar -rf ${air_dir}/ics_registry-${ics_versions[${ics_version_selected}]}.tar ics_offline cloudctl-linux-amd64.tar.gz
 cd $local_directory
 # Cleanup gi-temp, portable-registry
 podman rm bastion-registry
