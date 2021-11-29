@@ -66,12 +66,12 @@
       master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
 
   - name: Check master configuration
-      fail: msg="Variable {{ item.name }} is not set"
-      when: item.value == ""
-      loop:
-        - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
-        - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
-        - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
+      - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
+      - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
 
   - name: Set OCS array
     set_fact:
@@ -81,12 +81,12 @@
     when: is_ocs_tainted == 'Y'
 
   - name: Check OCS configuration
-      fail: msg="Variable {{ item.name }} is not set"
-      when: is_ocs_tainted == 'Y' and item.value == ""
-      loop:
-        - { name: "GI_OCS_IP", value: "{{ ocs_ip }}" }
-        - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
-        - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
+    fail: msg="Variable {{ item.name }} is not set"
+    when: is_ocs_tainted == 'Y' and item.value == ""
+    loop:
+      - { name: "GI_OCS_IP", value: "{{ ocs_ip }}" }
+      - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
+      - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
 
   - name: Set workers arrays
     set_fact:
@@ -96,11 +96,11 @@
     when: is_master_only == 'N'
 
   - name: Set workers arrays
-      set_fact:
-        worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
-        worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
-        worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
-      when: is_master_only == 'N'
+    set_fact:
+      worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
+      worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
+      worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
+    when: is_master_only == 'N'
 
   - name: Iterates all workers in one array
     vars:
