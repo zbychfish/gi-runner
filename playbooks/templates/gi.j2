@@ -5,6 +5,11 @@ metadata:
   name: {{ gi_namespace }}
 spec:
   version: {{ gi_version }}
+{% if stap_supp == 'Y' %}
+  connections:
+    insightsEnv:
+      FEATURE_STAP_STREAMING: "true"
+{% endif %}
   license:
     accept: true
     licenseType: "L-OOLE-C2ASKR"
