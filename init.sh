@@ -1039,7 +1039,7 @@ then
                                 read stap_supp
                                 stap_supp=${stap_supp:-Y}
                         fi
-                        if ! [[ $stap_supp== 'Y' || $stap_supp == 'N' ]]
+                        if ! [[ $stap_supp == 'Y' || $stap_supp == 'N' ]]
                         then
                                 echo "Incorrect value"
                         fi
