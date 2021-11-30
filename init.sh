@@ -4,11 +4,11 @@ GI_HOME=`pwd`
 GI_TEMP=$GI_HOME/gi-temp
 mkdir -p $GI_TEMP
 file=variables.sh
-declare -a gi_versions=(3.0.0 3.0.1 3.0.2)
+declare -a gi_versions=(3.0.0 3.0.1 3.0.2 3.1.0)
 declare -a ics_versions=(3.7.4 3.8.1 3.9.1 3.10.0 3.11.0 3.12.1 3.13.0)
-declare -a bundled_in_gi_ics_versions=(0 2 3)
+declare -a bundled_in_gi_ics_versions=(0 2 3 4)
 declare -a ocp_major_versions=(4.6 4.7 4.8 4.9)
-declare -a ocp_supported_by_gi=(0 0:1 0:1)
+declare -a ocp_supported_by_gi=(0 0:1 0:1 0:1:2)
 declare -a ocp_supported_by_ics=(0:1 0:1 0:1:2 0:1:2 0:1:2 0:1:2:3 0:1:2:3)
 declare -a gi_sizes=(values-poc-lite values-dev values-small)
 
@@ -127,6 +127,7 @@ then
 	echo "- ICS 3.7.4 for GI 3.0.0"
 	echo "- ICS 3.9.0 for GI 3.0.1"
 	echo "- ICS 3.10.0 for GI 3.0.2"
+	echo "- ICS 3.11.0 for GI 3.1.0"
 	echo "If you would like install different ICS version (supported by selected GI) please modify variable.sh file before starting playbooks"
 	echo "In case of air-gapped installation you must install the bundled ICS version"
 	echo "export GI_VERSION=$gi_version_selected" >> $file
@@ -995,7 +996,7 @@ then
         echo export GI_DB2_NODES=$db2_nodes >> $file
         while ! [[ $db2_enc == 'Y' || $db2_enc == 'N' ]]
         do
-                if [[ $gi_version_selected != '0' ]]
+                if [[ $gi_version_selected -ge 2 ]]
                 then
                         if [[ ! -z "$GI_DB2_ENCRYPTED" ]]
                         then
@@ -1020,6 +1021,33 @@ then
                 fi
         done
         echo export GI_DB2_ENCRYPTED=$db2_enc >> $file
+        while ! [[ $stap_supp == 'Y' || $stap_supp == 'N' ]]
+        do
+                if [[ $gi_version_selected -ge 3 ]]
+                then
+                        if [[ ! -z "$GI_STAP_STREAMING" ]]
+                        then
+                                read -p "STAP direct streaming to GI is set to [$GI_STAP_STREAMING] - would you like to enable this feature (YES/NO) or confirm current value <ENTER>: " new_stap_supp
+                                if [[ $new_stap_supp != '' ]]
+                                then
+                                        new_stap=$new_stap_supp
+                                else
+                                        db2_enc=$GI_STAP_STREAMING
+                                fi
+                        else
+                                printf "Should be enabled the direct streaming from STAP's? (\e[4mY\e[0m)es/(N)o: "
+                                read stap_supp
+                                stap_supp=${stap_supp:-Y}
+                        fi
+                        if ! [[ $stap_supp== 'Y' || $stap_supp == 'N' ]]
+                        then
+                                echo "Incorrect value"
+                        fi
+                else
+                        stap_supp='N'
+                fi
+        done
+        echo export GI_STAP_STREAMING=$stap_supp >> $file
 elif [[ $gi_install=='N' && $ics_install == 'Y' ]]
 then
 	ics_sizes="S M L"
