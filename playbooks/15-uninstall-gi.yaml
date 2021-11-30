@@ -41,7 +41,7 @@
 
   - name: Wait for GI pods removal
     shell:
-      cmd: "oc get pods -n gi --no-headers|grep -v -e Running -e Completed|wc -l"
+      cmd: "oc get pods -n {{ gi_namespace }} --no-headers|grep -v -e Running -e Completed|wc -l"
     register: gi_pods
     until: "gi_pods.stdout == \"0\""
     retries: 20
@@ -49,7 +49,7 @@
 
   - name: Delete GI pvc's
     shell:
-      cmd: "oc delete $(oc get pvc -n gi -oname) -n {{ gi_namespace }}||true "
+      cmd: "oc delete $(oc get pvc -n {{ gi_namespace }} -oname) -n {{ gi_namespace }}||true "
 
   - name: Uninstall GI operator
     shell:
