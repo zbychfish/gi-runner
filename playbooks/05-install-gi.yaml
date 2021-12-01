@@ -15,7 +15,7 @@
     db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
     is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
     stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
-    gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index is not in [0, 1, 2] else 'L-OOLE-C2ASKR' }}
+    gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index is not in [0, 1, 2] else 'L-OOLE-C2ASKR' }}"
   
   tasks:
   - name: Check other configuration parameters

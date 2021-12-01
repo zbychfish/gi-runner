@@ -305,6 +305,7 @@
   - name: Copy ICS config files to ocp directory
     shell:
       cmd: cp ../gi-temp/ics_catalog.yaml ../gi-temp/ics_operands.yaml ../ocp
+    ignore_errors: yes # ics_catalog does not exists in case of air-gapp installation
 
   - name: Cleanup temp directory
     shell:
