@@ -1030,9 +1030,9 @@ then
                                 read -p "STAP direct streaming to GI is set to [$GI_STAP_STREAMING] - would you like to enable this feature (YES/NO) or confirm current value <ENTER>: " new_stap_supp
                                 if [[ $new_stap_supp != '' ]]
                                 then
-                                        new_stap=$new_stap_supp
+                                        stap_supp=$new_stap_supp
                                 else
-                                        new_stap=$GI_STAP_STREAMING
+                                        stap_supp=$GI_STAP_STREAMING
                                 fi
                         else
                                 printf "Should be enabled the direct streaming from STAP's? (\e[4mY\e[0m)es/(N)o: "
