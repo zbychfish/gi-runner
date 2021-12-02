@@ -153,25 +153,6 @@
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-creds-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }}\""
     when: internet_type == 'A'
 
-  - name: Switch GI inventory to portable registry
-    shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir ../gi-temp/{{ offline_inventory }}\""
-    when: internet_type == 'A'
-
-  - name: Wait for cluster reconfiguration
-    pause:
-      minutes: 3
-    when: internet_type == 'A'
-
-  - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
-    shell:
-      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
-    register: co_status
-    until: "co_status.stdout == \"0\""
-    retries: 150
-    delay: 20
-    when: internet_type == 'A'
-
   - name: GI download case file
     shell:
       cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_case_archive }} --outputdir ../gi-temp/{{ offline_inventory }} --tolerance 1"
