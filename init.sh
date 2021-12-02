@@ -1293,7 +1293,7 @@ then
         echo "*** Update Fedora ***"
         dnf -qy update
         echo "*** Installing Ansible and other Fedora packages ***"
-        dnf -qy install tar ansible haproxy openldap perl podman-docker ipxe-bootimgs chrony dnsmasq unzip wget jq httpd-tools policycoreutils-python-utils python3-ldap openldap-servers openldap-clients
+        dnf -qy install tar ansible haproxy openldap perl podman-docker ipxe-bootimgs chrony dnsmasq unzip wget jq httpd-tools policycoreutils-python-utils python3-ldap openldap-servers openldap-clients pip
         dnf -qy install ansible skopeo
         if [[ $use_proxy == 'D' ]]
         then
