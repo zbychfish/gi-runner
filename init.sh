@@ -1032,7 +1032,7 @@ then
                                 then
                                         new_stap=$new_stap_supp
                                 else
-                                        db2_enc=$GI_STAP_STREAMING
+                                        new_stap=$GI_STAP_STREAMING
                                 fi
                         else
                                 printf "Should be enabled the direct streaming from STAP's? (\e[4mY\e[0m)es/(N)o: "
