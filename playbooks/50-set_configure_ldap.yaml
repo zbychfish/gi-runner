@@ -8,6 +8,7 @@
     ldap_users_raw: "{{ lookup('env','GI_LDAP_USERS') }}"
     ics_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+    ldap_depl_type: "{{ lookup('env','GI_LDAP_DEPLOYMENT') }}"
 
   tasks:
   - name: Check configuration parameters
@@ -19,6 +20,7 @@
       - { name: "GI_LDAP_DOMAIN", value: " {{ ldap_domain }}" }
       - { name: "GI_LDAP_USERS_PWD", value: " {{ ldap_password }}" }
       - { name: "GI_LDAP_USERS", value: " {{ ldap_users_raw }}" }
+      - { name: "GI_LDAP_DEPLOYMENT", value: " {{ ldap_depl_type }}" }
 
   - debug:
       msg: "{{ ldap_users_raw.split(',') }}"
@@ -29,17 +31,18 @@
       name:
         - "python3-ldap"
       state: latest
-    when: internet_type != 'A'
+    when: internet_type != 'A' and ldap_depl_type == "S"
 
   - name: Create LDAP directory
     file:
       path: ../ldap
       state: directory
+    when: ldap_depl_type == "S"
 
   - name: Set SELINUX for OpenLDAP
     shell:
       cmd: "semanage permissive -a slapd_t"
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Open ports for OpenLDAP
     firewalld:
@@ -50,12 +53,14 @@
     with_items:
       - { port: "389", type: "tcp" } 
       - { port: "636", type: "tcp" } 
+    when: ldap_depl_type == "S"
 
   - name: Start LDAP server
     service:
       name: slapd
       state: started
       enabled: yes
+    when: ldap_depl_type == "S"
 
   - name: Encrypt admin password
     shell:
@@ -77,7 +82,7 @@
       - { src: "ldap/monitor.j2", dest: "../ldap/monitor.ldif" }
       - { src: "ldap/root_dn.j2", dest: "../ldap/root_dn.ldif" }
           #- { src: "ldap/users.j2", dest: "ldap/users.ldif" }
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Modify LDAP domain
     shell:
@@ -87,12 +92,12 @@
       - "ldapmodify -Y EXTERNAL -H ldapi:/// -f ../ldap/admin_passwd.ldif"
       - "ldapmodify -Y EXTERNAL -H ldapi:/// -f ../ldap/monitor.ldif"
     ignore_errors: no
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Add Root DN
     shell:
       cmd: "ldapadd -f ../ldap/root_dn.ldif -D cn=admin,{{ ldap_domain }} -w {{ ldap_password }}"
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Add InetOrgPerson schema
     shell:
@@ -100,7 +105,7 @@
     loop:
       - "ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/cosine.ldif"
       - "ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/inetorgperson.ldif"
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Add User OU
     community.general.ldap_entry:
@@ -109,7 +114,7 @@
       bind_dn: "cn=admin,{{ ldap_domain }}"
       bind_pw: "{{ ldap_password }}"
       server_uri: ldap://{{ bas_ip }}/
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Add Users
     community.general.ldap_entry:
@@ -125,7 +130,7 @@
       server_uri: "ldap://{{ bas_ip }}/"
     with_items:
       - "{{ ldap_users.msg | list }}"
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Encode Base64 ldap admin password
     shell:
