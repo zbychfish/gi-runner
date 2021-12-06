@@ -179,7 +179,11 @@
     failed_when: result.rc != 0 and "already exists" not in result.stderr
     when: ldap_depl_type == "C"
 
-  - meta: end_play
+  - name: Get openldap route name
+    shell:
+      cmd: "oc get routes -n openldap -o json|jq .items[0].spec.host|tr -d '\"'"
+    register: openldap_route
+    when: ldap_depl_type == "C"
 
   - name: Encode Base64 ldap admin password
     shell:
@@ -195,11 +199,15 @@
       cmd: "cloudctl tokens|grep Access|awk -F ':' '{ print $2 }'|awk -F ' ' '{ print $2}'"
     register: access_token
 
+  - name: Set LDAP URL
+    set_fact:
+      ldap_url: "{{ bas_ip}}':389' if ldap_depl_type == 'S' else {{ openldap_route.stdout }}':31389'"
+
   - name: Add OpenLDAP to ICS configuration
     uri:
       url: 'https://cp-console.apps.{{ domain }}/idmgmt/identity/api/v1/directory/ldap/onboardDirectory'
       method: POST
-      body: "{\"LDAP_ID\": \"local_ldap\", \"LDAP_URL\": \"ldap://{{ bas_ip }}:389\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"\", \"LDAP_GROUPMEMBERIDMAP\": \"\"}"
+      body: "{\"LDAP_ID\": \"local_ldap\", \"LDAP_URL\": \"ldap://{{ ldap_url }}\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"\", \"LDAP_GROUPMEMBERIDMAP\": \"\"}"
       body_format: json
       headers:
         Authorization: 'bearer {{ access_token.stdout }}'
@@ -208,7 +216,6 @@
       use_proxy: no
     environment:
       no_proxy: cp-console.apps.{{ domain }}
-    register: result
 
   - debug:
       msg:
