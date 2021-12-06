@@ -209,7 +209,7 @@
       ldap_url: "{{ bas_ip }}:389"
     when: ldap_depl_type == "S"
 
-  - name: Add OpenLDAP to ICS configuration
+  - name: Add OpenLDAP to ICS configuration for standalone
     uri:
       url: 'https://cp-console.apps.{{ domain }}/idmgmt/identity/api/v1/directory/ldap/onboardDirectory'
       method: POST
@@ -222,7 +222,22 @@
       use_proxy: no
     environment:
       no_proxy: cp-console.apps.{{ domain }}
+    when: ldap_depl_type == "S"
 
+  - name: Add OpenLDAP to ICS configuration fo container
+    uri:
+      url: 'https://cp-console.apps.{{ domain }}/idmgmt/identity/api/v1/directory/ldap/onboardDirectory'
+      method: POST
+      body: "{\"LDAP_ID\": \"openldap\", \"LDAP_URL\": \"ldap://{{ ldap_url }}\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"\", \"LDAP_GROUPMEMBERIDMAP\": \"\"}"
+      body_format: json
+      headers:
+        Authorization: 'bearer {{ access_token.stdout }}'
+        Content-Type: 'application/json'
+      validate_certs: no
+      use_proxy: no
+    environment:
+      no_proxy: cp-console.apps.{{ domain }}
+    when: ldap_depl_type == "C"
   - debug:
       msg:
         - "Open LDAP installed"
