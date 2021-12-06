@@ -159,7 +159,7 @@
   - name: Configure openldap deployment plan
     template:
       src: "openldap_depl.j2"
-      dest: "../scripts/openldap_depl.yaml"
+      dest: "../gi_temp/openldap_depl.yaml"
     when: ldap_depl_type == "C"
 
   - name: Deploy bitnami.openldap
