@@ -17,10 +17,10 @@
     loop:
       - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
-      - { name: "GI_LDAP_DOMAIN", value: " {{ ldap_domain }}" }
-      - { name: "GI_LDAP_USERS_PWD", value: " {{ ldap_password }}" }
-      - { name: "GI_LDAP_USERS", value: " {{ ldap_users_raw }}" }
-      - { name: "GI_LDAP_DEPLOYMENT", value: " {{ ldap_depl_type }}" }
+      - { name: "GI_LDAP_DOMAIN", value: "{{ ldap_domain }}" }
+      - { name: "GI_LDAP_USERS_PWD", value: "{{ ldap_password }}" }
+      - { name: "GI_LDAP_USERS", value: "{{ ldap_users_raw }}" }
+      - { name: "GI_LDAP_DEPLOYMENT", value: "{{ ldap_depl_type }}" }
 
   - debug:
       msg: "{{ ldap_users_raw.split(',') }}"
