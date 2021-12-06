@@ -259,7 +259,7 @@
   - name: Create HA Proxy config file with openldap
     template:
       src: haproxy_with_ldap.j2
-      dest: /etc/haproxy/haproxy.cfg
+      dest: ../gi-temp/ldap_haproxy.cfg
     vars:
       masters: "{{ master_name|zip(master_ip)|list }}"
       nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
@@ -270,10 +270,15 @@
   - name: Create HA Proxy config file with ldap (no dedicated workers)
     template:
       src: haproxy_with_ldap_masters_only.j2
-      dest: /etc/haproxy/haproxy.cfg
+      dest: ../gi-temp/ldap_haproxy.cfg
     vars:
       masters: "{{ master_name|zip(master_ip)|list }}"
     when: is_master_only == 'Y' and ldap_depl_type == "C"
+
+  - name: Update HA proxy config
+    shell:
+      cmd: cat ../gi-temp/ldap_haproxy.cfg >> /etc/haproxy/haproxy.cfg
+    when: ldap_depl_type == "C"
 
   - name: Restart HA Proxy
     service:
