@@ -9,6 +9,8 @@
     ics_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     ldap_depl_type: "{{ lookup('env','GI_LDAP_DEPLOYMENT') }}"
+    is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
+    is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
 
   tasks:
   - name: Check configuration parameters
@@ -21,6 +23,51 @@
       - { name: "GI_LDAP_USERS_PWD", value: "{{ ldap_password }}" }
       - { name: "GI_LDAP_USERS", value: "{{ ldap_users_raw }}" }
       - { name: "GI_LDAP_DEPLOYMENT", value: "{{ ldap_depl_type }}" }
+      - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
+      - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
+
+  - name: Set masters array
+    set_fact:
+      master_ip: "{{ lookup('env', 'GI_MASTER_IP').split(',') }}"
+      master_mac: "{{ lookup('env', 'GI_MASTER_MAC_ADDRESS').split(',') }}"
+      master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
+
+  - name: Check master configuration
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
+      - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
+      - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
+
+   - name: Set workers arrays
+    set_fact:
+      worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
+      worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
+      worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
+    when: is_master_only == 'N'
+
+  - name: Set workers arrays
+    set_fact:
+      worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
+      worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
+      worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
+    when: is_master_only == 'N'
+
+  - - name: Set OCS array
+    set_fact:
+      ocs_ip: "{{ lookup('env', 'GI_OCS_IP').split(',') }}"
+      ocs_mac: "{{ lookup('env', 'GI_OCS_MAC_ADDRESS').split(',') }}"
+      ocs_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
+    when: is_ocs_tainted == 'Y'
+
+  - name: Check OCS configuration
+    fail: msg="Variable {{ item.name }} is not set"
+    when: is_ocs_tainted == 'Y' and item.value == ""
+    loop:
+      - { name: "GI_OCS_IP", value: "{{ ocs_ip }}" }
+      - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
+      - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
 
   - debug:
       msg: "{{ ldap_users_raw.split(',') }}"
