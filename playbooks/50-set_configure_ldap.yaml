@@ -201,13 +201,37 @@
 
   - name: Set LDAP URL for container
     set_fact:
-      ldap_url: "{{ openldap_route.stdout }}:31389"
+      ldap_url: "{{ openldap_route.stdout }}:1389"
     when: ldap_depl_type == "C"
 
   - name: Set LDAP URL for standalone
     set_fact:
       ldap_url: "{{ bas_ip }}:389"
     when: ldap_depl_type == "S"
+
+  - name: Create HA Proxy config file with openldap
+    template:
+      src: haproxy_with_ldap.j2
+      dest: /etc/haproxy/haproxy.cfg
+    vars:
+      masters: "{{ master_name|zip(master_ip)|list }}"
+      nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
+      ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
+      workers: "{{ nodes|zip(ips)|list }}"
+    when: is_master_only == 'N' and ldap_depl_type == "C"
+
+  - name: Create HA Proxy config file with ssh-service (no dedicated workers)
+    template:
+      src: haproxy_with_ldap_masters_only.j2
+      dest: /etc/haproxy/haproxy.cfg
+    vars:
+      masters: "{{ master_name|zip(master_ip)|list }}"
+    when: is_master_only == 'Y' and ldap_depl_type == "C"
+
+  - name: Restart HA Proxy
+    service:
+      name: haproxy
+      state: restarted
 
   - name: Add OpenLDAP to ICS configuration for standalone
     uri:
