@@ -145,7 +145,7 @@
 
   - name: Create password list
     shell:
-      cmd: "USER_PWD_LIST=\"\";IFS=',' read -r -a USER_ARR <<< {{ ldap_password }};for user in ${USERS_ARR[@]}; do USER_PWD_LIST+=\"${USERS_PWD},\";done;cat $USER_PWD_LIST"
+      cmd: "USER_PWD_LIST=\"\";IFS=',' read -r -a USER_ARR <<< {{ ldap_password }};for user in ${USERS_ARR[@]}; do USER_PWD_LIST+=\"${USERS_PWD},\";done;echo $USER_PWD_LIST"
     register: ldap_user_pwds
     when: ldap_depl_type == "C"
 
