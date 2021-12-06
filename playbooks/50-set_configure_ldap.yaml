@@ -220,7 +220,7 @@
       workers: "{{ nodes|zip(ips)|list }}"
     when: is_master_only == 'N' and ldap_depl_type == "C"
 
-  - name: Create HA Proxy config file with ssh-service (no dedicated workers)
+  - name: Create HA Proxy config file with ldap (no dedicated workers)
     template:
       src: haproxy_with_ldap_masters_only.j2
       dest: /etc/haproxy/haproxy.cfg
