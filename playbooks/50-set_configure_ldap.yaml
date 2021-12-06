@@ -278,7 +278,7 @@
   - name: Update HA proxy config
     shell:
       cmd: cat ../gi-temp/ldap_haproxy.cfg >> /etc/haproxy/haproxy.cfg
-    when: ldap_depl_type == "C"
+    when: false and ldap_depl_type == "C"
 
   - name: Restart HA Proxy
     service:
