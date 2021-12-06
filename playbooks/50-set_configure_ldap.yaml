@@ -156,6 +156,12 @@
     failed_when: result.rc != 0 and "already exists" not in result.stderr
     when: ldap_depl_type == "C"
 
+  - name: Configure openldap deployment plan
+    template:
+      src: ".openldap_depl.j2"
+      dest: "../scripts/openldap_depl.yaml"
+    when: ldap_depl_type == "C"
+
   - name: Deploy bitnami.openldap
     shell:
       cmd: oc create -f ../gi_temp/openldap_depl.yaml
