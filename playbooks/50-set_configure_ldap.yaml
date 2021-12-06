@@ -164,7 +164,10 @@
 
   - name: Deploy bitnami.openldap
     shell:
-      cmd: oc create -f ../gi-temp/openldap_depl.yaml -n openldap
+      cmd: "oc create -f {{ item }} -n openldap"
+    with_items:
+      - ../gi-temp/openldap_depl.yaml
+      - ../scripts/openldap_svc.yaml
     when: ldap_depl_type == "C"
 
   - meta: end_play
