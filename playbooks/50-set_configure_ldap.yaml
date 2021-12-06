@@ -169,7 +169,7 @@
     with_items:
       - ../gi-temp/openldap_depl.yaml
       - ../scripts/openldap_svc.yaml
-    failed_when: result.rc != 0 and "already exists" not in result.stderr
+    failed_when: result.rc != 0 and "already exists" not in result.stderr and "already allocated" not in result.stderr
     when: ldap_depl_type == "C"
 
   - meta: end_play
