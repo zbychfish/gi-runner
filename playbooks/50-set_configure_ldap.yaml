@@ -40,7 +40,7 @@
       - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
       - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
 
-   - name: Set workers arrays
+  - name: Set workers arrays
     set_fact:
       worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
       worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
@@ -54,7 +54,7 @@
       worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
     when: is_master_only == 'N'
 
-  - - name: Set OCS array
+  - name: Set OCS array
     set_fact:
       ocs_ip: "{{ lookup('env', 'GI_OCS_IP').split(',') }}"
       ocs_mac: "{{ lookup('env', 'GI_OCS_MAC_ADDRESS').split(',') }}"
