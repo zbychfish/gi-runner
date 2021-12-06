@@ -132,10 +132,16 @@
       - "{{ ldap_users.msg | list }}"
     when: ldap_depl_type == "S"
 
+  - name: Check openldap namespace existence
+    shell:
+      cmd: oc get namespace|grep openldap|wc -l
+    register: is_namespace_openldap
+    when: ldap_depl_type == "C"
+
   - name: Add openldap namespace
     shell:
       cmd: oc create namespace openldap
-    when: ldap_depl_type == "C"
+    when: ldap_depl_type == "C" and is_namespace_openldap == "0"
 
   - name: Create password list
     shell:
@@ -152,6 +158,8 @@
     shell:
       cmd: oc create -f ../gi_temp/openldap_depl.yaml
     when: ldap_depl_type == "C"
+
+  - meta: end_play
 
   - name: Encode Base64 ldap admin password
     shell:
