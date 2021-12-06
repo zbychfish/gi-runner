@@ -151,7 +151,7 @@
 
   - name: Add openldap secret
     shell:
-      cmd: "oc create secret generic openldap --from-literal=adminpassword={{ ldap_password }} --from-literal=users={{ ldap_users_raw }} --from-literal=passwords={{ ldap_user_pwds.output }} -n openldap"
+      cmd: "oc create secret generic openldap --from-literal=adminpassword={{ ldap_password }} --from-literal=users={{ ldap_users_raw }} --from-literal=passwords={{ ldap_user_pwds.stdout }} -n openldap"
     when: ldap_depl_type == "C"
 
   - name: Deploy bitnami.openldap
