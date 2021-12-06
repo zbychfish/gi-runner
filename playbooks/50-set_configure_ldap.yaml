@@ -132,6 +132,27 @@
       - "{{ ldap_users.msg | list }}"
     when: ldap_depl_type == "S"
 
+  - name: Add openldap namespace
+    shell:
+      cmd: oc create namespace openldap
+    when: ldap_depl_type == "C"
+
+  - name: Create password list
+    shell:
+      cmd: "USER_PWD_LIST="";IFS=',' read -r -a USER_ARR <<< {{ ldap_password }};for user in ${USERS_ARR[@]}; do USER_PWD_LIST+=\"${USERS_PWD},\";done;cat $USER_PWD_LIST"
+    register: ldap_users_pwds
+    when: ldap_depl_type == "C"
+
+  - name: Add openldap secret
+    shell:
+      cmd: "oc create secret generic openldap --from-literal=adminpassword={{ ldap_password }} --from-literal=users={{ ldap_users_raw }} --from-literal=passwords= -n openldap"
+    when: ldap_depl_type == "C"
+
+  - name: Deploy bitnami.openldap
+    shell:
+      cmd: oc create -f ../gi_temp/openldap_depl.yaml
+    when: ldap_depl_type == "C"
+
   - name: Encode Base64 ldap admin password
     shell:
       cmd: "echo -n {{ ldap_password }} | base64"
