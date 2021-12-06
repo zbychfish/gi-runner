@@ -141,7 +141,7 @@
   - name: Add openldap namespace
     shell:
       cmd: oc create namespace openldap
-    when: ldap_depl_type == "C" and is_namespace_openldap == "0"
+    when: ldap_depl_type == "C" and is_namespace_openldap.stdout == "0"
 
   - name: Create password list
     shell:
@@ -151,7 +151,7 @@
 
   - name: Add openldap secret
     shell:
-      cmd: "oc create secret generic openldap --from-literal=adminpassword={{ ldap_password }} --from-literal=users={{ ldap_users_raw }} --from-literal=passwords= -n openldap"
+      cmd: "oc create secret generic openldap --from-literal=adminpassword={{ ldap_password }} --from-literal=users={{ ldap_users_raw }} --from-literal=passwords={{ ldap_user_pwds.output }} -n openldap"
     when: ldap_depl_type == "C"
 
   - name: Deploy bitnami.openldap
