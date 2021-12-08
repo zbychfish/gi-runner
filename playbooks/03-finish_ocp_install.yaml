@@ -273,6 +273,8 @@
       - manifests-community-operator-index
     when: internet_type == 'A'
 
+  - meta: end_play
+
   - name: Clean manifests in temp directory
     shell:
       cmd: "rm -rf ../gi-temp/manifests-*"
