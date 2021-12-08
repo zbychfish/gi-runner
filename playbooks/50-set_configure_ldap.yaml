@@ -324,7 +324,7 @@
 
   - name: Installation summary
     vars:
-      ldap_name: "{{ 'openldap' if ldap_depl_type == 'C' else 'local_ldap' }"
+      ldap_name: "{{ 'openldap' if ldap_depl_type == 'C' else 'local_ldap' }}"
     debug:
       msg:
         - "Open LDAP installed"
