@@ -53,8 +53,8 @@ echo "Starting mirror image registry ..."
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version}
 check_exit_code $? "Cannot start temporary image registry"
 # Packs together centos updates, packages, python libraries and portable image
-echo "Mirroring open source rook-ceph for not onenode installation version 1.6.7 ..."
-images="docker.io/rook/ceph:v1.7.6 quay.io/ceph/ceph:v16.2.6 quay.io/cephcsi/cephcsi:v3.4.0 k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.3.0 k8s.gcr.io/sig-storage/csi-resizer:v1.3.0 k8s.gcr.io/sig-storage/csi-provisioner:v3.0.0 k8s.gcr.io/sig-storage/csi-snapshotter:v4.2.0 k8s.gcr.io/sig-storage/csi-attacher:v3.3.0"
+echo "Mirroring openldap container"
+images="docker.io/bitnami/openldap:latest"
 for image in $images
 do
 	echo $image
@@ -68,9 +68,9 @@ done
 echo "Archiving mirrored registry ..."
 podman stop bastion-registry
 cd /opt/registry
-tar cf ${air_dir}/rook-registry-`date +%Y-%m-%d`.tar data
+tar cf ${air_dir}/additions-registry-`date +%Y-%m-%d`.tar data
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
 rm -rf $temp_dir
-echo "Rook-Ceph images prepared - copy file ${air_dir}/rook-registry-`date +%Y-%m-%d`.tar to air-gapped bastion machine"
+echo "Images with additonal services prepared - copy file ${air_dir}/addition-registry-`date +%Y-%m-%d`.tar to air-gapped bastion machine"
