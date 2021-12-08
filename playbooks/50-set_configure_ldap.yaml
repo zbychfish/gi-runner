@@ -323,7 +323,7 @@
     when: ldap_depl_type == "C"
 
   - name: Installation summary
-    var:
+    vars:
       ldap_name: "{{ 'openldap' if ldap_depl_type == 'C' else 'local_ldap' }"
     debug:
       msg:
