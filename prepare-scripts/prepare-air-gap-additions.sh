@@ -62,7 +62,7 @@ do
 	check_exit_code $? "Cannot pull image $image"
         tag=`echo "$image" | awk -F '/' '{print $NF}'`
         echo "TAG: $tag"
-	podman push --creds admin:guardium $image `hostname --long`:5000/rook/$tag
+	podman push --creds admin:guardium $image `hostname --long`:5000/adds/$tag
 	podman rmi $image
 done
 echo "Archiving mirrored registry ..."
