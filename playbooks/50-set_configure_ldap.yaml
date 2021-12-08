@@ -321,8 +321,11 @@
     environment:
       no_proxy: cp-console.apps.{{ domain }}
     when: ldap_depl_type == "C"
+
   - debug:
+    var:
+      ldap_name: "{{ 'openldap' if ldap_depl_type == 'C' else 'local_ldap' }"
       msg:
         - "Open LDAP installed"
-        - "LDAP instance configured in ICS as 'local_ldap'"
+        - "LDAP instance configured in ICS - {{ ldap_name }}"
 
