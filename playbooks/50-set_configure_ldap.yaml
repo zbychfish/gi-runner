@@ -280,6 +280,13 @@
       cmd: cat ../gi-temp/ldap_haproxy.cfg >> /etc/haproxy/haproxy.cfg
     when: false and ldap_depl_type == "C"
 
+  - name: Open openldap port on load balancer (bastion)
+    firewalld:
+      port: "1389/tcp"
+      permanent: yes
+      immediate: yes
+      state: enabled
+
   - name: Restart HA Proxy
     service:
       name: haproxy
