@@ -1177,6 +1177,33 @@ done
 echo "export GI_INSTALL_LDAP=${install_ldap}" >> $file
 if [ $install_ldap == 'Y' ]
 then
+	if [[ ! -z "$GI_LDAP_DEPLOYMENT" ]]
+	then
+		if [[ "$GI_LDAP_DEPLOYMENT" == "C" ]]
+		then
+			ldap_inst_type = "openshift"
+		else
+			ldap_inst_type = "bastion"
+		fi
+		read -p "You decided to install openldap on $ldap_inst_type  - insert (C)ontainer or (S)tandalone bastion or confirm existing and press <ENTER>: " new_ldap_depl
+		if [[ $new_ldap_depl != '' ]]
+                then
+                        ldap_depl=$new_ldap_depl
+                fi
+	else
+		while ! [[ $ldap_depl == 'C' || $ldap_depl == 'S' ]]
+                do
+			printf "Decide where LDAP instance should be deployed (as container on OpenShift or as standalone installation on bastion? (\e[4mC\e[0m)ontainer/(S)tandalone: "
+			read ldap_depl
+			ldap_depl=${ldap_depl:-C}
+		done
+	fi
+	if [[ -z "$ldap_depl" ]]
+        then
+                echo export GI_LDAP_DEPLOYMENT=$GI_LDAP_DEPLOYMENT >> $file
+        else
+                echo export GI_LDAP_DEPLOYMENT=$ldap_depl >> $file
+        fi
         if [[ ! -z "$GI_LDAP_DOMAIN" ]]
         then
                 read -p "LDAP organization DN is set to [$GI_LDAP_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ldap_domain
