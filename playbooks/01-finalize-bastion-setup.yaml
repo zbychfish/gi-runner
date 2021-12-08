@@ -132,13 +132,14 @@
         path: oc-registry.tar
         state: absent
 
-    - name: Extractng OCP, OLM, ROOK images - takes several minutes ...
+    - name: Extractng OCP, OLM, ROOK, ADDS images - takes several minutes ...
       shell:
         cmd: "tar -C /opt/registry -xf {{ archives_dir }}/{{ item.archive }} data/*"
       with_items:
         - { archive: 'coreos-registry-*.tar' }
         - { archive: 'olm-registry-*.tar' }
         - { archive: 'rook-registry-*.tar' }
+        - { archive: 'additions-registry-*.tar' }
       when: internet_type == 'A'
       
     - name: Check image repository existence
