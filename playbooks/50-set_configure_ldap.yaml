@@ -278,7 +278,7 @@
   - name: Update HA proxy config
     shell:
       cmd: cat ../gi-temp/ldap_haproxy.cfg >> /etc/haproxy/haproxy.cfg
-    when: false and ldap_depl_type == "C"
+    when: ldap_depl_type == "C"
 
   - name: Open openldap port on load balancer (bastion)
     firewalld:
