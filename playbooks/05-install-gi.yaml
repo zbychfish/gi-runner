@@ -113,6 +113,7 @@
 
   - name: Set GI installation variables
     set_fact:
+      archives_dir: "{{ lookup('env','GI_ARCHIVES_DIR') }}"
       gi_case_inventory_setup: "install"
       gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' }}"
       offline_inventory: "gi_offline"
@@ -122,6 +123,11 @@
       db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
       db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
       gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int > 2 else 'L-OOLE-C2ASKR' }}"
+
+  - name: Extract offline operator archive
+    shell:
+      cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/gi_registry-{{ gi_version }}.tar  gi_offline/*"
+    when: internet_type == 'A'
 
   - name: Check presence of cloudctl tool
     stat:

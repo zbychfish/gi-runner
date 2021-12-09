@@ -14,7 +14,7 @@ function check_exit_code() {
 echo "Setting environment"
 registry_version=2.7.1
 local_directory=`pwd`
-host_fqdn=$( hostname --long )
+host_fqdn=$(hostname --long)
 temp_dir=$local_directory/gi-temp
 air_dir=$local_directory/air-gap
 # Creates temporary directory
@@ -32,7 +32,7 @@ check_exit_code $? "Cannot download image registry"
 # - Prepares portable registry directory structure
 mkdir -p /opt/registry/{auth,certs,data}
 # - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
-openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:`hostname --long`"
+openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:${host_fqdn}"
 check_exit_code $? "Cannot create certificate for temporary image registry"
 cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
 update-ca-trust extract
@@ -62,11 +62,12 @@ do
 	check_exit_code $? "Cannot pull image $image"
         tag=`echo "$image" | awk -F '/' '{print $NF}'`
         echo "TAG: $tag"
-	podman push --creds admin:guardium $image `hostname --long`:5000/adds/$tag
+	podman push --creds admin:guardium $image ${host_fqdn}:5000/adds/$tag
 	podman rmi $image
 done
 echo "Extracting image digests ..."
-echo "openldap:latest,"$(podman inspect `hostname --long`:5000/adds/openldap:latest|jq .[0].Digest|tr -d '"') >> ${air_dir}/digests.txt
+echo "openldap:latest,"podman inspect ${host_fqdn}:5000/adds/openldap:latest|jq .[0].Digest|tr -d '"' >> ${air_dir}/digests.txt
+exit 0
 echo "Archiving mirrored registry ..."
 podman stop bastion-registry
 cd /opt/registry
