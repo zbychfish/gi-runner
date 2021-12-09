@@ -65,10 +65,15 @@ do
 	podman push --creds admin:guardium $image `hostname --long`:5000/adds/$tag
 	podman rmi $image
 done
+echo "Extracting image digests ..."
+echo "openldap:latest,"$(podman inspect `hostname --long`:5000/adds/openldap:latest|jq .[0].Digest|tr -d '"') >> ${air_dir}/digests.txt
 echo "Archiving mirrored registry ..."
 podman stop bastion-registry
 cd /opt/registry
 tar cf ${air_dir}/additions-registry-`date +%Y-%m-%d`.tar data
+cd ${air_dir}
+tar -rf ${air_dir}/additions-registry-`date +%Y-%m-%d`.tar digest.txt
+rm -f digests.txt
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
