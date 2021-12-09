@@ -223,7 +223,7 @@
 
   - name: Get openldap digest
     shell:
-      cmd: cat gi-temp/digests.txt|grep openldap:latest|awk -F ',' '{print $2}'
+      cmd: cat ../gi-temp/digests.txt|grep openldap:latest|awk -F ',' '{print $2}'
     register: ldap_digest
 
   - name: Set correct tag or digest
