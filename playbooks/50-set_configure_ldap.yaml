@@ -25,6 +25,7 @@
       - { name: "GI_LDAP_DEPLOYMENT", value: "{{ ldap_depl_type }}" }
       - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
       - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
+      - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
 
   - name: Set masters array
     set_fact:
@@ -68,6 +69,17 @@
       - { name: "GI_OCS_IP", value: "{{ ocs_ip }}" }
       - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
       - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
+
+  - name: Set parameters for air-gapped installation
+    set_fact:
+      archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
+    when: internet_type == 'A'
+
+  - name: Check configuration parameters for air-gapped installation
+    fail: msg="Variable {{ item.name }} is not set"
+    when: internet_type == 'A' and item.value == ""
+    loop:
+      - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
 
   - debug:
       msg: "{{ ldap_users_raw.split(',') }}"
@@ -113,6 +125,7 @@
     shell:
       cmd: slappasswd -s {{ ldap_password }}
     register: ssha_admin_password
+    when: ldap_depl_type == "S"
 
   - name: Extract first LDAP domain component
     shell:
@@ -202,6 +215,13 @@
     register: result
     failed_when: result.rc != 0 and "already exists" not in result.stderr
     when: ldap_depl_type == "C"
+
+  - name: Extract digests from archive
+    shell:
+      cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/additions-registry*.tar digests.txt"
+    when: internet_type == 'A'
+
+  - meta: end_play
 
   - name: Configure openldap deployment plan
     template:
