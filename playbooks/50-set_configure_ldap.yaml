@@ -226,8 +226,8 @@
       cmd: cat gi-temp/digests.txt|grep openldap:latest|awk -F ',' '{print $2}'
     register: ldap_digest
 
-  - name: Set correct tag/digest
-    set_facts:
+  - name: Set correct tag or digest
+    set_fact:
       ldap_version: "{{ ':latest' if internet_type != 'A' else '@'ldap_digest.stdout }}"
     when: ldap_depl_type == "C"
 
