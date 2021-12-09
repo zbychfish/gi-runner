@@ -228,7 +228,7 @@
 
   - name: Set correct tag or digest
     set_fact:
-      ldap_version: "{{ ':latest' if internet_type != 'A' else '@'ldap_digest.stdout }}"
+      ldap_version: "{{ ':latest' if internet_type != 'A' else '@'+ldap_digest.stdout }}"
     when: ldap_depl_type == "C"
 
   - name: Configure openldap deployment plan
