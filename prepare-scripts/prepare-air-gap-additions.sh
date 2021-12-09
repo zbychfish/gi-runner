@@ -32,7 +32,7 @@ check_exit_code $? "Cannot download image registry"
 # - Prepares portable registry directory structure
 mkdir -p /opt/registry/{auth,certs,data}
 # - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
-openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:${host_fqdn}"
+openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=${host_fqdn}" -addext "subjectAltName = DNS:${host_fqdn}"
 check_exit_code $? "Cannot create certificate for temporary image registry"
 cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
 update-ca-trust extract
@@ -66,14 +66,13 @@ do
 	podman rmi $image
 done
 echo "Extracting image digests ..."
-echo "openldap:latest,"podman inspect ${host_fqdn}:5000/adds/openldap:latest|jq .[0].Digest|tr -d '"' >> ${air_dir}/digests.txt
-exit 0
+echo "openldap:latest,"`cat /opt/registry/data/docker/registry/v2/repositories/adds/openldap/_manifests/tags/latest/current/link` > ${air_dir}/digests.txt
 echo "Archiving mirrored registry ..."
 podman stop bastion-registry
 cd /opt/registry
 tar cf ${air_dir}/additions-registry-`date +%Y-%m-%d`.tar data
 cd ${air_dir}
-tar -rf ${air_dir}/additions-registry-`date +%Y-%m-%d`.tar digest.txt
+tar -rf ${air_dir}/additions-registry-`date +%Y-%m-%d`.tar digests.txt
 rm -f digests.txt
 podman rm bastion-registry
 podman rmi --all

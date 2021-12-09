@@ -128,6 +128,7 @@
     shell:
       cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/gi_registry-{{ gi_version }}.tar  gi_offline/*"
     when: internet_type == 'A'
+    warn: false
 
   - name: Check presence of cloudctl tool
     stat:
