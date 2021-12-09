@@ -228,7 +228,7 @@
 
   - name: Configure openldap deployment plan
     vars:
-      ldap_version: "':latest' if internet_type !=A else '@'ldap_digest.stdout"
+      ldap_version: "{{ ':latest' if internet_type !=A else '@'ldap_digest.stdout }}"
     when: ldap_depl_type == "C"
 
     template:
