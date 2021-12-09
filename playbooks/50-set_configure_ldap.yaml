@@ -226,11 +226,12 @@
       cmd: cat gi-temp/digests.txt|grep openldap:latest|awk -F ',' '{print $2}'
     register: ldap_digest
 
-  - name: Configure openldap deployment plan
-    vars:
+  - name: Set correct tag/digest
+    set_facts:
       ldap_version: "{{ ':latest' if internet_type != 'A' else '@'ldap_digest.stdout }}"
     when: ldap_depl_type == "C"
 
+  - name: Configure openldap deployment plan
     template:
       src: "openldap_depl.j2"
       dest: "../gi-temp/openldap_depl.yaml"
