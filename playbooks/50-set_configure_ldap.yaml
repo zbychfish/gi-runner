@@ -219,15 +219,24 @@
   - name: Extract digests from archive
     shell:
       cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/additions-registry*.tar digests.txt"
-    when: internet_type == 'A'
+    when: internet_type == 'A' and ldap_depl_type == "C"
 
-  - meta: end_play
+  - name: Get openldap digest
+    shell:
+      cmd: cat gi-temp/digests.txt|grep openldap:latest|awk -F ',' '{print $2}'
+    register: ldap_digest
 
   - name: Configure openldap deployment plan
+    vars:
+      ldap_version: "':latest' if internet_type !=A else '@'ldap_digest.stdout"
+    when: ldap_depl_type == "C"
+
     template:
       src: "openldap_depl.j2"
       dest: "../gi-temp/openldap_depl.yaml"
     when: ldap_depl_type == "C"
+
+  - meta: end_play
 
   - name: Deploy bitnami.openldap
     shell:
