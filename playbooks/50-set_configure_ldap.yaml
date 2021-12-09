@@ -237,8 +237,6 @@
       dest: "../gi-temp/openldap_depl.yaml"
     when: ldap_depl_type == "C"
 
-  - meta: end_play
-
   - name: Deploy bitnami.openldap
     shell:
       cmd: "oc create -f {{ item }} -n openldap"
