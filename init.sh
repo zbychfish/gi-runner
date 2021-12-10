@@ -241,7 +241,7 @@ then
 		result=$?
 		if [[ $result -eq 0 ]]
 		then
-			if [[ `openssl rsa -noout -modulus -in $ocp.key` != $modulus_cert ]]
+			if [[ `openssl rsa -noout -modulus -in $ocp_key` != $modulus_cert ]]
 			then
 				echo "Key does not correspond to OCP certificate"
 				result=1
