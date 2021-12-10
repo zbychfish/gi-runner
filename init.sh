@@ -200,6 +200,9 @@ done
 while ! [[ $ocp_ext_ingress == 'Y' || $ocp_ext_ingress == 'N' ]]
 do
 	read -p "Would you like add own certificate for OCP ingress?: " ocp_ext_ingress
+done
+if [[ $ocp_ext_ingress == 'Y' || $ocp_ext_ingress == 'N' ]]
+then
 	result=1
 	while [[ $result -ne 0 ]]
 	do
@@ -247,7 +250,7 @@ do
 			echo "Key cannot be validated."
 		fi
 	done
-done
+fi
 if [[ $use_air_gap != 'Y' ]]
 then
 	while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
