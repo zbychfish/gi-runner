@@ -106,9 +106,9 @@
 
   - name: Set ingress cert variables
     set_fact:
-      ocp_ca: "{{ lookup('env', 'GI_OCP_IN_CA').split(',') }}"
-      ocp_cert: "{{ lookup('env', 'GI_OCP_IN_CERT').split(',') }}"
-      ocp_key: "{{ lookup('env', 'GI_OCP_IN_KEY').split(',') }}"
+      ocp_ca: "{{ lookup('env', 'GI_OCP_IN_CA') }}"
+      ocp_cert: "{{ lookup('env', 'GI_OCP_IN_CERT') }}"
+      ocp_key: "{{ lookup('env', 'GI_OCP_IN_KEY') }}"
     when: ocp_ext_ingress == 'Y'
 
   - name: Check workers configuration
