@@ -197,7 +197,7 @@ do
 		echo "Incorrect choice"
 	fi
 done
-while [[ $ocp_ext_ingress == 'Y' || $ocp_ext_ingress == 'N' ]]
+while ! [[ $ocp_ext_ingress == 'Y' || $ocp_ext_ingress == 'N' ]]
 do
 	read -p "Would you like add own certificate for OCP ingress?: " ocp_ext_ingress
 	result=1
