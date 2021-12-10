@@ -197,6 +197,56 @@ do
 		echo "Incorrect choice"
 	fi
 done
+while [[ $ocp_ext_ingress == 'Y' || $ocp_ext_ingress == 'N' ]]
+do
+	read -p "Would you like add own certificate for OCP ingress?: " ocp_ext_ingress
+	result=1
+	while [[ $result -ne 0 ]]
+	do
+		read -p "Insert full path to CA certificate which singned the OCP certificate: " ocp_ca
+		openssl x509 -in $ocp_ca -text -noout
+		result=$?
+		if [[ $result -ne 0 ]]
+			echo "Certificate cannot be validated."
+		fi
+	done
+	result=1
+	while [[ $result -ne 0 ]]
+	do
+		read -p "Insert full path to OCP ingres certificate: " ocp_cert
+		openssl x509 -in $ocp_cert -text -noout
+		result=$?
+		if [[ $result -eq 0 ]]
+		then
+			openssl verify -CAfile $ocp_ca $ocp_cert
+			result=$?
+			if [[ $result -ne 0 ]]
+			then
+				echo "Certificate is not signed by provided CA"
+			fi
+		else
+			echo "Certificate cannot be validated."
+		fi
+	done
+	modulus_cert=$(openssl x509 -noout -modulus -in ocp_cert)
+	result=1
+	while [[ $result -ne 0 ]]
+	do
+		read -p "Insert full path to private key of OCP certificate: " ocp_key
+		openssl rsa -in ocp_key -check
+		result=$?
+		if [[ $result -eq 0 ]]
+		then
+			if [[ $(openssl rsa -noout -modulus -in ocp.key) != $modulus_cert ]]
+			then
+				echo "Key does not correspond to OCP certificate"
+				result=1
+			fi
+		else
+			echo "Key cannot be validated."
+		fi
+	done
+done
 if [[ $use_air_gap != 'Y' ]]
 then
 	while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
