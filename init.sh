@@ -207,6 +207,7 @@ do
 		openssl x509 -in $ocp_ca -text -noout
 		result=$?
 		if [[ $result -ne 0 ]]
+		then
 			echo "Certificate cannot be validated."
 		fi
 	done
