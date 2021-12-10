@@ -614,7 +614,7 @@
 
   - name: Add CA cert to OCP proxy configuration
     shell:
-      cmd: "oc patch proxy/cluster --type=merge --patch='{\"spec\":{\"trustedCA\":{\"name\":\"gn-ca\"}}}"
+      cmd: "oc patch proxy/cluster --type=merge -p '{\"spec\":{\"trustedCA\":{\"name\":\"gn-ca\"}}}'"
     when: ocp_ext_ingress == 'Y'
 
   - name: Wait - cluster stabilization
