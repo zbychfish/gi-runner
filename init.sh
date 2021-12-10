@@ -232,16 +232,16 @@ then
 			echo "Certificate cannot be validated."
 		fi
 	done
-	modulus_cert=$(openssl x509 -noout -modulus -in ocp_cert)
+	modulus_cert=$(openssl x509 -noout -modulus -in $ocp_cert)
 	result=1
 	while [[ $result -ne 0 ]]
 	do
 		read -p "Insert full path to private key of OCP certificate: " ocp_key
-		openssl rsa -in ocp_key -check
+		openssl rsa -in $ocp_key -check
 		result=$?
 		if [[ $result -eq 0 ]]
 		then
-			if [[ $(openssl rsa -noout -modulus -in ocp.key) != $modulus_cert ]]
+			if [[ $(openssl rsa -noout -modulus -in $ocp.key) != $modulus_cert ]]
 			then
 				echo "Key does not correspond to OCP certificate"
 				result=1
