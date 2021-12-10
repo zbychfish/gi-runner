@@ -32,6 +32,7 @@ function get_ocp_domain() {
         if [[ -z "$ocp_domain" ]]
         then
                 echo export GI_DOMAIN=$GI_DOMAIN >> $file
+		ocp_domain=$GI_DOMAIN
         else
                 echo export GI_DOMAIN=$ocp_domain >> $file
         fi
@@ -197,11 +198,45 @@ do
 		echo "Incorrect choice"
 	fi
 done
+if [[ $use_air_gap != 'Y' ]]
+then
+        while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
+        do
+                printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
+                read ocp_release_decision
+                ocp_release_decision=${ocp_release_decision:-E}
+                if [[ $ocp_release_decision == 'E' ]]
+                then
+                        while [[ $ocp_release_minor == '' ]]
+                        do
+                                read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
+                        done
+                        ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
+                elif [[ $ocp_release_decision == 'S' ]]
+                then
+                        ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
+                fi
+        done
+else
+        while [[ $ocp_release_minor == '' ]]
+        do
+                read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
+        done
+        ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
+fi
+get_ocp_domain
+echo "export GI_OCP_RELEASE=$ocp_release" >> $file
+echo "OCP certificate must refer to globaly to each name in apps subdomain."
+echo "Alternate Subject Name must be set to: \"*.apps.${ocp_domain}\"."
+echo "You need provide full paths to CA, certificate and private key."
 while ! [[ $ocp_ext_ingress == 'Y' || $ocp_ext_ingress == 'N' ]]
 do
-	read -p "Would you like add own certificate for OCP ingress?: " ocp_ext_ingress
+	printf  "Would you like add own certificate for OCP ingress? (\e[4mN\e[0m)o/(Y)es: "
+	read ocp_ext_ingress
+	ocp_ext_ingress=${ocp_ext_ingress:-N}
 done
-if [[ $ocp_ext_ingress == 'Y' || $ocp_ext_ingress == 'N' ]]
+echo "export GI_OCP_IN=$ocp_ext_ingress" >> $file
+if [[ $ocp_ext_ingress == 'Y' ]]
 then
 	result=1
 	while [[ $result -ne 0 ]]
@@ -250,34 +285,10 @@ then
 			echo "Key cannot be validated."
 		fi
 	done
+	echo "export GI_OCP_IN_CA=$ocp_ca" >> $file
+	echo "export GI_OCP_IN_CERT=$ocp_cert" >> $file
+	echo "export GI_OCP_IN_KEY=$ocp_key" >> $file
 fi
-if [[ $use_air_gap != 'Y' ]]
-then
-	while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
-	do
-        	printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
-        	read ocp_release_decision
-        	ocp_release_decision=${ocp_release_decision:-E}
-        	if [[ $ocp_release_decision == 'E' ]]
-        	then
-                	while [[ $ocp_release_minor == '' ]]
-               		do
-				read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
-                	done
-			ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
-        	elif [[ $ocp_release_decision == 'S' ]]
-        	then
-			ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
-        	fi
-	done
-else
-	while [[ $ocp_release_minor == '' ]]
-        do
-        	read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
-        done
-        ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
-fi
-echo "export GI_OCP_RELEASE=$ocp_release" >> $file
 while ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
 do
 	printf "Is your installation the 3 nodes only (masters only)? (\e[4mN\e[0m)o/(Y)es: "
@@ -288,7 +299,6 @@ do
  	       echo "Incorrect value"
         fi
 done
-get_ocp_domain
 echo export GI_MASTER_ONLY=$is_master_only >> $file
 # Time settings
 while ! [[ $install_ntpd == 'Y' || $install_ntpd == 'N' ]]
