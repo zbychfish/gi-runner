@@ -1245,9 +1245,9 @@ then
 	then
 		if [[ "$GI_LDAP_DEPLOYMENT" == "C" ]]
 		then
-			ldap_inst_type = "openshift"
+			ldap_inst_type="openshift"
 		else
-			ldap_inst_type = "bastion"
+			ldap_inst_type="bastion"
 		fi
 		read -p "You decided to install openldap on $ldap_inst_type  - insert (C)ontainer or (S)tandalone bastion or confirm existing and press <ENTER>: " new_ldap_depl
 		if [[ $new_ldap_depl != '' ]]
