@@ -642,7 +642,7 @@
 
   - name: Wait - cluster stabilization
     pause:
-      minutes: 5
+      minutes: 1
     when: ocp_ext_ingress == 'Y'
 
   - name: Check cluster nodes health after ingress change
