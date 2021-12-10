@@ -111,7 +111,7 @@
       ocp_key: "{{ lookup('env', 'GI_OCP_IN_KEY') }}"
     when: ocp_ext_ingress == 'Y'
 
-  - name: Check workers configuration
+  - name: Check ingress cert variables
     fail: msg="Variable {{ item.name }} is not set"
     when: ocp_ext_ingress == 'Y' and item.value == ""
     loop:

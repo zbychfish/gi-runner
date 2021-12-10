@@ -1228,6 +1228,68 @@ then
 
         echo export GI_ICS_OPERANDS=`echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1'` >> $file
 fi
+echo "CPFS (ICS) ASN (Alternate Subject Name) certificate attribute must be set tp in \"cp-console.apps${ocp_domain}\"."
+echo "You need provide full paths to CA, certificate and private key."
+while ! [[ $ics_ext_ingress == 'Y' || $ics_ext_ingress == 'N' ]]
+do
+        printf  "Would you like add own certificate for ICS endpoint? (\e[4mN\e[0m)o/(Y)es: "
+        read ics_ext_ingress
+        ics_ext_ingress=${ics_ext_ingress:-N}
+done
+echo "export GI_ICS_IN=$cs_ext_ingress" >> $file
+if [[ $ics_ext_ingress == 'Y' ]]
+then
+        result=1
+        while [[ $result -ne 0 ]]
+        do
+                read -p "Insert full path to CA certificate which singned the ICS certificate: " ics_ca
+                openssl x509 -in $ics_ca -text -noout
+                result=$?
+                if [[ $result -ne 0 ]]
+                then
+                        echo "Certificate cannot be validated."
+                fi
+        done
+        result=1
+        while [[ $result -ne 0 ]]
+        do
+                read -p "Insert full path to ICS endpoint certificate: " ics_cert
+                openssl x509 -in $ics_cert -text -noout
+                result=$?
+                if [[ $result -eq 0 ]]
+                then
+                        openssl verify -CAfile $ics_ca $ics_cert
+                        result=$?
+                        if [[ $result -ne 0 ]]
+                        then
+                                echo "Certificate is not signed by provided CA"
+                        fi
+                else
+                        echo "Certificate cannot be validated."
+                fi
+        done
+        modulus_cert=`openssl x509 -noout -modulus -in $ics_cert`
+        result=1
+        while [[ $result -ne 0 ]]
+        do
+                read -p "Insert full path to private key of ICS certificate: " ics_key
+                openssl rsa -in $ics_key -check
+                result=$?
+                if [[ $result -eq 0 ]]
+                then
+                        if [[ `openssl rsa -noout -modulus -in $ics_key` != $modulus_cert ]]
+                        then
+                                echo "Key does not correspond to OCP certificate"
+                                result=1
+                        fi
+                else
+                        echo "Key cannot be validated."
+                fi
+        done
+        echo "export GI_ICS_IN_CA=$ics_ca" >> $file
+        echo "export GI_ICS_IN_CERT=$ics_cert" >> $file
+        echo "export GI_ICS_IN_KEY=$ics_key" >> $file
+fi
 while ! [[ $install_ldap == 'Y' || $install_ldap == 'N' ]] # While string is different or empty...
 do
         printf "Would you like install OpenLDAP for example as Guardium Insights identity source? (\e[4mY\e[0m)es/(N)o: "
