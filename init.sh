@@ -226,7 +226,7 @@ else
 fi
 get_ocp_domain
 echo "export GI_OCP_RELEASE=$ocp_release" >> $file
-echo "OCP certificate must refer to globaly to each name in apps subdomain."
+echo "OCP certificate must refer globaly to each name in apps subdomain."
 echo "Alternate Subject Name must be set to: \"*.apps.${ocp_domain}\"."
 echo "You need provide full paths to CA, certificate and private key."
 while ! [[ $ocp_ext_ingress == 'Y' || $ocp_ext_ingress == 'N' ]]
