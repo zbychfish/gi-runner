@@ -341,7 +341,7 @@
       - "oc -n ibm-common-services delete secret route-tls-secret"
       - "oc -n ibm-common-services create secret generic route-tls-secret --from-file=ca.crt={{ ics_ca }}  --from-file=tls.crt={{ ics_cert }}  --from-file=tls.key={{ ics_key }}"
       - "oc -n ibm-common-services delete secret ibmcloud-cluster-ca-cert"
-      = "oc -n ibm-common-services delete pod -l app=auth-idp"
+      - "oc -n ibm-common-services delete pod -l app=auth-idp"
     when: ics_ext_ingress == 'Y'
 
   - name: Wait for successful cert replacement
