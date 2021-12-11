@@ -18,6 +18,7 @@ Releases:
 <LI>additional init.sh variable to enable STAP direct streaming (available for GI 3.1+ installations) GI_STAP_STREAMING
 <LI>added support OpenLDAP as application worked on OCP cluster, additional init.sh variable introduced GI_LDAP_DEPLOYMENT
 <LI>added optional replacement OCP ingress certificate, 4 additional init.sh variables: GI_OCP_IN, GI_OCP_IN_CA, GI_OCP_IN_CERT, GI_OCP_IN_KEY
+<LI>added optional replacement CPFS (ICS) endpoint certificate, 4 additional init.sh variables: GI_ICS_IN, GI_ICS_IN_CA, GI_ICS_IN_CERT, GI_ICS_IN_KEY
 <LI>Tested support Fedora35 as bastion
 <HR>
 Files:
