@@ -322,7 +322,7 @@
   - name: Switch off automatic endpoint certificate recreation
     shell:
       cmd: oc -n ibm-common-services patch managementingress default --type merge --patch '{"spec":{"ignoreRouteCert":true}}'
-    when: when: ics_ext_ingress == 'Y'
+    when: ics_ext_ingress == 'Y'
 
   - name: Wait for endpoint configuration change
     shell:
@@ -331,7 +331,7 @@
     until: "ics_pods_status.stdout != \"1\""
     retries: 10
     delay: 20
-    when: when: ics_ext_ingress == 'Y'
+    when: ics_ext_ingress == 'Y'
 
   - name: Change endpoint cert
     shell:
@@ -342,7 +342,7 @@
       - "oc -n ibm-common-services create secret generic route-tls-secret --from-file=ca.crt={{ ics_ca }}  --from-file=tls.crt={{ ics_cert }}  --from-file=tls.key={{ ics_key }}"
       - "oc -n ibm-common-services delete secret ibmcloud-cluster-ca-cert"
       = "oc -n ibm-common-services delete pod -l app=auth-idp"
-    when: when: ics_ext_ingress == 'Y'
+    when: ics_ext_ingress == 'Y'
 
   - name: Wait for successful cert replacement
     shell:
@@ -351,7 +351,7 @@
     until: "ics_pods_status.stdout == \"0\""
     retries: 50
     delay: 20
-    when: when: ics_ext_ingress == 'Y'
+    when: ics_ext_ingress == 'Y'
 
   - name: Copy ICS config files to ocp directory
     shell:
