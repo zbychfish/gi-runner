@@ -7,7 +7,7 @@ cd $temp_dir
 dnf -y install git
 git clone https://github.com/rook/rook.git
 cd rook
-git checkout $rook-version
+git checkout ${rook-version}
 images+=` grep -e "image:.*ceph\/ceph:.*" deploy/examples/cluster.yaml|awk '{print $NF}'`
 echo $images
 exit 0
