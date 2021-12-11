@@ -1,14 +1,22 @@
 #!/bin/bash
-rook_version=v1.8.0
+rook_version="v1.8.0"
 images="docker.io/rook/ceph:${rook_version}"
 local_directory=`pwd`
 temp_dir=$local_directory/gi-temp
 cd $temp_dir
+echo "ROOK_CEPH_OPER,docker.io/rook/ceph:${rook_version}" > $temp_dir/rook_images
 dnf -y install git
 git clone https://github.com/rook/rook.git
 cd rook
-git checkout ${rook-version}
-images+=" "`grep -e "image:.*ceph\/ceph:.*" deploy/examples/cluster.yaml|awk '{print $NF}'`
+git checkout ${rook_version}
+image=" "`grep -e "image:.*ceph\/ceph:.*" deploy/examples/cluster.yaml|awk '{print $NF}'`
+images+=image
+echo "ROOK_CEPH_IMAGE,$image" > $temp_dir/rook_images
+declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RESIZER_IMAGE" "ROOK_CSI_PROVISIONER_IMAGE" "ROOK_CSI_SNAPSHOTTER_IMAGE" "ROOK_CSI_ATTACHER_IMAGE" "CSI_VOLUME_REPLICATION_IMAGE")
+for label in "${labels[@]}"
+do
+	cat rook/deploy/examples/operator-openshift.yaml|grep $label|awk -F ":" '{print $(NF-1)":"$NF}'|tr -d '"'|tr -d " "
+done
 echo $images
 exit 0
 function check_exit_code() {
