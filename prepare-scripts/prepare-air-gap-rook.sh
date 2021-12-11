@@ -1,5 +1,11 @@
 #!/bin/bash
+rook_version=1.8.0
+temp_dir=$local_directory/gi-temp
+cd $temp_dir
+dnf -y install git
+git clone https://github.com/rook/rook.git
 
+exit 0
 function check_exit_code() {
         if [[ $1 -ne 0 ]]
         then
