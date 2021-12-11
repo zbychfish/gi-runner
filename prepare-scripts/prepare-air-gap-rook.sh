@@ -1,11 +1,15 @@
 #!/bin/bash
-rook_version=1.8.0
+rook_version=v1.8.0
+images="docker.io/rook/ceph:${rook_version}"
 local_directory=`pwd`
 temp_dir=$local_directory/gi-temp
 cd $temp_dir
 dnf -y install git
 git clone https://github.com/rook/rook.git
-
+cd rook
+git checkout $rook-version
+images+=` grep -e "image:.*ceph\/ceph:.*" deploy/examples/cluster.yaml|awk '{print $NF}'`
+echo $images
 exit 0
 function check_exit_code() {
         if [[ $1 -ne 0 ]]
