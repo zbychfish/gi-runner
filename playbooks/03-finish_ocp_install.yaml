@@ -40,6 +40,7 @@
 
   - set_fact:
       operator: "registry.{{ domain }}:5000/rook/ceph:v1.7.6"
+      rook_version: "v1.8.0"
 
   - set_fact:
       image: "{{ 'rook/ceph:v1.7.6' if internet_type != 'A' else operator }}"
