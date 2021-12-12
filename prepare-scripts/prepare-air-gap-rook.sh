@@ -30,6 +30,8 @@ image=`grep -e "image:.*ceph\/ceph:.*" deploy/examples/cluster.yaml|awk '{print 
 images+=" "$image
 echo "ROOK_CEPH_IMAGE,$image" >> $temp_dir/rook_images
 declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RESIZER_IMAGE" "ROOK_CSI_PROVISIONER_IMAGE" "ROOK_CSI_SNAPSHOTTER_IMAGE" "ROOK_CSI_ATTACHER_IMAGE" "CSI_VOLUME_REPLICATION_IMAGE")
+labels+="ROOK_CEPH_OPER"
+labels+="ROOK_CEPH_IMAGE"
 for label in "${labels[@]}"
 do
 	echo $label
