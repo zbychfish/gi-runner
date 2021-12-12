@@ -35,10 +35,10 @@ labels+=("ROOK_CEPH_IMAGE")
 for label in "${labels[@]}"
 do
 	echo $label
-	image_spec=`grep $label $temp_dir/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
-	echo $image_spec
-	IFS=":" read -r -a image_def <<< $image_spec        
-	echo ${image_def[@]}
+	IFS=":" read -r -a image_spec <<< `grep $label $temp_dir/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
+	#echo $image_spec
+	#IFS=":" read -r -a image_def <<< $image_spec        
+	echo ${image_spec[@]}
 done
 exit 0
 for label in "${labels[@]}"
