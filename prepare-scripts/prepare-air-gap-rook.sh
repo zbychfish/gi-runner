@@ -37,7 +37,7 @@ do
 	echo $label
 	image_spec=`grep $label $temp_dir/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
 	echo $image_spec
-	IFS="," read -r -a image_def <<< $image_spec        
+	IFS=":" read -r -a image_def <<< $image_spec        
 	echo ${image_def[@]}
 done
 exit 0
