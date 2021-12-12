@@ -8,6 +8,7 @@
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
     install_ldap:  "{{ lookup('env','GI_INSTALL_LDAP') }}"
     registry_version: "2.7.1"
+    storage_type:  "{{ lookup('env','GI_STORAGE_TYPE') }}"
 
   tasks:
     - name: Check configuration parameters
@@ -21,6 +22,7 @@
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
         - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
         - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
+        - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
 
     - name: Set parameters for air-gapped installation
       set_fact:
@@ -142,6 +144,11 @@
         - { archive: 'additions-registry-*.tar' }
       when: internet_type == 'A'
       
+    - name: rook-ceph images list extraction
+      shell:
+        cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/additions-registry-*.tar rook_images_sha"
+      when: storage_type == 'R'
+
     - name: Check image repository existence
       shell:
         cmd: podman ps -a|grep bastion-registry|wc -l
