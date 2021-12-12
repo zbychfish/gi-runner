@@ -18,6 +18,7 @@ images="docker.io/rook/ceph:${rook_version}"
 local_directory=`pwd`
 air_dir=$local_directory/air-gap
 temp_dir=$local_directory/gi-temp
+mkdir -p $temp_dir
 cd $temp_dir
 echo "ROOK_CEPH_OPER,docker.io/rook/ceph:${rook_version}" > $temp_dir/rook_images
 dnf -qy install python3 podman wget git
@@ -71,7 +72,7 @@ echo "Starting mirror image registry ..."
 podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version}
 check_exit_code $? "Cannot start temporary image registry"
 # Packs together centos updates, packages, python libraries and portable image
-echo "Mirroring open source rook-ceph for not onenode installation version 1.6.7 ..."
+echo "Mirroring open source rook-ceph for not onenode installation version ${rook_version} ..."
 for image in $images
 do
 	echo $image
@@ -82,6 +83,7 @@ do
 	podman push --creds admin:guardium $image `hostname --long`:5000/rook/$tag
 	podman rmi $image
 done
+exit 0
 echo "Archiving mirrored registry ..."
 podman stop bastion-registry
 cd /opt/registry
