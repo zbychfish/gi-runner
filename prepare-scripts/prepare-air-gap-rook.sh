@@ -32,6 +32,13 @@ echo "ROOK_CEPH_IMAGE,$image" >> $temp_dir/rook_images
 declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RESIZER_IMAGE" "ROOK_CSI_PROVISIONER_IMAGE" "ROOK_CSI_SNAPSHOTTER_IMAGE" "ROOK_CSI_ATTACHER_IMAGE" "CSI_VOLUME_REPLICATION_IMAGE")
 for label in "${labels[@]}"
 do
+	image_spec=`grep label $temp_dir/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
+	IFS="," read -r -a image_def <<< $image_spec        
+	echo ${image_def[@]}
+done
+exit 0
+for label in "${labels[@]}"
+do
         image=`cat deploy/examples/operator-openshift.yaml|grep $label|awk -F ":" '{print $(NF-1)":"$NF}'|tr -d '"'|tr -d " "`
         echo "$label,$image" >> $temp_dir/rook_images
         images+=" "$image
@@ -83,7 +90,6 @@ do
 	podman push --creds admin:guardium $image `hostname --long`:5000/rook/$tag
 	podman rmi $image
 done
-exit 0
 echo "Archiving mirrored registry ..."
 podman stop bastion-registry
 cd /opt/registry
