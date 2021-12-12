@@ -1228,7 +1228,7 @@ then
 
         echo export GI_ICS_OPERANDS=`echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1'` >> $file
 fi
-if [[ $gi_install=='Y' || $ics_install == 'Y' ]]
+if [[ $gi_install == 'Y' || $ics_install == 'Y' ]]
 then
 	while ! [[ $ics_ext_ingress == 'Y' || $ics_ext_ingress == 'N' ]]
 	do
