@@ -33,6 +33,7 @@ declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RE
 for label in "${labels[@]}"
 do
 	image_spec=`grep label $temp_dir/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
+	echo $image_spec
 	IFS="," read -r -a image_def <<< $image_spec        
 	echo ${image_def[@]}
 done
