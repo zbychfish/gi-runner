@@ -35,8 +35,8 @@ labels+=("ROOK_CEPH_IMAGE")
 for label in "${labels[@]}"
 do
 	IFS=":" read -r -a image_spec <<< `grep $label $temp_dir/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
-	echo ${image_spec[@]}
-	cat /opt/registry/data/docker/registry/v2/repositories/rook/${image_spec[0]}/_manifests/tags/${image_spec[1]}/current/link
+	#echo ${image_spec[@]}
+	echo `grep $label $temp_dir/rook_images`","`cat /opt/registry/data/docker/registry/v2/repositories/rook/${image_spec[0]}/_manifests/tags/${image_spec[1]}/current/link`
 done
 exit 0
 for label in "${labels[@]}"
