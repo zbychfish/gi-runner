@@ -1,27 +1,5 @@
 #!/bin/bash
-rook_version="v1.8.0"
-images="docker.io/rook/ceph:${rook_version}"
-local_directory=`pwd`
-temp_dir=$local_directory/gi-temp
-cd $temp_dir
-echo "ROOK_CEPH_OPER,docker.io/rook/ceph:${rook_version}" > $temp_dir/rook_images
-dnf -y install git
-git clone https://github.com/rook/rook.git
-cd rook
-git checkout ${rook_version}
-image=`grep -e "image:.*ceph\/ceph:.*" deploy/examples/cluster.yaml|awk '{print $NF}'`
-images+=" "$image
-echo "ROOK_CEPH_IMAGE,$image" >> $temp_dir/rook_images
-declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RESIZER_IMAGE" "ROOK_CSI_PROVISIONER_IMAGE" "ROOK_CSI_SNAPSHOTTER_IMAGE" "ROOK_CSI_ATTACHER_IMAGE" "CSI_VOLUME_REPLICATION_IMAGE")
-for label in "${labels[@]}"
-do
-	image=`cat deploy/examples/operator-openshift.yaml|grep $label|awk -F ":" '{print $(NF-1)":"$NF}'|tr -d '"'|tr -d " "`
-	echo "$label,$image" >> $temp_dir/rook_images
-	images+=" "$image
-done
-cat $temp_dir/rook_images
-echo $images
-exit 0
+
 function check_exit_code() {
         if [[ $1 -ne 0 ]]
         then
@@ -33,16 +11,34 @@ function check_exit_code() {
         fi
 }
 
-echo "Setting environment"
 registry_version=2.7.1
-local_directory=`pwd`
+rook_version="v1.8.0"
 host_fqdn=$( hostname --long )
-temp_dir=$local_directory/gi-temp
+images="docker.io/rook/ceph:${rook_version}"
+local_directory=`pwd`
 air_dir=$local_directory/air-gap
+temp_dir=$local_directory/gi-temp
+cd $temp_dir
+echo "ROOK_CEPH_OPER,docker.io/rook/ceph:${rook_version}" > $temp_dir/rook_images
+dnf -qy install python3 podman wget git
+check_exit_code $? "Cannot install required OS packages"
+git clone https://github.com/rook/rook.git
+cd rook
+git checkout ${rook_version}
+image=`grep -e "image:.*ceph\/ceph:.*" deploy/examples/cluster.yaml|awk '{print $NF}'`
+images+=" "$image
+echo "ROOK_CEPH_IMAGE,$image" >> $temp_dir/rook_images
+declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RESIZER_IMAGE" "ROOK_CSI_PROVISIONER_IMAGE" "ROOK_CSI_SNAPSHOTTER_IMAGE" "ROOK_CSI_ATTACHER_IMAGE" "CSI_VOLUME_REPLICATION_IMAGE")
+for label in "${labels[@]}"
+do
+        image=`cat deploy/examples/operator-openshift.yaml|grep $label|awk -F ":" '{print $(NF-1)":"$NF}'|tr -d '"'|tr -d " "`
+        echo "$label,$image" >> $temp_dir/rook_images
+        images+=" "$image
+done
+cd $local_directory
+echo "Setting environment"
 # Creates temporary directory
 mkdir -p $air_dir
-dnf -qy install python3 podman wget
-check_exit_code $? "Cannot install required OS packages"
 echo "Setup mirror image registry ..."
 # - cleanup repository if exists
 podman stop bastion-registry
@@ -90,9 +86,11 @@ done
 echo "Archiving mirrored registry ..."
 podman stop bastion-registry
 cd /opt/registry
-tar cf ${air_dir}/rook-registry-`date +%Y-%m-%d`.tar data
+tar cf ${air_dir}/rook-registry-${rook_version}.tar data
+cd $temp_dir
+tar -rf ${air_dir}/rook-registry-${rook_version}.tar rook_images
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
 rm -rf $temp_dir
-echo "Rook-Ceph images prepared - copy file ${air_dir}/rook-registry-`date +%Y-%m-%d`.tar to air-gapped bastion machine"
+echo "Rook-Ceph images prepared - copy file ${air_dir}/rook-registry-${rook_version}.tar to air-gapped bastion machine"
