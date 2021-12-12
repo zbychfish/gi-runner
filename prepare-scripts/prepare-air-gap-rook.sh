@@ -9,14 +9,17 @@ dnf -y install git
 git clone https://github.com/rook/rook.git
 cd rook
 git checkout ${rook_version}
-image=" "`grep -e "image:.*ceph\/ceph:.*" deploy/examples/cluster.yaml|awk '{print $NF}'`
-images+=image
+image=`grep -e "image:.*ceph\/ceph:.*" deploy/examples/cluster.yaml|awk '{print $NF}'`
+images+=" "$image
 echo "ROOK_CEPH_IMAGE,$image" >> $temp_dir/rook_images
 declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RESIZER_IMAGE" "ROOK_CSI_PROVISIONER_IMAGE" "ROOK_CSI_SNAPSHOTTER_IMAGE" "ROOK_CSI_ATTACHER_IMAGE" "CSI_VOLUME_REPLICATION_IMAGE")
 for label in "${labels[@]}"
 do
-	cat deploy/examples/operator-openshift.yaml|grep $label|awk -F ":" '{print $(NF-1)":"$NF}'|tr -d '"'|tr -d " "
+	image=`cat deploy/examples/operator-openshift.yaml|grep $label|awk -F ":" '{print $(NF-1)":"$NF}'|tr -d '"'|tr -d " "`
+	echo "$label,$image" >> $temp_dir/rook_images
+	images+=" "$image
 done
+cat $temp_dir/rook_images
 echo $images
 exit 0
 function check_exit_code() {
