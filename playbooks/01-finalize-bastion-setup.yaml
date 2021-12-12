@@ -142,11 +142,11 @@
         - { archive: 'olm-registry-*.tar' }
         - { archive: 'rook-registry-*.tar' }
         - { archive: 'additions-registry-*.tar' }
-      when: internet_type == 'A'
+      when: internet_type == 'A' and false
       
     - name: rook-ceph images list extraction
       shell:
-        cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/additions-registry-*.tar rook_images_sha"
+        cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/rook-registry-*.tar rook_images_sha"
       when: storage_type == 'R'
 
     - name: Check image repository existence
