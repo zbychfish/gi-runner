@@ -90,7 +90,6 @@ do
 	IFS=":" read -r -a image_spec <<< `grep $label $temp_dir/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
 	echo `grep $label $temp_dir/rook_images`","`cat /opt/registry/data/docker/registry/v2/repositories/rook/${image_spec[0]}/_manifests/tags/${image_spec[1]}/current/link` >> $temp_dir/rook_images_sha
 done
-exit 0
 echo "Archiving mirrored registry ..."
 podman stop bastion-registry
 cd /opt/registry
