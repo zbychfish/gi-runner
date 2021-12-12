@@ -72,7 +72,6 @@ podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/li
 check_exit_code $? "Cannot start temporary image registry"
 # Packs together centos updates, packages, python libraries and portable image
 echo "Mirroring open source rook-ceph for not onenode installation version 1.6.7 ..."
-images="docker.io/rook/ceph:v1.7.6 quay.io/ceph/ceph:v16.2.6 quay.io/cephcsi/cephcsi:v3.4.0 k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.3.0 k8s.gcr.io/sig-storage/csi-resizer:v1.3.0 k8s.gcr.io/sig-storage/csi-provisioner:v3.0.0 k8s.gcr.io/sig-storage/csi-snapshotter:v4.2.0 k8s.gcr.io/sig-storage/csi-attacher:v3.3.0"
 for image in $images
 do
 	echo $image
