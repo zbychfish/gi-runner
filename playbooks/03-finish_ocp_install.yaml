@@ -17,7 +17,6 @@
     ssh_key:  "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
 
-
   tasks:
   - name: Check other configuration parameters
     fail: msg="Variable {{ item.name }} is not set"
@@ -473,6 +472,8 @@
     with_items:
       - { cmd: "oc patch storageclass ocs-storagecluster-cephfs --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "O"
+
+  - meta: end_play
 
   - name: Configure rook-ceph CRD's
     shell:
