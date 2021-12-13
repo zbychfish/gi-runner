@@ -85,6 +85,7 @@ do
 done
 labels+=("ROOK_CEPH_OPER")
 labels+=("ROOK_CEPH_IMAGE")
+echo "#List of rook-ceph images" > $temp_dir/rook_images_sha
 for label in "${labels[@]}"
 do
 	IFS=":" read -r -a image_spec <<< `grep $label $temp_dir/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
