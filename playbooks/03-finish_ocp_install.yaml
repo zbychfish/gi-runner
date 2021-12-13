@@ -502,6 +502,10 @@
       - CSI_VOLUME_REPLICATION_IMAGE
     when: internet_type == 'A' and storage_type == "R"
 
+  - debug:
+    var: rook_digests
+    #verbosity: 2
+
   - set_fact:
       rook_image: "rook/ceph:{{ rook_version }}"
     when: internet_type != 'A' and storage_type == "R"
