@@ -16,6 +16,7 @@
     ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}"
     ssh_key:  "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
+    rook_version: "v1.8.0"
 
   tasks:
   - name: Check other configuration parameters
@@ -483,16 +484,27 @@
       cmd: "{{ item }}"
     with_items:
       - "tar -C ../gi-temp -xf {{ archives_dir }}/rook-registry-*.tar rook_images_sha"
+    when: internet_type == 'A' and storage_type == "R" and false
+
+  - name: Set digests for images (in order OPER,
+    shell:
+      cmd: "IFS=',' read -r -a rook_v_oper <<< `cat gi-temp/rook_images_sha|grep {{ item }}`;echo \"`echo ${rook_v_oper[1]}|awk -F '/' '{print $NF}'|awk -F':' '{print $1}'`@${rook_v_oper[2]}\""
+    register: rook_digests
+    with_items:
+      - ROOK_CEPH_OPER
+      - ROOK_CEPH_IMAGE
+      - ROOK_CSI_CEPH_IMAGE
+      - ROOK_CSI_REGISTRAR_IMAGE
+      - ROOK_CSI_RESIZER_IMAGE
+      - ROOK_CSI_PROVISIONER_IMAGE
+      - ROOK_CSI_SNAPSHOTTER_IMAGE
+      - ROOK_CSI_ATTACHER_IMAGE
+      - CSI_VOLUME_REPLICATION_IMAGE
     when: internet_type == 'A' and storage_type == "R"
 
   - set_fact:
-      operator: "registry.{{ domain }}:5000/rook/ceph:v1.7.6"
-      rook_version: "v1.8.0"
-    when: storage_type == "R"
-
-  - set_fact:
-      image: "{{ 'rook/ceph:{{ rook_version }}' if internet_type != 'A' else operator }}"
-    when: storage_type == "R"
+      rook_image: "rook/ceph:{{ rook_version }}"
+    when: internet_type != 'A' and storage_type == "R"
 
   - name: Configure rook-ceph CRD's
     shell:
