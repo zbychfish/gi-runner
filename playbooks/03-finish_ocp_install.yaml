@@ -508,7 +508,7 @@
     #verbosity: 2
 
   - set_fact:
-      rook_ceph_image: "ceph:{{ rook_ceph_version }}"
+      rook_ceph_image: "ceph{{ rook_ceph_version }}"
     when: internet_type != 'A' and storage_type == "R"
 
   - set_fact:
