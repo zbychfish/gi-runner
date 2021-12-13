@@ -488,7 +488,7 @@
 
   - name: Set digests for images (in order OPER,
     shell:
-      cmd: "IFS=',' read -r -a rook_v_oper <<< `cat gi-temp/rook_images_sha|grep {{ item }}`;echo \"`echo ${rook_v_oper[1]}|awk -F '/' '{print $NF}'|awk -F':' '{print $1}'`@${rook_v_oper[2]}\""
+      cmd: "IFS=',' read -r -a rook_v_oper <<< `cat ../gi-temp/rook_images_sha|grep {{ item }}`;echo \"`echo ${rook_v_oper[1]}|awk -F '/' '{print $NF}'|awk -F':' '{print $1}'`@${rook_v_oper[2]}\""
     register: rook_digests
     with_items:
       - ROOK_CEPH_OPER
