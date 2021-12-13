@@ -485,8 +485,6 @@
       - { cmd: "oc patch storageclass ocs-storagecluster-cephfs --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "O"
 
-  - meta: end_play
-
   - name: Configure rook-ceph CRD's
     shell:
       cmd: "oc apply -f ../scripts/rook-latest-crds.yaml --kubeconfig ../ocp/auth/kubeconfig"
@@ -496,6 +494,8 @@
     shell:
       cmd: "oc apply -f ../scripts/rook-latest-common.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "R"
+
+  - meta: end_play
 
   - name: Configure rook-ceph cluster file
     vars:
