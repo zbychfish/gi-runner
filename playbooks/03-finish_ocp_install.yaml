@@ -541,22 +541,20 @@
   - name: Configure rook operator file offline
     template:
       src: "rook-latest-operator-offline.j2"
-      dest: "../scripts/rook-latest-operator.yaml"
+      dest: "../gi-temp/rook-latest-operator.yaml"
     when: internet_type == 'A' and storage_type == "R"
 
   - name: Configure rook operator file online
     template:
       src: "rook-latest-operator.j2"
-      dest: "../scripts/rook-latest-operator.yaml"
+      dest: "../gi-temp/rook-latest-operator.yaml"
     when: internet_type != 'A' and storage_type == "R"
-
-  - meta: end_play
 
   - name: Configure rook operator
     shell:
       cmd: "{{ item }}"
     loop:
-      - "oc apply -f ../scripts/rook-latest-operator.yaml --kubeconfig ../ocp/auth/kubeconfig"
+      - "oc apply -f ../gi-temp/rook-latest-operator.yaml --kubeconfig ../ocp/auth/kubeconfig"
       - "oc apply -f ../scripts/rook-latest-filesystem.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
@@ -573,7 +571,7 @@
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
-      - { cmd: "oc apply -f ../scripts/'rook-cluster.yaml' --kubeconfig ../ocp/auth/kubeconfig" }
+      - { cmd: "oc apply -f ../gi-temp/'rook-cluster.yaml' --kubeconfig ../ocp/auth/kubeconfig" }
     when: storage_type == "R"
 
   - name: Wait for correct Rook Ceph cluster deployment
