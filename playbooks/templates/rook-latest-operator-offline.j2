@@ -145,12 +145,12 @@ data:
   # The default version of CSI supported by Rook will be started. To change the version
   # of the CSI driver to something other than what is officially supported, change
   # these images to the desired release of the CSI driver.
-  ROOK_CSI_CEPH_IMAGE: "registry.{{ domain }}:5000/rook/cephcsi:v3.4.0"
-  ROOK_CSI_REGISTRAR_IMAGE: "registry.{{ domain }}:5000/rook/csi-node-driver-registrar:v2.3.0"
-  ROOK_CSI_RESIZER_IMAGE: "registry.{{ domain }}:5000/rook/csi-resizer:v1.3.0"
-  ROOK_CSI_PROVISIONER_IMAGE: "registry.{{ domain }}:5000/rook/csi-provisioner:v3.0.0"
-  ROOK_CSI_SNAPSHOTTER_IMAGE: "registry.{{ domain }}:5000/rook/csi-snapshotter:v4.2.0"
-  ROOK_CSI_ATTACHER_IMAGE: "registry.{{ domain }}:5000/rook/csi-attacher:v3.3.0"
+  ROOK_CSI_CEPH_IMAGE: "quay.io/cephcsi/{{ rook_digests.results[2].stdout }}"
+  ROOK_CSI_REGISTRAR_IMAGE: "k8s.gcr.io/sig-storage/{{ rook_digests.results[3].stdout }}"
+  ROOK_CSI_RESIZER_IMAGE: "k8s.gcr.io/sig-storage/{{ rook_digests.results[4].stdout }}"
+  ROOK_CSI_PROVISIONER_IMAGE: "k8s.gcr.io/sig-storage/{{ rook_digests.results[5].stdout }}"
+  ROOK_CSI_SNAPSHOTTER_IMAGE: "k8s.gcr.io/sig-storage/{{ rook_digests.results[6].stdout }}"
+  ROOK_CSI_ATTACHER_IMAGE: "k8s.gcr.io/sig-storage/{{ rook_digests.results[7].stdout }}"
   # (Optional) set user created priorityclassName for csi plugin pods.
   # CSI_PLUGIN_PRIORITY_CLASSNAME: "system-node-critical"
 
@@ -362,7 +362,7 @@ data:
   ROOK_ENABLE_DISCOVERY_DAEMON: "false"
   # Enable volume replication controller
   CSI_ENABLE_VOLUME_REPLICATION: "false"
-  # CSI_VOLUME_REPLICATION_IMAGE: "quay.io/csiaddons/volumereplication-operator:v0.1.0"
+  # CSI_VOLUME_REPLICATION_IMAGE: "quay.io/csiaddons/{{ rook_digests.results[8].stdout }}"
 
   # (Optional) Admission controller NodeAffinity.
   # ADMISSION_CONTROLLER_NODE_AFFINITY: "role=storage-node; storage=rook, ceph"
@@ -399,7 +399,7 @@ spec:
       serviceAccountName: rook-ceph-system
       containers:
         - name: rook-ceph-operator
-          image: {{ image }}
+          image: docker.io/rook/{{ rook_digests.results[0].stdout }}
           args: ["ceph", "operator"]
           volumeMounts:
             - mountPath: /var/lib/rook
