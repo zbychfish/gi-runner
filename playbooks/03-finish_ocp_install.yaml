@@ -503,7 +503,7 @@
     when: internet_type == 'A' and storage_type == "R"
 
   - debug:
-      msg: "{{ rook_digests.results }}"
+      msg: "{{ rook_digests.results[0].stdout }}"
     #verbosity: 2
 
   - set_fact:
