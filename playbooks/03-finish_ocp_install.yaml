@@ -16,7 +16,8 @@
     ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}"
     ssh_key:  "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
-    rook_version: "v1.8.0"
+    rook_operator_version: "v1.8.0"
+    rook_ceph_version: "v16.2.7"
 
   tasks:
   - name: Check other configuration parameters
@@ -503,12 +504,16 @@
     when: internet_type == 'A' and storage_type == "R"
 
   - debug:
-      msg: "{{ rook_digests.results[0].stdout }}"
+      msg: "{{ rook_digests.results[1].stdout }}"
     #verbosity: 2
 
   - set_fact:
-      rook_image: "rook/ceph:{{ rook_version }}"
+      rook_ceph_image: "ceph:{{ rook_ceph_version }}"
     when: internet_type != 'A' and storage_type == "R"
+
+  - set_fact:
+      rook_ceph_image: "{{ rook_digests.results[1].stdout }}"
+    when: internet_type == 'A' and storage_type == "R"
 
   - name: Configure rook-ceph CRD's
     shell:
@@ -520,14 +525,12 @@
       cmd: "oc apply -f ../scripts/rook-latest-common.yaml --kubeconfig ../ocp/auth/kubeconfig"
     when: storage_type == "R"
 
-  - meta: end_play
-
   - name: Configure rook-ceph cluster file
     vars:
       multiple_per_node: "true"
     template:
       src: "rook-latest-cluster.j2"
-      dest: "../scripts/rook-cluster.yaml"
+      dest: "../gi-temp/rook-cluster.yaml"
     when: storage_type == "R"
 
   - name: Configure rook-ceph-rbd-sc file
@@ -536,8 +539,10 @@
       requires_replica: "true"
     template:
       src: "rook-storage_class_rbd.j2"
-      dest: "../scripts/rook-storage_class_rbd.yaml"
+      dest: "../gi-temp/rook-storage_class_rbd.yaml"
     when: storage_type == "R"
+
+  - meta: end_play
 
   - name: Configure rook operator file offline
     template:
