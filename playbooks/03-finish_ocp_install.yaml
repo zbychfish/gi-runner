@@ -38,13 +38,6 @@
       - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
       - { name: "GI_OCP_IN", value: "{{ ocp_ext_ingress }}" }
 
-  - set_fact:
-      operator: "registry.{{ domain }}:5000/rook/ceph:v1.7.6"
-      rook_version: "v1.8.0"
-
-  - set_fact:
-      image: "{{ 'rook/ceph:v1.7.6' if internet_type != 'A' else operator }}"
-
   - name: Set parameters for air-gapped installation
     set_fact:
       archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
@@ -484,6 +477,22 @@
     with_items:
       - { cmd: "oc patch storageclass ocs-storagecluster-cephfs --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "O"
+
+  - name: Unpack rook images list
+    shell:
+      cmd: "{{ item }}"
+    with_items:
+      - "tar -C ../gi-temp -xf {{ archives_dir }}/rook-registry-*.tar rook_images_sha"
+    when: internet_type == 'A' and storage_type == "R"
+
+  - set_fact:
+      operator: "registry.{{ domain }}:5000/rook/ceph:v1.7.6"
+      rook_version: "v1.8.0"
+    when: storage_type == "R"
+
+  - set_fact:
+      image: "{{ 'rook/ceph:{{ rook_version }}' if internet_type != 'A' else operator }}"
+    when: storage_type == "R"
 
   - name: Configure rook-ceph CRD's
     shell:
