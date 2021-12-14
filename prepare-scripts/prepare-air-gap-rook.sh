@@ -13,6 +13,8 @@ function check_exit_code() {
 
 registry_version=2.7.1
 rook_version="v1.7.8"
+ceph_path="cluster/examples/kubernetes/ceph"
+#ceph_path="deploy/examples"
 host_fqdn=$( hostname --long )
 images="docker.io/rook/ceph:${rook_version}"
 local_directory=`pwd`
@@ -26,13 +28,13 @@ check_exit_code $? "Cannot install required OS packages"
 git clone https://github.com/rook/rook.git
 cd rook
 git checkout ${rook_version}
-image=`grep -e "image:.*ceph\/ceph:.*" deploy/examples/cluster.yaml|awk '{print $NF}'`
+image=`grep -e "image:.*ceph\/ceph:.*" ${ceph_path}/cluster.yaml|awk '{print $NF}'`
 images+=" "$image
 echo "ROOK_CEPH_IMAGE,$image" >> $temp_dir/rook_images
 declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RESIZER_IMAGE" "ROOK_CSI_PROVISIONER_IMAGE" "ROOK_CSI_SNAPSHOTTER_IMAGE" "ROOK_CSI_ATTACHER_IMAGE" "CSI_VOLUME_REPLICATION_IMAGE")
 for label in "${labels[@]}"
 do
-        image=`cat deploy/examples/operator-openshift.yaml|grep $label|awk -F ":" '{print $(NF-1)":"$NF}'|tr -d '"'|tr -d " "`
+        image=`cat ${ceph_path}/operator-openshift.yaml|grep $label|awk -F ":" '{print $(NF-1)":"$NF}'|tr -d '"'|tr -d " "`
         echo "$label,$image" >> $temp_dir/rook_images
         images+=" "$image
 done
