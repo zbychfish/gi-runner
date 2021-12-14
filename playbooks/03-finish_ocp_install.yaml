@@ -273,10 +273,13 @@
       - manifests-community-operator-index
     when: internet_type == 'A'
 
-  - name: Configure rook-ceph imagecontentsourcepolicy file
+  - name: Configure rook-ceph and openldap imagecontentsourcepolicy files
     template:
-      src: "rook_icsp.j2"
-      dest: "../gi-temp/rook_icsp.yaml"
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+    with_items:
+      - { src: "rook_icsp.j2", dest: "../gi-temp/rook_icsp.yaml" }
+      - { src: "openldap_icsp.j2", dest: "../gi-temp/openldap_icsp.yaml" }
     when: internet_type == 'A'
 
   - name: Configure mirrored imageContentSourcePolicy.yaml
@@ -291,9 +294,12 @@
       - manifests-community-operator-index
     when: internet_type == 'A'
 
-  - name: Configure imageContentSourcePolicy for rook-ceph
+  - name: Configure imageContentSourcePolicy for rook-ceph and openldap
     shell:
-      cmd: "oc apply -f ../gi-temp/rook_icsp.yaml"
+      cmd: "oc apply -f ../gi-temp/{{ item }}"
+    with_items:
+      - rook_icsp.yaml
+      - openldap_icsp.yaml
     when: internet_type == 'A'
 
   - name: Clean manifests in temp directory
