@@ -511,6 +511,8 @@
       rook_ceph_image: "{{ rook_digests.results[1].stdout }}"
     when: internet_type == 'A' and storage_type == "R"
 
+  - meta: end_play 
+
   - name: Configure rook-ceph CRD's
     shell:
       cmd: "oc apply -f ../scripts/rook-latest-crds.yaml --kubeconfig ../ocp/auth/kubeconfig"
