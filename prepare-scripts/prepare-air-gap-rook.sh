@@ -12,7 +12,7 @@ function check_exit_code() {
 }
 
 registry_version=2.7.1
-rook_version="v1.8.0"
+rook_version="v1.7.8"
 host_fqdn=$( hostname --long )
 images="docker.io/rook/ceph:${rook_version}"
 local_directory=`pwd`
