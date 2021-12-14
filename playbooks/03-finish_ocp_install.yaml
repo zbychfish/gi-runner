@@ -485,7 +485,7 @@
       cmd: "{{ item }}"
     with_items:
       - "tar -C ../gi-temp -xf {{ archives_dir }}/rook-registry-*.tar rook_images_sha"
-    when: internet_type == 'A' and storage_type == "R" and false
+    when: internet_type == 'A' and storage_type == "R"
 
   - name: Set digests for images (in order OPER,
     shell:
