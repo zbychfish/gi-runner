@@ -17,7 +17,7 @@
     ssh_key:  "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
     rook_operator_version: "v1.7.8"
-    rook_ceph_version: "v16.2.7"
+    rook_ceph_version: "v16.2.6"
 
   tasks:
   - name: Check other configuration parameters
@@ -511,8 +511,6 @@
       rook_ceph_image: "{{ rook_digests.results[1].stdout }}"
     when: internet_type == 'A' and storage_type == "R"
 
-  - meta: end_play 
-
   - name: Configure rook-ceph CRD's
     shell:
       cmd: "oc apply -f ../scripts/rook-latest-crds.yaml --kubeconfig ../ocp/auth/kubeconfig"
@@ -589,7 +587,7 @@
     shell:
       cmd: "{{ item.cmd }}"
     with_items:
-      - { cmd: "oc apply -f ../scripts/rook-storage_class_rbd.yaml --kubeconfig ../ocp/auth/kubeconfig" }
+      - { cmd: "oc apply -f ../gi-temp/rook-storage_class_rbd.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc patch storageclass rook-ceph-block --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "R"
