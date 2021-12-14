@@ -1237,7 +1237,7 @@ then
         	ics_ext_ingress=${ics_ext_ingress:-N}
 	done
 	echo "export GI_ICS_IN=$cs_ext_ingress" >> $file
-	if ! [[ $ics_ext_ingress == 'Y' ]]
+	if [[ $ics_ext_ingress == 'Y' ]]
 	then
 		echo "CPFS (ICS) ASN (Alternate Subject Name) certificate attribute must be set tp in \"cp-console.apps${ocp_domain}\"."
 		echo "You need provide full paths to CA, certificate and private key."
