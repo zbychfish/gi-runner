@@ -353,10 +353,14 @@
     delay: 20
     when: ics_ext_ingress == 'Y'
 
-  - name: Copy ICS config files to ocp directory
+  - name: Copy ICS operand config to ocp directory
     shell:
-      cmd: cp ../gi-temp/ics_catalog.yaml ../gi-temp/ics_operands.yaml ../ocp
-    ignore_errors: yes # ics_catalog does not exists in case of air-gapp installation
+      cmd: cp ../gi-temp/ics_operands.yaml ../ocp
+
+  - name: Copy ICS catalog config to ocp directory
+    shell:
+      cmd: cp ../gi-temp/ics_catalog.yaml ../ocp
+    when: internet_type != 'A'
 
   - name: Cleanup temp directory
     shell:
