@@ -400,7 +400,7 @@ spec:
       serviceAccountName: rook-ceph-system
       containers:
         - name: rook-ceph-operator
-          image: {{ rook_operator_version }}
+          image: rook/ceph:{{ rook_operator_version }}
           args: ["ceph", "operator"]
           volumeMounts:
             - mountPath: /var/lib/rook
