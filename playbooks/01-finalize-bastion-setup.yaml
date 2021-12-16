@@ -147,7 +147,7 @@
     - name: rook-ceph images list extraction
       shell:
         cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/rook-registry-*.tar rook_images_sha"
-      when: storage_type == 'R'
+      when: storage_type == 'R' and internet_type == 'A'
 
     - name: Check image repository existence
       shell:
