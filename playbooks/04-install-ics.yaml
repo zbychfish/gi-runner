@@ -208,7 +208,7 @@
 
   - name: Create ICS catalog file
     vars:
-      ics_registry: "{{ 'docker.io/ibmcom' if ics_version_hint is not in [ 0, 1, 2, 3, 4, 5, 6 ] else 'icr.io/cpopen' }}"
+      ics_registry: "{{ 'docker.io/ibmcom' if ics_version_hint is in [ 0, 1, 2, 3, 4, 5, 6 ] else 'icr.io/cpopen' }}"
     template:
       src: ics_catalog.j2
       dest: "../gi-temp/ics_catalog.yaml"
