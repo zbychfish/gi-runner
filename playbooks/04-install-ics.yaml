@@ -207,7 +207,7 @@
     when: internet_type == 'A'
 
   - name: Create ICS catalog file
-    set_fact:
+    vars:
       ics_registry: "{{ 'docker.io/ibmcom' if ics_version_hint is not in [ 0, 1, 2, 3, 4, 5, 6 ] else 'icr.io/cpopen' }}"
     template:
       src: ics_catalog.j2
