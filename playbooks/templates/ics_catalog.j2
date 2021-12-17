@@ -7,7 +7,7 @@ spec:
   displayName: IBMCS Operators
   publisher: IBM
   sourceType: grpc
-  image: icr.io/cpopen/ibm-common-service-catalog:{{ ics_version }}
+  image: {{ ics_registry }}/ibm-common-service-catalog:{{ ics_version }}
   updateStrategy:
     registryPoll:
       interval: 45m
