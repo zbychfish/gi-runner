@@ -128,7 +128,7 @@ then
 	echo "- ICS 3.7.4 for GI 3.0.0"
 	echo "- ICS 3.9.0 for GI 3.0.1"
 	echo "- ICS 3.10.0 for GI 3.0.2"
-	echo "- ICS 3.11.0 for GI 3.1.0"
+	echo "- ICS 3.14.1 for GI 3.1.0"
 	echo "If you would like install different ICS version (supported by selected GI) please modify variable.sh file before starting playbooks"
 	echo "In case of air-gapped installation you must install the bundled ICS version"
 	echo "export GI_VERSION=$gi_version_selected" >> $file
@@ -1112,6 +1112,68 @@ then
                 fi
         done
         echo export GI_STAP_STREAMING=$stap_supp >> $file
+        while ! [[ $gi_ext_ingress == 'Y' || $gi_ext_ingress == 'N' ]]
+        do
+                printf  "Would you like add own certificate for GI endpoint? (\e[4mN\e[0m)o/(Y)es: "
+                read gi_ext_ingress
+                gi_ext_ingress=${gi_ext_ingress:-N}
+        done
+        echo "export GI_IN=$gi_ext_ingress" >> $file
+        if [[ $gi_ext_ingress == 'Y' ]]
+        then
+                echo "Guardium Insights ASN (Alternate Subject Name) certificate attribute must be set tp in \"insights.apps${ocp_domain}\"."
+                echo "You need provide full paths to CA, certificate and private key."
+                result=1
+                while [[ $result -ne 0 ]]
+                do
+                        read -p "Insert full path to CA certificate which singned the ICS certificate: " gi_ca
+                        openssl x509 -in $gi_ca -text -noout
+                        result=$?
+                        if [[ $result -ne 0 ]]
+                        then
+                                echo "Certificate cannot be validated."
+                        fi
+                done
+                result=1
+                while [[ $result -ne 0 ]]
+                do
+                        read -p "Insert full path to GI endpoint certificate: " gi_cert
+                        openssl x509 -in $gi_cert -text -noout
+                        result=$?
+                        if [[ $result -eq 0 ]]
+                        then
+                                openssl verify -CAfile $gi_ca $ics_cert
+                                result=$?
+                                if [[ $result -ne 0 ]]
+                                then
+                                        echo "Certificate is not signed by provided CA"
+                                fi
+                        else
+                                echo "Certificate cannot be validated."
+                        fi
+                done
+                modulus_cert=`openssl x509 -noout -modulus -in $gi_cert`
+                result=1
+                while [[ $result -ne 0 ]]
+                do
+                        read -p "Insert full path to private key of GI certificate: " gi_key
+                        openssl rsa -in $gi_key -check
+                        result=$?
+                        if [[ $result -eq 0 ]]
+                        then
+                                if [[ `openssl rsa -noout -modulus -in $gi_key` != $modulus_cert ]]
+                                then
+                                        echo "Key does not correspond to GI certificate"
+                                        result=1
+                                fi
+                        else
+                                echo "Key cannot be validated."
+                        fi
+                done
+                echo "export GI_IN_CA=$gi_ca" >> $file
+                echo "export GI_IN_CERT=$gi_cert" >> $file
+                echo "export GI_IN_KEY=$gi_key" >> $file
+        fi
 elif [[ $gi_install=='N' && $ics_install == 'Y' ]]
 then
 	ics_sizes="S M L"
