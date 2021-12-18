@@ -164,6 +164,10 @@
       cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_case_archive }} --outputdir ../gi-temp/{{ offline_inventory }} --tolerance 1"
     when: internet_type != 'A'
 
+  - name: Link python3 to python
+    shell:
+      cmd: ln -s /usr/bin/python3 /usr/bin/python
+
   - name: GI preinstall task
     vars:
       add_options1: "{{ '-l false' if gi_version_index|int > 2 else '' }}"
@@ -211,7 +215,7 @@
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
     when: internet_type != 'A'
 
-  - name: Wait for GI operators
+  - name: Wait for GI operators before 3.1
     shell:
       cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
     register: operator_status
@@ -223,6 +227,20 @@
       - { operator_pattern: "ibm-cloud-databases-redis-operator" }
       - { operator_pattern: "mongodb-kubernetes-operator" }
       - { operator_pattern: "guardiuminsights-controller-manager" }
+    when: gi_version_index|int < 3
+
+  - name: Wait for GI operators from 3.1
+    shell:
+      cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
+    register: operator_status
+    until: "operator_status.stdout == \"1\""
+    retries: 30
+    delay: 10
+    with_items:
+      - { operator_pattern: "ibm-cloud-databases-redis-operator" }
+      - { operator_pattern: "mongodb-kubernetes-operator" }
+      - { operator_pattern: "guardiuminsights-controller-manager" }
+    when: gi_version_index|int > 2
 
   - name: Generate GI deployment file
     template:
