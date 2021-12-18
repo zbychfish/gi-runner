@@ -229,6 +229,8 @@
       src: "gi.j2"
       dest: "../gi-temp/gi.yaml"
 
+  - meta: end_play
+
   - name: Deploy GI
     shell:
       cmd: "oc apply -f ../gi-temp/gi.yaml"
