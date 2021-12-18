@@ -172,7 +172,7 @@
 
   - name: GI preinstall task
     vars:
-      add_options1: "{{ '-l false' if gi_version_index|int > 2 else '' }}"
+      add_options1: "{{ '-l true' if gi_version_index|int > 2 else '' }}"
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes_list }} -t false {{ add_options1 }}\""
 
