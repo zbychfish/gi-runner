@@ -1142,7 +1142,7 @@ then
                         result=$?
                         if [[ $result -eq 0 ]]
                         then
-                                openssl verify -CAfile $gi_ca $ics_cert
+                                openssl verify -CAfile $gi_ca $gi_cert
                                 result=$?
                                 if [[ $result -ne 0 ]]
                                 then
