@@ -15,6 +15,7 @@
     db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
     is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
     stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
+    gi_ext_ingress: "{{ lookup('env','GI_IN') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -36,6 +37,7 @@
       - { name: "GI_DB2_ENCRYPTED", value: "{{ db2_enc_hint }}" }
       - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
       - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
+      - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
 
   - name: Set parameters for non air-gapped installation
     set_fact:
@@ -124,6 +126,21 @@
       db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
       gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int > 2 else 'L-OOLE-C2ASKR' }}"
 
+  - name: Set endpoint cert variables
+    set_fact:
+      gi_ca: "{{ lookup('env', 'GI_IN_CA') }}"
+      gi_cert: "{{ lookup('env', 'GI_IN_CERT') }}"
+      gi_key: "{{ lookup('env', 'GI_IN_KEY') }}"
+    when: gi_ext_ingress == 'Y'
+
+  - name: Check ICS endpoint cert variables
+    fail: msg="Variable {{ item.name }} is not set"
+    when: gi_ext_ingress == 'Y' and item.value == ""
+    loop:
+      - { name: "GI_IN_CA", value: "{{ gi_ca }}" }
+      - { name: "GI_IN_CERT", value: "{{ gi_cert }}" }
+      - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
+
   - name: Extract offline operator archive
     shell:
       cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/gi_registry-{{ gi_version }}.tar  gi_offline/*"
@@ -172,9 +189,10 @@
 
   - name: GI preinstall task
     vars:
-      add_options1: "{{ '-l true ' if gi_version_index|int > 2 else '' }}"
+      add_options1: "{{ ' -l true ' if gi_version_index|int > 2 else '' }}"
+      add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes_list }} -t false {{ add_options1 }}\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes_list }} -t false{{ add_options1 }}{{ add_options2 }}\""
 
   - name: Install GI catalog in air-gapped
     shell:
