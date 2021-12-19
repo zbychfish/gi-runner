@@ -221,7 +221,7 @@
 
   - name: Publish ICS catalog in air-gap
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
+      cmd: "cloudctl case launch --case {{ offline_inventory }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
     when: internet_type == 'A'
 
   - name: Wait for ICS catalog
