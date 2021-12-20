@@ -3,12 +3,13 @@
     internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     domain: "{{ lookup('env','GI_DOMAIN') }}"
     ics_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
-    ics_versions: [ "3.7.4","3.8.1","3.9.1","3.10.0","3.11.0","3.12.1","3.13.0" ]
-    ics_cases: [ "ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz","ibm-cp-common-services-1.5.1.tgz","ibm-cp-common-services-1.6.0.tgz","ibm-cp-common-services-1.7.0.tgz","ibm-cp-common-services-1.8.1.tgz","ibm-cp-common-services-1.9.0.tgz" ]
+    ics_versions: [ "3.7.4","3.8.1","3.9.1","3.10.0","3.11.0","3.12.1","3.13.0", "3.14.1" ]
+    ics_cases: [ "ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz","ibm-cp-common-services-1.5.1.tgz","ibm-cp-common-services-1.6.0.tgz","ibm-cp-common-services-1.7.0.tgz","ibm-cp-common-services-1.8.1.tgz","ibm-cp-common-services-1.9.0.tgz", "ibm-cp-common-services-1.10.1.tgz" ]
     ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
     install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
+    ics_ext_ingress: "{{ lookup('env','GI_ICS_IN') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -22,6 +23,7 @@
       - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
+      - { name: "GI_ICS_IN", value: "{{ ics_ext_ingress }}" }
 
   - name: Set parameters for ICS with GI (part1)
     set_fact:
@@ -39,7 +41,7 @@
   - name: Set parameters for ICS with GI (part2)
     set_fact:
       ics_size_hint: "{{ 'S' if gi_size == 'values-dev' else 'S' if gi_size == 'values-poc-lite' else 'M' }}"
-      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' }}"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' }}"
     when: install_gi == 'Y'
 
   - name: Set parameters for ICS without GI
@@ -66,7 +68,7 @@
   - name: Set GI installation variables
     set_fact:
       gi_case_inventory_setup: "install"
-      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' }}"
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz'}}"
     when: internet_type == 'A' and install_gi == 'Y'
 
   - name: Set parameters for air-gapped installation
@@ -87,6 +89,21 @@
       - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
       - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
       - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+
+  - name: Set endpoint cert variables
+    set_fact:
+      ics_ca: "{{ lookup('env', 'GI_ICS_IN_CA') }}"
+      ics_cert: "{{ lookup('env', 'GI_ICS_IN_CERT') }}"
+      ics_key: "{{ lookup('env', 'GI_ICS_IN_KEY') }}"
+    when: ics_ext_ingress == 'Y'
+
+  - name: Check ICS endpoint cert variables
+    fail: msg="Variable {{ item.name }} is not set"
+    when: ics_ext_ingress == 'Y' and item.value == ""
+    loop:
+      - { name: "GI_ICS_IN_CA", value: "{{ ics_ca }}" }
+      - { name: "GI_ICS_IN_CERT", value: "{{ ics_cert }}" }
+      - { name: "GI_ICS_IN_KEY", value: "{{ ics_key }}" }
 
   - name: Create ICS operator namespace
     shell:
@@ -190,6 +207,8 @@
     when: internet_type == 'A'
 
   - name: Create ICS catalog file
+    vars:
+      ics_registry: "{{ 'docker.io/ibmcom' if ics_version_hint is in [ 0, 1, 2, 3, 4, 5, 6 ] else 'icr.io/cpopen' }}"
     template:
       src: ics_catalog.j2
       dest: "../gi-temp/ics_catalog.yaml"
@@ -202,7 +221,7 @@
 
   - name: Publish ICS catalog in air-gap
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
+      cmd: "cloudctl case launch --case {{ offline_inventory }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
     when: internet_type == 'A'
 
   - name: Wait for ICS catalog
@@ -302,9 +321,48 @@
     retries: 80
     delay: 20
 
-  - name: Copy ICS config files to ocp directory
+  - name: Switch off automatic endpoint certificate recreation
     shell:
-      cmd: cp ../gi-temp/ics_catalog.yaml ../gi-temp/ics_operands.yaml ../ocp
+      cmd: oc -n ibm-common-services patch managementingress default --type merge --patch '{"spec":{"ignoreRouteCert":true}}'
+    when: ics_ext_ingress == 'Y'
+
+  - name: Wait for endpoint configuration change
+    shell:
+      cmd: "oc logs `oc get pods -n ibm-common-services | grep ibm-management-ingress-operator|awk '{print $1}'` -n ibm-common-services|grep 'IgnoreRouteCert is true'|wc -l"
+    register: ics_pod_status
+    until: "ics_pods_status.stdout != \"1\""
+    retries: 10
+    delay: 20
+    when: ics_ext_ingress == 'Y'
+
+  - name: Change endpoint cert
+    shell:
+      cmd: "{{ item }}"
+    with_items:
+      - "oc -n ibm-common-services delete certificates.v1alpha1.certmanager.k8s.io route-cert"
+      - "oc -n ibm-common-services delete secret route-tls-secret"
+      - "oc -n ibm-common-services create secret generic route-tls-secret --from-file=ca.crt={{ ics_ca }}  --from-file=tls.crt={{ ics_cert }}  --from-file=tls.key={{ ics_key }}"
+      - "oc -n ibm-common-services delete secret ibmcloud-cluster-ca-cert"
+      - "oc -n ibm-common-services delete pod -l app=auth-idp"
+    when: ics_ext_ingress == 'Y'
+
+  - name: Wait for successful cert replacement
+    shell:
+      cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+    register: ics_pods_status
+    until: "ics_pods_status.stdout == \"0\""
+    retries: 50
+    delay: 20
+    when: ics_ext_ingress == 'Y'
+
+  - name: Copy ICS operand config to ocp directory
+    shell:
+      cmd: cp ../gi-temp/ics_operands.yaml ../ocp
+
+  - name: Copy ICS catalog config to ocp directory
+    shell:
+      cmd: cp ../gi-temp/ics_catalog.yaml ../ocp
+    when: internet_type != 'A'
 
   - name: Cleanup temp directory
     shell:

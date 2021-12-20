@@ -8,17 +8,78 @@
     ldap_users_raw: "{{ lookup('env','GI_LDAP_USERS') }}"
     ics_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
     internet_type:  "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+    ldap_depl_type: "{{ lookup('env','GI_LDAP_DEPLOYMENT') }}"
+    is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
+    is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
 
   tasks:
   - name: Check configuration parameters
     fail: msg="Variable {{ item.name }} is not set"
-    when: item.value == "" or item.value == "''"
+    when: item.value == "" or item.value == "''" or item.value == " "
     loop:
       - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
-      - { name: "GI_LDAP_DOMAIN", value: " {{ ldap_domain }}" }
-      - { name: "GI_LDAP_USERS_PWD", value: " {{ ldap_password }}" }
-      - { name: "GI_LDAP_USERS", value: " {{ ldap_users_raw }}" }
+      - { name: "GI_LDAP_DOMAIN", value: "{{ ldap_domain }}" }
+      - { name: "GI_LDAP_USERS_PWD", value: "{{ ldap_password }}" }
+      - { name: "GI_LDAP_USERS", value: "{{ ldap_users_raw }}" }
+      - { name: "GI_LDAP_DEPLOYMENT", value: "{{ ldap_depl_type }}" }
+      - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
+      - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
+      - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
+
+  - name: Set masters array
+    set_fact:
+      master_ip: "{{ lookup('env', 'GI_MASTER_IP').split(',') }}"
+      master_mac: "{{ lookup('env', 'GI_MASTER_MAC_ADDRESS').split(',') }}"
+      master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
+
+  - name: Check master configuration
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
+      - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
+      - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
+
+  - name: Set workers arrays
+    set_fact:
+      worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
+      worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
+      worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
+    when: is_master_only == 'N'
+
+  - name: Set workers arrays
+    set_fact:
+      worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
+      worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
+      worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
+    when: is_master_only == 'N'
+
+  - name: Set OCS array
+    set_fact:
+      ocs_ip: "{{ lookup('env', 'GI_OCS_IP').split(',') }}"
+      ocs_mac: "{{ lookup('env', 'GI_OCS_MAC_ADDRESS').split(',') }}"
+      ocs_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
+    when: is_ocs_tainted == 'Y'
+
+  - name: Check OCS configuration
+    fail: msg="Variable {{ item.name }} is not set"
+    when: is_ocs_tainted == 'Y' and item.value == ""
+    loop:
+      - { name: "GI_OCS_IP", value: "{{ ocs_ip }}" }
+      - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
+      - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
+
+  - name: Set parameters for air-gapped installation
+    set_fact:
+      archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
+    when: internet_type == 'A'
+
+  - name: Check configuration parameters for air-gapped installation
+    fail: msg="Variable {{ item.name }} is not set"
+    when: internet_type == 'A' and item.value == ""
+    loop:
+      - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
 
   - debug:
       msg: "{{ ldap_users_raw.split(',') }}"
@@ -29,17 +90,18 @@
       name:
         - "python3-ldap"
       state: latest
-    when: internet_type != 'A'
+    when: internet_type != 'A' and ldap_depl_type == "S"
 
   - name: Create LDAP directory
     file:
       path: ../ldap
       state: directory
+    when: ldap_depl_type == "S"
 
   - name: Set SELINUX for OpenLDAP
     shell:
       cmd: "semanage permissive -a slapd_t"
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Open ports for OpenLDAP
     firewalld:
@@ -50,17 +112,20 @@
     with_items:
       - { port: "389", type: "tcp" } 
       - { port: "636", type: "tcp" } 
+    when: ldap_depl_type == "S"
 
   - name: Start LDAP server
     service:
       name: slapd
       state: started
       enabled: yes
+    when: ldap_depl_type == "S"
 
   - name: Encrypt admin password
     shell:
       cmd: slappasswd -s {{ ldap_password }}
     register: ssha_admin_password
+    when: ldap_depl_type == "S"
 
   - name: Extract first LDAP domain component
     shell:
@@ -77,7 +142,7 @@
       - { src: "ldap/monitor.j2", dest: "../ldap/monitor.ldif" }
       - { src: "ldap/root_dn.j2", dest: "../ldap/root_dn.ldif" }
           #- { src: "ldap/users.j2", dest: "ldap/users.ldif" }
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Modify LDAP domain
     shell:
@@ -87,12 +152,12 @@
       - "ldapmodify -Y EXTERNAL -H ldapi:/// -f ../ldap/admin_passwd.ldif"
       - "ldapmodify -Y EXTERNAL -H ldapi:/// -f ../ldap/monitor.ldif"
     ignore_errors: no
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Add Root DN
     shell:
       cmd: "ldapadd -f ../ldap/root_dn.ldif -D cn=admin,{{ ldap_domain }} -w {{ ldap_password }}"
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Add InetOrgPerson schema
     shell:
@@ -100,7 +165,7 @@
     loop:
       - "ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/cosine.ldif"
       - "ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/inetorgperson.ldif"
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Add User OU
     community.general.ldap_entry:
@@ -109,7 +174,7 @@
       bind_dn: "cn=admin,{{ ldap_domain }}"
       bind_pw: "{{ ldap_password }}"
       server_uri: ldap://{{ bas_ip }}/
-    when: true
+    when: ldap_depl_type == "S"
 
   - name: Add Users
     community.general.ldap_entry:
@@ -125,11 +190,89 @@
       server_uri: "ldap://{{ bas_ip }}/"
     with_items:
       - "{{ ldap_users.msg | list }}"
-    when: true
+    when: ldap_depl_type == "S"
+
+  - name: Check openldap namespace existence
+    shell:
+      cmd: oc get namespace|grep openldap|wc -l
+    register: is_namespace_openldap
+    when: ldap_depl_type == "C"
+
+  - name: Add openldap namespace
+    shell:
+      cmd: oc create namespace openldap
+    when: ldap_depl_type == "C" and is_namespace_openldap.stdout == "0"
+
+  - name: Create password list
+    shell:
+      cmd: "USER_PWD_LIST=\"\";IFS=',' read -r -a USER_ARR <<< {{ ldap_users_raw }};for user in ${USER_ARR[@]}; do USER_PWD_LIST+=\"{{ ldap_password }},\";done;echo $USER_PWD_LIST"
+    register: ldap_user_pwds
+    when: ldap_depl_type == "C"
+
+  - name: Add openldap secret
+    shell:
+      cmd: "oc create secret generic openldap --from-literal=adminpassword={{ ldap_password }} --from-literal=users={{ ldap_users_raw }} --from-literal=passwords={{ ldap_user_pwds.stdout }} -n openldap"
+    register: result
+    failed_when: result.rc != 0 and "already exists" not in result.stderr
+    when: ldap_depl_type == "C"
+
+  - name: Extract digests from archive
+    shell:
+      cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/additions-registry*.tar digests.txt"
+    when: internet_type == 'A' and ldap_depl_type == "C"
+
+  - name: Get openldap digest
+    shell:
+      cmd: cat ../gi-temp/digests.txt|grep openldap:latest|awk -F ',' '{print $2}'
+    register: ldap_digest
+    when: ldap_depl_type == "C"
+
+  - name: Set correct tag or digest
+    set_fact:
+      ldap_version: "{{ ':latest' if internet_type != 'A' else '@'+ldap_digest.stdout }}"
+    when: ldap_depl_type == "C"
+
+  - name: Configure openldap deployment plan
+    template:
+      src: "openldap_depl.j2"
+      dest: "../gi-temp/openldap_depl.yaml"
+    when: ldap_depl_type == "C"
+
+  - name: Deploy bitnami.openldap
+    shell:
+      cmd: "oc create -f {{ item }} -n openldap"
+    register: result
+    with_items:
+      - ../gi-temp/openldap_depl.yaml
+      - ../scripts/openldap_svc.yaml
+    failed_when: result.rc != 0 and "already exists" not in result.stderr and "already allocated" not in result.stderr
+    when: ldap_depl_type == "C"
+
+  - name: Wait for openldap successful deployment
+    shell:
+      cmd: "oc get pods -n openldap|grep 1/1|wc -l"
+    register: openldap_status
+    until: "openldap_status.stdout == \"1\""
+    retries: 20
+    delay: 10
+    when: ldap_depl_type == "C"
+
+  - name: Add route for openldap
+    shell:
+      cmd: "oc expose service/openldap -n openldap"
+    register: result
+    failed_when: result.rc != 0 and "already exists" not in result.stderr
+    when: ldap_depl_type == "C"
+
+  - name: Get openldap route name
+    shell:
+      cmd: "oc get routes -n openldap -o json|jq .items[0].spec.host|tr -d '\"'"
+    register: openldap_route
+    when: ldap_depl_type == "C"
 
   - name: Encode Base64 ldap admin password
     shell:
-      cmd: "echo -n {{ ics_password }} | base64"
+      cmd: "echo -n {{ ldap_password }} | base64"
     register: ldap_password_base64
 
   - name: Login to ICS
@@ -141,11 +284,57 @@
       cmd: "cloudctl tokens|grep Access|awk -F ':' '{ print $2 }'|awk -F ' ' '{ print $2}'"
     register: access_token
 
-  - name: Add OpenLDAP to ICS configuration
+  - name: Set LDAP URL for container
+    set_fact:
+      ldap_url: "{{ openldap_route.stdout }}:1389"
+    when: ldap_depl_type == "C"
+
+  - name: Set LDAP URL for standalone
+    set_fact:
+      ldap_url: "{{ bas_ip }}:389"
+    when: ldap_depl_type == "S"
+
+  - name: Create HA Proxy config file with openldap
+    template:
+      src: haproxy_with_ldap.j2
+      dest: ../gi-temp/ldap_haproxy.cfg
+    vars:
+      masters: "{{ master_name|zip(master_ip)|list }}"
+      nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
+      ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
+      workers: "{{ nodes|zip(ips)|list }}"
+    when: is_master_only == 'N' and ldap_depl_type == "C"
+
+  - name: Create HA Proxy config file with ldap (no dedicated workers)
+    template:
+      src: haproxy_with_ldap_masters_only.j2
+      dest: ../gi-temp/ldap_haproxy.cfg
+    vars:
+      masters: "{{ master_name|zip(master_ip)|list }}"
+    when: is_master_only == 'Y' and ldap_depl_type == "C"
+
+  - name: Update HA proxy config
+    shell:
+      cmd: cat ../gi-temp/ldap_haproxy.cfg >> /etc/haproxy/haproxy.cfg
+    when: ldap_depl_type == "C"
+
+  - name: Open openldap port on load balancer (bastion)
+    firewalld:
+      port: "1389/tcp"
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+  - name: Restart HA Proxy
+    service:
+      name: haproxy
+      state: restarted
+
+  - name: Add OpenLDAP to ICS configuration for standalone
     uri:
       url: 'https://cp-console.apps.{{ domain }}/idmgmt/identity/api/v1/directory/ldap/onboardDirectory'
       method: POST
-      body: "{\"LDAP_ID\": \"local_ldap\", \"LDAP_URL\": \"ldap://{{ bas_ip }}:389\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"\", \"LDAP_GROUPMEMBERIDMAP\": \"\"}"
+      body: "{\"LDAP_ID\": \"local_ldap\", \"LDAP_URL\": \"ldap://{{ ldap_url }}\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"\", \"LDAP_GROUPMEMBERIDMAP\": \"\"}"
       body_format: json
       headers:
         Authorization: 'bearer {{ access_token.stdout }}'
@@ -154,10 +343,28 @@
       use_proxy: no
     environment:
       no_proxy: cp-console.apps.{{ domain }}
-    register: result
+    when: ldap_depl_type == "S"
 
-  - debug:
+  - name: Add OpenLDAP to ICS configuration fo container
+    uri:
+      url: 'https://cp-console.apps.{{ domain }}/idmgmt/identity/api/v1/directory/ldap/onboardDirectory'
+      method: POST
+      body: "{\"LDAP_ID\": \"openldap\", \"LDAP_URL\": \"ldap://{{ ldap_url }}\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"\", \"LDAP_GROUPMEMBERIDMAP\": \"\"}"
+      body_format: json
+      headers:
+        Authorization: 'bearer {{ access_token.stdout }}'
+        Content-Type: 'application/json'
+      validate_certs: no
+      use_proxy: no
+    environment:
+      no_proxy: cp-console.apps.{{ domain }}
+    when: ldap_depl_type == "C"
+
+  - name: Installation summary
+    vars:
+      ldap_name: "{{ 'openldap' if ldap_depl_type == 'C' else 'local_ldap' }}"
+    debug:
       msg:
         - "Open LDAP installed"
-        - "LDAP instance configured in ICS as 'local_ldap'"
+        - "LDAP instance configured in ICS - {{ ldap_name }}"
 

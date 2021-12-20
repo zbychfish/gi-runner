@@ -14,6 +14,8 @@
     is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
     db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
     is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
+    stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
+    gi_ext_ingress: "{{ lookup('env','GI_IN') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -34,6 +36,8 @@
       - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
       - { name: "GI_DB2_ENCRYPTED", value: "{{ db2_enc_hint }}" }
       - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
+      - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
+      - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
 
   - name: Set parameters for non air-gapped installation
     set_fact:
@@ -111,14 +115,36 @@
 
   - name: Set GI installation variables
     set_fact:
+      archives_dir: "{{ lookup('env','GI_ARCHIVES_DIR') }}"
       gi_case_inventory_setup: "install"
-      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' }}"
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' }}"
       offline_inventory: "gi_offline"
       storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
       storage_class_block: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' }}"
-      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' }}"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' }}"
       db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
       db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
+      gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int > 2 else 'L-OOLE-C2ASKR' }}"
+
+  - name: Set endpoint cert variables
+    set_fact:
+      gi_ca: "{{ lookup('env', 'GI_IN_CA') }}"
+      gi_cert: "{{ lookup('env', 'GI_IN_CERT') }}"
+      gi_key: "{{ lookup('env', 'GI_IN_KEY') }}"
+    when: gi_ext_ingress == 'Y'
+
+  - name: Check ICS endpoint cert variables
+    fail: msg="Variable {{ item.name }} is not set"
+    when: gi_ext_ingress == 'Y' and item.value == ""
+    loop:
+      - { name: "GI_IN_CA", value: "{{ gi_ca }}" }
+      - { name: "GI_IN_CERT", value: "{{ gi_cert }}" }
+      - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
+
+  - name: Extract offline operator archive
+    shell:
+      cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/gi_registry-{{ gi_version }}.tar  gi_offline/*"
+    when: internet_type == 'A'
 
   - name: Check presence of cloudctl tool
     stat:
@@ -150,33 +176,23 @@
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-creds-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }}\""
     when: internet_type == 'A'
 
-  - name: Switch GI inventory to portable registry
-    shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir ../gi-temp/{{ offline_inventory }}\""
-    when: internet_type == 'A'
-
-  - name: Wait for cluster reconfiguration
-    pause:
-      minutes: 3
-    when: internet_type == 'A'
-
-  - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
-    shell:
-      cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
-    register: co_status
-    until: "co_status.stdout == \"0\""
-    retries: 150
-    delay: 20
-    when: internet_type == 'A'
-
   - name: GI download case file
     shell:
       cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_case_archive }} --outputdir ../gi-temp/{{ offline_inventory }} --tolerance 1"
     when: internet_type != 'A'
 
+  - name: Link python3 to python
+    file:
+      src: /usr/bin/python3
+      dest: /usr/bin/python
+      state: link
+
   - name: GI preinstall task
+    vars:
+      add_options1: "{{ ' -l true ' if gi_version_index|int > 2 else '' }}"
+      add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes_list }} -t false\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes_list }} -t false{{ add_options1 }}{{ add_options2 }}\""
 
   - name: Install GI catalog in air-gapped
     shell:
@@ -219,7 +235,7 @@
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
     when: internet_type != 'A'
 
-  - name: Wait for GI operators
+  - name: Wait for GI operators before 3.1
     shell:
       cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
     register: operator_status
@@ -231,6 +247,20 @@
       - { operator_pattern: "ibm-cloud-databases-redis-operator" }
       - { operator_pattern: "mongodb-kubernetes-operator" }
       - { operator_pattern: "guardiuminsights-controller-manager" }
+    when: gi_version_index|int < 3
+
+  - name: Wait for GI operators from 3.1
+    shell:
+      cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
+    register: operator_status
+    until: "operator_status.stdout == \"1\""
+    retries: 30
+    delay: 10
+    with_items:
+      - { operator_pattern: "ibm-cloud-databases-redis-operator" }
+      - { operator_pattern: "mongodb-kubernetes-operator" }
+      - { operator_pattern: "guardiuminsights-controller-manager" }
+    when: gi_version_index|int > 2
 
   - name: Generate GI deployment file
     template:
