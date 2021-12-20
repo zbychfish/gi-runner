@@ -4,12 +4,12 @@ GI_HOME=`pwd`
 GI_TEMP=$GI_HOME/gi-temp
 mkdir -p $GI_TEMP
 file=variables.sh
-declare -a gi_versions=(3.0.0 3.0.1 3.0.2)
-declare -a ics_versions=(3.7.4 3.8.1 3.9.1 3.10.0 3.11.0 3.12.1 3.13.0)
-declare -a bundled_in_gi_ics_versions=(0 2 3)
+declare -a gi_versions=(3.0.0 3.0.1 3.0.2 3.1.0)
+declare -a ics_versions=(3.7.4 3.8.1 3.9.1 3.10.0 3.11.0 3.12.1 3.13.0 3.14.1)
+declare -a bundled_in_gi_ics_versions=(0 2 3 7)
 declare -a ocp_major_versions=(4.6 4.7 4.8 4.9)
-declare -a ocp_supported_by_gi=(0 0:1 0:1)
-declare -a ocp_supported_by_ics=(0:1 0:1 0:1:2 0:1:2 0:1:2 0:1:2:3 0:1:2:3)
+declare -a ocp_supported_by_gi=(0 0:1 0:1 0:1:2)
+declare -a ocp_supported_by_ics=(0:1 0:1 0:1:2 0:1:2 0:1:2 0:1:2:3 0:1:2:3 0:1:2:3)
 declare -a gi_sizes=(values-poc-lite values-dev values-small)
 
 function get_ocp_domain() {
@@ -32,6 +32,7 @@ function get_ocp_domain() {
         if [[ -z "$ocp_domain" ]]
         then
                 echo export GI_DOMAIN=$GI_DOMAIN >> $file
+		ocp_domain=$GI_DOMAIN
         else
                 echo export GI_DOMAIN=$ocp_domain >> $file
         fi
@@ -127,6 +128,7 @@ then
 	echo "- ICS 3.7.4 for GI 3.0.0"
 	echo "- ICS 3.9.0 for GI 3.0.1"
 	echo "- ICS 3.10.0 for GI 3.0.2"
+	echo "- ICS 3.14.1 for GI 3.1.0"
 	echo "If you would like install different ICS version (supported by selected GI) please modify variable.sh file before starting playbooks"
 	echo "In case of air-gapped installation you must install the bundled ICS version"
 	echo "export GI_VERSION=$gi_version_selected" >> $file
@@ -198,31 +200,95 @@ do
 done
 if [[ $use_air_gap != 'Y' ]]
 then
-	while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
-	do
-        	printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
-        	read ocp_release_decision
-        	ocp_release_decision=${ocp_release_decision:-E}
-        	if [[ $ocp_release_decision == 'E' ]]
-        	then
-                	while [[ $ocp_release_minor == '' ]]
-               		do
-				read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
-                	done
-			ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
-        	elif [[ $ocp_release_decision == 'S' ]]
-        	then
-			ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
-        	fi
-	done
-else
-	while [[ $ocp_release_minor == '' ]]
+        while [[ $ocp_release_decision != 'E' && $ocp_release_decision != 'S' ]]
         do
-        	read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
+                printf "Would you provide exact version OC to install [E] or use the latest stable (S)? (\e[4mE\e[0m)xact/(S)table: "
+                read ocp_release_decision
+                ocp_release_decision=${ocp_release_decision:-E}
+                if [[ $ocp_release_decision == 'E' ]]
+                then
+                        while [[ $ocp_release_minor == '' ]]
+                        do
+                                read -p "Insert minor version of OCP ${ocp_major_versions[${ocp_major_version}]} to install (must be existing one): " ocp_release_minor
+                        done
+                        ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
+                elif [[ $ocp_release_decision == 'S' ]]
+                then
+                        ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
+                fi
+        done
+else
+        while [[ $ocp_release_minor == '' ]]
+        do
+                read -p "Insert minor version of OCP $ocp_major_version to install (must be existing one): " ocp_release_minor
         done
         ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
 fi
+get_ocp_domain
 echo "export GI_OCP_RELEASE=$ocp_release" >> $file
+echo "OCP certificate must refer globaly to each name in apps subdomain."
+echo "Alternate Subject Name must be set to: \"*.apps.${ocp_domain}\"."
+echo "You need provide full paths to CA, certificate and private key."
+while ! [[ $ocp_ext_ingress == 'Y' || $ocp_ext_ingress == 'N' ]]
+do
+	printf  "Would you like add own certificate for OCP ingress? (\e[4mN\e[0m)o/(Y)es: "
+	read ocp_ext_ingress
+	ocp_ext_ingress=${ocp_ext_ingress:-N}
+done
+echo "export GI_OCP_IN=$ocp_ext_ingress" >> $file
+if [[ $ocp_ext_ingress == 'Y' ]]
+then
+	result=1
+	while [[ $result -ne 0 ]]
+	do
+		read -p "Insert full path to CA certificate which singned the OCP certificate: " ocp_ca
+		openssl x509 -in $ocp_ca -text -noout
+		result=$?
+		if [[ $result -ne 0 ]]
+		then
+			echo "Certificate cannot be validated."
+		fi
+	done
+	result=1
+	while [[ $result -ne 0 ]]
+	do
+		read -p "Insert full path to OCP ingres certificate: " ocp_cert
+		openssl x509 -in $ocp_cert -text -noout
+		result=$?
+		if [[ $result -eq 0 ]]
+		then
+			openssl verify -CAfile $ocp_ca $ocp_cert
+			result=$?
+			if [[ $result -ne 0 ]]
+			then
+				echo "Certificate is not signed by provided CA"
+			fi
+		else
+			echo "Certificate cannot be validated."
+		fi
+	done
+	modulus_cert=`openssl x509 -noout -modulus -in $ocp_cert`
+	result=1
+	while [[ $result -ne 0 ]]
+	do
+		read -p "Insert full path to private key of OCP certificate: " ocp_key
+		openssl rsa -in $ocp_key -check
+		result=$?
+		if [[ $result -eq 0 ]]
+		then
+			if [[ `openssl rsa -noout -modulus -in $ocp_key` != $modulus_cert ]]
+			then
+				echo "Key does not correspond to OCP certificate"
+				result=1
+			fi
+		else
+			echo "Key cannot be validated."
+		fi
+	done
+	echo "export GI_OCP_IN_CA=$ocp_ca" >> $file
+	echo "export GI_OCP_IN_CERT=$ocp_cert" >> $file
+	echo "export GI_OCP_IN_KEY=$ocp_key" >> $file
+fi
 while ! [[ $is_master_only == 'Y' || $is_master_only == 'N' ]]
 do
 	printf "Is your installation the 3 nodes only (masters only)? (\e[4mN\e[0m)o/(Y)es: "
@@ -233,7 +299,6 @@ do
  	       echo "Incorrect value"
         fi
 done
-get_ocp_domain
 echo export GI_MASTER_ONLY=$is_master_only >> $file
 # Time settings
 while ! [[ $install_ntpd == 'Y' || $install_ntpd == 'N' ]]
@@ -995,7 +1060,7 @@ then
         echo export GI_DB2_NODES=$db2_nodes >> $file
         while ! [[ $db2_enc == 'Y' || $db2_enc == 'N' ]]
         do
-                if [[ $gi_version_selected != '0' ]]
+                if [[ $gi_version_selected -ge 2 ]]
                 then
                         if [[ ! -z "$GI_DB2_ENCRYPTED" ]]
                         then
@@ -1020,6 +1085,95 @@ then
                 fi
         done
         echo export GI_DB2_ENCRYPTED=$db2_enc >> $file
+        while ! [[ $stap_supp == 'Y' || $stap_supp == 'N' ]]
+        do
+                if [[ $gi_version_selected -ge 3 ]]
+                then
+                        if [[ ! -z "$GI_STAP_STREAMING" ]]
+                        then
+                                read -p "STAP direct streaming to GI is set to [$GI_STAP_STREAMING] - would you like to enable this feature (YES/NO) or confirm current value <ENTER>: " new_stap_supp
+                                if [[ $new_stap_supp != '' ]]
+                                then
+                                        stap_supp=$new_stap_supp
+                                else
+                                        stap_supp=$GI_STAP_STREAMING
+                                fi
+                        else
+                                printf "Should be enabled the direct streaming from STAP's? (\e[4mY\e[0m)es/(N)o: "
+                                read stap_supp
+                                stap_supp=${stap_supp:-Y}
+                        fi
+                        if ! [[ $stap_supp == 'Y' || $stap_supp == 'N' ]]
+                        then
+                                echo "Incorrect value"
+                        fi
+                else
+                        stap_supp='N'
+                fi
+        done
+        echo export GI_STAP_STREAMING=$stap_supp >> $file
+        while ! [[ $gi_ext_ingress == 'Y' || $gi_ext_ingress == 'N' ]]
+        do
+                printf  "Would you like add own certificate for GI endpoint? (\e[4mN\e[0m)o/(Y)es: "
+                read gi_ext_ingress
+                gi_ext_ingress=${gi_ext_ingress:-N}
+        done
+        echo "export GI_IN=$gi_ext_ingress" >> $file
+        if [[ $gi_ext_ingress == 'Y' ]]
+        then
+                echo "Guardium Insights ASN (Alternate Subject Name) certificate attribute must be set tp in \"insights.apps${ocp_domain}\"."
+                echo "You need provide full paths to CA, certificate and private key."
+                result=1
+                while [[ $result -ne 0 ]]
+                do
+                        read -p "Insert full path to CA certificate which singned the ICS certificate: " gi_ca
+                        openssl x509 -in $gi_ca -text -noout
+                        result=$?
+                        if [[ $result -ne 0 ]]
+                        then
+                                echo "Certificate cannot be validated."
+                        fi
+                done
+                result=1
+                while [[ $result -ne 0 ]]
+                do
+                        read -p "Insert full path to GI endpoint certificate: " gi_cert
+                        openssl x509 -in $gi_cert -text -noout
+                        result=$?
+                        if [[ $result -eq 0 ]]
+                        then
+                                openssl verify -CAfile $gi_ca $gi_cert
+                                result=$?
+                                if [[ $result -ne 0 ]]
+                                then
+                                        echo "Certificate is not signed by provided CA"
+                                fi
+                        else
+                                echo "Certificate cannot be validated."
+                        fi
+                done
+                modulus_cert=`openssl x509 -noout -modulus -in $gi_cert`
+                result=1
+                while [[ $result -ne 0 ]]
+                do
+                        read -p "Insert full path to private key of GI certificate: " gi_key
+                        openssl rsa -in $gi_key -check
+                        result=$?
+                        if [[ $result -eq 0 ]]
+                        then
+                                if [[ `openssl rsa -noout -modulus -in $gi_key` != $modulus_cert ]]
+                                then
+                                        echo "Key does not correspond to GI certificate"
+                                        result=1
+                                fi
+                        else
+                                echo "Key cannot be validated."
+                        fi
+                done
+                echo "export GI_IN_CA=$gi_ca" >> $file
+                echo "export GI_IN_CERT=$gi_cert" >> $file
+                echo "export GI_IN_KEY=$gi_key" >> $file
+        fi
 elif [[ $gi_install=='N' && $ics_install == 'Y' ]]
 then
 	ics_sizes="S M L"
@@ -1136,6 +1290,71 @@ then
 
         echo export GI_ICS_OPERANDS=`echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1'` >> $file
 fi
+if [[ $gi_install == 'Y' || $ics_install == 'Y' ]]
+then
+	while ! [[ $ics_ext_ingress == 'Y' || $ics_ext_ingress == 'N' ]]
+	do
+        	printf  "Would you like add own certificate for ICS endpoint? (\e[4mN\e[0m)o/(Y)es: "
+        	read ics_ext_ingress
+        	ics_ext_ingress=${ics_ext_ingress:-N}
+	done
+	echo "export GI_ICS_IN=$ics_ext_ingress" >> $file
+	if [[ $ics_ext_ingress == 'Y' ]]
+	then
+		echo "CPFS (ICS) ASN (Alternate Subject Name) certificate attribute must be set tp in \"cp-console.apps${ocp_domain}\"."
+		echo "You need provide full paths to CA, certificate and private key."
+        	result=1
+        	while [[ $result -ne 0 ]]
+       		do
+                	read -p "Insert full path to CA certificate which singned the ICS certificate: " ics_ca
+                	openssl x509 -in $ics_ca -text -noout
+                	result=$?
+                	if [[ $result -ne 0 ]]
+                	then
+                        	echo "Certificate cannot be validated."
+                	fi
+        	done
+        	result=1
+        	while [[ $result -ne 0 ]]
+        	do
+                	read -p "Insert full path to ICS endpoint certificate: " ics_cert
+                	openssl x509 -in $ics_cert -text -noout
+                	result=$?
+                	if [[ $result -eq 0 ]]
+                	then
+                        	openssl verify -CAfile $ics_ca $ics_cert
+                        	result=$?
+                        	if [[ $result -ne 0 ]]
+                        	then
+                                	echo "Certificate is not signed by provided CA"
+                        	fi
+                	else
+                        	echo "Certificate cannot be validated."
+                	fi
+        	done
+        	modulus_cert=`openssl x509 -noout -modulus -in $ics_cert`
+        	result=1
+        	while [[ $result -ne 0 ]]
+        	do
+                	read -p "Insert full path to private key of ICS certificate: " ics_key
+                	openssl rsa -in $ics_key -check
+                	result=$?
+                	if [[ $result -eq 0 ]]
+                	then
+                        	if [[ `openssl rsa -noout -modulus -in $ics_key` != $modulus_cert ]]
+                        	then
+                                	echo "Key does not correspond to OCP certificate"
+                                	result=1
+                        	fi
+                	else
+                        	echo "Key cannot be validated."
+                	fi
+        	done
+        	echo "export GI_ICS_IN_CA=$ics_ca" >> $file
+        	echo "export GI_ICS_IN_CERT=$ics_cert" >> $file
+        	echo "export GI_ICS_IN_KEY=$ics_key" >> $file
+	fi
+fi
 while ! [[ $install_ldap == 'Y' || $install_ldap == 'N' ]] # While string is different or empty...
 do
         printf "Would you like install OpenLDAP for example as Guardium Insights identity source? (\e[4mY\e[0m)es/(N)o: "
@@ -1149,6 +1368,33 @@ done
 echo "export GI_INSTALL_LDAP=${install_ldap}" >> $file
 if [ $install_ldap == 'Y' ]
 then
+	if [[ ! -z "$GI_LDAP_DEPLOYMENT" ]]
+	then
+		if [[ "$GI_LDAP_DEPLOYMENT" == "C" ]]
+		then
+			ldap_inst_type="openshift"
+		else
+			ldap_inst_type="bastion"
+		fi
+		read -p "You decided to install openldap on $ldap_inst_type  - insert (C)ontainer or (S)tandalone bastion or confirm existing and press <ENTER>: " new_ldap_depl
+		if [[ $new_ldap_depl != '' ]]
+                then
+                        ldap_depl=$new_ldap_depl
+                fi
+	else
+		while ! [[ $ldap_depl == 'C' || $ldap_depl == 'S' ]]
+                do
+			printf "Decide where LDAP instance should be deployed (as container on OpenShift or as standalone installation on bastion? (\e[4mC\e[0m)ontainer/(S)tandalone: "
+			read ldap_depl
+			ldap_depl=${ldap_depl:-C}
+		done
+	fi
+	if [[ -z "$ldap_depl" ]]
+        then
+                echo export GI_LDAP_DEPLOYMENT=$GI_LDAP_DEPLOYMENT >> $file
+        else
+                echo export GI_LDAP_DEPLOYMENT=$ldap_depl >> $file
+        fi
         if [[ ! -z "$GI_LDAP_DOMAIN" ]]
         then
                 read -p "LDAP organization DN is set to [$GI_LDAP_DOMAIN] - insert new or confirm existing one <ENTER>: " new_ldap_domain
@@ -1265,7 +1511,7 @@ then
         echo "*** Update Fedora ***"
         dnf -qy update
         echo "*** Installing Ansible and other Fedora packages ***"
-        dnf -qy install tar ansible haproxy openldap perl podman-docker ipxe-bootimgs chrony dnsmasq unzip wget jq httpd-tools policycoreutils-python-utils python3-ldap openldap-servers openldap-clients
+        dnf -qy install tar ansible haproxy openldap perl podman-docker ipxe-bootimgs chrony dnsmasq unzip wget jq httpd-tools policycoreutils-python-utils python3-ldap openldap-servers openldap-clients pip
         dnf -qy install ansible skopeo
         if [[ $use_proxy == 'D' ]]
         then
