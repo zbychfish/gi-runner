@@ -35,7 +35,7 @@ check_exit_code $? "Cannot update system"
 cd ..
 # Download all OS packages required to install OCP, ICS and GI in air-gap env, some of them from epel (python3 always available on CentOS 8)
 echo "Downloading additional OS packages ..."
-packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd-tools podman python3 python3-ldap openldap-servers openldap-clients vim"
+packages="ansible haproxy openldap perl podman-docker ipxe-bootimgs skopeo chrony dnsmasq unzip wget jq httpd-tools podman python3 python3-ldap openldap-servers openldap-clients vim python3-pip"
 for package in $packages
 do
         dnf download -qy --downloaddir os-packages $package --resolve
@@ -44,7 +44,7 @@ do
 done
 # Install packages
 echo "Installing missing packages ..."
-dnf -qy install python3 podman wget
+dnf -qy install python3 podman wget python3-pip
 check_exit_code $? "Cannot install some packages" 
 # Download some Python libraries (in wheel format) required by gi-runner Ansible playbooks
 echo "Downloading python packages for Ansible extensions ..."
