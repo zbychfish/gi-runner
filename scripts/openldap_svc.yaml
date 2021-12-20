@@ -1,0 +1,20 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: openldap
+  namespace: openldap
+spec:
+  externalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ports:
+    - name: tcp
+      protocol: TCP
+      port: 1389
+      targetPort: 1389
+      nodePort: 31389
+  type: LoadBalancer
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+  selector:
+    app.kubernetes.io/name: openldap
