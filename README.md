@@ -1,7 +1,7 @@
 <B>OpenShift Cluster, IBM Common Services and Guardium Insights installation automation on bare metal</B>
 <HR>
 <P>Automates OCP installation for releases: 4.6, 4.7, 4.8, 4.9
-<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0
+<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.1
 <P>Automates GI installation for releases: 3.0.0, 3.0.1, 3.0.2, 3.1.0
 <P>Supports installation with direct access to the Internet, using proxy and air-gapped (restricted) approach
 <P>Implemented OCP architectures:
@@ -9,6 +9,9 @@
 <LI>3 masters only with OCS or rook-ceph
 <LI>3 masters and 3+n workers and OCS tainted on 3 additional infra nodes
 <LI>Bastion setup requires Fedora 34 or 35 as a operating system
+<LI>GI 3.1 installation with air-gapped environment fails because of vendor decision to provide installation with CASE file in next release (log4shell issue).<BR>
+Still installation in air-gapped is possible. In this case before execution a playbook 04 you must extract to mirrored registry the archive of ICS 3.14.1 (prepared before with prepare-ics.sh script)<BR>
+tar -C /opt/registry -xvf <archives_dir>/ics_registry-3.14.11 data/*
 <HR>
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
