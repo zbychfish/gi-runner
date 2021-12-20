@@ -1,0 +1,19 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-local-storage-operatorgroup
+  namespace: openshift-local-storage
+spec:
+  targetNamespaces:
+  - openshift-local-storage
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: local-storage-subscription
+  namespace: openshift-local-storage
+spec:
+  channel: "{{ ocp_major_release }}"
+  name: local-storage-operator 
+  source: {{ operator_source }}
+  sourceNamespace: openshift-marketplace

@@ -1,0 +1,5 @@
+dn: {{ ldap_domain }}
+objectClass: dcObject
+objectClass: organization
+dc: {{ ldap_organization.stdout }}
+o: {{ ldap_organization.stdout }}
