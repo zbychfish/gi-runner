@@ -9,7 +9,7 @@
 <LI>3 masters only with OCS or rook-ceph
 <LI>3 masters and 3+n workers and OCS tainted on 3 additional infra nodes
 <LI>Bastion setup requires Fedora 34 or 35 as a operating system
-<LI>GI 3.1 installation with air-gapped environment fails because of vendor decision to provide installation with CASE file in next release (log4shell issue).<BR>
+<LI>GI 3.1 installation in air-gapped environment fails because of vendor decision to provide installation with CASE file in next release (log4shell issue).<BR>
 Still installation in air-gapped is possible. In this case before execution a playbook 04 you must extract to mirrored registry the archive of ICS 3.14.1 (prepared before with prepare-ics.sh script)<BR>
 tar -C /opt/registry -xvf <archives_dir>/ics_registry-3.14.11 data/*
 <HR>
