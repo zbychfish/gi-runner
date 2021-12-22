@@ -1003,9 +1003,7 @@ then
         done
         echo "export GI_DATA_STORAGE_SIZE=$gi_ds_size" >> $file
         echo "export GI_SIZE_GI=${gi_sizes[$gi_size_selected]}" >> $file
-        #echo "export GI_INSTALL_GI=$gi_install" >> $file
         echo "export GI_ICS_OPERANDS=N,N,Y,Y,Y,N,N,N,N" >> $file
-        #echo "export GI_ICS=Y" >> $file
         while [[ $ics_password == '' ]]
         do
                 read -sp "Insert IBM Common Services admin user password: " ics_password
@@ -1036,28 +1034,30 @@ then
                 read -p "Current list of DB2 nodes is set to [$GI_DB2_NODES] - insert list of DB2 nodes (comma separated) or confirm existing <ENTER>: " new_db2_nodes
                 if [[ $new_db2_nodes != '' ]]
                 then
-			declare -a db2_nodes_arr=()
-                	while [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
-                	do
-                        	declare -a db2_nodes_arr=()
-                        	read -p "Insert DB2 nodes list (comma separated): " db2_nodes
-                        	IFS=","
-                        	for element in $db2_nodes;do db2_nodes_arr+=( $element );done
-                	done
+			IFS=',' read -r -a  db2_nodes_arr <<< "$new_db2_nodes"
+			if [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
+			then
+	                	while [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
+        	        	do
+                        		read -p "Insert DB2 nodes list (comma separated): " db2_nodes
+					IFS=',' read -r -a  db2_nodes_arr <<< "$db2_nodes"
+                		done
+			else
+				db2_nodes=$new_db2_nodes
+			fi
                 else
-                        db2_nodes=$GI_DB2_NODES
+                        db2_nodes="$GI_DB2_NODES"
                 fi
         else
 		declare -a db2_nodes_arr=()
 		while [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
 		do
-			declare -a db2_nodes_arr=()
                 	read -p "Insert DB2 nodes list (comma separated): " db2_nodes
-			IFS=","
-			for element in $db2_nodes;do db2_nodes_arr+=( $element );done
+			IFS=',' read -r -a  db2_nodes_arr <<< "$db2_nodes"
+
 		done
         fi
-        echo export GI_DB2_NODES=$db2_nodes >> $file
+        echo "export GI_DB2_NODES=$db2_nodes" >> $file
         while ! [[ $db2_enc == 'Y' || $db2_enc == 'N' ]]
         do
                 if [[ $gi_version_selected -ge 2 ]]
@@ -1084,7 +1084,7 @@ then
                         db2_enc='Y'
                 fi
         done
-        echo export GI_DB2_ENCRYPTED=$db2_enc >> $file
+        echo "export GI_DB2_ENCRYPTED=$db2_enc" >> $file
         while ! [[ $stap_supp == 'Y' || $stap_supp == 'N' ]]
         do
                 if [[ $gi_version_selected -ge 3 ]]
@@ -1111,7 +1111,7 @@ then
                         stap_supp='N'
                 fi
         done
-        echo export GI_STAP_STREAMING=$stap_supp >> $file
+        echo export "GI_STAP_STREAMING=$stap_supp" >> $file
         while ! [[ $gi_ext_ingress == 'Y' || $gi_ext_ingress == 'N' ]]
         do
                 printf  "Would you like add own certificate for GI endpoint? (\e[4mN\e[0m)o/(Y)es: "
@@ -1391,9 +1391,9 @@ then
 	fi
 	if [[ -z "$ldap_depl" ]]
         then
-                echo export GI_LDAP_DEPLOYMENT=$GI_LDAP_DEPLOYMENT >> $file
+                echo "export GI_LDAP_DEPLOYMENT=$GI_LDAP_DEPLOYMENT" >> $file
         else
-                echo export GI_LDAP_DEPLOYMENT=$ldap_depl >> $file
+                echo "export GI_LDAP_DEPLOYMENT=$ldap_depl" >> $file
         fi
         if [[ ! -z "$GI_LDAP_DOMAIN" ]]
         then
@@ -1407,9 +1407,9 @@ then
         fi
         if [[ -z "$ldap_domain" ]]
         then
-                echo export GI_LDAP_DOMAIN=$GI_LDAP_DOMAIN >> $file
+                echo "export GI_LDAP_DOMAIN=$GI_LDAP_DOMAIN" >> $file
         else
-                echo export GI_LDAP_DOMAIN=$ldap_domain >> $file
+                echo "export GI_LDAP_DOMAIN=$ldap_domain" >> $file
         fi
         if [[ ! -z "$GI_LDAP_USERS" ]]
         then
@@ -1426,9 +1426,9 @@ then
         fi
         if [[ -z "$ldap_users" ]]
         then
-                echo export GI_LDAP_USERS=$GI_LDAP_USERS >> $file
+                echo "export GI_LDAP_USERS=$GI_LDAP_USERS" >> $file
         else
-                echo export GI_LDAP_USERS=$ldap_users >> $file
+                echo "export GI_LDAP_USERS=$ldap_users" >> $file
         fi
         while [[ $ldap_password == '' ]]
         do
