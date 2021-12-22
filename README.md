@@ -15,9 +15,10 @@ tar -C /opt/registry -xvf <archives_dir>/ics_registry-3.14.11 data/*
 <HR>
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
-Releases:
-<P>v0.6
-<LI>
+Release description:
+<PR>v0.5.2
+<LI>Bug with parsing comma separated value of db2 nodes, ldap domain and ldap user list solved
+<LI>GI deployment modified to reflect correct distribution of nodes
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
@@ -39,6 +40,8 @@ Files:
 <LI>scripts/login_to_ocp.sh - logs admin to OCP cluster with new token
 <HR>
 Releases history:
+<P>v0.5.1
+<LI>Solved problem with git branch conflict
 <P>v0.5
 <LI>added support for Guardium Insights 3.1
 <LI>added init.sh variable to enable STAP direct streaming (available for GI 3.1+ installations) GI_STAP_STREAMING
