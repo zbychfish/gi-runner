@@ -1,0 +1,29 @@
+- hosts: bastion
+  vars:
+    internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+    domain: "{{ lookup('env','GI_DOMAIN') }}"
+    gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
+
+  tasks:
+  - name: Check other configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
+      - { name: "GI_DOMAIN", value: "{{ domain }}" }
+      - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+
+  - name: Set GI installation variables
+    set_fact:
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' }}"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' }}"
+
+
+  - name: Extract case file
+    shell:
+      cmd: "tar xvf ../gi-temp/gi_offline/{{ gi_case_archive }}"
+
+  - name: Stop Guardium Insights service
+    shell:
+      cmd: ../gi-temp/gi_offline/ibm-guardium-insights/inventory/install/files/support/startorstopGuardiumInsights.sh start
+
