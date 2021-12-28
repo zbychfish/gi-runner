@@ -61,8 +61,7 @@
     shell:
       cmd: "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 wvcli system status\""
     register: is_db2_ready
-    when: is_db2_ready.stdout != "0"
-    until: "is_db2_ready.stdout == \"OK\""
+    until: "is_db2_ready == \"OK\""
     retries: 50
     delay: 30
 
