@@ -59,3 +59,5 @@
       cmd: "{{ item }}"
     with_items:
       - "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 wvcli system disable -m 'Disable HA before Db2 maintenance'\""
+      - "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 /mnt/blumeta0/home/db2inst1/sqllib/adm/db2stop\""
+      - "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 /mnt/blumeta0/home/db2inst1/sqllib/bin/ipclean\""
