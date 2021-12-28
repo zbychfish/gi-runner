@@ -90,17 +90,15 @@
       state: absent
     when: is_gis_size.stat.exists == True
 
-  - meta: end_play
-
   - name: Wait for pods cleanup
     shell:
-      cmd: "oc get pods -n {{ gi_namespace }}|grep Terminating|wc -l"
+      cmd: "oc get pods -n {{ gi_namespace }}|grep -v -e Error -e Completed|grep 0/|wc -l"
     register: pods_status
     until: "pods_status.stdout == \"0\""
     retries: 50
     delay: 10
 
-  - name: Stop cronjobs
+  - name: Start cronjobs
     shell:
-      cmd: "oc patch `oc get cronjob -lproject=insights -oname -n={{ gi_namespace }}` -p '{\"spec\" : {\"suspend\" : true }}' -n={{ gi_namespace }}"
+      cmd: "oc patch `oc get cronjob -lproject=insights -oname -n={{ gi_namespace }}` -p '{\"spec\" : {\"suspend\" : false }}' -n={{ gi_namespace }}"
 
