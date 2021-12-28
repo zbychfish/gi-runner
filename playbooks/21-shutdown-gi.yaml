@@ -63,3 +63,15 @@
       - "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 /mnt/blumeta0/home/db2inst1/sqllib/adm/db2stop\""
       - "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 /mnt/blumeta0/home/db2inst1/sqllib/bin/ipclean\""
     failed_when: "cmd_output.rc !=0 and cmd_output.stdout is not search('SQL1032N')"
+
+  - name: Unlabel DB2 nodes
+    shell:
+      cmd: "oc patch --type=merge node $(oc get nodes -Licp4data | grep database-db2wh | awk '{print $1}') -p '{\"metadata\":{\"labels\":{\"icp4data\":\"temp-database-db2wh\"}}}'"
+
+  - name: Bounce DB2 
+    shell:
+      cmd: "{{ item }"
+    with_items:
+      - "oc delete pod $(oc get pods | grep c-{{ gi_namespace }}-db2-db2u | awk '{print$1}') -n {{ gi_namespace }}"
+      - "oc delete pod $(oc get pods | grep c-{{ gi_namespace }}-db2-etcd | awk '{print$1}') -n {{ gi_namespace }}"
+      - "oc delete pod $(oc get pods | grep c-{{ gi_namespace }}-db2-ldap | awk '{print$1}') -n {{ gi_namespace }}"
