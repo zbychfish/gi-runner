@@ -26,7 +26,7 @@
 
   - name: Start auxilliary services
     shell:
-      cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ gi_namespace }}-zookeeper ../gi-temp/aux_size.tmp`;oc scale sts ${sts_i[0]} --replicas ${sts_i[1]} -n {{ gi_namespace }}"
+      cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ item }} ../gi-temp/aux_size.tmp`;oc scale sts ${sts_i[0]} --replicas ${sts_i[1]} -n {{ gi_namespace }}"
     with_items:
       - "{{ gi_namespace }}-zookeeper"
       - "{{ gi_namespace }}-kafka"
