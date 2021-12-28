@@ -37,6 +37,6 @@
     shell:
       cmd: "oc get pods -n {{ gi_namespace }}|grep Terminating|wc -l"
     register: pods_status
-    until: "pods_status.stdout|int != 0"
+    until: "pods_status.stdout != \"0\""
     retries: 50
     delay: 10
