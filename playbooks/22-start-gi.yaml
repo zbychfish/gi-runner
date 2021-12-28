@@ -55,6 +55,8 @@
       - "c-{{ gi_namespace }}-redis-s"
     when: is_aux_size.stat.exists == True
 
+  - meta: end_play
+
   - name: Remove auxilliary services file
     file:
       path: ../gi-temp/aux_size.tmp
@@ -90,7 +92,7 @@
       state: absent
     when: is_gis_size.stat.exists == True
 
-  - name: Wait for pods cleanup
+  - name: Wait for pods startup
     shell:
       cmd: "oc get pods -n {{ gi_namespace }}|grep -v -e Error -e Completed|grep 0/|wc -l"
     register: pods_status
@@ -105,3 +107,4 @@
   - name: Cleanup old pods
     shell:
       cmd: "oc delete $(oc get pods --field-selector status.phase=Failed -o name -n {{ gi_namespace }}) -n {{ gi_namespace }}"
+    ignore_errors: yes
