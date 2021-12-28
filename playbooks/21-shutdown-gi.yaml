@@ -3,6 +3,7 @@
     internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     domain: "{{ lookup('env','GI_DOMAIN') }}"
     gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
+    gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
 
   tasks:
   - name: Check other configuration parameters
@@ -12,12 +13,16 @@
       - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
       - { name: "GI_DOMAIN", value: "{{ domain }}" }
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+      - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
 
   - name: Set GI installation variables
     set_fact:
       gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' }}"
       gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' }}"
 
+  - name: Set correct namespace context
+    shell:
+      cmd: "oc project {{ gi_namespace }}"
 
   - name: Extract case file
     shell:
