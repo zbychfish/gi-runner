@@ -55,8 +55,6 @@
       - "c-{{ gi_namespace }}-redis-s"
     when: is_aux_size.stat.exists == True
 
-  - meta: end_play
-
   - name: Remove auxilliary services file
     file:
       path: ../gi-temp/aux_size.tmp
