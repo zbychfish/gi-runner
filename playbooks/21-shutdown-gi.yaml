@@ -97,8 +97,8 @@
     copy:
       dest: ../gi-temp/aux_size.tmp
       content: |
-        {{ gi_namespace }}-zookeeper,{{ aux_size[0].stdout }}
-        {{ gi_namespace }}-kafka,{{ aux_size[1].stdout }}
-        {{ gi_namespace }}-mongodb,{{ aux_size[2].stdout }}
-        c-{{ gi_namespace }}-redis-m,{{ aux_size[3].stdout }}
-        c-{{ gi_namespace }}-redis-s,{{ aux_size[4].stdout }}
+        "{{ gi_namespace }}-zookeper"
+        #        {{ gi_namespace }}-kafka,{{ aux_size[1].stdout }}
+        #{{ gi_namespace }}-mongodb,{{ aux_size[2].stdout }}
+        #c-{{ gi_namespace }}-redis-m,{{ aux_size[3].stdout }}
+        #c-{{ gi_namespace }}-redis-s,{{ aux_size[4].stdout }}
