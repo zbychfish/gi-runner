@@ -42,7 +42,7 @@
 
   - name: Wait for auxilliary services
     shell:
-      cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ item }} ../gi-temp/aux_size.tmp`;if [[ `oc get sts ${sts_i[0]} -o json -n {{ gi_namespace }}|jq '.spec.readyReplicas'` -ne ${sts_i[1]} ]];then exit 1;fi"
+      cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ item }} ../gi-temp/aux_size.tmp`;if [[ `oc get sts ${sts_i[0]} -o json -n {{ gi_namespace }}|jq '.status.readyReplicas'` -ne ${sts_i[1]} ]];then exit 1;fi"
     register: sts_status
     until: "sts_status.rc == 0"
     retries: 30
