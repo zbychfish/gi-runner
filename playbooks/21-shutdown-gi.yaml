@@ -94,4 +94,4 @@
       - "oc get sts c-{{ gi_namespace }}-redis-s -n {{ gi_namespace }} -o json|jq .spec.replicas"
 
   - debug:
-      msg: aux_size
+      msg: "{{ aux_size.stdout }}"
