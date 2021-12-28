@@ -97,5 +97,5 @@
     copy:
       dest: ../gi-temp/aux_size.tmp
       content: |
-        gi_namespace
+        {{ gi_namespace }}
 
