@@ -17,7 +17,8 @@ Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/0
 <HR>
 Release description:
 <P>v0.6.0
-<LI>
+<LI>added support for patches related to log4j2 vulnerabilities (support CPFS 3.14.2, GI 3.1.2)
+<LI>added playbooks to safely stop and start GI instance
 <LI>
 <HR>
 Files:
@@ -30,6 +31,8 @@ Files:
 <LI>playbook/50-set_configure_ldap.yaml - Ansible playbook to setup on bastion OpenLDAP instance
 <LI>playbook/14-uninstall-ics.yaml - Ansible playbook to uninstall ICS
 <LI>playbook/15-uninstall-gi.yaml - Ansible playbook to uninstall GI
+<LI>playbook/21-shutdown-gi.yaml - Ansible playbook to shutdown GI instance for administration purposes on CPFS and OCP level
+<LI>playbook/22-start-gi.yaml - Ansible playbook to start GI instance after shutdown with playbook 21
 <LI>variables.sh - shell script with OCP environment variables, should loaded after login to bastion (. variables.sh)
 <LI>prepare-scripts/prepare-air-gap-os-files.sh - script to gather software and OS packaged to setup bastion in air-gapped environment
 <LI>prepare-scripts/prepare-air-gap-coreos.sh - script to gather OCP installation tools and container images to install OCP in air-gapped environment
@@ -37,6 +40,7 @@ Files:
 <LI>prepare-scripts/prepare-air-gap-rook.sh - script to gather Rook-Ceph images to install Rook in the air-gapped environment
 <LI>prepare-scripts/prepare-air-gap-ics.sh - script to gather ICS images to install ICS in air-gapped environment
 <LI>prepare-scripts/prepare-air-gap-gi.sh - script to gather GI images to install GI in air-gapped environment
+<LI>prepare-scripts/prepare-air-gap-additions.sh - script to gather additional images to install some services on OCP (for instance: openldap)
 <LI>scripts/login_to_ocp.sh - logs admin to OCP cluster with new token
 <HR>
 Releases history:
