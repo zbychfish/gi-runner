@@ -25,5 +25,5 @@
 
   - name: Stop Guardium Insights service
     shell:
-      cmd: ../gi-temp/gi_offline/ibm-guardium-insights/inventory/install/files/support/startorstopGuardiumInsights.sh start
+      cmd: ../gi-temp/gi_offline/ibm-guardium-insights/inventory/install/files/support/startorstopGuardiumInsights.sh stop
 
