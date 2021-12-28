@@ -40,11 +40,16 @@
     retries: 10
     delay: 30
 
+  - name: Are GI service sizes available?
+    stat:
+      path: ../gi-temp/gi_offline/.previousGuardiumInsightsReplicas
+    register: is_gis_size
+
   - name: Stop Guardium Insights service
     shell:
       chdir: ../gi-temp/gi_offline
       cmd: ibm-guardium-insights/inventory/install/files/support/startorstopGuardiumInsights.sh stop
-    when: false
+    when: is_gis_size.stat.exists == False
 
   - name: Wait for pods cleanup
     shell:
@@ -120,4 +125,3 @@
       - "c-{{ gi_namespace }}-redis-m"
       - "c-{{ gi_namespace }}-redis-s"
 
-      
