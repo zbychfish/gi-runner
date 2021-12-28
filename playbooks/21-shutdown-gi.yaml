@@ -93,5 +93,10 @@
       - "oc get sts c-{{ gi_namespace }}-redis-m -n {{ gi_namespace }} -o json|jq .spec.replicas"
       - "oc get sts c-{{ gi_namespace }}-redis-s -n {{ gi_namespace }} -o json|jq .spec.replicas"
 
-  - debug:
-      msg: "{{ aux_size }}"
+  - name: Save auxilliary services size 
+    copy:
+      dest: ../gi-temp/aux_size.tmp
+      content: |
+        "{{ gi_namespace }}-zookeeper,{{ aux_size[0].stdout }}"
+        "{{ gi_namespace }}-kafka,{{ aux_size[1].stdout }}"
+
