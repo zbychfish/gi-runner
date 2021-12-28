@@ -57,7 +57,9 @@
   - name: Stop DB2 instance
     shell:
       cmd: "{{ item }}"
+    register: cmd_output
     with_items:
       - "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 wvcli system disable -m 'Disable HA before Db2 maintenance'\""
       - "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 /mnt/blumeta0/home/db2inst1/sqllib/adm/db2stop\""
       - "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 /mnt/blumeta0/home/db2inst1/sqllib/bin/ipclean\""
+    failed_when: "cmd_output.rc !=0 and cmd_output.stdout is not search('SQL1032N')"
