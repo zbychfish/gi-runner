@@ -102,3 +102,6 @@
     shell:
       cmd: "oc patch `oc get cronjob -lproject=insights -oname -n={{ gi_namespace }}` -p '{\"spec\" : {\"suspend\" : false }}' -n={{ gi_namespace }}"
 
+  - name: Cleanup old pods
+    shell:
+      cmd: "oc delete $(oc get pods --field-selector status.phase=Failed -o name -n {{ gi_namespace }}) -n {{ gi_namespace }}"
