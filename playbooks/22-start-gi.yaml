@@ -34,6 +34,20 @@
       - "c-{{ gi_namespace }}-redis-m"
       - "c-{{ gi_namespace }}-redis-s"
 
+  - name: Wait for auxilliary services
+    shell:
+      cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ item }} ../gi-temp/aux_size.tmp`;if `oc get sts ${sts_i[0]} -o json -n {{ gi_namespace }}|jq '.spec.replicas'` -ne ${sts_i[1]};then exit 1;done "
+    register: sts_status
+    until: "sts_status == \"OK\""
+    retries: 30
+    delay: 15
+    with_items:
+      - "{{ gi_namespace }}-zookeeper"
+      - "{{ gi_namespace }}-kafka"
+      - "{{ gi_namespace }}-mongodb"
+      - "c-{{ gi_namespace }}-redis-m"
+      - "c-{{ gi_namespace }}-redis-s"
+
   - meta: end_play
 
   - name: Stop cronjobs
