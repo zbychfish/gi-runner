@@ -24,6 +24,11 @@
     shell:
       cmd: "oc project {{ gi_namespace }}"
 
+  - name: Are auxilliary service sizes available?
+    stat:
+      path: ../gi-temp/aux_size.tmp
+    register: is_aux_size
+
   - name: Start auxilliary services
     shell:
       cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ item }} ../gi-temp/aux_size.tmp`;oc scale sts ${sts_i[0]} --replicas ${sts_i[1]} -n {{ gi_namespace }}"
@@ -33,6 +38,7 @@
       - "{{ gi_namespace }}-mongodb"
       - "c-{{ gi_namespace }}-redis-m"
       - "c-{{ gi_namespace }}-redis-s"
+    when: is_aux_size.stat.exists == True
 
   - name: Wait for auxilliary services
     shell:
@@ -47,11 +53,13 @@
       - "{{ gi_namespace }}-mongodb"
       - "c-{{ gi_namespace }}-redis-m"
       - "c-{{ gi_namespace }}-redis-s"
+    when: is_aux_size.stat.exists == True
 
   - name: Remove auxilliary services file
     file:
       path: ../gi-temp/aux_size.tmp
       state: absent
+    when: is_aux_size.stat.exists == True
 
   - name: Label DB2 nodes
     shell:
