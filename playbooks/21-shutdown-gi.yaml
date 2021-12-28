@@ -21,7 +21,7 @@
 
   - name: Extract case file
     shell:
-      cmd: "tar xvf ../gi-temp/gi_offline/{{ gi_case_archive }}"
+      cmd: "tar -C ../gi-temp/gi_offline -xf ../gi-temp/gi_offline/{{ gi_case_archive }}"
 
   - name: Stop Guardium Insights service
     shell:
