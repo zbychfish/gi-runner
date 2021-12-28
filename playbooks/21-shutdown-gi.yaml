@@ -97,6 +97,5 @@
     copy:
       dest: ../gi-temp/aux_size.tmp
       content: |
-        "{{ gi_namespace }}-zookeeper,{{ aux_size[0].stdout }}"
-        "{{ gi_namespace }}-kafka,{{ aux_size[1].stdout }}"
+        gi_namespace
 
