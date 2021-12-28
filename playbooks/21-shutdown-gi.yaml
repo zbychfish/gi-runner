@@ -44,7 +44,7 @@
     shell:
       chdir: ../gi-temp/gi_offline
       cmd: ibm-guardium-insights/inventory/install/files/support/startorstopGuardiumInsights.sh stop
-    when: true
+    when: false
 
   - name: Wait for pods cleanup
     shell:
@@ -54,3 +54,8 @@
     retries: 50
     delay: 10
 
+  - name: Stop DB2 instance
+    shell:
+      cmd: "{{ item }}"
+    with_items:
+      - "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 wvcli system disable -m 'Disable HA before Db2 maintenance'\""
