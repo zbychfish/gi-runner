@@ -82,6 +82,11 @@
       - "oc delete pod $(oc get pods | grep c-{{ gi_namespace }}-db2-etcd | awk '{print$1}') -n {{ gi_namespace }}"
       - "oc delete pod $(oc get pods | grep c-{{ gi_namespace }}-db2-ldap | awk '{print$1}') -n {{ gi_namespace }}"
 
+  - name: Are auxilliary service sizes available?
+    stat:
+      path: ../gi-temp/aux_size.tmp
+    register: is_aux_size
+
   - name: Get auxilliary services size
     shell:
       cmd: "{{ item }}"
@@ -92,6 +97,7 @@
       - "oc get sts {{ gi_namespace }}-mongodb -n {{ gi_namespace }} -o json|jq .spec.replicas"
       - "oc get sts c-{{ gi_namespace }}-redis-m -n {{ gi_namespace }} -o json|jq .spec.replicas"
       - "oc get sts c-{{ gi_namespace }}-redis-s -n {{ gi_namespace }} -o json|jq .spec.replicas"
+    when: is_aux_size.stat.exists == False
 
   - name: Save auxilliary services size 
     copy:
@@ -102,4 +108,5 @@
         {{ gi_namespace }}-mongodb,{{ aux_size['results'][2].stdout }}
         c-{{ gi_namespace }}-redis-m,{{ aux_size['results'][3].stdout }}
         c-{{ gi_namespace }}-redis-s,{{ aux_size['results'][4].stdout }}
+    when: is_aux_size.stat.exists == False
 
