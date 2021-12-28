@@ -33,3 +33,10 @@
       chdir: ../gi-temp/gi_offline
       cmd: ibm-guardium-insights/inventory/install/files/support/startorstopGuardiumInsights.sh stop
 
+  - name: Wait for pods cleanup
+    shell:
+      cmd: "oc get pods -n {{ gi_namespace }}|grep Terminating|wc -l"
+    register: pods_status
+    until: "pods_status.stdout|int != 0"
+    retries: 50
+    delay: 10
