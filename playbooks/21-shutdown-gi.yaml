@@ -101,5 +101,5 @@
         {{ gi_namespace }}-kafka,{{ aux_size['results'][1].stdout }}
         {{ gi_namespace }}-mongodb,{{ aux_size['results'][2].stdout }}
         c-{{ gi_namespace }}-redis-m,{{ aux_size['results'][3].stdout }}
-        c-{{ gi_namespace }}-redis-s,{{ aux_size[4['results']].stdout }}
+        c-{{ gi_namespace }}-redis-s,{{ aux_size['results'][4].stdout }}
 
