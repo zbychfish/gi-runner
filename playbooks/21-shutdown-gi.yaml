@@ -97,5 +97,5 @@
     copy:
       dest: ../gi-temp/aux_size.tmp
       content: |
-        {{ gi_namespace }}-zookeeper,{{ aux_size[0] }}
+        {{ gi_namespace }}-zookeeper,{{ aux_size['results'][0] }}
 
