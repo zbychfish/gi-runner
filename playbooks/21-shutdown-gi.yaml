@@ -110,3 +110,14 @@
         c-{{ gi_namespace }}-redis-s,{{ aux_size['results'][4].stdout }}
     when: is_aux_size.stat.exists == False
 
+  - name: Stop auxilliary services
+    shell:
+      cmd: "oc scale sts {{ item }} --replicas=0 -n {{ gi_namespace }}"
+    with_items:
+      - "{{ gi_namespace }}-zookeeper"
+      - "{{ gi_namespace }}-kafka"
+      - "{{ gi_namespace }}-mongodb"
+      - "c-{{ gi_namespace }}-redis-m"
+      - "c-{{ gi_namespace }}-redis-s"
+
+      
