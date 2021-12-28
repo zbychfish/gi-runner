@@ -28,15 +28,29 @@
     shell:
       cmd: "tar -C ../gi-temp/gi_offline -xf ../gi-temp/gi_offline/{{ gi_case_archive }}"
 
+  - name: Stop cronjobs
+    shell:
+      cmd: "oc patch `oc get cronjob -lproject=insights -oname -n={{ gi_namespace }}` -p '{\"spec\" : {\"suspend\" : true }}' -n={{ gi_namespace }}"
+
+  - name: Drain kafka
+    shell:
+      cmd: ../gi-temp/gi_offline/ibm-guardium-insights/inventory/install/files/support/kafka_drain_test.sh -n gi -v|grep "Kafka system is drained"|wc -l
+    register: kafka_drain
+    until: "kafka_drain.stdout == \"1\""
+    retries: 10
+    delay: 30
+
   - name: Stop Guardium Insights service
     shell:
       chdir: ../gi-temp/gi_offline
       cmd: ibm-guardium-insights/inventory/install/files/support/startorstopGuardiumInsights.sh stop
+    when: true
 
   - name: Wait for pods cleanup
     shell:
       cmd: "oc get pods -n {{ gi_namespace }}|grep Terminating|wc -l"
     register: pods_status
-    until: "pods_status.stdout != \"0\""
+    until: "pods_status.stdout == \"0\""
     retries: 50
     delay: 10
+
