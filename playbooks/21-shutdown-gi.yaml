@@ -81,3 +81,17 @@
       - "oc delete pod $(oc get pods | grep c-{{ gi_namespace }}-db2-db2u | awk '{print$1}') -n {{ gi_namespace }}"
       - "oc delete pod $(oc get pods | grep c-{{ gi_namespace }}-db2-etcd | awk '{print$1}') -n {{ gi_namespace }}"
       - "oc delete pod $(oc get pods | grep c-{{ gi_namespace }}-db2-ldap | awk '{print$1}') -n {{ gi_namespace }}"
+
+  - name: Get auxilliary services size
+    shell:
+      cmd: "{{ item }}"
+    register: aux_size
+    with_items:
+      - "oc get sts {{ gi_namespace }}-zookeeper -n {{ gi_namespace }} -o json|jq .spec.replicas"
+      - "oc get sts {{ gi_namespace }}-kafka -n {{ gi_namespace }} -o json|jq .spec.replicas"
+      - "oc get sts {{ gi_namespace }}-mongodb -n {{ gi_namespace }} -o json|jq .spec.replicas"
+      - "oc get sts c-{{ gi_namespace }}-redis-m -n {{ gi_namespace }} -o json|jq .spec.replicas"
+      - "oc get sts c-{{ gi_namespace }}-redis-s -n {{ gi_namespace }} -o json|jq .spec.replicas"
+
+  - debug:
+      msg: aux_size
