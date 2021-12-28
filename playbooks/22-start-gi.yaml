@@ -36,7 +36,7 @@
 
   - name: Wait for auxilliary services
     shell:
-      cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ item }} ../gi-temp/aux_size.tmp`;if [[ `oc get sts ${sts_i[0]} -o json -n {{ gi_namespace }}|jq '.spec.replicas'` -eq ${sts_i[1]} ]];then exit 1;fi"
+      cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ item }} ../gi-temp/aux_size.tmp`;if [[ `oc get sts ${sts_i[0]} -o json -n {{ gi_namespace }}|jq '.spec.replicas'` -ne ${sts_i[1]} ]];then exit 1;fi"
     register: sts_status
     until: "sts_status.rc == 0"
     retries: 30
@@ -47,6 +47,24 @@
       - "{{ gi_namespace }}-mongodb"
       - "c-{{ gi_namespace }}-redis-m"
       - "c-{{ gi_namespace }}-redis-s"
+
+  - name: Remove auxilliary services file
+    file:
+      path: ../gi-temp/aux_size.tmp
+      state: absent
+
+  - name: Label DB2 nodes
+    shell:
+      cmd: "oc patch --type=merge node $(oc get nodes -Licp4data | grep database-db2wh | awk '{print $1}') -p '{\"metadata\":{\"labels\":{\"icp4data\":\"database-db2wh\"}}}'"
+
+  - name: Wait for DB2 instance running
+    shell:
+      cmd: "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 wvcli system status\""
+    register: is_db2_ready
+    when: is_db2_ready.stdout != "0"
+    until: "is_db2_ready.stdout == \"OK\""
+    retries: 50
+    delay: 30
 
   - meta: end_play
 
