@@ -24,9 +24,17 @@
     shell:
       cmd: "oc project {{ gi_namespace }}"
 
-  - name: Extract case file
+  - name: Start auxilliary services
     shell:
-      cmd: "tar -C ../gi-temp/gi_offline -xf ../gi-temp/gi_offline/{{ gi_case_archive }}"
+      cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ gi_namespace }}-zookeeper ../gi-temp/aux_size.tmp`;oc scale sts ${sts_i[0]} --replicas ${sts_i[1]} -n {{ gi_namespace }}"
+    with_items:
+      - "{{ gi_namespace }}-zookeeper"
+      - "{{ gi_namespace }}-kafka"
+      - "{{ gi_namespace }}-mongodb"
+      - "c-{{ gi_namespace }}-redis-m"
+      - "c-{{ gi_namespace }}-redis-s"
+
+  - meta: end_play
 
   - name: Stop cronjobs
     shell:
