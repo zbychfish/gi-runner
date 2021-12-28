@@ -76,7 +76,7 @@
 
   - name: Bounce DB2 
     shell:
-      cmd: "{{ item }"
+      cmd: "{{ item }}"
     with_items:
       - "oc delete pod $(oc get pods | grep c-{{ gi_namespace }}-db2-db2u | awk '{print$1}') -n {{ gi_namespace }}"
       - "oc delete pod $(oc get pods | grep c-{{ gi_namespace }}-db2-etcd | awk '{print$1}') -n {{ gi_namespace }}"
