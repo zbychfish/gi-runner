@@ -204,15 +204,22 @@
     retries: 150 
     delay: 10
 
+  - name: Is htpasswd secret available
+    shell:
+      cmd: "oc get secret htpass-secret -n openshift-config -oname|wc -l"
+    register: is_htpasswd_secret
+
   - name: Create htpasswd file
     htpasswd:
       path: ../gi-temp/ocadmin.htpasswd
       name: "{{ ocadmin }}"
       password: "{{ ocadmin_password }}"
+    when: is_htpasswd_secret|int == 0
 
-  - name: Wait before 1 minute before adding admin
+  - name: Wait 1 minute before adding admin
     pause:
       minutes: 1
+    when: is_htpasswd_secret|int == 0
 
   - name: Register htpasswd file in OCP
     shell:
@@ -221,9 +228,8 @@
       - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocadmin.htpasswd -n openshift-config --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc apply -f ../scripts/oauth_provider.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocadmin }} --kubeconfig ../ocp/auth/kubeconfig" }
-    ignore_errors: yes #if htpasswd has been imported before
-
-  - meta: end_play
+    ignore_errors: no #if htpasswd has been imported before
+    when: is_htpasswd_secret|int == 0
 
   - name: Unpack OLM manifests
     shell:
