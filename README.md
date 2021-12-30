@@ -20,6 +20,7 @@ Release description:
 <LI>added support for patches related to log4j2 vulnerabilities (support CPFS 3.14.2, GI 3.1.2)
 <LI>added playbooks to safely stop and start GI instance
 <LI>Solved problem with reference to device name instead logical name on bastion in playbook 2
+<LI>Solved problem with occasional :appearance of error during insertion secret for htpasswd authentication in OCP
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
