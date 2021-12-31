@@ -123,10 +123,21 @@
     register: are_objects
     when: use_new_procedure
 
-  - name: Delete rolebindings
+  - name: Delete operator group
     shell:
       cmd: "oc delete $(oc get operatorgroup -n ibm-common-services -oname) -n ibm-common-services"
     when: use_new_procedure and are_objects.stdout|int > 0
+
+  - name: Delete remaining RBAC objects
+    shell:
+      cmd: "{{ item }}"
+    with_items:
+      - "oc delete ClusterRole ibm-common-service-webhook --ignore-not-found"
+      - "oc delete ClusterRoleBinding ibm-common-service-webhook --ignore-not-found"
+      - "oc delete RoleBinding ibmcloud-cluster-info -n kube-public --ignore-not-found"
+      - "oc delete Role ibmcloud-cluster-info -n kube-public --ignore-not-found"
+      - "oc delete RoleBinding ibmcloud-cluster-ca-cert -n kube-public --ignore-not-found"
+      - "oc delete Role ibmcloud-cluster-ca-cert -n kube-public --ignore-not-found"
 
   - meta: end_play
 
