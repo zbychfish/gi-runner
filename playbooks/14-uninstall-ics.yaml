@@ -104,7 +104,7 @@
   - name: Delete common-service project
     shell:
       cmd: oc delete project common-service||true
-    when: use_new_procedure are_objects.stdout|int > 0
+    when: use_new_procedure and are_objects.stdout|int > 0
 
   - meta: end_play
 
