@@ -73,6 +73,17 @@
     when: use_new_procedure
     failed_when: are_objects.stdout|int != 0
 
+  - name: Check CVS's and SUB's existence
+    shell:
+      cmd: "oc -n ibm-common-services get csv,sub -o name|wc -l"
+    register: are_objects
+    when: use_new_procedure
+
+  - name: Remove CVS's and SUB's
+    shell:
+      cmd: "oc delete $(oc -n ibm-common-services get csv,sub -o name) -n ibm-common-services"
+    when: use_new_procedure and are_objects.stdout|int > 0
+
   - meta: end_play
 
   - name: Get ICS operator name
