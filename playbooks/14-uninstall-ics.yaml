@@ -47,7 +47,7 @@
 
   - name: Wait for CRD's removal
     pause:
-      minutes: 5
+      minutes: 3
     when: use_new_procedure and are_objects.stdout|int > 0
 
   - name: Check crd's existence
@@ -151,38 +151,63 @@
       cmd: oc delete project ibm-common-services
     when: use_new_procedure and are_objects.stdout|int > 0
 
-  - meta: end_play
+  - name: Wait for namespace removal
+    pause:
+      minutes: 3
+    when: use_new_procedure and are_objects.stdout|int > 0
+
+  - name: Delete remaining objects
+    shell:
+      cmd: "{{ item }}"
+    with_items:
+      - 'oc -n kube-public delete cm ibmcloud-cluster-info --ignore-not-found'
+      - 'oc -n kube-public delete cm ibm-common-services-status --ignore-not-found --timeout=10s'
+      - 'oc -n kube-public delete cm common-service-maps --ignore-not-found --timeout=10s'
+      - 'oc -n kube-system delete secret icp-metering-api-secret --ignore-not-found'
+      - 'oc -n kube-public delete configmap ibmcloud-cluster-info --ignore-not-found'
+      - 'oc -n kube-public delete secret ibmcloud-cluster-ca-cert --ignore-not-found'
+      - 'oc delete ValidatingWebhookConfiguration cert-manager-webhook ibm-cs-ns-mapping-webhook-configuration --ignore-not-found'
+      - 'oc delete MutatingWebhookConfiguration cert-manager-webhook ibm-common-service-webhook-configuration ibm-operandrequest-webhook-configuration namespace-admission-config --ignore-not-found'
+      - 'oc delete namespace services'
+      - 'oc delete nss --all'
+    when: use_new_procedure
 
   - name: Get ICS operator name
     shell:
       cmd: oc get  ClusterServiceVersion -n ibm-common-services -o name|grep ibm-common-service-operator||echo "none"
     register: ics_operator
+    when: not use_new_procedure
 
   - name: Delete ICS operator
     shell:
       cmd: "oc delete {{ ics_operator.stdout }} -n ibm-common-services"
-    when: ics_operator.stdout != 'none'
+    when: not use_new_procedure and ics_operator.stdout != 'none'
 
   - name: Delete common-service project
     shell:
       cmd: oc delete project common-service||true
+    when: not use_new_procedure
 
   - name: Delete operand common-service
     shell:
       cmd: 'oc delete operandrequest.operator.ibm.com/common-service -n ibm-common-services||true'
+    when: not use_new_procedure
 
   - name: Wait for operands removal
     pause:
       minutes: 5
+    when: not use_new_procedure
 
   - name: Get OCP login token
     shell:
       cmd: "python3 ../scripts/get_ocp_token.py {{ ocadmin }} {{ ocadmin_password }} {{ domain }}"
     register: ocp_token
+    when: not use_new_procedure
 
   - name: Login to OCP after ICS API removal
     shell:
       cmd: "oc login --token={{ ocp_token.stdout }} --server=https://api.{{ domain }}:6443"
+    when: not use_new_procedure
 
   - name: Check that operands are removed 
     shell:
@@ -191,26 +216,32 @@
     until: "operands_number.stdout == \"0\""
     retries: 30
     delay: 30
+    when: not use_new_procedure
 
   - name: Delete operand configs
     shell:
       cmd: 'for config in `oc get OperandConfig -n ibm-common-services -o name`; do oc delete $config -n ibm-common-services;done'
+    when: not use_new_procedure
 
   - name: Delete operand registries
     shell:
       cmd: 'for registry in `oc get OperandRegistry -n ibm-common-services -o name`; do oc delete $registry -n ibm-common-services;done'
+    when: not use_new_procedure
    
   - name: Delete operand namespacescopes
     shell:
       cmd: 'for nscope in `oc get NamespaceScope -n ibm-common-services -o name`; do oc delete $nscope -n ibm-common-services;done'
+    when: not use_new_procedure
 
   - name: Delete remaining ICS operators
     shell:
       cmd: 'for operator in `oc get  ClusterServiceVersion -n ibm-common-services -o name`;do oc delete $operator -n ibm-common-services;done'
+    when: not use_new_procedure
 
   - name: Delete ibm-common-services project
     shell:
       cmd: oc delete project ibm-common-services
+    when: not use_new_procedure
 
   - name: Delete remaining objects
     shell:
@@ -223,14 +254,17 @@
       - 'oc delete MutatingWebhookConfiguration cert-manager-webhook ibm-common-service-webhook-configuration ibm-operandrequest-webhook-configuration namespace-admission-config --ignore-not-found'
       - 'oc delete namespace services'
       - 'oc delete nss --all'
+    when: not use_new_procedure
 
   - name: Delete ICS crd's
     shell:
       cmd: 'for crd in `oc get crd -o name| grep ibm.com`;do oc delete $crd;done'
+    when: not use_new_procedure
 
   - name: Delete ICS catalog
     shell:
       cmd: 'oc delete -f ../ocp/ics_catalog.yaml'
+    when: not use_new_procedure
 
   - name: Delete ICS installation files
     file:
