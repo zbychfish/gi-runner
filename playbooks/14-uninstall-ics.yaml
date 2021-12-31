@@ -252,7 +252,6 @@
       - 'oc -n kube-public delete secret ibmcloud-cluster-ca-cert --ignore-not-found'
       - 'oc delete ValidatingWebhookConfiguration cert-manager-webhook ibm-cs-ns-mapping-webhook-configuration --ignore-not-found'
       - 'oc delete MutatingWebhookConfiguration cert-manager-webhook ibm-common-service-webhook-configuration ibm-operandrequest-webhook-configuration namespace-admission-config --ignore-not-found'
-      - 'oc delete namespace services --ignore-not-found'
     when: not use_new_procedure
 
   - name: Check services namespace existense
