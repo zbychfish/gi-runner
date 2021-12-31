@@ -117,6 +117,17 @@
       cmd: "oc delete rolebinding $(oc -n ibm-common-services get rolebindings --no-headers|grep -v '^system:' | awk '{print $1}') -n ibm-common-services"
     when: use_new_procedure and are_objects.stdout|int > 0
 
+  - name: Check operator service existense
+    shell:
+      cmd: "oc get operatorgroup -n ibm-common-services -oname|wc -l"
+    register: are_objects
+    when: use_new_procedure
+
+  - name: Delete rolebindings
+    shell:
+      cmd: "oc delete $(oc get operatorgroup -n ibm-common-services -oname) -n operatorgroup"
+    when: use_new_procedure and are_objects.stdout|int > 0
+
   - meta: end_play
 
   - name: Get ICS operator name
