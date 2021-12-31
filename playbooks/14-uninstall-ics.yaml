@@ -103,7 +103,7 @@
 
   - name: Delete common-service project
     shell:
-      cmd: oc delete project common-service||true
+      cmd: oc delete project common-service
     when: use_new_procedure and are_objects.stdout|int > 0
 
   - name: Check rolebindings existense
@@ -138,6 +138,18 @@
       - "oc delete Role ibmcloud-cluster-info -n kube-public --ignore-not-found"
       - "oc delete RoleBinding ibmcloud-cluster-ca-cert -n kube-public --ignore-not-found"
       - "oc delete Role ibmcloud-cluster-ca-cert -n kube-public --ignore-not-found"
+    when: use_new_procedure
+
+  - name: Check ibm-common-service namespace existense
+    shell:
+      cmd: "oc get ns ibm-common-services -oname|wc -l"
+    register: are_objects
+    when: use_new_procedure
+
+  - name: Delete ibm-common-services project
+    shell:
+      cmd: oc delete project ibm-common-services
+    when: use_new_procedure and are_objects.stdout|int > 0
 
   - meta: end_play
 
