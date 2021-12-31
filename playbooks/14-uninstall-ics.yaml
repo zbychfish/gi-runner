@@ -37,9 +37,6 @@
     shell:
       cmd: oc get  ClusterServiceVersion -n ibm-common-services -o name|grep ibm-common-service-operator||echo "none"
     register: ics_operator
-    when: not use_new_procedure
-
-  - meta: end_play
 
   - name: Delete ICS operator
     shell:
