@@ -84,15 +84,27 @@
       cmd: "oc delete $(oc -n ibm-common-services get csv,sub -o name) -n ibm-common-services"
     when: use_new_procedure and are_objects.stdout|int > 0
 
+  - name: Check ICS catalog existence
+    shell:
+      cmd: "oc -n openshift-marketplace get CatalogSource -o name|grep opencloud-operators|wc -l"
+    register: are_objects
+    when: use_new_procedure
+
   - name: Delete ICS catalog
     shell:
       cmd: 'oc delete -f ../ocp/ics_catalog.yaml'
+    when: use_new_procedure and are_objects.stdout|int > 0
+
+  - name: Check common-service namespace existense
+    shell:
+      cmd: "oc get ns common-service -oname|wc -l"
+    register: are_objects
     when: use_new_procedure
 
   - name: Delete common-service project
     shell:
       cmd: oc delete project common-service||true
-    when: use_new_procedure
+    when: use_new_procedure are_objects.stdout|int > 0
 
   - meta: end_play
 
