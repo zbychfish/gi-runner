@@ -84,6 +84,11 @@
       cmd: "oc delete $(oc -n ibm-common-services get csv,sub -o name) -n ibm-common-services"
     when: use_new_procedure and are_objects.stdout|int > 0
 
+  - name: Delete ICS catalog
+    shell:
+      cmd: 'oc delete -f ../ocp/ics_catalog.yaml'
+    when: use_new_procedure
+
   - meta: end_play
 
   - name: Get ICS operator name
