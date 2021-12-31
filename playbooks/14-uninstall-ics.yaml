@@ -24,7 +24,7 @@
       use_new_procedure: "{{ True if ics_version_hint|int > 5 else False }}" 
 
   - debug:
-      msg: use_new_procedure
+      msg: "{{ use_new_procedure }}"
   - name: Get ICS operator name
     shell:
       cmd: oc get  ClusterServiceVersion -n ibm-common-services -o name|grep ibm-common-service-operator||echo "none"
