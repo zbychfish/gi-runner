@@ -29,7 +29,7 @@
     shell:
       cmd: oc get  ClusterServiceVersion -n ibm-common-services -o name|grep ibm-common-service-operator||echo "none"
     register: ics_operator
-    when: ! use_new_procedure
+    when: not use_new_procedure
 
   - meta: end_play
 
