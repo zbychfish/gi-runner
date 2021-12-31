@@ -253,8 +253,18 @@
       - 'oc delete ValidatingWebhookConfiguration cert-manager-webhook ibm-cs-ns-mapping-webhook-configuration --ignore-not-found'
       - 'oc delete MutatingWebhookConfiguration cert-manager-webhook ibm-common-service-webhook-configuration ibm-operandrequest-webhook-configuration namespace-admission-config --ignore-not-found'
       - 'oc delete namespace services --ignore-not-found'
-      - 'oc delete nss --all --ignore-not-found'
     when: not use_new_procedure
+
+  - name: Check services namespace existense
+    shell:
+      cmd: "oc get ns services -oname|wc -l"
+    register: are_objects
+    when: use_new_procedure
+
+  - name: Delete services project
+    shell:
+      cmd: oc delete project services
+    when: use_new_procedure and are_objects.stdout|int > 0
 
   - name: Delete ICS crd's
     shell:
