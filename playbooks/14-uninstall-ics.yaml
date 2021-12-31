@@ -23,8 +23,16 @@
     set_fact:
       use_new_procedure: "{{ True if ics_version_hint|int > 5 else False }}" 
 
-  - debug:
-      msg: "{{ use_new_procedure }}"
+  - name: Check operandrequest existence
+    shell:
+      cmd: "oc get operandrequests -n ibm-common-services -o name|wc -l"
+    register: are_objects
+
+  - name: Remove operandrequest
+    shell:
+      cmd: "oc delete $(oc get operandrequests -n ibm-common-services -o name) -n ibm-common-services --ignore-not-found --timeout=60s"
+    when: use_new_procedure and are_objects.stdout|int > 0
+
   - name: Get ICS operator name
     shell:
       cmd: oc get  ClusterServiceVersion -n ibm-common-services -o name|grep ibm-common-service-operator||echo "none"
