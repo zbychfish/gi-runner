@@ -178,7 +178,7 @@
 
   - name: Delete services project
     shell:
-      cmd: oc delete project mon-services
+      cmd: oc delete project services
     when: use_new_procedure and are_objects.stdout|int > 0
 
   - name: Get ICS operator name
