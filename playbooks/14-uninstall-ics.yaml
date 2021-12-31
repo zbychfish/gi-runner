@@ -108,13 +108,13 @@
 
   - name: Check rolebindings existense
     shell:
-      cmd: "oc -n ibm-common-services get rolebindings|grep -v '^system:' | awk '{print $1}'|wc -l"
+      cmd: "oc -n ibm-common-services get rolebindings --no-headers|grep -v '^system:' | awk '{print $1}'|wc -l"
     register: are_objects
     when: use_new_procedure
 
   - name: Delete rolebindings
     shell:
-      cmd: "oc delete rolebinding $(oc -n ibm-common-services get rolebindings|grep -v '^system:' | awk '{print $1}') -n ibm-common-services"
+      cmd: "oc delete rolebinding $(oc -n ibm-common-services get rolebindings --no-headers|grep -v '^system:' | awk '{print $1}') -n ibm-common-services"
     when: use_new_procedure and are_objects.stdout|int > 0
 
   - meta: end_play
