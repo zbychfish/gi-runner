@@ -89,6 +89,11 @@
       cmd: 'oc delete -f ../ocp/ics_catalog.yaml'
     when: use_new_procedure
 
+  - name: Delete common-service project
+    shell:
+      cmd: oc delete project common-service||true
+    when: use_new_procedure
+
   - meta: end_play
 
   - name: Get ICS operator name
