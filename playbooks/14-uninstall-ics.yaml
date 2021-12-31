@@ -125,7 +125,7 @@
 
   - name: Delete rolebindings
     shell:
-      cmd: "oc delete $(oc get operatorgroup -n ibm-common-services -oname) -n operatorgroup"
+      cmd: "oc delete $(oc get operatorgroup -n ibm-common-services -oname) -n ibm-common-services"
     when: use_new_procedure and are_objects.stdout|int > 0
 
   - meta: end_play
