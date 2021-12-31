@@ -27,11 +27,53 @@
     shell:
       cmd: "oc get operandrequests -n ibm-common-services -o name|wc -l"
     register: are_objects
+    when: use_new_procedure
 
   - name: Remove operandrequest
     shell:
       cmd: "oc delete $(oc get operandrequests -n ibm-common-services -o name) -n ibm-common-services --ignore-not-found --timeout=60s"
     when: use_new_procedure and are_objects.stdout|int > 0
+
+  - name: Check crd's existence
+    shell:
+      cmd: "oc get crd -oname|grep -E ibm.com|wc -l"
+    register: are_objects
+    when: use_new_procedure
+
+  - name: Remove CRD's
+    shell:
+      cmd: "oc delete $(oc get crd -oname| grep -E ibm.com)"
+    when: use_new_procedure and are_objects.stdout|int > 0
+
+  - name: Wait for CRD's removal
+    pause:
+      minutes: 5
+    when: use_new_procedure
+
+  - name: Check crd's existence
+    shell:
+      cmd: "oc get crd -oname|grep -E ibm.com|wc -l"
+    register: are_objects
+    when: use_new_procedure
+
+  - name: Patch remaining CRD's
+    shell:
+      cmd: "oc patch $(oc get crd -oname| grep -E ibm.com) --type json -p '[{ \"op\": \"remove\", \"path\": \"/metadata/finalizers\"}]'"
+    when: use_new_procedure are_objects.stdout|int > 0
+
+  - name: Wait for CRD's removal
+    pause:
+      minutes: 1
+    when: use_new_procedure
+
+  - name: Check crd's existence
+    shell:
+      cmd: "oc get crd -oname|grep -E ibm.com|wc -l"
+    register: are_objects
+    when: use_new_procedure
+    failed_when: are_objects.stdout|int != 0
+
+  - meta: end_play
 
   - name: Get ICS operator name
     shell:
