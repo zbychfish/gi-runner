@@ -1126,7 +1126,7 @@ then
                 result=1
                 while [[ $result -ne 0 ]]
                 do
-                        read -p "Insert full path to CA certificate which singned the ICS certificate: " gi_ca
+                        read -p "Insert full path to CA certificate which singned the GI certificate: " gi_ca
                         openssl x509 -in $gi_ca -text -noout
                         result=$?
                         if [[ $result -ne 0 ]]
