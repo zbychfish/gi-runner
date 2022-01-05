@@ -85,6 +85,16 @@ spec:
         encrypt: "NO"
 {% endif %}
       storage:
+{% if gi_logs_size|int != 0 %}
+      - name: activelogs
+        spec:
+          accessModes:
+          - ReadWriteOnce
+          storageClassName: "{{ storage_class_block }}"
+          resources:
+            requests:
+              storage: "{{ gi_logs_size }}Gi"
+{% endif %}
       - name: meta
         spec:
           accessModes:

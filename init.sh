@@ -1007,6 +1007,12 @@ then
                 read gi_meta_size
 		gi_meta_size=${gi_meta_size:-0}
         done
+	while [[ $gi_logs_size == '' || -z "$gi_logs_size" ]]
+        do
+		printf "Push Enter for default size of DB2 Activelogs PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+                read gi_logs_size
+		gi_logs_size=${gi_logs_size:-0}
+        done
 	while [[ $gi_mongo_size == '' || -z "$gi_mongo_size" ]]
         do
 		printf "Push Enter for default size of MongoDB data PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
@@ -1033,6 +1039,7 @@ then
         done
         echo "export GI_DATA_STORAGE_SIZE=$gi_ds_size" >> $file
 	echo "export GI_METADATA_STORAGE_SIZE=$gi_meta_size" >> $file
+	echo "export GI_ACTIVELOGS_STORAGE_SIZE=$gi_logs_size" >> $file
 	echo "export GI_MONGO_DATA_STORAGE_SIZE=$gi_mongo_size" >> $file
 	echo "export GI_MONGO_METADATA_STORAGE_SIZE=$gi_mongo_meta_size" >> $file
 	echo "export GI_KAFKA_DATA_STORAGE_SIZE=$gi_kafka_size" >> $file
