@@ -1001,7 +1001,42 @@ then
                         read -p "Provide size of GI data PVC (for example 300, should not exceed 70% of total cluster storage size) in GB: " gi_ds_size
                 fi
         done
+	while [[ $gi_meta_size == '' || -z "$gi_meta_size" ]]
+        do
+		printf "Push Enter for default size of DB2 metadata PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+                read gi_meta_size
+		gi_meta_size=${gi_meta_size:-0}
+        done
+	while [[ $gi_mongo_size == '' || -z "$gi_mongo_size" ]]
+        do
+		printf "Push Enter for default size of MongoDB data PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+                read gi_mongo_size
+		gi_mongo_size=${gi_mongo_size:-0}
+        done
+	while [[ $gi_mongo_meta_size == '' || -z "$gi_mongo_meta_size" ]]
+        do
+		printf "Push Enter for default size of MongoDB metadata PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+                read gi_mongo_meta_size
+		gi_mongo_meta_size=${gi_mongo_meta_size:-0}
+        done
+	while [[ $gi_kafka_size == '' || -z "$gi_kafka_size" ]]
+        do
+		printf "Push Enter for default size of Kafka data PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+                read gi_kafka_size
+		gi_kafka_size=${gi_kafka_size:-0}
+        done
+	while [[ $gi_zookeeper_size == '' || -z "$gi_zookeeper_size" ]]
+        do
+		printf "Push Enter for default size of ZooKeeper data PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+                read gi_zookeeper_size
+		gi_zookeeper_size=${gi_zookeeper_size:-0}
+        done
         echo "export GI_DATA_STORAGE_SIZE=$gi_ds_size" >> $file
+	echo "export GI_METADATA_STORAGE_SIZE=$gi_meta_size" >> $file
+	echo "export GI_MONGO_DATA_STORAGE_SIZE=$gi_mongo_size" >> $file
+	echo "export GI_MONGO_METADATA_STORAGE_SIZE=$gi_mongo_meta_size" >> $file
+	echo "export GI_KAFKA_DATA_STORAGE_SIZE=$gi_kafka_size" >> $file
+	echo "export GI_ZOOKEEPER_METADATA_STORAGE_SIZE=$gi_zookeeper_size" >> $file
         echo "export GI_SIZE_GI=${gi_sizes[$gi_size_selected]}" >> $file
         echo "export GI_ICS_OPERANDS=N,N,Y,Y,Y,N,N,N,N" >> $file
         while [[ $ics_password == '' ]]
