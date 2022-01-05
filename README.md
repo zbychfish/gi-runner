@@ -20,6 +20,7 @@ Release description:
 <LI>added support for patches related to log4j2 vulnerabilities (support CPFS 3.14.2, GI 3.1.2)
 <LI>added playbooks to safely stop and start GI instance
 <LI>ICS uninstallation playbook modified to cover complex uninstallation cases
+<LI>Added init.sh variables GI_META_STORAGE_SIZE, GI_MONGO_DATA_STORAGE_SIZE, GI_MONGO_METADATA_STORAGE_SIZE, GI_KAFKA_STORAGE_SIZE and GI_ZOOKEEPER_STORAGE_SIZE to override default sizes of PVC define in GI templates (all values refers to size in GB's)
 <LI>Solved problem with reference to device name instead logical name on bastion in playbook 2
 <LI>Solved problem with an occasional appearance of error during insertion secret for htpasswd authentication in OCP
 <HR>
