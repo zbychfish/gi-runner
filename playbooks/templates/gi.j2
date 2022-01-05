@@ -62,6 +62,7 @@ spec:
         resources:
           requests:
             storage: {{ gi_mongo_size }}Gi
+{% endif %}
         storageClassName: "{{ storage_class_block }}"
     - metadata:
         name: logs-volume
