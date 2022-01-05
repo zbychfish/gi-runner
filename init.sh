@@ -1003,37 +1003,37 @@ then
         done
 	while [[ $gi_meta_size == '' || -z "$gi_meta_size" ]]
         do
-		printf "Push Enter for default size of DB2 metadata PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+		printf "Push Enter for default size of DB2 metadata PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB) "
                 read gi_meta_size
 		gi_meta_size=${gi_meta_size:-0}
         done
 	while [[ $gi_logs_size == '' || -z "$gi_logs_size" ]]
         do
-		printf "Push Enter for default size of DB2 Activelogs PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+		printf "Push Enter for default size of DB2 Activelogs PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB) "
                 read gi_logs_size
 		gi_logs_size=${gi_logs_size:-0}
         done
 	while [[ $gi_mongo_size == '' || -z "$gi_mongo_size" ]]
         do
-		printf "Push Enter for default size of MongoDB data PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+		printf "Push Enter for default size of MongoDB data PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB) "
                 read gi_mongo_size
 		gi_mongo_size=${gi_mongo_size:-0}
         done
 	while [[ $gi_mongo_meta_size == '' || -z "$gi_mongo_meta_size" ]]
         do
-		printf "Push Enter for default size of MongoDB metadata PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+		printf "Push Enter for default size of MongoDB metadata PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB) "
                 read gi_mongo_meta_size
 		gi_mongo_meta_size=${gi_mongo_meta_size:-0}
         done
 	while [[ $gi_kafka_size == '' || -z "$gi_kafka_size" ]]
         do
-		printf "Push Enter for default size of Kafka data PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+		printf "Push Enter for default size of Kafka data PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB) "
                 read gi_kafka_size
 		gi_kafka_size=${gi_kafka_size:-0}
         done
 	while [[ $gi_zookeeper_size == '' || -z "$gi_zookeeper_size" ]]
         do
-		printf "Push Enter for default size of ZooKeeper data PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB)"
+		printf "Push Enter for default size of ZooKeeper data PVC (related to ${gi_ds_size} template) or insert demanded size (measured in GB) "
                 read gi_zookeeper_size
 		gi_zookeeper_size=${gi_zookeeper_size:-0}
         done
