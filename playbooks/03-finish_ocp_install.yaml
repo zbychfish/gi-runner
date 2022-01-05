@@ -677,7 +677,7 @@
       minutes: 5
     when: ocp_ext_ingress == 'Y'
 
-  - name: Check cluster nodes health after proxy change
+  - name: Check cluster nodes health after proxy certificate change
     shell: ../scripts/check_cluster_health_operators.sh
     register: cluster_health_operators
     until: cluster_health_operators.stdout == "0"
