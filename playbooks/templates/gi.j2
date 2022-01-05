@@ -38,9 +38,15 @@ spec:
     kafka:
       storage:
         class: "{{ storage_class_block }}"
+{% if gi_kafka_size|int != 0 %}
+        size: {{ gi_kafka_size }}Gi
+{% endif %}
     zookeeper:
       storage:
         class: "{{ storage_class_block }}"
+{% if gi_zookeeper_size|int != 0 %}
+        size: {{ gi_zookeeper_size }}Gi
+{% endif %}
   dependency-redis:
     size: 3
     persistence:
@@ -52,18 +58,21 @@ spec:
       spec:
         accessModes:
         - ReadWriteOnce
-        #resources:
-          #requests:
-            #storage: 100Gi
+{% if gi_mongo_size|int != 0 %}
+        resources:
+          requests:
+            storage: {{ gi_mongo_size }}Gi
         storageClassName: "{{ storage_class_block }}"
     - metadata:
         name: logs-volume
       spec:
         accessModes:
         - ReadWriteMany
-        #resources:
-          #requests:
-            #storage: 100Gi
+{% if gi_mongo_meta_size|int != 0 %}
+        resources:
+          requests:
+            storage: {{ gi_mongo_meta_size }}Gi
+{% endif %}
         storageClassName: "{{ storage_class_fs }}"
   dependency-db2:
     db2:
@@ -79,9 +88,11 @@ spec:
         spec:
           accessModes:
           - ReadWriteMany
-          #resources:
-            #requests:
-              #storage: "100Gi"
+{% if gi_meta_size|int != 0 %}
+          resources:
+            requests:
+              storage: {{ gi_meta_size }}Gi
+{% endif %}
           storageClassName: "{{ storage_class_fs }}"
         type: create
       - name: data
