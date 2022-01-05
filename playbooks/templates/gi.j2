@@ -96,14 +96,6 @@ spec:
     mln:
       distribution: 0:0
       total: "{{ db2_nodes_array|length }}"
-  dependency-mongodb:
-    storage:
-      - metadata:
-          name: data-volume
-      - metadata:
-          name: logs-volume
-        spec:
-          storageClassName: "{{ storage_class_fs }}"
   mini-snif:
     persistentVolumesClaims:
       mini-snif-shared:
