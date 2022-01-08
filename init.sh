@@ -1042,8 +1042,8 @@ then
 	echo "export GI_ACTIVELOGS_STORAGE_SIZE=$gi_logs_size" >> $file
 	echo "export GI_MONGO_DATA_STORAGE_SIZE=$gi_mongo_size" >> $file
 	echo "export GI_MONGO_METADATA_STORAGE_SIZE=$gi_mongo_meta_size" >> $file
-	echo "export GI_KAFKA_DATA_STORAGE_SIZE=$gi_kafka_size" >> $file
-	echo "export GI_ZOOKEEPER_METADATA_STORAGE_SIZE=$gi_zookeeper_size" >> $file
+	echo "export GI_KAFKA_STORAGE_SIZE=$gi_kafka_size" >> $file
+	echo "export GI_ZOOKEEPER_STORAGE_SIZE=$gi_zookeeper_size" >> $file
         echo "export GI_SIZE_GI=${gi_sizes[$gi_size_selected]}" >> $file
         echo "export GI_ICS_OPERANDS=N,N,Y,Y,Y,N,N,N,N" >> $file
         while [[ $ics_password == '' ]]
