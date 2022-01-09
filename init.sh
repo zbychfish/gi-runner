@@ -708,6 +708,8 @@ then
                 m_worker_number=2
         fi
 	echo "Define number of workers, you must set minimum $m_worker_number of workers."
+	echo "In case of installation GI you must have minimum 3 workers."
+	echo "If you plan taint the DB2 nodes you must setup minimum 5 workers."
         while ! [[ $w_number -ge $m_worker_number ]]
         do
 
