@@ -990,6 +990,47 @@ then
                 read -p "Your choice?: " gi_size_selected
                 gi_size_selected=$(($gi_size_selected-1))
         done
+	if [[ ! -z "$GI_DB2_NODES" ]]
+        then
+                read -p "Current list of DB2 nodes is set to [$GI_DB2_NODES] - insert list of DB2 nodes (comma separated) or confirm existing <ENTER>: " new_db2_nodes
+                if [[ $new_db2_nodes != '' ]]
+                then
+                        IFS=',' read -r -a  db2_nodes_arr <<< "$new_db2_nodes"
+                        if [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
+                        then
+                                while [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
+                                do
+                                        read -p "Insert DB2 nodes list (comma separated): " db2_nodes
+                                        IFS=',' read -r -a  db2_nodes_arr <<< "$db2_nodes"
+                                done
+                        else
+                                db2_nodes=$new_db2_nodes
+                        fi
+                else
+                        db2_nodes="$GI_DB2_NODES"
+                fi
+        else
+                declare -a db2_nodes_arr=()
+                while [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
+                do
+                        read -p "Insert DB2 nodes list (comma separated): " db2_nodes
+                        IFS=',' read -r -a  db2_nodes_arr <<< "$db2_nodes"
+
+                done
+        fi
+        echo "export GI_DB2_NODES=$db2_nodes" >> $file
+	if [[ `expr ${#worker_ip_arr[@]} - ${#db2_nodes_arr[@]}` -gt 3 ]]
+	then
+		while [[ $db2_tainted == 'Y' || $db2_tainted == 'N' ]]
+		do
+			printf "Should be DB2 nodes tainted (\e[4mY\e[0m)es/(N)o: "
+			read db2_tainted
+			db2_tainted=${db2_tainted:-Y}
+		done
+	else
+		db2_tainted="N"
+	fi
+        echo "export GI_DB2_TAINTED=$db2_tainted" >> $file
 	while [[ $gi_ds_size == '' || -z "$gi_ds_size" ]]
         do
                 if [[ ! -z "$GI_DATA_STORAGE_SIZE" ]]
@@ -1073,35 +1114,6 @@ then
         else
                 echo export GI_NAMESPACE_GI=$gi_namespace >> $file
         fi
-        if [[ ! -z "$GI_DB2_NODES" ]]
-        then
-                read -p "Current list of DB2 nodes is set to [$GI_DB2_NODES] - insert list of DB2 nodes (comma separated) or confirm existing <ENTER>: " new_db2_nodes
-                if [[ $new_db2_nodes != '' ]]
-                then
-			IFS=',' read -r -a  db2_nodes_arr <<< "$new_db2_nodes"
-			if [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
-			then
-	                	while [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
-        	        	do
-                        		read -p "Insert DB2 nodes list (comma separated): " db2_nodes
-					IFS=',' read -r -a  db2_nodes_arr <<< "$db2_nodes"
-                		done
-			else
-				db2_nodes=$new_db2_nodes
-			fi
-                else
-                        db2_nodes="$GI_DB2_NODES"
-                fi
-        else
-		declare -a db2_nodes_arr=()
-		while [[ ${#db2_nodes_arr[@]} -lt 1 || ${#db2_nodes_arr[@]} -gt 3 ]]
-		do
-                	read -p "Insert DB2 nodes list (comma separated): " db2_nodes
-			IFS=',' read -r -a  db2_nodes_arr <<< "$db2_nodes"
-
-		done
-        fi
-        echo "export GI_DB2_NODES=$db2_nodes" >> $file
         while ! [[ $db2_enc == 'Y' || $db2_enc == 'N' ]]
         do
                 if [[ $gi_version_selected -ge 2 ]]
