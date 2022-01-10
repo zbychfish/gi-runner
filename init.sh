@@ -1019,7 +1019,7 @@ then
                 done
         fi
         echo "export GI_DB2_NODES=$db2_nodes" >> $file
-	if [[ `expr ${#worker_ip_arr[@]} - ${#db2_nodes_arr[@]}` -gt 3 ]]
+	if [[ `expr ${#worker_ip_arr[@]} - ${#db2_nodes_arr[@]}` -ge 3 ]]
 	then
 		while [[ $db2_tainted == 'Y' || $db2_tainted == 'N' ]]
 		do
@@ -1028,6 +1028,7 @@ then
 			db2_tainted=${db2_tainted:-Y}
 		done
 	else
+		echo "DB2 will not be tainted"
 		db2_tainted="N"
 	fi
         echo "export GI_DB2_TAINTED=$db2_tainted" >> $file
