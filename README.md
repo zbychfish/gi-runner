@@ -1,7 +1,7 @@
 <B>OpenShift Cluster, IBM Common Services and Guardium Insights installation automation on bare metal</B>
 <HR>
 <P>Automates OCP installation for releases: 4.6, 4.7, 4.8, 4.9
-<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.1
+<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.2
 <P>Automates GI installation for releases: 3.0.0, 3.0.1, 3.0.2, 3.1.0
 <P>Supports installation with direct access to the Internet, using proxy and air-gapped (restricted) approach
 <P>Implemented OCP architectures:
@@ -21,7 +21,7 @@ Release description:
 <LI>added playbooks to safely stop and start GI instance
 <LI>ICS uninstallation playbook modified to cover complex uninstallation cases
 <LI>Added init.sh variables GI_META_STORAGE_SIZE, GI_ACTIVELOGS_STORAGE_SIZE, GI_MONGO_DATA_STORAGE_SIZE, GI_MONGO_METADATA_STORAGE_SIZE, GI_KAFKA_STORAGE_SIZE and GI_ZOOKEEPER_STORAGE_SIZE to override default sizes of PVC define in GI templates (all values refers to storage size in GB's)
-<LI>Added init.sh variables GI_DB2_TAINTED to decide to separate DB2 nodes from other GI services (OCP cluster must have 3 additional workers besides dedicated for DB2)
+<LI>Added init.sh variable GI_DB2_TAINTED to separate DB2 nodes from other GI services (OCP cluster must have 3 additional workers besides dedicated for DB2)
 <LI>update rook-ceph operator to version 1.8.2 (rook images must be recreated for air-gapped installation)
 <LI>Solved problem with reference to device name instead logical name on bastion in playbook 2
 <LI>Solved problem with an occasional appearance of error during insertion secret for htpasswd authentication in OCP
