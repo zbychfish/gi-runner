@@ -207,11 +207,6 @@
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
 
-  - debug:
-      msg: "{{ add_options1 }}"
-
-  - meta: end_play
-
   - name: Install GI catalog in air-gapped
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir ../gi-temp/{{ offline_inventory }}\""
