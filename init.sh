@@ -1020,8 +1020,6 @@ then
                 done
         fi
         echo "export GI_DB2_NODES=$db2_nodes" >> $file
-	echo ${#worker_ip_arr[@]}
-	echo ${#db2_nodes_arr[@]}
 	if [[ `expr ${#worker_ip_arr[@]} - ${#db2_nodes_arr[@]}` -ge 3 ]]
 	then
 		while [[ $db2_tainted != 'Y' && $db2_tainted != 'N' ]]
