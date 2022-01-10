@@ -16,8 +16,8 @@
     ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}"
     ssh_key:  "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
-    rook_operator_version: "v1.7.8"
-    rook_ceph_version: "v16.2.6"
+    rook_operator_version: "v1.8.2"
+    rook_ceph_version: "v16.2.7"
 
   tasks:
   - name: Check other configuration parameters
