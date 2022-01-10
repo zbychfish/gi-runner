@@ -1007,6 +1007,7 @@ then
                                 db2_nodes=$new_db2_nodes
                         fi
                 else
+			IFS=',' read -r -a  db2_nodes_arr <<< "$GI_DB2_NODES"
                         db2_nodes="$GI_DB2_NODES"
                 fi
         else
@@ -1023,7 +1024,7 @@ then
 	echo ${#db2_nodes_arr[@]}
 	if [[ `expr ${#worker_ip_arr[@]} - ${#db2_nodes_arr[@]}` -ge 3 ]]
 	then
-		while [[ $db2_tainted == 'Y' || $db2_tainted == 'N' ]]
+		while [[ $db2_tainted != 'Y' && $db2_tainted != 'N' ]]
 		do
 			printf "Should be DB2 nodes tainted (\e[4mY\e[0m)es/(N)o: "
 			read db2_tainted
