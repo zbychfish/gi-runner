@@ -629,6 +629,8 @@
     retries: 30
     delay: 10
 
+  - meta: end_play
+
   - name: Configure OCP registry with PVC
     shell:
       cmd: "{{ item.cmd }}"
