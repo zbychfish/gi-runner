@@ -139,6 +139,8 @@
       db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
       db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
       gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int > 2 else 'L-OOLE-C2ASKR' }}"
+      add_options1: "{{ ' -t false' if db2_tainted == 'N' ' -t true' if db2_tainted == 'Y' else '' }}"
+      add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
 
   - name: Set endpoint cert variables
     set_fact:
@@ -202,9 +204,6 @@
       state: link
 
   - name: GI preinstall task
-    vars:
-      add_options1: "{{ ' -t false' if db2_tainted == 'N' ' -t true' if db2_tainted == 'Y' else '' }}"
-      add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
     shell:
       cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
 
