@@ -587,8 +587,6 @@
       dest: "../gi-temp/rook-latest-operator.yaml"
     when: internet_type != 'A' and storage_type == "R"
 
-  - meta: end_play
-
   - name: Configure rook operator
     shell:
       cmd: "{{ item }}"
@@ -630,6 +628,8 @@
       - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc patch storageclass rook-ceph-block --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "R"
+
+  - meta: end_play
 
   - name: Configure registry PVC file
     vars:
