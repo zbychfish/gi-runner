@@ -437,8 +437,6 @@ metadata:
     app.kubernetes.io/component: rook-ceph-operator
     app.kubernetes.io/part-of: rook-ceph-operator
 spec:
-  nodeselector:
-    role: storage-node
   selector:
     matchLabels:
       app: rook-ceph-operator
