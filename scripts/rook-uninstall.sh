@@ -40,4 +40,4 @@ oc delete -f scripts/rook-latest-common.yaml --ignore-not-found
 echo "Delete crds objects"
 oc delete -f scripts/rook-latest-crds.yaml --ignore-not-found
 echo "rook-ceph has been uninstalled"
-~
+
