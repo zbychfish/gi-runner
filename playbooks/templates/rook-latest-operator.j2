@@ -191,7 +191,7 @@ data:
 
   # (Optional) CephCSI provisioner NodeAffinity(applied to both CephFS and RBD provisioner).
 {% if rook_dedicated_nodes|length > 0 %}
-  CSI_PROVISIONER_NODE_AFFINITY: "role=storage-node; storage=rook, ceph"
+  CSI_PROVISIONER_NODE_AFFINITY: "role=storage-node"
 {% endif %}
   # (Optional) CephCSI provisioner tolerations list(applied to both CephFS and RBD provisioner).
   # Put here list of taints you want to tolerate in YAML format.
@@ -205,7 +205,7 @@ data:
   #     operator: Exists
   # (Optional) CephCSI plugin NodeAffinity(applied to both CephFS and RBD plugin).
 {% if rook_dedicated_nodes|length > 0 %}
-  CSI_PLUGIN_NODE_AFFINITY: "role=storage-node; storage=rook, ceph"
+  CSI_PLUGIN_NODE_AFFINITY: "role=storage-node"
 {% endif %}
   # (Optional) CephCSI plugin tolerations list(applied to both CephFS and RBD plugin).
   # Put here list of taints you want to tolerate in YAML format.
@@ -482,7 +482,7 @@ spec:
             # (Optional) Discover Agent NodeAffinity.
 {% if rook_dedicated_nodes|length > 0 %}
             - name: DISCOVER_AGENT_NODE_AFFINITY
-              value: "role=storage-node; storage=rook, ceph"
+              value: "role=storage-node"
 {% endif %}
             # (Optional) Discover Agent Pod Labels.
             # - name: DISCOVER_AGENT_POD_LABELS
