@@ -521,6 +521,14 @@
       - CSI_VOLUME_REPLICATION_IMAGE
     when: internet_type == 'A' and storage_type == "R"
 
+  - name: Label rook storage nodes
+    shell:
+      cmd: "oc label nodes {{ item }}.{{ domain }} storage-node=true --overwrite=true"
+    with_items: "{{ dedicated_storage_nodes }}"
+    when: storage_type == "R" and dedicated_storage_nodes|length > 2
+
+  - meta: end_play
+
   - set_fact:
       rook_ceph_image: "ceph:{{ rook_ceph_version }}"
     when: internet_type != 'A' and storage_type == "R"
