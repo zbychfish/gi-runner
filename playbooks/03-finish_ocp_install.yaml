@@ -84,6 +84,19 @@
       - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
       - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
 
+  - name: Set rook nodes
+    set_fact:
+      rook_dedicated_nodes: "{{ lookup('env', 'GI_ROOK_NODES').split(',') }}"
+    when: storage_type == 'R'
+
+  - name: Check OCS configuration
+    fail: msg="Variable {{ item.name }} is not set"
+    when: is_ocs_tainted == 'Y' and item.value == ""
+    loop:
+      - { name: "GI_OCS_IP", value: "{{ ocs_ip }}" }
+      - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
+      - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
+
   - name: Set workers arrays
     set_fact:
       worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
@@ -524,8 +537,8 @@
   - name: Label rook storage nodes
     shell:
       cmd: "oc label nodes {{ item }}.{{ domain }} storage-node=true --overwrite=true"
-    with_items: "{{ dedicated_storage_nodes }}"
-    when: storage_type == "R" and dedicated_storage_nodes|length > 2
+    with_items: "{{ rook_dedicated_nodes }}"
+    when: storage_type == "R" and rook_dedicated_nodes|length > 2
 
   - meta: end_play
 
