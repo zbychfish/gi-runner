@@ -535,9 +535,8 @@
     when: internet_type == 'A' and storage_type == "R"
 
   - name: Label rook storage nodes
-    shell: |
-      "oc label nodes {{ item }}.{{ domain }} role=storage-node --overwrite=true"
-      "oc label nodes {{ item }}.{{ domain }} storage=rook --overwrite=true"
+    shell:
+      cmd:"oc label node {{ item }}.{{ domain }} role=storage-node --overwrite=true;oc label node {{ item }}.{{ domain }} storage=rook --overwrite=true"
     with_items: "{{ rook_dedicated_nodes|list }}"
     when: storage_type == "R" and rook_dedicated_nodes|length > 2
 
