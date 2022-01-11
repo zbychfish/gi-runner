@@ -536,11 +536,9 @@
 
   - name: Label rook storage nodes
     shell:
-      cmd:"oc label node {{ item }}.{{ domain }} role=storage-node --overwrite=true;oc label node {{ item }}.{{ domain }} storage=rook --overwrite=true"
+      cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --overwrite=true;oc label node {{ item }}.{{ domain }} storage=rook --overwrite=true"
     with_items: "{{ rook_dedicated_nodes|list }}"
     when: storage_type == "R" and rook_dedicated_nodes|length > 2
-
-  - meta: end_play
 
   - set_fact:
       rook_ceph_image: "ceph:{{ rook_ceph_version }}"
@@ -588,6 +586,8 @@
       src: "rook-latest-operator.j2"
       dest: "../gi-temp/rook-latest-operator.yaml"
     when: internet_type != 'A' and storage_type == "R"
+
+  - meta: end_play
 
   - name: Configure rook operator
     shell:
