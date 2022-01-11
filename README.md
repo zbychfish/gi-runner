@@ -34,7 +34,6 @@ Files:
 <LI>playbook/04-install-ics.yaml - Ansible playbook to install IBM Common Services
 <LI>playbook/05-install-gi.yaml - Ansible playbook to install Guardium Insights
 <LI>playbook/50-set_configure_ldap.yaml - Ansible playbook to setup on bastion OpenLDAP instance
-<LI>playbook/14-uninstall-ics.yaml - Ansible playbook to uninstall ICS
 <LI>playbook/15-uninstall-gi.yaml - Ansible playbook to uninstall GI
 <LI>playbook/21-shutdown-gi.yaml - Ansible playbook to shutdown GI instance for administration purposes on CPFS and OCP level
 <LI>playbook/22-start-gi.yaml - Ansible playbook to start GI instance after shutdown with playbook 21
@@ -47,6 +46,7 @@ Files:
 <LI>prepare-scripts/prepare-air-gap-gi.sh - script to gather GI images to install GI in air-gapped environment
 <LI>prepare-scripts/prepare-air-gap-additions.sh - script to gather additional images to install some services on OCP (for instance: openldap)
 <LI>scripts/login_to_ocp.sh - logs admin to OCP cluster with new token
+<LI>scripts/ics-uninstall.sh - native DEV team script to remove ICS instances
 <HR>
 Releases history:
 <P>v0.5.2
