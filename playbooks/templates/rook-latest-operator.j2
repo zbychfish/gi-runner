@@ -191,7 +191,7 @@ data:
 
   # (Optional) CephCSI provisioner NodeAffinity(applied to both CephFS and RBD provisioner).
 {% if rook_dedicated_nodes|length > 0 %}
-  # CSI_PROVISIONER_NODE_AFFINITY: "role=storage-node"
+  CSI_PROVISIONER_NODE_AFFINITY: "role=storage-node"
 {% endif %}
   # (Optional) CephCSI provisioner tolerations list(applied to both CephFS and RBD provisioner).
   # Put here list of taints you want to tolerate in YAML format.

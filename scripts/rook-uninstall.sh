@@ -26,11 +26,11 @@ oc delete -f gi-temp/rook-latest-operator.yaml
 #do
 #        oc delete -n rook-ceph $op
 #done
-#echo "Wait for deployment cleanup"
-#while [[ `oc get pods -n rook-ceph --no-headers|grep -v Completed|wc -l` -ne 0 ]]
-#do
-#        sleep 2
-#done
+echo "Wait for deployment cleanup"
+while [[ `oc get pods -n rook-ceph --no-headers|grep -v Completed|wc -l` -ne 0 ]]
+do
+        sleep 2
+done
 #echo "Delete Security Context"
 #for op in $(oc get SecurityContextConstraints -o name|grep rook)
 #do
