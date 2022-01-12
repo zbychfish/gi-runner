@@ -132,6 +132,8 @@
     shell:
       cmd: "tar -C ../gi-temp -xf {{ archives_dir }}/{{ ics_registry }} cloudctl-linux-amd64.tar.gz {{ ics_manifest }}"
     when: internet_type == 'A'
+  
+  - meta: end_play
 
   - name: Check presence of cloudctl tool
     stat:
