@@ -65,6 +65,10 @@
       ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
       ics_operands_arr: "{{ lookup('env', 'GI_ICS_OPERANDS').split(',') }}"
 
+  - name: Set ICS nodes
+    set_fact:
+      ics_dedicated_nodes: "{{ lookup('env', 'GI_ICS_NODES').split(',') }}"
+
   - name: Set GI installation variables
     set_fact:
       gi_case_inventory_setup: "install"
