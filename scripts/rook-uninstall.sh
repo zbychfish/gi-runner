@@ -21,20 +21,21 @@ then
         oc delete cephcluster rook-ceph -n rook-ceph
 fi
 echo "Remove Rook operator"
-for op in $(oc get deployments -n rook-ceph -o name | grep rook)
-do
-        oc delete -n rook-ceph $op
-done
-echo "Wait for deployment cleanup"
-while [[ `oc get pods -n rook-ceph --no-headers|grep -v Completed|wc -l` -ne 0 ]]
-do
-        sleep 2
-done
-echo "Delete Security Context"
-for op in $(oc get SecurityContextConstraints -o name|grep rook)
-do
-        oc delete -n rook-ceph $op
-done
+oc delete -f gi-temp/rook-latest-operator.yaml
+#for op in $(oc get deployments -n rook-ceph -o name | grep rook)
+#do
+#        oc delete -n rook-ceph $op
+#done
+#echo "Wait for deployment cleanup"
+#while [[ `oc get pods -n rook-ceph --no-headers|grep -v Completed|wc -l` -ne 0 ]]
+#do
+#        sleep 2
+#done
+#echo "Delete Security Context"
+#for op in $(oc get SecurityContextConstraints -o name|grep rook)
+#do
+#        oc delete -n rook-ceph $op
+#done
 echo "Delete common objects"
 oc delete -f scripts/rook-latest-common.yaml --ignore-not-found
 echo "Delete crds objects"
