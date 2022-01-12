@@ -125,7 +125,7 @@
       cmd: "{{ item }}"
     with_items:
       - oc create namespace ibm-common-services || echo "Namespace exists"
-      - oc patch namespace test -p '{"metadata":{"annotations": {"scheduler.alpha.kubernetes.io/node-selector": "role=ics-node"}}}'
+      - "oc patch namespace test -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"role=ics-node\"}}}'"
     when: ics_dedicated_nodes|length > 2
 
   - name: Extract cloudctl and manifest from archive
