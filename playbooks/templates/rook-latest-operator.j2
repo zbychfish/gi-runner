@@ -446,6 +446,10 @@ spec:
       labels:
         app: rook-ceph-operator
     spec:
+{% if rook_dedicated_nodes|length > 0 %}
+      nodeSelector:
+        role: storage-node
+{% endif %}
       serviceAccountName: rook-ceph-system
       containers:
         - name: rook-ceph-operator
