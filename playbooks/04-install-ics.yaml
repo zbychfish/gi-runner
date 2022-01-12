@@ -116,7 +116,7 @@
 
   - name: Label ICS nodes
     shell:
-      cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --overwrite=true;oc label node {{ item }}.{{ domain }} storage=rook --overwrite=true"
+      cmd: "oc label node {{ item }}.{{ domain }} role=ics --overwrite=true"
     with_items: "{{ ics_dedicated_nodes|list }}"
     when: ics_dedicated_nodes|length > 2
 
