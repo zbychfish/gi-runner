@@ -116,7 +116,7 @@
 
   - name: Label ICS nodes
     shell:
-      cmd: "oc label node {{ item }}.{{ domain }} role=ics --overwrite=true"
+      cmd: "oc label node {{ item }}.{{ domain }} ics_role=yes --overwrite=true"
     with_items: "{{ ics_dedicated_nodes|list }}"
     when: ics_dedicated_nodes|length > 2
 
@@ -125,7 +125,7 @@
       cmd: "{{ item }}"
     with_items:
       - oc create namespace ibm-common-services || echo "Namespace exists"
-      - "oc patch namespace ibm-common-services -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"role=ics-node\"}}}'"
+      - "oc patch namespace ibm-common-services -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"ics_role=yes\"}}}'"
     when: ics_dedicated_nodes|length > 2
 
   - name: Extract cloudctl and manifest from archive
