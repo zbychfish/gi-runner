@@ -131,21 +131,6 @@
     debug:
       msg: "{{ nodes|zip(ips)|list }}"
 
-  - name: Set GI installation variables
-    set_fact:
-      archives_dir: "{{ lookup('env','GI_ARCHIVES_DIR') }}"
-      gi_case_inventory_setup: "install"
-      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' }}"
-      offline_inventory: "gi_offline"
-      storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
-      storage_class_block: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' }}"
-      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' }}"
-      db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
-      db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
-      gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int > 2 else 'L-OOLE-C2ASKR' }}"
-      add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
-      add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
-
   - name: Set endpoint cert variables
     set_fact:
       gi_ca: "{{ lookup('env', 'GI_IN_CA') }}"
@@ -160,6 +145,21 @@
       - { name: "GI_IN_CA", value: "{{ gi_ca }}" }
       - { name: "GI_IN_CERT", value: "{{ gi_cert }}" }
       - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
+
+  - name: Set GI installation variables
+    set_fact:
+      archives_dir: "{{ lookup('env','GI_ARCHIVES_DIR') }}"
+      gi_case_inventory_setup: "install"
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' }}"
+      offline_inventory: "gi_offline"
+      storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
+      storage_class_block: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' }}"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' }}"
+      db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
+      db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
+      gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int > 2 else 'L-OOLE-C2ASKR' }}"
+      add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
+      add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
 
   - name: Extract offline operator archive
     shell:
