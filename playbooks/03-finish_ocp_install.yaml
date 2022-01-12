@@ -587,6 +587,12 @@
       dest: "../gi-temp/rook-latest-operator.yaml"
     when: internet_type != 'A' and storage_type == "R"
 
+  - name: Configure rook toolbox
+    template:
+      src: "rook-toolbox.j2"
+      dest: "../gi-temp/rook-toolbox.yaml"
+    when: internet_type != 'A' and storage_type == "R"
+
   - name: Configure rook operator
     shell:
       cmd: "{{ item }}"
@@ -628,6 +634,10 @@
       - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc patch storageclass rook-ceph-block --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "R"
+
+  - name: Deploy rook toolbox
+    shell:
+      cmd: "oc apply -f ../gi-temp/rook-toolbox.yaml"
 
   - meta: end_play
 
