@@ -53,6 +53,10 @@
       - { name: "GI_ZOOKEEPER_STORAGE_SIZE", value: "{{ gi_zookeeper_size }}" }
       - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
 
+  - name: Set ICS nodes
+    set_fact:
+      gi_dedicated_nodes: "{{ lookup('env', 'GI_GI_NODES').split(',') }}"
+
   - name: Set parameters for non air-gapped installation
     set_fact:
       ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
@@ -183,9 +187,24 @@
       - podman start bastion-registry
     when: internet_type == 'A'
 
+  - name: Label ICS nodes
+    shell:
+      cmd: "oc label node {{ item }}.{{ domain }} gi_role=yes --overwrite=true"
+    with_items: "{{ gi_dedicated_nodes|list }}"
+    when: gi_dedicated_nodes|length > 2
+
+  - name: Create ICS namespace with node selector
+    shell:
+      cmd: "{{ item }}"
+    with_items:
+      - "oc create namespace  {{ gi_namespace }} || echo 'Namespace exists'"
+      - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"gi_role=yes\"}}}'"
+    when: gi_dedicated_nodes|length > 2
+
   - name: Create GI operator namespace
     shell:
       cmd: "oc create namespace {{ gi_namespace }}||true"
+    when: gi_dedicated_nodes|length < 3
 
   - name: Save portable repo credentials
     shell:

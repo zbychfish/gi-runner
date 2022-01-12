@@ -1415,6 +1415,7 @@ then
 fi
 echo "export GI_ROOK_NODES=''" >> $file
 echo "export GI_ICS_NODES=''" >> $file
+echo "export GI_GI_NODES=''" >> $file
 while ! [[ $install_ldap == 'Y' || $install_ldap == 'N' ]] # While string is different or empty...
 do
         printf "Would you like install OpenLDAP for example as Guardium Insights identity source? (\e[4mY\e[0m)es/(N)o: "
