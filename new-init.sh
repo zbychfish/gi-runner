@@ -1681,7 +1681,7 @@ function prepare_bastion_to_execute_playbooks() {
 msg "#gi-runner configuration file" true > $file
 msg "This script must be executed from gi-runner home directory" true
 msg "*** Checking OS release ***" true
-save variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
+save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
 check_bastion_os
 get_network_installation_type
 get_software_selection
