@@ -438,7 +438,7 @@ function select_ics_version() {
 }
 
 function select_ocp_version() {
-	if [[ $tgi_install == 'Y' ]]
+	if [[ $gi_install == 'Y' ]]
 	then
         	IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
 	elif [[ $ics_install == 'Y' ]]
