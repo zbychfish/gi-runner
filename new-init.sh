@@ -904,7 +904,7 @@ function get_service_assignment() {
 		msg "Only disks from specified nodes will be configured as cluster storage" true
 		while $(check_input $rook_on_list "yn" false)
         	do
-                	get_input "yn" "Would you like to install Rook-Ceph on strictly specified nodes?: " false
+                	get_input "yn" "Would you like to install Rook-Ceph on strictly specified nodes?: " true
                 	rook_on_list=${input_variable^^}
         	done
 		if [ "$rook_on_list" == 'Y' ]
@@ -928,7 +928,7 @@ function get_service_assignment() {
                 msg "You can force to deploy ICS on strictly defined node list" true
                 while $(check_input $ics_on_list "yn" false)
                 do
-                        get_input "yn" "Would you like to install ICS on strictly specified nodes?: " false
+                        get_input "yn" "Would you like to install ICS on strictly specified nodes?: " true
                         ics_on_list=${input_variable^^}
                 done
 		if [ "$ics_on_list" == 'Y' ]
@@ -955,7 +955,7 @@ function get_service_assignment() {
 			msg "You can force to deploy GI on strictly defined node list" true
                 	while $(check_input $gi_on_list "yn" false)
                 	do
-                        	get_input "yn" "Would you like to install GI on strictly specified nodes?: " false
+                        	get_input "yn" "Would you like to install GI on strictly specified nodes?: " true
                         	gi_on_list=${input_variable^^}
                 	done
 		fi
@@ -1249,7 +1249,7 @@ function get_certificates() {
 	msg "CA cert, service cert and private key files must be stored separately in PEM format" true
 	while $(check_input "$ocp_ext_ingress" "yn" false)
         do
-	        get_input "yn" "Would you like to install own certificates for OCP?: " false
+	        get_input "yn" "Would you like to install own certificates for OCP?: " true
                 ocp_ext_ingress=${input_variable^^}
 	done
 	save_variable GI_OCP_IN $ocp_ext_ingress
@@ -1258,7 +1258,7 @@ function get_certificates() {
         then
 		while $(check_input "$ics_ext_ingress" "yn" false)
         	do
-                	get_input "yn" "Would you like to install own certificates for ICP?: " false
+                	get_input "yn" "Would you like to install own certificates for ICP?: " true
                 	ics_ext_ingress=${input_variable^^}
         	done
         	save_variable GI_ICS_IN $ics_ext_ingress
@@ -1268,7 +1268,7 @@ function get_certificates() {
         then
                 while $(check_input "$gi_ext_ingress" "yn" false)
                 do
-                        get_input "yn" "Would you like to install own certificates for GI?: " false
+                        get_input "yn" "Would you like to install own certificates for GI?: " true
                         gi_ext_ingress=${input_variable^^}
                 done
                 save_variable GI_GI_IN $gi_ext_ingress
@@ -1570,17 +1570,18 @@ function setup_online_installation() {
 	msg "*** Updating Fedora to have up to date software packages ***" true
         dnf -qy update
         msg "*** Installing Ansible and other Fedora packages ***" true
-	local soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bootimgs" "chrony" "dnsmasq" "unzip" "wget" "jq" "httpd-tools" "policycoreutils-python-utils" "python3-ldap" "openldap-servers" "openldap-clients" "pip" "ansible" "skopeo")
+	local soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bootimgs" "chrony" "dnsmasq" "unzip" "wget" "jq" "httpd-tools" "policycoreutils-python-utils" "python3-ldap" "openldap-servers" "openldap-clients" "pip" "skopeo")
 	for package in "${soft[@]}"
 	do
-		msg "- installing $package ..."
-		dnf -qy install $package &/dev/null
+		msg " - installing $package ..." true
+		dnf -qy install $package &>/dev/null
 		[[ $? -ne 0 ]] && exit 1
 	done
         msg "*** Installing Python packages ***" true
 	local python_soft=("passlib" "dnspython" "beautifulsoup4")
-	for package in "${soft[@]}"
+	for package in "${python_soft[@]}"
 	do
+		msg " - installing $package ..." true
 		[[ $use_proxy == 'D' ]] && pip3 install "$package" || pip3 install "$package" --proxy http://$proxy_ip:$proxy_port
 		[[ $? -ne 0 ]] && exit 1
 	done
@@ -1681,6 +1682,8 @@ function prepare_bastion_to_execute_playbooks() {
 msg "#gi-runner configuration file" true > $file
 msg "This script must be executed from gi-runner home directory" true
 msg "*** Checking OS release ***" true
+#install tools for init.sh
+dnf -y install jq
 save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
 check_bastion_os
 get_network_installation_type
