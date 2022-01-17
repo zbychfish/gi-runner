@@ -1274,7 +1274,7 @@ function get_certificates() {
                         get_input "yn" "Would you like to install own certificates for GI?: " true
                         gi_ext_ingress=${input_variable^^}
                 done
-                save_variable GI_GI_IN $gi_ext_ingress
+                save_variable GI_IN $gi_ext_ingress
                 [ $gi_ext_ingress == 'Y' ] && validate_certs "gi"
         fi
 }
