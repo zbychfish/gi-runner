@@ -173,7 +173,7 @@
       shell:
         cmd: semanage permissive -a NetworkManager_t
 
-    - name: Install ansible ldap reqs
+    - name: Install ansible galaxy packages
       shell:
         cmd: ansible-galaxy collection install community.general
       when: install_ldap == 'Y' and internet_type != 'A'

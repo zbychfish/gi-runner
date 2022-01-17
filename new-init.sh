@@ -541,6 +541,8 @@ function get_software_architecture() {
 			ocs_tainted=${input_variable^^}
 		done
 		save_variable GI_OCS_TAINTED $ocs_tainted
+	else
+		save_variable GI_OCS_TAINTED "N"
 	fi
 	if [[ $gi_install == "Y" ]]
 	then
@@ -1075,6 +1077,7 @@ function get_credentials() {
 			then
 				echo ${input_variable}|{ jq .auths 2>/dev/null 1>/dev/null ;}
 				[[ $? -eq 0 ]] && is_ok=false
+				rhn_secret="${input_variable}"
 			fi
         	done
         	save_variable GI_RHN_SECRET "'${input_variable}'"
@@ -1588,7 +1591,7 @@ function setup_online_installation() {
         msg "*** Configuring Ansible ***" true
         mkdir -p /etc/ansible
         [[ $use_proxy == 'P' ]] && echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts || echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
-        [ $use_air_gap == 'N' ] && echo "pullSecret: '$rhn_secret'" > scripts/pull_secret.tmp
+        echo "pullSecret: '$rhn_secret'" > scripts/pull_secret.tmp
 }
 
 function setup_offline_installation() {
