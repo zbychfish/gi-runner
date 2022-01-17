@@ -1551,7 +1551,7 @@ function unset_proxy_settings() {
         then
                 mv -f /etc/dnf/dnf.conf.gi_no_proxy /etc/dnf/dnf.conf
         fi
-	save variable GI_PROXY_URL "NO_PROXY"
+	save_variable GI_PROXY_URL "NO_PROXY"
 
 }
 
@@ -1563,7 +1563,7 @@ function create_cluster_ssh_key() {
 	echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
 	cat ${cluster_id}.pub >> /root/.ssh/authorized_keys
 	save_variable GI_SSH_KEY "${cluster_id}"
-	msh "Save SSH keys names: ${cluster_id} and ${cluster_id}.pub, each init.sh execution create new with random name" true
+	msg "Save SSH keys names: ${cluster_id} and ${cluster_id}.pub, each init.sh execution create new with random name" true
 }
 
 function setup_online_installation() {
@@ -1712,6 +1712,6 @@ create_cluster_ssh_key
 prepare_bastion_to_execute_playbooks
 msg "*** Execute commands below ***" true
 [[ $use_proxy == 'P' ]] &&  echo "- import PROXY settings: \". /etc/profile\""
-msg "- import variables: \". $file\"" true
-msg "- start first playbook: \"ansible-playbook playbooks/01-finalize-bastion-setup.yaml\"" true
+msg " - import variables: \". $file\"" true
+msg " - start first playbook: \"ansible-playbook playbooks/01-finalize-bastion-setup.yaml\"" true
 
