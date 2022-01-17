@@ -41,7 +41,7 @@
   - name: Set parameters for ICS with GI (part2)
     set_fact:
       ics_size_hint: "{{ 'S' if gi_size == 'values-dev' else 'S' if gi_size == 'values-poc-lite' else 'M' }}"
-      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' }}"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' if gi_version_index == '3' else '3.1.2'}}"
     when: install_gi == 'Y'
 
   - name: Set parameters for ICS without GI
