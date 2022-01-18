@@ -39,13 +39,6 @@
         - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
         - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
 
-    - name: Upgrade system
-      dnf:
-        name: "*"
-        state: latest
-      register: dnf_updates
-      when: internet_type != 'A'
-
     - name: Check for reboot hint.
       shell: LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then echo 'reboot'; else echo 'no'; fi
       ignore_errors: true

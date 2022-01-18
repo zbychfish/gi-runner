@@ -32,8 +32,8 @@ then
 	mkdir -p $air_dir
 fi
 read -sp "Insert your IBM Cloud Key: " ibm_account_key
-declare -a gi_versions=(3.0.0 3.0.1 3.0.2 3.1.2)
-declare -a cases=(ibm-guardium-insights-2.0.0.tgz ibm-guardium-insights-2.0.1.tgz ibm-guardium-insights-2.0.2.tgz ibm-guardium-insights-2.1.2.tgz)
+declare -a gi_versions=(3.0.0 3.0.1 3.0.2 3.1.0 3.1.2)
+declare -a cases=(ibm-guardium-insights-2.0.0.tgz ibm-guardium-insights-2.0.1.tgz ibm-guardium-insights-2.0.2.tgz ibm-guardium-insights-2.1.0.tgz ibm-guardium-insights-2.1.2.tgz)
 while [[ ( -z $gi_version_selected ) || ( $gi_version_selected -lt 1 || $gi_version_selected -gt $i ) ]]
 do
 	echo "Select GI version to mirror:"
@@ -132,6 +132,7 @@ then
 	exit 1
 fi
 podman stop bastion-registry
+cd $temp_dir
 tar cf ${air_dir}/gi_registry-${gi_versions[${gi_version_selected}]}.tar gi_offline cloudctl-linux-amd64.tar.gz
 cd /opt/registry
 tar -rf ${air_dir}/gi_registry-${gi_versions[${gi_version_selected}]}.tar data

@@ -1619,7 +1619,7 @@ function setup_offline_installation() {
         done
         save_variable GI_REPO_USER_PWD "'$repo_admin_pwd'"
 	msg "Offline installation requires installation archives preparation using preinstall scripts" true
-	msg "Archives must be copied to bastion before installation"
+	msg "Archives must be copied to bastion before installation" true
 	while $(check_input "${gi_archives}" "txt" 1)
         do
                 if [[ ! -z "$GI_ARCHIVES_DIR" ]]
@@ -1647,7 +1647,7 @@ function setup_offline_installation() {
                 read -p "Have you updated system before, would you like to continue (Y/N)?: " is_updated
                 if [ $is_updated != 'N' ]
                 then
-                        msg "Upload air-gap files corresponding to bastion kernel or generate files for bastion environment."
+                        msg "Upload air-gap files corresponding to bastion kernel or generate files for bastion environment." true
                         exit 1
                 fi
         fi
@@ -1672,7 +1672,7 @@ function setup_offline_installation() {
         mkdir -p /etc/ansible
         echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
         rm -rf $GI_TEMP/*
-        echo "*** OS software update and installation successfully finished ***"
+        msg "*** OS software update and installation successfully finished ***" true
 }
 
 function prepare_bastion_to_execute_playbooks() {
@@ -1686,10 +1686,11 @@ msg "#gi-runner configuration file" true > $file
 msg "This script must be executed from gi-runner home directory" true
 msg "*** Checking OS release ***" true
 #install tools for init.sh
-dnf -y install jq
 save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
 check_bastion_os
 get_network_installation_type
+[[ "$use_air_gap" == 'Y' ]] && prepare_bastion_to_execute_playbooks
+[[ "$use_air_gap" == 'N' ]] && dnf -qy install jq
 get_software_selection
 get_software_architecture
 get_ocp_domain
@@ -1712,9 +1713,8 @@ get_certificates
 [[ "$install_ldap" == 'Y' ]] && get_ldap_options
 [[ $use_air_gap == 'Y' && $use_proxy='P' ]] && configure_os_for_proxy || unset_proxy_settings
 create_cluster_ssh_key
-prepare_bastion_to_execute_playbooks
+[[ "$use_air_gap" == 'N' ]] && prepare_bastion_to_execute_playbooks
 msg "*** Execute commands below ***" true
 [[ $use_proxy == 'P' ]] &&  echo "- import PROXY settings: \". /etc/profile\""
 msg " - import variables: \". $file\"" true
 msg " - start first playbook: \"ansible-playbook playbooks/01-finalize-bastion-setup.yaml\"" true
-
