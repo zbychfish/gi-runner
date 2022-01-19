@@ -435,7 +435,7 @@ function check_exit_code() {
 
 function setup_local_registry() {
 	msg "*** Setup Image Registry ***" true
-	msg "Installing podman, httpd-tools jq..."
+	msg "Installing podman, httpd-tools jq ..."
 	dnf -qy install podman httpd-tools jq
 	test $(check_exit_code $?) || (msg "Cannot install httpd-tools" true; exit 1)
 	msg "Setup mirror image registry ..." true
