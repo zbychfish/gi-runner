@@ -13,6 +13,7 @@ get_pull_secret
 msg "Access to OLM packages requires RedHat account authentication" true
 get_account "Insert RedHat account name"
 rh_account=$curr_value
+echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
 curr_value=""
 while $(check_input "${curr_value}" "txt" 2)
 do
@@ -31,8 +32,7 @@ do
 done
 install_ocp_tools
 rm -f openshift-client-linux.tar.gz opm-linux.tar.gz
-msg "Mirroring OLM ${ocp_version} images ..." true
-exit 1
+msg "Mirroring OLM ${ocp_major_release} images ..." true
 LOCAL_REGISTRY="$host_fqdn:5000"
 if [[ ! -z "$REDHAT_OPERATORS_OVERRIDE" ]]
 then
@@ -61,7 +61,7 @@ else
 fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
-jq ".auths += $AUTHSTRING" < $temp_dir/pull-secret.txt > $temp_dir/pull-secret-update.txt
+jq ".auths += $AUTHSTRING" < $GI_TEMP/pull-secret.txt > $GI_TEMP/pull-secret-update.txt
 LOCAL_REGISTRY="$host_fqdn:5000"
 echo $REDHAT_OPERATORS > $air_dir/operators.txt
 echo $CERTIFIED_OPERATORS >> $air_dir/operators.txt
@@ -72,21 +72,21 @@ podman login $LOCAL_REGISTRY -u admin -p guardium
 check_exit_code $? "Cannot login to local image registry"
 podman login registry.redhat.io -u "$rh_account" -p "$rh_account_pwd"
 check_exit_code $? "Cannot login to RedHat image repository"
-echo "Mirrorring RedHat Operators - ${REDHAT_OPERATORS} ..."
+msg "Mirrorring RedHat Operators - ${REDHAT_OPERATORS} ..." true
 opm index prune -f registry.redhat.io/redhat/redhat-operator-index:v${ocp_major_release} -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
 podman push $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
 check_exit_code $? "Error during mirroring of RedHat operators"
-echo "Mirrorring Certified Operators - ${CERTIFIED_OPERATORS} ..."
+msg "Mirrorring Certified Operators - ${CERTIFIED_OPERATORS} ..." true
 opm index prune -f registry.redhat.io/redhat/certified-operator-index:v${ocp_major_release} -p $CERTIFIED_OPERATORS -t $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release}
 podman push $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release}
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
 check_exit_code $? "Error during mirroring of RedHat operators"
-echo "Mirrorring Marketplace Operators - ${MARKETPLACE_OPERATORS} ..."
+msg "Mirrorring Marketplace Operators - ${MARKETPLACE_OPERATORS} ..." true
 opm index prune -f registry.redhat.io/redhat/redhat-marketplace-index:v${ocp_major_release} -p $MARKETPLACE_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release}
 podman push $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release}
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
-echo "Mirrorring Community Operators - ${COMMUNITY_OPERATORS} ..."
+msg "Mirrorring Community Operators - ${COMMUNITY_OPERATORS} ..." true
 opm index prune -f registry.redhat.io/redhat/community-operator-index:latest -p $COMMUNITY_OPERATORS -t $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
 podman push $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/community-operator-index:latest $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
@@ -102,11 +102,11 @@ podman stop bastion-registry
 ocp_major_release=`echo $ocp_version|awk -F'.' '{print $1"."$2}'`
 cd /opt/registry
 tar cf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar data
-cd $temp_dir
+cd $GI_TEMP
 tar -rf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar manifests-*
 cd $air_dir
 tar -rf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar operators.txt
-rm -rf $temp_dir
+rm -rf $GI_TEMP
 rm -f  $air_dir/operators.txt
 podman rm bastion-registry
 podman rmi --all
