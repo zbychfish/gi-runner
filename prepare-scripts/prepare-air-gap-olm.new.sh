@@ -13,6 +13,7 @@ get_pull_secret
 msg "Access to OLM packages requires RedHat account authentication" true
 get_account "Insert RedHat account name"
 rh_account=$curr_value
+curr_value=""
 while $(check_input "${curr_value}" "txt" 2)
 do
 	get_input "txt" "Insert password for RedHat account $rh_account: " false
