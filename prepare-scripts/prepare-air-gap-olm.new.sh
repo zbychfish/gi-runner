@@ -10,7 +10,7 @@ pre_scripts_init
 msg "You must provide the exact version of OpenShift for its images mirror process" true
 get_ocp_version_prescript "major"
 get_pull_secret
-get_mail "Access to OLM packages requires RedHat account authentication"
+msg "Access to OLM packages requires RedHat account authentication" true
 get_account "Insert RedHat account name"
 rh_account=$curr_value
 while $(check_input "${curr_value}" "txt" 2)
