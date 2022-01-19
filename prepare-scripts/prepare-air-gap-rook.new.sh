@@ -30,7 +30,6 @@ do
 done
 cd $GI_HOME
 setup_local_registry
-exit 1
 msg "Mirroring open source rook-ceph ${rook_version} ..."
 for image in $images
 do
