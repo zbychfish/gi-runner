@@ -4,6 +4,7 @@
 
 #import global variables
 . ./scripts/init.globals.sh
+
 function msg() {
 	$2 && printf "$1\n" || printf "$1"
 }
@@ -1620,7 +1621,7 @@ function setup_offline_installation() {
         save_variable GI_REPO_USER_PWD "'$repo_admin_pwd'"
 	msg "Offline installation requires installation archives preparation using preinstall scripts" true
 	msg "Archives must be copied to bastion before installation" true
-	while $(check_input "${gi_archives}" "txt" 1)
+	while $(check_input "${gi_archives}" "txt" 2)
         do
                 if [[ ! -z "$GI_ARCHIVES_DIR" ]]
                 then
@@ -1631,7 +1632,7 @@ function setup_offline_installation() {
                         gi_archives="${input_variable}"
         done
 	save_variable GI_ARCHIVES_DIR "$gi_archives"	
-	exit 1
+	mkdir $GI_TEMP
         msg "*** Check OS files archive existence ***" true
         if [[ `ls $gi_archives/os*.tar 2>/dev/null|wc -l` -ne 1 ]]
         then
@@ -1711,7 +1712,7 @@ get_certificates
 [[ "$gi_install" == 'Y' ]] && save_variable GI_ICS_OPERANDS "N,N,Y,Y,Y,N,N,N,N"
 [[ "$ics_install" == 'Y' && "$gi_install" == 'N' ]] && get_ics_options
 [[ "$install_ldap" == 'Y' ]] && get_ldap_options
-[[ $use_air_gap == 'Y' && $use_proxy='P' ]] && configure_os_for_proxy || unset_proxy_settings
+[[ $use_air_gap == 'N' && $use_proxy='P' ]] && configure_os_for_proxy || unset_proxy_settings
 create_cluster_ssh_key
 [[ "$use_air_gap" == 'N' ]] && prepare_bastion_to_execute_playbooks
 msg "*** Execute commands below ***" true
