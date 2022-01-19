@@ -163,6 +163,9 @@ function check_input() {
                                                 [[ ${#1} -le $4 ]] && echo false || echo true
                                         fi
                                         ;;
+                                "4")
+                                        [[ $1 =~ ^[a-zA-Z][a-zA-Z0-9_-]{0,}[a-zA-Z0-9]$ ]] && echo false || echo true
+                                        ;;
                                 "*")
                                         exit 1
                                         ;;
@@ -415,7 +418,7 @@ function get_mail() {
 
 function get_account() {
 	curr_value=""
-	while $(check_input "${curr_value}" "txt" 1)
+	while $(check_input "${curr_value}" "txt" 4)
         do
                 get_input "txt" "$1: " false
                 curr_value="$input_variable"
