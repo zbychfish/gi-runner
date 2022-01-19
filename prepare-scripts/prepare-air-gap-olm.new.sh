@@ -103,7 +103,6 @@ mv manifests-community-operator-index-* manifests-community-operator-index
 # - Archvining manifests
 # - Clean up
 podman stop bastion-registry
-ocp_major_release=`echo $ocp_version|awk -F'.' '{print $1"."$2}'`
 cd /opt/registry
 tar cf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar data
 cd $GI_TEMP

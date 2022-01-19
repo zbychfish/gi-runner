@@ -8,6 +8,7 @@ declare -a ocp_supported_by_gi=(0 0:1 0:1 0:1:2 0:1:2)
 declare -a ocp_supported_by_ics=(0:1 0:1 0:1:2 0:1:2 0:1:2 0:1:2:3 0:1:2:3 0:1:2:3)
 declare -a gi_sizes=(values-dev values-small)
 fedora_supp_releases="34, 35"
+rook_version="v1.8.2"
 GI_HOME=`pwd`
 GI_TEMP=$GI_HOME/gi-temp
 file=$GI_HOME/variables.sh
