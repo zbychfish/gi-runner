@@ -354,8 +354,8 @@ function check_input() {
 			if [[ "$1" && "$1" =~ ^.*@.*$ ]] 
                         then
 				local m_account=$(echo "$1"|awk -F '@' '{print $1}')
-				local m_domain=$(echo "$2"|awk -F '@' '{print $2}')
-				(! check_input ${m_account} "txt" 1 && ! check_input ${m_domain} "domain")  && echo false || echo true
+				local m_domain=$(echo "$1"|awk -F '@' '{print $2}')
+				! $(check_input "$m_account" "txt" 1) && ! $(check_input "$m_domain" "domain") && echo false || echo true
                         else
                                 echo true
                         fi
@@ -406,18 +406,19 @@ function get_pull_secret() {
 
 function get_mail() {
 	curr_value=""
-	while $(check_input ${curr_value} "user")
+	while $(check_input "${curr_value}" "mail")
         do
                 get_input "txt" "$1: " false
-                curr_value=$input_variable
+                curr_value="$input_variable"
         done
 }
 
 function get_account() {
-	while $(check_input ${curr_value} "mail")
+	curr_value=""
+	while $(check_input "${curr_value}" "txt" 1)
         do
                 get_input "txt" "$1: " false
-                curr_value=$input_variable
+                curr_value="$input_variable"
         done
 }
 
