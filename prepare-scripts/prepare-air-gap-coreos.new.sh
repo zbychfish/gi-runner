@@ -10,9 +10,9 @@ pre_scripts_init
 msg "You must provide the exact version of OpenShift for its images mirror process" true
 get_ocp_version_prescript
 get_pull_secret
-echo "$pull_secret" > $GI_TEMP/pull-secret.txt
+echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
 get_mail "Provide e-mail address associated with just inserted RH pulSecret"
-mail=curr_value
+mail=$curr_value
 msg "Setup mirror image registry ..." true
 setup_local_registry
 msg "Save image registry image ..." true
