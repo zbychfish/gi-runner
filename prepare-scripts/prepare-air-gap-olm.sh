@@ -77,7 +77,11 @@ done
 tar xf openshift-client-linux.tar.gz -C /usr/local/bin
 tar xf opm-linux.tar.gz -C /usr/local/bin
 rm -f openshift-client-linux.tar.gz opm-linux.tar.gz
-echo "Mirroring OLM ${ocp_version} images ..."
+msg "Patching GPG keys ..." true
+curl -s -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-isv https://www.redhat.com/security/data/55A34A82.txt
+cat /etc/containers/policy.json|jq '.transports += {"docker": {"registry.redhat.io/redhat/certified-operator-index": [{"type": "signedBy","keyType": "GPGKeys","keyPath": "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-isv"}],"registry.redhat.io/redhat/community-operator-index": [{"type": "insecureAcceptAnything"}],"registry.redhat.io/redhat/redhat-marketplace-index": [{"type": "signedBy","keyType": "GPGKeys","keyPath": "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-isv"}]}}' > /etc/containers/policy-new.json
+mv -f /etc/containers/policy-new.json /etc/containers/policy.json
+echo "Mirroring OLM ${ocp_version} images ..." true
 dnf -qy install jq
 check_exit_code $? "Cannot install jq package"
 LOCAL_REGISTRY="$host_fqdn:5000"

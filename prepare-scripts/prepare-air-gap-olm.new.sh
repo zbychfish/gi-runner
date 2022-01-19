@@ -32,6 +32,10 @@ do
 done
 install_ocp_tools
 rm -f openshift-client-linux.tar.gz opm-linux.tar.gz
+msg "Patching GPG keys ..." true
+curl -s -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-isv https://www.redhat.com/security/data/55A34A82.txt
+cat /etc/containers/policy.json|jq '.transports += {"docker": {"registry.redhat.io/redhat/certified-operator-index": [{"type": "signedBy","keyType": "GPGKeys","keyPath": "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-isv"}],"registry.redhat.io/redhat/community-operator-index": [{"type": "insecureAcceptAnything"}],"registry.redhat.io/redhat/redhat-marketplace-index": [{"type": "signedBy","keyType": "GPGKeys","keyPath": "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-isv"}]}}' > /etc/containers/policy-new.json
+mv -f /etc/containers/policy-new.json /etc/containers/policy.json
 msg "Mirroring OLM ${ocp_major_release} images ..." true
 LOCAL_REGISTRY="$host_fqdn:5000"
 if [[ ! -z "$REDHAT_OPERATORS_OVERRIDE" ]]
