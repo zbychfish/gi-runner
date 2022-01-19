@@ -10,7 +10,7 @@ pre_scripts_init
 msg "You must provide the exact version of OpenShift for its images mirror process" true
 get_ocp_version_prescript
 get_pull_secret
-echo "$pull_secret" > $temp_dir/pull-secret.txt
+echo "$pull_secret" > $GI_TEMP/pull-secret.txt
 get_mail "Provide e-mail address associated with just inserted RH pulSecret"
 mail=curr_value
 msg "Setup mirror image registry ..." true
@@ -46,4 +46,5 @@ rm -rf $GI_TEMP
 podman rm bastion-registry &>/dev/null
 podman rmi --all &>/dev/null
 rm -rf /opt/registry
+rm -f $GI_TEMP/pull-secret.txt
 msg "CoreOS images prepared - copy file ${air_dir}/coreos-registry-${ocp_release}.tar to air-gapped bastion machine" true
