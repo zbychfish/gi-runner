@@ -2,6 +2,9 @@
 set -e
 trap "exit 1" ERR
 
+source scripts/init.globals.sh
+source scripts/shared_functions.sh
+
 get_pre_scripts_variables
 pre_scripts_init
 msg "You must provide the exact version of OpenShift for its images mirror process" true
