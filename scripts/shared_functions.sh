@@ -464,8 +464,8 @@ function setup_local_registry() {
 }
 
 function download_file() {
-	wget "$1" &>/dev/null
 	msg "Downloading $1 ..." true 
+	wget "$1" &>/dev/null
 	test $(check_exit_code $?) || (msg "Cannot download $file" true; exit 1)
 }
 

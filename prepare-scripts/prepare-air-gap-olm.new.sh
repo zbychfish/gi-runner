@@ -25,7 +25,7 @@ msg "Setup mirror image registry ..." true
 setup_local_registry
 msg "Download support tools ..." true
 cd $GI_TEMP
-declare -a ocp_files=("https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-client-linux.tar.gz")
+declare -a ocp_files=("https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-${ocp_major_release}/openshift-client-linux.tar.gz")
 for file in ${ocp_files[@]}
 do
         download_file $file
