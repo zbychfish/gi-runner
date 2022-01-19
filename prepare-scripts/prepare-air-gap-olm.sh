@@ -1,89 +1,42 @@
 #!/bin/bash
+set -e
+trap "exit 1" ERR
 
-function check_exit_code() {
-        if [[ $1 -ne 0 ]]
-        then
-                echo $2
-                echo "Please check the reason of problem and restart script"
-                exit 1
-        else
-                echo "OK"
-        fi
-}
-echo "Install os packages"
-dnf -y install podman
-echo "Setting environment"
-registry_version=2.7.1
-local_directory=`pwd`
-host_fqdn=$( hostname --long )
-temp_dir=$local_directory/gi-temp
-air_dir=$local_directory/air-gap
-# Creates target download directory
-mkdir -p $air_dir
-# Creates temporary directory
-rm -rf $temp_dir
-mkdir -p $temp_dir
-# Gets list of parameters to create repo  
-echo "To check the latest stable OCP release go to https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.X, where X is 6, 7, 8 or 9"
-read -p "Insert OCP release to mirror images: " ocp_version
-ocp_major_release=`echo $ocp_version|cut -f -2 -d .`
-read -sp "Insert RedHat pull secret: " pull_secret
-echo -e '\n'
-echo "$pull_secret" > $temp_dir/pull-secret.txt
-read -p "Insert RH account name: " rh_account
-read -sp "Insert RH account password: " rh_account_pwd
-echo -e "\n"
-echo "Setup mirror image registry ..."
-# - cleanup repository if exists
-podman stop bastion-registry
-podman container prune <<< 'Y'
-rm -rf /opt/registry
-# - Pulls image of portable registry and save it
-podman pull docker.io/library/registry:${registry_version}
-check_exit_code $? "Cannot download image registry"
-# - Prepares portable registry directory structure
-mkdir -p /opt/registry/{auth,certs,data}
-# - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
-openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:`hostname --long`"
-check_exit_code $? "Cannot create certificate for temporary image registry"
-cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
-update-ca-trust extract
-# - Creates user to get access to portable repository
-dnf -qy install httpd-tools
-check_exit_code $? "Cannot install httpd-tools"
-htpasswd -bBc /opt/registry/auth/htpasswd admin guardium
-# - Sets firewall settings
-systemctl enable firewalld
-systemctl start firewalld
-firewall-cmd --zone=public --add-port=5000/tcp --permanent
-firewall-cmd --zone=public --add-service=http --permanent
-firewall-cmd --reload
-# - Sets SE Linux for NetworkManager
-semanage permissive -a NetworkManager_t
-# - Starts portable registry
-echo "Starting mirror image registry ..."
-podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version}
-check_exit_code $? "Cannot start temporary image registry"
-# Get tools
-echo "Downloading OCP tools ..."
-cd $temp_dir
-declare -a ocp_files=("https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_version}/openshift-client-linux.tar.gz")
+source scripts/init.globals.sh
+source scripts/shared_functions.sh
+
+get_pre_scripts_variables
+pre_scripts_init
+msg "You must provide the exact version of OpenShift for its images mirror process" true
+get_ocp_version_prescript "major"
+get_pull_secret
+msg "Access to OLM packages requires RedHat account authentication" true
+get_account "Insert RedHat account name"
+rh_account=$curr_value
+echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
+curr_value=""
+while $(check_input "${curr_value}" "txt" 2)
+do
+	get_input "txt" "Insert password for RedHat account $rh_account: " false
+        curr_value="$input_variable"
+done
+rh_account_pwd=$curr_value
+msg "Setup mirror image registry ..." true
+setup_local_registry
+msg "Download support tools ..." true
+cd $GI_TEMP
+declare -a ocp_files=("https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-${ocp_major_release}/openshift-client-linux.tar.gz")
 for file in ${ocp_files[@]}
 do
-        wget $file > /dev/null
-        check_exit_code $? "Cannot donwload $file"
+        download_file $file
 done
-# Install OCP and ICS tools
-tar xf openshift-client-linux.tar.gz -C /usr/local/bin
-tar xf opm-linux.tar.gz -C /usr/local/bin
+install_ocp_tools
 rm -f openshift-client-linux.tar.gz opm-linux.tar.gz
 msg "Patching GPG keys ..." true
 curl -s -o /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-isv https://www.redhat.com/security/data/55A34A82.txt
 cat /etc/containers/policy.json|jq '.transports += {"docker": {"registry.redhat.io/redhat/certified-operator-index": [{"type": "signedBy","keyType": "GPGKeys","keyPath": "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-isv"}],"registry.redhat.io/redhat/community-operator-index": [{"type": "insecureAcceptAnything"}],"registry.redhat.io/redhat/redhat-marketplace-index": [{"type": "signedBy","keyType": "GPGKeys","keyPath": "/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-isv"}]}}' > /etc/containers/policy-new.json
 mv -f /etc/containers/policy-new.json /etc/containers/policy.json
-echo "Mirroring OLM ${ocp_version} images ..." true
-dnf -qy install jq
-check_exit_code $? "Cannot install jq package"
+msg "Mirroring OLM ${ocp_major_release} images ..." true
 LOCAL_REGISTRY="$host_fqdn:5000"
 if [[ ! -z "$REDHAT_OPERATORS_OVERRIDE" ]]
 then
@@ -112,10 +65,10 @@ else
 fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
-jq ".auths += $AUTHSTRING" < $temp_dir/pull-secret.txt > $temp_dir/pull-secret-update.txt
+jq ".auths += $AUTHSTRING" < $GI_TEMP/pull-secret.txt > $GI_TEMP/pull-secret-update.txt
 LOCAL_REGISTRY="$host_fqdn:5000"
 echo $REDHAT_OPERATORS > $air_dir/operators.txt
-echo $CERTIFIED_OPERATORS >> $air_dir/operators.txt
+#echo $CERTIFIED_OPERATORS >> $air_dir/operators.txt
 echo $MARKETPLACE_OPERATORS >> $air_dir/operators.txt
 echo $COMMUNITY_OPERATORS >> $air_dir/operators.txt
 # - Mirrroring process
@@ -123,21 +76,21 @@ podman login $LOCAL_REGISTRY -u admin -p guardium
 check_exit_code $? "Cannot login to local image registry"
 podman login registry.redhat.io -u "$rh_account" -p "$rh_account_pwd"
 check_exit_code $? "Cannot login to RedHat image repository"
-#echo "Mirrorring RedHat Operators - ${REDHAT_OPERATORS} ..."
-#opm index prune -f registry.redhat.io/redhat/redhat-operator-index:v${ocp_major_release} -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
-#podman push $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
-#oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
-#check_exit_code $? "Error during mirroring of RedHat operators"
-echo "Mirrorring Certified Operators - ${CERTIFIED_OPERATORS} ..."
+msg "Mirrorring RedHat Operators - ${REDHAT_OPERATORS} ..." true
+opm index prune -f registry.redhat.io/redhat/redhat-operator-index:v${ocp_major_release} -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
+podman push $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
+oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+check_exit_code $? "Error during mirroring of RedHat operators"
+msg "Mirrorring Certified Operators - ${CERTIFIED_OPERATORS} ..." true
 opm index prune -f registry.redhat.io/redhat/certified-operator-index:v${ocp_major_release} -p $CERTIFIED_OPERATORS -t $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release}
 podman push $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release}
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
 check_exit_code $? "Error during mirroring of RedHat operators"
-echo "Mirrorring Marketplace Operators - ${MARKETPLACE_OPERATORS} ..."
+msg "Mirrorring Marketplace Operators - ${MARKETPLACE_OPERATORS} ..." true
 opm index prune -f registry.redhat.io/redhat/redhat-marketplace-index:v${ocp_major_release} -p $MARKETPLACE_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release}
 podman push $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release}
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
-echo "Mirrorring Community Operators - ${COMMUNITY_OPERATORS} ..."
+msg "Mirrorring Community Operators - ${COMMUNITY_OPERATORS} ..." true
 opm index prune -f registry.redhat.io/redhat/community-operator-index:latest -p $COMMUNITY_OPERATORS -t $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
 podman push $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
 oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/community-operator-index:latest $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
@@ -150,14 +103,13 @@ mv manifests-community-operator-index-* manifests-community-operator-index
 # - Archvining manifests
 # - Clean up
 podman stop bastion-registry
-ocp_major_release=`echo $ocp_version|awk -F'.' '{print $1"."$2}'`
 cd /opt/registry
 tar cf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar data
-cd $temp_dir
+cd $GI_TEMP
 tar -rf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar manifests-*
 cd $air_dir
 tar -rf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar operators.txt
-rm -rf $temp_dir
+rm -rf $GI_TEMP
 rm -f  $air_dir/operators.txt
 podman rm bastion-registry
 podman rmi --all
