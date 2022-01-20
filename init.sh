@@ -876,8 +876,14 @@ function get_service_assignment() {
 	if [[ $gi_install == 'Y' ]] 
 	then
 		[[ $gi_size == 'values-small' ]] && db2_nodes_size=2 || db2_nodes_size=1
-		msg "You decided that DB2 will be installed on dedicated nodes" true
-		msg "These nodes should not be used as storage cluster nodes" true
+		if [[ "$db2_tainted" == 'Y' ]]
+		then
+			msg "You decided that DB2 will be installed on dedicated node/nodes in taint mode" true
+			msg "These nodes should not be used as storage cluster nodes" true
+		else
+			msg "You must point on which node/nodes DB2 will be installed"
+		fi
+		msg "Inserted node/nodes must have propriate resources to serve DB2 instance, check GI documention to get demands"
 		msg "Available worker nodes: $worker_name" true
 		while $(check_input $db2_nodes "nodes" $worker_name $db2_nodes_size "def")
                 do
@@ -1247,6 +1253,7 @@ function validate_certs() {
                         ;;
         esac
 }
+
 function get_certificates() {
 	msg "You can replace self-signed certicates for UI's by providing your own created by trusted CA" true
 	msg "Certificates must be uploaded to bastion to provide full path to them" true
@@ -1712,7 +1719,7 @@ get_certificates
 [[ "$gi_install" == 'Y' ]] && save_variable GI_ICS_OPERANDS "N,N,Y,Y,Y,N,N,N,N"
 [[ "$ics_install" == 'Y' && "$gi_install" == 'N' ]] && get_ics_options
 [[ "$install_ldap" == 'Y' ]] && get_ldap_options
-[[ $use_air_gap == 'N' && $use_proxy='P' ]] && configure_os_for_proxy || unset_proxy_settings
+[[ $use_air_gap == 'N' && $use_proxy == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
 create_cluster_ssh_key
 [[ "$use_air_gap" == 'N' ]] && prepare_bastion_to_execute_playbooks
 msg "*** Execute commands below ***" true
