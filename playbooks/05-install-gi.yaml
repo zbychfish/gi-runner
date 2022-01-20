@@ -3,19 +3,26 @@
     internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     domain: "{{ lookup('env','GI_DOMAIN') }}"
     ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
-    bas_ip:  "{{ lookup('env','GI_BASTION_IP') }}"
-    install_gi:  "{{ lookup('env','GI_INSTALL_GI') }}"
-    gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
+    bas_ip: "{{ lookup('env','GI_BASTION_IP') }}"
+    install_gi: "{{ lookup('env','GI_INSTALL_GI') }}"
+    gi_namespace: "{{ lookup('env','GI_NAMESPACE_GI') }}"
     db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
     gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
-    storage_type:  "{{ lookup('env','GI_STORAGE_TYPE') }}"
-    gi_ds_size:  "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
-    gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
-    is_ocs_tainted:  "{{ lookup('env','GI_OCS_TAINTED') }}"
+    storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
+    gi_version_index: "{{ lookup('env','GI_VERSION') }}"
+    is_ocs_tainted: "{{ lookup('env','GI_OCS_TAINTED') }}"
     db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
     is_master_only:  "{{ lookup('env','GI_MASTER_ONLY') }}"
     stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
     gi_ext_ingress: "{{ lookup('env','GI_IN') }}"
+    gi_ds_size: "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
+    gi_meta_size: "{{ lookup('env','GI_METADATA_STORAGE_SIZE') }}"
+    gi_logs_size: "{{ lookup('env','GI_ACTIVELOGS_STORAGE_SIZE') }}"
+    gi_mongo_size: "{{ lookup('env','GI_MONGO_DATA_STORAGE_SIZE') }}"
+    gi_mongo_meta_size:  "{{ lookup('env','GI_MONGO_METADATA_STORAGE_SIZE') }}"
+    gi_kafka_size: "{{ lookup('env','GI_KAFKA_STORAGE_SIZE') }}"
+    gi_zookeeper_size:  "{{ lookup('env','GI_ZOOKEEPER_STORAGE_SIZE') }}"
+    db2_tainted: "{{ lookup('env','GI_DB2_TAINTED') }}"
   
   tasks:
   - name: Check other configuration parameters
@@ -31,13 +38,24 @@
       - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
       - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
       - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
-      - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
       - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
       - { name: "GI_DB2_ENCRYPTED", value: "{{ db2_enc_hint }}" }
       - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
       - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
       - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
+      - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
+      - { name: "GI_METADATA_STORAGE_SIZE", value: "{{ gi_meta_size }}" }
+      - { name: "GI_ACTIVELOGS_STORAGE_SIZE", value: "{{ gi_logs_size }}" }
+      - { name: "GI_MONGO_DATA_STORAGE_SIZE", value: "{{ gi_mongo_size }}" }
+      - { name: "GI_MONGO_METADATA_STORAGE_SIZE", value: "{{ gi_mongo_meta_size }}" }
+      - { name: "GI_KAFKA_STORAGE_SIZE", value: "{{ gi_kafka_size }}" }
+      - { name: "GI_ZOOKEEPER_STORAGE_SIZE", value: "{{ gi_zookeeper_size }}" }
+      - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
+
+  - name: Set ICS nodes
+    set_fact:
+      gi_dedicated_nodes: "{{ lookup('env', 'GI_GI_NODES').split(',') }}"
 
   - name: Set parameters for non air-gapped installation
     set_fact:
@@ -113,19 +131,6 @@
     debug:
       msg: "{{ nodes|zip(ips)|list }}"
 
-  - name: Set GI installation variables
-    set_fact:
-      archives_dir: "{{ lookup('env','GI_ARCHIVES_DIR') }}"
-      gi_case_inventory_setup: "install"
-      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' }}"
-      offline_inventory: "gi_offline"
-      storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
-      storage_class_block: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' }}"
-      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' }}"
-      db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
-      db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
-      gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int > 2 else 'L-OOLE-C2ASKR' }}"
-
   - name: Set endpoint cert variables
     set_fact:
       gi_ca: "{{ lookup('env', 'GI_IN_CA') }}"
@@ -140,6 +145,21 @@
       - { name: "GI_IN_CA", value: "{{ gi_ca }}" }
       - { name: "GI_IN_CERT", value: "{{ gi_cert }}" }
       - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
+
+  - name: Set GI installation variables
+    set_fact:
+      archives_dir: "{{ lookup('env','GI_ARCHIVES_DIR') }}"
+      gi_case_inventory_setup: "install"
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' if gi_version_index == '3' else 'ibm-guardium-insights-2.1.2.tgz' }}"
+      offline_inventory: "gi_offline"
+      storage_class_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' }}"
+      storage_class_block: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' }}"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' if gi_version_index == '3' else '3.1.2' }}"
+      db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
+      db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
+      gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int > 2 else 'L-OOLE-C2ASKR' }}"
+      add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
+      add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
 
   - name: Extract offline operator archive
     shell:
@@ -167,9 +187,24 @@
       - podman start bastion-registry
     when: internet_type == 'A'
 
+  - name: Label ICS nodes
+    shell:
+      cmd: "oc label node {{ item }}.{{ domain }} gi_role=yes --overwrite=true"
+    with_items: "{{ gi_dedicated_nodes|list }}"
+    when: gi_dedicated_nodes|length > 2
+
+  - name: Create ICS namespace with node selector
+    shell:
+      cmd: "{{ item }}"
+    with_items:
+      - "oc create namespace  {{ gi_namespace }} || echo 'Namespace exists'"
+      - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"gi_role=yes\"}}}'"
+    when: gi_dedicated_nodes|length > 2
+
   - name: Create GI operator namespace
     shell:
       cmd: "oc create namespace {{ gi_namespace }}||true"
+    when: gi_dedicated_nodes|length < 3
 
   - name: Save portable repo credentials
     shell:
@@ -188,11 +223,8 @@
       state: link
 
   - name: GI preinstall task
-    vars:
-      add_options1: "{{ ' -l true ' if gi_version_index|int > 2 else '' }}"
-      add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes_list }} -t false{{ add_options1 }}{{ add_options2 }}\""
+      cmd: "cloudctl case launch --case ../gi-temp/{{ offline_inventory }}/{{ gi_case_archive }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password}} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
 
   - name: Install GI catalog in air-gapped
     shell:
