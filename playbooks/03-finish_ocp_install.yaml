@@ -16,8 +16,8 @@
     ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}"
     ssh_key:  "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
-    rook_operator_version: "v1.7.8"
-    rook_ceph_version: "v16.2.6"
+    rook_operator_version: "v1.8.2"
+    rook_ceph_version: "v16.2.7"
 
   tasks:
   - name: Check other configuration parameters
@@ -75,6 +75,19 @@
       ocs_mac: "{{ lookup('env', 'GI_OCS_MAC_ADDRESS').split(',') }}"
       ocs_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
     when: is_ocs_tainted == 'Y'
+
+  - name: Check OCS configuration
+    fail: msg="Variable {{ item.name }} is not set"
+    when: is_ocs_tainted == 'Y' and item.value == ""
+    loop:
+      - { name: "GI_OCS_IP", value: "{{ ocs_ip }}" }
+      - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
+      - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
+
+  - name: Set rook nodes
+    set_fact:
+      rook_dedicated_nodes: "{{ lookup('env', 'GI_ROOK_NODES').split(',') }}"
+    when: storage_type == 'R'
 
   - name: Check OCS configuration
     fail: msg="Variable {{ item.name }} is not set"
@@ -204,11 +217,22 @@
     retries: 150 
     delay: 10
 
+  - name: Is htpasswd secret available
+    shell:
+      cmd: "oc get secret htpass-secret -n openshift-config -oname|wc -l"
+    register: is_htpasswd_secret
+
   - name: Create htpasswd file
     htpasswd:
       path: ../gi-temp/ocadmin.htpasswd
       name: "{{ ocadmin }}"
       password: "{{ ocadmin_password }}"
+    when: is_htpasswd_secret.stdout|int == 0
+
+  - name: Wait 1 minute before adding admin
+    pause:
+      minutes: 1
+    when: is_htpasswd_secret.stdout|int == 0
 
   - name: Register htpasswd file in OCP
     shell:
@@ -217,7 +241,8 @@
       - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocadmin.htpasswd -n openshift-config --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc apply -f ../scripts/oauth_provider.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocadmin }} --kubeconfig ../ocp/auth/kubeconfig" }
-    ignore_errors: yes #if htpasswd has been imported before
+    ignore_errors: no #if htpasswd has been imported before
+    when: is_htpasswd_secret.stdout|int == 0
 
   - name: Unpack OLM manifests
     shell:
@@ -493,7 +518,7 @@
       - "tar -C ../gi-temp -xf {{ archives_dir }}/rook-registry-*.tar rook_images_sha"
     when: internet_type == 'A' and storage_type == "R"
 
-  - name: Set digests for images (in order OPER,
+  - name: Set digests for images in order
     shell:
       cmd: "IFS=',' read -r -a rook_v_oper <<< `cat ../gi-temp/rook_images_sha|grep {{ item }}`;echo \"`echo ${rook_v_oper[1]}|awk -F '/' '{print $NF}'|awk -F':' '{print $1}'`@${rook_v_oper[2]}\""
     register: rook_digests
@@ -508,6 +533,12 @@
       - ROOK_CSI_ATTACHER_IMAGE
       - CSI_VOLUME_REPLICATION_IMAGE
     when: internet_type == 'A' and storage_type == "R"
+
+  - name: Label rook storage nodes
+    shell:
+      cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --overwrite=true;oc label node {{ item }}.{{ domain }} storage=rook --overwrite=true"
+    with_items: "{{ rook_dedicated_nodes|list }}"
+    when: storage_type == "R" and rook_dedicated_nodes|length > 2
 
   - set_fact:
       rook_ceph_image: "ceph:{{ rook_ceph_version }}"
@@ -556,6 +587,12 @@
       dest: "../gi-temp/rook-latest-operator.yaml"
     when: internet_type != 'A' and storage_type == "R"
 
+  - name: Configure rook toolbox
+    template:
+      src: "rook-toolbox.j2"
+      dest: "../gi-temp/rook-toolbox.yaml"
+    when: internet_type != 'A' and storage_type == "R"
+
   - name: Configure rook operator
     shell:
       cmd: "{{ item }}"
@@ -597,6 +634,10 @@
       - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml --kubeconfig ../ocp/auth/kubeconfig" }
       - { cmd: "oc patch storageclass rook-ceph-block --kubeconfig ../ocp/auth/kubeconfig -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
     when: storage_type == "R"
+
+  - name: Deploy rook toolbox
+    shell:
+      cmd: "oc apply -f ../gi-temp/rook-toolbox.yaml"
 
   - name: Configure registry PVC file
     vars:
@@ -665,7 +706,7 @@
       minutes: 5
     when: ocp_ext_ingress == 'Y'
 
-  - name: Check cluster nodes health after proxy change
+  - name: Check cluster nodes health after proxy certificate change
     shell: ../scripts/check_cluster_health_operators.sh
     register: cluster_health_operators
     until: cluster_health_operators.stdout == "0"

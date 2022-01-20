@@ -12,7 +12,7 @@ function check_exit_code() {
 }
 
 registry_version=2.7.1
-rook_version="v1.7.8"
+rook_version="v1.8.2"
 ceph_path="cluster/examples/kubernetes/ceph"
 #ceph_path="deploy/examples"
 host_fqdn=$( hostname --long )

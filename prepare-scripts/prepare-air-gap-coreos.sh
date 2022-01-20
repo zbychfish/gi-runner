@@ -1,105 +1,50 @@
 #!/bin/bash
+set -e
+trap "exit 1" ERR
 
-function check_exit_code() {
-        if [[ $1 -ne 0 ]]
-        then
-                echo $2
-                echo "Please check the reason of problem and restart script"
-                exit 1
-        else
-                echo "OK"
-        fi
-}
-#variables
-registry_version=2.7.1
-echo "Setting environment"
-local_directory=`pwd`
-host_fqdn=$( hostname --long )
-temp_dir=$local_directory/gi-temp
-air_dir=$local_directory/air-gap
-# Creates target download directory
-mkdir -p $air_dir
-# Creates temporary directory
-rm -rf $temp_dir
-rm -rf /opt/registry
-mkdir -p $temp_dir
-# Gets list of parameters 
-echo "To check the latest stable OCP release go to https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.X, where X is 6, 7, 8 or 9"
-read -p "Insert OCP release to mirror images: " ocp_release
-ocp_major_release=`echo $ocp_release|cut -f -2 -d .`
-read -sp "Insert RedHat pull secret: " pull_secret
-echo -e '\n'
-echo "$pull_secret" > $temp_dir/pull-secret.txt
-read -p "Insert your mail address to authenticate in RedHat Network: " mail
-echo -e "\n"
-dnf -y install podman
-# Setup portable registry
-echo "Setup mirror image registry ..."
-podman stop bastion-registry
-podman container prune <<< 'Y'
-# - Pulls image of portable registry and save it 
-podman pull docker.io/library/registry:${registry_version}
-check_exit_code $? "Cannot download image registry"
-podman save -o $temp_dir/oc-registry.tar docker.io/library/registry:${registry_version}
-# - Prepares portable registry directory structure
-mkdir -p /opt/registry/{auth,certs,data}
-# - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
-openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:`hostname --long`"
-check_exit_code $? "Cannot create certificate for temporary image registry"
-cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
-update-ca-trust extract
-# - Creates user to get access to portable repository
-dnf -qy install httpd-tools
-check_exit_code $? "Cannot install httpd-tools"
-htpasswd -bBc /opt/registry/auth/htpasswd admin guardium
-# - Sets firewall settings
-systemctl enable firewalld
-systemctl start firewalld
-firewall-cmd --zone=public --add-port=5000/tcp --permanent
-firewall-cmd --zone=public --add-service=http --permanent
-firewall-cmd --reload
-# - Sets SE Linux for NetworkManager
-semanage permissive -a NetworkManager_t
-# - Starts portable registry
-echo "Starting mirror image registry ..."
-podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version}
-check_exit_code $? "Cannot start temporary image registry"
-echo "Downloading OCP tools ..."
-cd $temp_dir
-# Download external tools and software (OCP, ICS, matchbox)
-echo "Download OCP tools and CoreOS installation files ..."
+source scripts/init.globals.sh
+source scripts/shared_functions.sh
+
+get_pre_scripts_variables
+pre_scripts_init
+msg "You must provide the exact version of OpenShift for its images mirror process" true
+get_ocp_version_prescript
+get_pull_secret
+echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
+get_mail "Provide e-mail address associated with just inserted RH pulSecret"
+mail=$curr_value
+msg "Setup mirror image registry ..." true
+setup_local_registry
+msg "Save image registry image ..." true
+podman save -o $GI_TEMP/oc-registry.tar docker.io/library/registry:${registry_version} &>/dev/null
+msg "Download OCP, support tools and CoreOS images ..." true
+cd $GI_TEMP
 declare -a ocp_files=("https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-client-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-install-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-initramfs.x86_64.img" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-kernel-x86_64" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-rootfs.x86_64.img" "https://github.com/poseidon/matchbox/releases/download/v0.9.0/matchbox-v0.9.0-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz")
 for file in ${ocp_files[@]}
 do
-	wget $file > /dev/null
-	check_exit_code $? "Cannot donwload $file"
+	download_file $file
 done
-# Install OCP tools
-tar xf openshift-client-linux.tar.gz -C /usr/local/bin
-tar xf opm-linux.tar.gz -C /usr/local/bin
-# Mirrors OCP images to portable repository
-echo "Mirroring OCP ${ocp_version} images ..."
-dnf -qy install jq
-check_exit_code $? "Cannot install jq package"
+install_ocp_tools
+msg "Mirroring OCP ${ocp_release} images ..."
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
-jq ".auths += $AUTHSTRING" < $temp_dir/pull-secret.txt > $temp_dir/pull-secret-update.txt
+jq ".auths += $AUTHSTRING" < $GI_TEMP/pull-secret.txt > $GI_TEMP/pull-secret-update.txt
 LOCAL_REGISTRY="$host_fqdn:5000"
 LOCAL_REPOSITORY=ocp4/openshift4
 PRODUCT_REPO='openshift-release-dev'
 RELEASE_NAME="ocp-release"
-LOCAL_SECRET_JSON=$temp_dir/pull-secret-update.txt
+LOCAL_SECRET_JSON=$GI_TEMP/pull-secret-update.txt
 ARCHITECTURE=x86_64
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_release}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_release}-${ARCHITECTURE}
-check_exit_code $? "Cannot mirror OCP images"
-# Mirrors OCP operators
+test $(check_exit_code $?) || msg "Cannot mirror OCP images" true
 podman stop bastion-registry
 cd /opt/registry
 tar cf $air_dir/coreos-registry-${ocp_release}.tar data
-cd $temp_dir
+cd $GI_TEMP
 tar -rf $air_dir/coreos-registry-${ocp_release}.tar oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v0.9.0-linux-amd64.tar.gz
-rm -rf $temp_dir
-podman rm bastion-registry
-podman rmi --all
+rm -rf $GI_TEMP
+podman rm bastion-registry &>/dev/null
+podman rmi --all &>/dev/null
 rm -rf /opt/registry
-echo "CoreOS images prepared - copy file ${air_dir}/coreos-registry-${ocp_release}.tar to air-gapped bastion machine"
+rm -f $GI_TEMP/pull-secret.txt
+msg "CoreOS images prepared - copy file ${air_dir}/coreos-registry-${ocp_release}.tar to air-gapped bastion machine" true

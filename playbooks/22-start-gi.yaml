@@ -1,0 +1,108 @@
+- hosts: bastion
+  vars:
+    internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+    domain: "{{ lookup('env','GI_DOMAIN') }}"
+    gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
+    gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
+
+  tasks:
+  - name: Check other configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
+      - { name: "GI_DOMAIN", value: "{{ domain }}" }
+      - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+      - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
+
+  - name: Set GI installation variables
+    set_fact:
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' }}"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' }}"
+
+  - name: Set correct namespace context
+    shell:
+      cmd: "oc project {{ gi_namespace }}"
+
+  - name: Are auxilliary service sizes available?
+    stat:
+      path: ../gi-temp/aux_size.tmp
+    register: is_aux_size
+
+  - name: Start auxilliary services
+    shell:
+      cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ item }} ../gi-temp/aux_size.tmp`;oc scale sts ${sts_i[0]} --replicas ${sts_i[1]} -n {{ gi_namespace }}"
+    with_items:
+      - "{{ gi_namespace }}-zookeeper"
+      - "{{ gi_namespace }}-kafka"
+      - "{{ gi_namespace }}-mongodb"
+      - "c-{{ gi_namespace }}-redis-m"
+      - "c-{{ gi_namespace }}-redis-s"
+    when: is_aux_size.stat.exists == True
+
+  - name: Wait for auxilliary services
+    shell:
+      cmd: "IFS=\",\" read -r -a sts_i <<< `grep {{ item }} ../gi-temp/aux_size.tmp`;if [[ `oc get sts ${sts_i[0]} -o json -n {{ gi_namespace }}|jq '.status.readyReplicas'` -ne ${sts_i[1]} ]];then exit 1;fi"
+    register: sts_status
+    until: "sts_status.rc == 0"
+    retries: 30
+    delay: 15
+    with_items:
+      - "{{ gi_namespace }}-zookeeper"
+      - "{{ gi_namespace }}-kafka"
+      - "{{ gi_namespace }}-mongodb"
+      - "c-{{ gi_namespace }}-redis-m"
+      - "c-{{ gi_namespace }}-redis-s"
+    when: is_aux_size.stat.exists == True
+
+  - name: Remove auxilliary services file
+    file:
+      path: ../gi-temp/aux_size.tmp
+      state: absent
+    when: is_aux_size.stat.exists == True
+
+  - name: Label DB2 nodes
+    shell:
+      cmd: "oc patch --type=merge node $(oc get nodes -Licp4data | grep database-db2wh | awk '{print $1}') -p '{\"metadata\":{\"labels\":{\"icp4data\":\"database-db2wh\"}}}'"
+
+  - name: Wait for DB2 instance running
+    shell:
+      cmd: "oc exec -it c-{{ gi_namespace }}-db2-db2u-0 -- bash -c \"sudo -u db2inst1 wvcli system status\""
+    register: is_db2_ready
+    until: "is_db2_ready.stdout == \"HA Management is RUNNING. \""
+    retries: 50
+    delay: 30
+
+  - name: Are GI service sizes available?
+    stat:
+      path: ../gi-temp/gi_offline/.previousGuardiumInsightsReplicas
+    register: is_gis_size
+
+  - name: Start Guardium Insights service
+    shell:
+      chdir: ../gi-temp/gi_offline
+      cmd: ibm-guardium-insights/inventory/install/files/support/startorstopGuardiumInsights.sh start
+    when: is_gis_size.stat.exists == True
+
+  - name: Remove GI service sizes file
+    file:
+      path: ../gi-temp/gi_offline/.previousGuardiumInsightsReplicas
+      state: absent
+    when: is_gis_size.stat.exists == True
+
+  - name: Wait for pods startup
+    shell:
+      cmd: "oc get pods -n {{ gi_namespace }}|grep -v -e Error -e Completed|grep 0/|wc -l"
+    register: pods_status
+    until: "pods_status.stdout == \"0\""
+    retries: 50
+    delay: 10
+
+  - name: Start cronjobs
+    shell:
+      cmd: "oc patch `oc get cronjob -lproject=insights -oname -n={{ gi_namespace }}` -p '{\"spec\" : {\"suspend\" : false }}' -n={{ gi_namespace }}"
+
+  - name: Cleanup old pods
+    shell:
+      cmd: "oc delete $(oc get pods --field-selector status.phase=Failed -o name -n {{ gi_namespace }}) -n {{ gi_namespace }}"
+    ignore_errors: yes
