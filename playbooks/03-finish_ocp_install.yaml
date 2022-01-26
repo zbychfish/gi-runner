@@ -540,6 +540,18 @@
     with_items: "{{ rook_dedicated_nodes|list }}"
     when: storage_type == "R" and rook_dedicated_nodes|length > 2
 
+  - name: Label rook storage nodes
+    shell:
+      cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --overwrite=true"
+    with_items: "{{ nodes|list }}"
+    when: storage_type == "R" and rook_dedicated_nodes|length < 3
+
+  - name: Label rook storage nodes
+    shell:
+      cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --overwrite=true"
+    with_items: "{{ master_names|list }}"
+    when: storage_type == "R" and is_master_only == 'Y'
+
   - set_fact:
       rook_ceph_image: "ceph:{{ rook_ceph_version }}"
     when: internet_type != 'A' and storage_type == "R"
