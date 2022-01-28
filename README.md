@@ -13,9 +13,9 @@
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
 Release description:
-<P>v0.6.1
-<LI>Solved bug with requesting proxy parameters for non-proxy installations
-<LI>Solved incorrect message for non-tainted DB2 installations
+<P>v0.6.2
+<LI>Solved bug with rook-ceph installation when nodes are not dedicated
+<LI>Identified bug with OCS installation on cluster with more that 3 workers, in this case storage must be assigned to first 3 nodes - will be solved in next release
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
@@ -40,6 +40,9 @@ Files:
 <LI>scripts/ics-uninstall.sh - native DEV team script to remove ICS instances
 <HR>
 Releases history:
+<P>v0.6.1
+<LI>Solved bug with requesting proxy parameters for non-proxy installations
+<LI>Solved incorrect message for non-tainted DB2 installations
 <P>v0.6.0
 <LI>added support for patches related to log4j2 vulnerabilities (support CPFS 3.14.2, GI 3.1.2)
 <LI>added playbooks to safely stop and start GI instance
