@@ -15,7 +15,7 @@ spec:
       labels:
         app: rook-ceph-tools
     spec:
-{% if rook_dedicated_nodes|length > 0 %}
+{% if rook_dedicated_nodes|length > 2 %}
       nodeSelector:
         role: storage-node
 {% endif %}

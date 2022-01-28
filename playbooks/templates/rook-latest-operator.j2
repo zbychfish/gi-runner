@@ -190,7 +190,7 @@ data:
   # ROOK_CSI_RBD_POD_LABELS: "key1=value1,key2=value2"
 
   # (Optional) CephCSI provisioner NodeAffinity(applied to both CephFS and RBD provisioner).
-{% if rook_dedicated_nodes|length > 0 %}
+{% if rook_dedicated_nodes|length > 2 %}
   CSI_PROVISIONER_NODE_AFFINITY: "role=storage-node"
 {% endif %}
   # (Optional) CephCSI provisioner tolerations list(applied to both CephFS and RBD provisioner).
@@ -204,7 +204,7 @@ data:
   #     key: node-role.kubernetes.io/etcd
   #     operator: Exists
   # (Optional) CephCSI plugin NodeAffinity(applied to both CephFS and RBD plugin).
-{% if rook_dedicated_nodes|length > 0 %}
+{% if rook_dedicated_nodes|length > 2 %}
   # CSI_PLUGIN_NODE_AFFINITY: "role=storage-node"
 {% endif %}
   # (Optional) CephCSI plugin tolerations list(applied to both CephFS and RBD plugin).
@@ -446,7 +446,7 @@ spec:
       labels:
         app: rook-ceph-operator
     spec:
-{% if rook_dedicated_nodes|length > 0 %}
+{% if rook_dedicated_nodes|length > 2 %}
       nodeSelector:
         role: storage-node
 {% endif %}
@@ -484,7 +484,7 @@ spec:
             # - name: DISCOVER_PRIORITY_CLASS_NAME
             #   value: "<PriorityClassName>"
             # (Optional) Discover Agent NodeAffinity.
-{% if rook_dedicated_nodes|length > 0 %}
+{% if rook_dedicated_nodes|length > 2 %}
             - name: DISCOVER_AGENT_NODE_AFFINITY
               value: "role=storage-node"
 {% endif %}
