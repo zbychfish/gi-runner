@@ -1,8 +1,8 @@
 <B>OpenShift Cluster, IBM Common Services and Guardium Insights installation automation on bare metal</B>
 <HR>
 <P>Automates OCP installation for releases: 4.6, 4.7, 4.8, 4.9
-<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.2
-<P>Automates GI installation for releases: 3.0.0, 3.0.1, 3.0.2, 3.1.0, 3.1.2
+<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.2, 3,15.0
+<P>Automates GI installation for releases: 3.0.0, 3.0.1, 3.0.2, 3.1.0, 3.1.2, 3.1.3
 <P>Supports installation with direct access to the Internet, using proxy and air-gapped (restricted) approach
 <P>Implemented OCP architectures:
 <LI>3 masters and 3+n workers with OCS or rook-ceph
@@ -13,8 +13,18 @@
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
 Release description:
-<P>v0.6.2
-<LI>Solved bug with rook-ceph installation when nodes are not dedicated
+<P>v0.7.0
+<LI>init.sh modified to evaluate inputs and provides more readable output
+<LI>Playbooks modified, only one playbook must be manually started after the others will be started automatically based on installation decisions
+<LI>Playbook install_all.yaml accept option -e "skip_phase=X", where X:
+<UL>
+<LI>1 - skips bastion preparation and continue from stage2
+<LI>2 - skips all steps before storage setup on OCP
+<LI>3 - skips all OCP installation steps and installs configured applications (ICS, GI, LDAP)
+<LI>4 - skips all OCP installation steps and ICS
+<LI>5 - skips all OCP installation steps, ICS and GI
+<LI>6 - skips all OCP installation steps, ICS, GI and LDAP
+</UL>
 <LI>Identified bug with OCS installation on cluster with more that 3 workers, in this case storage must be assigned to first 3 nodes - will be solved in next release
 <HR>
 Files:
@@ -40,6 +50,9 @@ Files:
 <LI>scripts/ics-uninstall.sh - native DEV team script to remove ICS instances
 <HR>
 Releases history:
+<P>v0.6.2
+<LI>Solved bug with rook-ceph installation when nodes are not dedicated
+<LI>Identified bug with OCS installation on cluster with more that 3 workers, in this case storage must be assigned to first 3 nodes - will be solved in next release
 <P>v0.6.1
 <LI>Solved bug with requesting proxy parameters for non-proxy installations
 <LI>Solved incorrect message for non-tainted DB2 installations
