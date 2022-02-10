@@ -14,8 +14,9 @@ Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/0
 <HR>
 Release description:
 <P>v0.7.0
+<LI>Support GI 3.1.3 and ICS 3.15
 <LI>init.sh modified to evaluate inputs and provides more readable output
-<LI>Playbooks modified, only one playbook must be manually started after the others will be started automatically based on installation decisions
+<LI>Playbooks modified, only one playbook must be manually started, the others will be started automatically based on installation decisions
 <LI>Playbook install_all.yaml accept option -e "skip_phase=X", where X:
 <UL>
 <LI>1 - skips bastion preparation and continue from stage2
@@ -25,16 +26,12 @@ Release description:
 <LI>5 - skips all OCP installation steps, ICS and GI
 <LI>6 - skips all OCP installation steps, ICS, GI and LDAP
 </UL>
-<LI>Identified bug with OCS installation on cluster with more that 3 workers, in this case storage must be assigned to first 3 nodes - will be solved in next release
+<LI>Implemented installation flow to support multi-subnet location of OCP nodes. DHCP Relay must be set on routers and points the bastion.
+<LI>Possible selection different ICS version than default for GI installation (except air-gapped approach)
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
-<LI>playbook/01-finalize-bastion-setup.yaml - Ansible playbook to configure bastion with Fedora OS onboard (will restart bastion in case of kernel update)
-<LI>playbook/02-setup-bastion-for-ocp-installation.yaml - Ansible playbook to setup bastion to boot OCP cluster
-<LI>playbook/03-finish_ocp_install.yaml - Ansible playbook to finalize OCP installation and setup cluster storage (OCS or rook-ceph)
-<LI>playbook/04-install-ics.yaml - Ansible playbook to install IBM Common Services
-<LI>playbook/05-install-gi.yaml - Ansible playbook to install Guardium Insights
-<LI>playbook/50-set_configure_ldap.yaml - Ansible playbook to setup on bastion OpenLDAP instance
+<LI>playbook/install_all.yaml - Ansible playbook to manage installation flow
 <LI>playbook/15-uninstall-gi.yaml - Ansible playbook to uninstall GI
 <LI>playbook/21-shutdown-gi.yaml - Ansible playbook to shutdown GI instance for administration purposes on CPFS and OCP level
 <LI>playbook/22-start-gi.yaml - Ansible playbook to start GI instance after shutdown with playbook 21
