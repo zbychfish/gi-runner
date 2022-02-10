@@ -186,11 +186,13 @@
 - name: Login to ICS
   shell:
     cmd: "cloudctl login -a https://cp-console.apps.{{ domain }} --skip-ssl-validation -u admin -p '{{ ics_admin_password }}' -n ibm-common-services"
+  when: install_ics == 'Y'
 
 - name: Extract ICS Access Token
   shell:
     cmd: "cloudctl tokens|grep Access|awk -F ':' '{ print $2 }'|awk -F ' ' '{ print $2}'"
   register: access_token
+  when: install_ics == 'Y'
 
 - name: Set LDAP URL for container
   set_fact:
@@ -223,7 +225,7 @@
 
 - name: Update HA proxy config
   shell:
-    cmd: cat //etc/haproxy/haproxy.cfg.ldap >> /etc/haproxy/haproxy.cfg
+    cmd: cat /etc/haproxy/haproxy.cfg.ldap >> /etc/haproxy/haproxy.cfg
   when: ldap_depl_type == "C"
 
 - name: Open openldap port on load balancer (bastion)
@@ -253,7 +255,7 @@
     use_proxy: no
   environment:
     no_proxy: cp-console.apps.{{ domain }}
-  when: ldap_depl_type == "S"
+  when: ldap_depl_type == "S" and install_ics == 'Y'
 
 - name: Add OpenLDAP to ICS configuration fo container
   uri:
@@ -268,5 +270,5 @@
     use_proxy: no
   environment:
     no_proxy: cp-console.apps.{{ domain }}
-  when: ldap_depl_type == "C"
+  when: ldap_depl_type == "C" and install_ics == 'Y'
 
