@@ -189,7 +189,9 @@ data:
   # ROOK_CSI_RBD_POD_LABELS: "key1=value1,key2=value2"
 
   # (Optional) CephCSI provisioner NodeAffinity(applied to both CephFS and RBD provisioner).
-  # CSI_PROVISIONER_NODE_AFFINITY: "role=storage-node; storage=rook, ceph"
+{% if rook_dedicated_nodes|length > 2 %}
+  CSI_PROVISIONER_NODE_AFFINITY: "role=storage-node"
+{% endif %}
   # (Optional) CephCSI provisioner tolerations list(applied to both CephFS and RBD provisioner).
   # Put here list of taints you want to tolerate in YAML format.
   # CSI provisioner would be best to start on the same nodes as other ceph daemons.
@@ -201,7 +203,9 @@ data:
   #     key: node-role.kubernetes.io/etcd
   #     operator: Exists
   # (Optional) CephCSI plugin NodeAffinity(applied to both CephFS and RBD plugin).
-  # CSI_PLUGIN_NODE_AFFINITY: "role=storage-node; storage=rook, ceph"
+{% if rook_dedicated_nodes|length > 2 %}
+  # CSI_PLUGIN_NODE_AFFINITY: "role=storage-node"
+{% endif %}
   # (Optional) CephCSI plugin tolerations list(applied to both CephFS and RBD plugin).
   # Put here list of taints you want to tolerate in YAML format.
   # CSI plugins need to be started on all the nodes where the clients need to mount the storage.
@@ -441,6 +445,10 @@ spec:
       labels:
         app: rook-ceph-operator
     spec:
+{% if rook_dedicated_nodes|length > 2 %}
+      nodeSelector:
+        role: storage-node
+{% endif %}
       serviceAccountName: rook-ceph-system
       containers:
         - name: rook-ceph-operator
@@ -475,6 +483,10 @@ spec:
             # - name: DISCOVER_PRIORITY_CLASS_NAME
             #   value: "<PriorityClassName>"
             # (Optional) Discover Agent NodeAffinity.
+{% if rook_dedicated_nodes|length > 2 %}
+            - name: DISCOVER_AGENT_NODE_AFFINITY
+              value: "role=storage-node"
+{% endif %}
             # - name: DISCOVER_AGENT_NODE_AFFINITY
             #   value: "role=storage-node; storage=rook, ceph"
             # (Optional) Discover Agent Pod Labels.

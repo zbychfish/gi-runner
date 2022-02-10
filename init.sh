@@ -1,206 +1,343 @@
 #!/bin/bash
 
+trap display_error EXIT
+export MPID=$$
+
 #author: zibi - zszmigiero@gmail.com
 
 #import global variables
 . ./scripts/init.globals.sh
 
+function display_error() {
+	msg "$1" 9
+	trap - EXIT
+	kill -s TERM $MPID
+}
+
 function msg() {
-	$2 && printf "$1\n" || printf "$1"
-}
-
-function check_bastion_os() {
-	if [[ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]]
-		then
-        	msg "*** ERROR ***" true
-        	msg "Your bastion machine is not Fedora OS - please use the supported Operating System" true
-        	exit 1
-	else
-        	msg "You use `hostnamectl|grep "Operating System"` - tested releases $fedora_supp_releases" true
-	fi
-}
-
-function display_list () {
-	local list=("$@")
-	local i=1
-        for element in "${list[@]}"
-        do
-		if [[ $i -eq ${#list[@]} ]]
-		then
- 			msg "\e[4m$i - $element\e[0m" true
-		else
-			msg "$i - $element" true
-		fi
-        	i=$((i+1))
-        done
-}
-
-function get_input() {
-	unset input_variable
-	msg "$2" false
-	case $1 in
-		"yn")
-			$3 && msg "(\e[4mN\e[0m)o/(Y)es: " false || msg "(N)o/(\e[4mY\e[0m)es: " false
-			read input_variable
-			$3 && input_variable=${input_variable:-N} || input_variable=${input_variable:-Y}
+	case "$2" in
+		"0")
+			printf "$1"
 			;;
-		"dp")
-                        read input_variable
-                        $3 && input_variable=${input_variable:-D} || input_variable=${input_variable:-P}
+		"1")
+			printf "$1\n"
 			;;
-		"cs")
-                        read input_variable
-                        $3 && input_variable=${input_variable:-C} || input_variable=${input_variable:-S}
+		"2")
+			printf "\e[1m>>> $1"
 			;;
-		"list")
-			msg "" true
-			shift
-			shift
-			local list=("$@")
-			display_list $@
-			msg "Your choice: " false
-			read input_variable
-			input_variable=${input_variable:-${#list[@]}}
+		"6")
+			printf "\e[32m\e[2mINFO:\e[22m $1\n\e[0m"
 			;;
-		"es")
-                        read input_variable
-                        $3 && input_variable=${input_variable:-S} || input_variable=${input_variable:-E}
-                        ;;
-		"int")
-			read input_variable
+		"7")
+			printf "\e[34m\e[2mTASK:\e[22m $1\n\e[0m"
 			;;
-		"sto")
-                        read input_variable
-                        $3 && input_variable=${input_variable:-R} || input_variable=${input_variable:-O}
-                        ;;
-		"txt")
-			read input_variable
-			if $3
+		"8")
+			printf "\e[2mINFO:\e[22m \e[97m$1\n\e[0m"
+			;;
+		"9")     
+			printf "\e[31m----------------------------------------\n"
+			if [ "$1" ]
 			then
-				[ -z ${input_variable} ] && input_variable="$4"
+				printf "Error: $1\n"
+			else
+				printf "Error in subfunction\n"
 			fi
+			printf -- "----------------------------------------\n"
+			printf "\e[0m"
 			;;
-		"pwd")
-			local password
-			local password2
-			echo
-			while true; do
-  				read -s -p "Password: " password
-				echo
-				if $3
-				then
-					password="$4"
-					password2="$4"
-				else
-  					read -s -p "Password (again): " password2
-  					echo
-				fi
-  				[ "$password" = "$password2" ] && break
-  				echo "Please try again"
-			done
-			input_variable="$password"
-			;;
-		"*")
-			exit 1
+		*)
+			display_error "msg with incorrect parameter - $2"
 			;;
 	esac
 }
 
+function save_variable() {
+        echo "export $1=$2" >> $file
+}
+
+function check_bastion_os() {
+        if [[ `hostnamectl|grep "Operating System"|awk -F ':' '{print $2}'|awk '{print $1}'` != 'Fedora' ]]
+                then
+                display_error "Your bastion machine is not Fedora OS - please use the supported Operating System"
+        else
+                msg "You use `hostnamectl|grep "Operating System"` - tested releases $fedora_supp_releases" 8
+        fi
+}
+
+function get_network_installation_type() {
+        while $(check_input "yn" ${use_air_gap})
+        do
+                get_input "yn" "Is your environment air-gapped? - " true
+                use_air_gap=${input_variable^^}
+        done
+        if [ $use_air_gap == 'Y' ]
+        then
+                switch_dnf_sync_off
+                save_variable GI_INTERNET_ACCESS "A"
+        else
+                while $(check_input "dp" ${use_proxy})
+                do
+                        get_input "dp" "Has your environment direct access to the internet or use HTTP proxy? (\e[4mD\e[0m)irect/(P)roxy: " true
+                        use_proxy=${input_variable^^}
+                done
+                save_variable GI_INTERNET_ACCESS $use_proxy
+        fi
+}
+
+function switch_dnf_sync_off() {
+        if [[ `grep "metadata_timer_sync=" /etc/dnf/dnf.conf|wc -l` -eq 0 ]]
+        then
+                echo "metadata_timer_sync=0" >> /etc/dnf/dnf.conf
+        else
+                sed -i 's/.*metadata_timer_sync=.*/metadata_timer_sync=0/' /etc/dnf/dnf.conf
+        fi
+}
+
+function get_software_selection() {
+        while $(check_input "yn" ${gi_install})
+        do
+                get_input "yn" "Would you like to install Guardium Insights? " false
+                gi_install=${input_variable^^}
+        done
+        save_variable GI_INSTALL_GI $gi_install
+        [ $gi_install == 'Y' ] && select_gi_version || select_ics_version
+        save_variable GI_ICS $ics_install
+        select_ocp_version
+        while $(check_input "yn" ${install_ldap})
+        do
+                get_input "yn" "Would you like to install OpenLDAP? " false
+                install_ldap=${input_variable^^}
+        done
+        save_variable GI_INSTALL_LDAP $install_ldap
+}
+
+function display_default_ics() {
+	local gi_version
+	local i=0
+	for gi_version in "${gi_versions[@]}"
+	do
+		msg "ICS - ${ics_versions[${bundled_in_gi_ics_versions[$i]}]} for GI $gi_version" 8
+		i=$((i+1))
+	done
+}
+
+function select_ics_version() {
+	ics_version_selected=""
+        while $(check_input "yn" ${ics_install})
+        do
+                get_input "yn" "Would you like to install Cloud Packs Foundational Services (IBM Common Services)? " false
+                ics_install=${input_variable^^}
+        done
+        if [[ $ics_install == 'Y' ]]
+        then
+                ics_version_selected=${ics_version_selected:-0}
+                while $(check_input "list" ${ics_version_selected} ${#ics_versions[@]})
+                do
+                        get_input "list" "Select ICS version: " "${ics_versions[@]}"
+                        ics_version_selected="$input_variable"
+                done
+                ics_version_selected=$(($ics_version_selected-1))
+                save_variable GI_ICS_VERSION $ics_version_selected
+                ics_install='Y'
+        else
+                ics_install='N'
+        fi
+}
+
+function select_gi_version() {
+	local nd_ics_install
+        while $(check_input "list" ${gi_version_selected} ${#gi_versions[@]})
+        do
+                get_input "list" "Select GI version: " "${gi_versions[@]}"
+                gi_version_selected="$input_variable"
+        done
+        msg "Guardium Insights installation choice assumes installation of bundled version of ICS" 8
+        gi_version_selected=$(($gi_version_selected-1))
+        save_variable GI_VERSION $gi_version_selected
+        ics_version_selected=${bundled_in_gi_ics_versions[$gi_version_selected]}
+        ics_install='Y'
+	if [[ $use_air_gap == 'N' ]]
+	then
+		msg "You can overwrite selection of default ICS ${ics_versions[$ics_version_selected]} version" 8
+		msg "In this case you must select supported ICS version by GI ${gi_versions[$gi_version_selected]}" 8
+		msg "Check documentation before to avoid GI installation problems" 8
+		while $(check_input "yn" ${nd_ics_install})
+        	do
+                	get_input "yn" "Would you like to install non-default Cloud Packs Foundational Services for GI? " true
+                	nd_ics_install="${input_variable^^}"
+        	done
+		[[ "$nd_ics_install" == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
+	else
+		display_default_ics
+		save_variable GI_ICS_VERSION $ics_version_selected
+        	msg "In case of air-gapped installation you must install the bundled ICS version" 8
+	fi
+}
+
+function select_ocp_version() {
+	local i
+        if [[ $gi_install == 'Y' ]]
+        then
+                IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
+        elif [[ $ics_install == 'Y' ]]
+        then
+                IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_ics[$ics_version_selected]}
+        fi
+        local new_major_versions=()
+        local i=1
+        for ocp_version in "${ocp_versions[@]}"
+        do
+                new_major_versions+=("${ocp_major_versions[$ocp_version]}")
+                i=$((i+1))
+        done
+        ocp_major_version=${ocp_major_version:-0}
+        while $(check_input "list" ${ocp_major_version} ${#ocp_versions[@]})
+        do
+                get_input "list" "Select OCP major version: " "${new_major_versions[@]}"
+                ocp_major_version="$input_variable"
+        done
+        for i in "${!ocp_major_versions[@]}"; do
+                [[ "${ocp_major_versions[$i]}" == "${new_major_versions[$(($ocp_major_version-1))]}" ]] && break
+        done
+        ocp_major_version=$i
+        if [[ $use_air_gap == 'N' ]]
+        then
+                ocp_release_decision=${ocp_release_decision:-Z}
+                while $(check_input "es" ${ocp_release_decision})
+                do
+                        get_input "es" "Would you provide exact version OC to install (E) or use the latest stable [S]? (E)xact/(\e[4mS\e[0m)table: " true
+                        ocp_release_decision=${input_variable^^}
+                done
+        else
+                ocp_release_decision='E'
+        fi
+        if [[ $ocp_release_decision == 'E' ]]
+        then
+                msg "Insert minor version of OpenShift ${ocp_major_versions[${ocp_major_version}]}.x" 8
+                msg "It must be existing version - you can check list of available version using this URL: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_versions[${ocp_major_version}]}/latest/" 8
+                ocp_release_minor=${ocp_release_minor:-Z}
+                while $(check_input "int" ${ocp_release_minor} 0 1000)
+                do
+                        get_input "txt" "Insert minor version of OCP ${ocp_major_versions[${ocp_major_version}]} to install (must be existing one): " false
+                        ocp_release_minor=${input_variable}
+                done
+                ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
+        else
+                ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
+        fi
+        save_variable GI_OCP_RELEASE $ocp_release
+}
+
+function display_list () {
+        local list=("$@")
+        local i=1
+        for element in "${list[@]}"
+        do
+                if [[ $i -eq ${#list[@]} ]]
+                then
+                        msg "    \e[4m$i\e[24m - $element" 1
+                else
+                        msg "    $i - $element" 1
+                fi
+                i=$((i+1))
+        done
+}
+
 function check_input() {
-	case $2 in
-		"yn")
-			[[ $1 == 'N' || $1 == 'Y' ]] && echo false || echo true
-			;;
-		"dp")   
-			[[ $1 == 'D' || $1 == 'P' ]] && echo false || echo true
-			;;
-		"cs")   
-			[[ $1 == 'C' || $1 == 'S' ]] && echo false || echo true
-			;;
-		"list")
-			if [[ $1 == +([[:digit:]]) ]]
-			then
-				[[ $1 -gt 0 && $1 -le $3 ]] && echo false || echo true 
-			else
-				echo true
-			fi
-			;;
-		"es")
-			[[ $1 == 'E' || $1 == 'S' ]] && echo false || echo true
-			;;
-		"int")
-			if [[ $1 == +([[:digit:]]) ]]
-			then
-				[[ $1 -ge $3 && $1 -le $4 ]] && echo false || echo true
-			else
-				echo true
-			fi
-			;;
-		"sto")
-			[[ $1 == 'O' || $1 == 'R' ]] && echo false || echo true
+        case $1 in
+                "yn")
+                        [[ $2 == 'N' || $2 == 'Y' ]] && echo false || echo true
                         ;;
-		"ip")
-			local ip
-    			if [[ $1 =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]
-    			then
-				IFS='.' read -r -a ip <<< $1
-		        	[[ ${ip[0]} -le 255 && ${ip[1]} -le 255 && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]] 
-        			[[ $? -eq 0 ]] && echo false || echo true
-			else 
-				echo true
-			fi
-			;;
+		"dp")
+                        [[ $2 == 'D' || $2 == 'P' ]] && echo false || echo true
+                        ;;
+		"es")
+                        [[ $2 == 'E' || $2 == 'S' ]] && echo false || echo true
+                        ;;
+		"sto")
+                        [[ $2 == 'O' || $2 == 'R' ]] && echo false || echo true
+                        ;;
+		"list")
+                        if [[ $2 == +([[:digit:]]) ]]
+                        then
+                                [[ $2 -gt 0 && $2 -le $3 ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
+		"int")
+                        if [[ $2 == +([[:digit:]]) ]]
+                        then
+                                [[ $2 -ge $3 && $2 -le $4 ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
 		"txt")
-			case $3 in
-				"1")
-					[[ $1 =~ ^[a-zA-Z][a-zA-Z0-9]{1,64}$ ]] && echo false || echo true
-					;;
-				"2")
-					[[ ! -z $1 ]] && echo false || echo true
-					;;
-				"3")
-					if [ -z "$1" ] || $(echo "$1" | egrep -q "[[:space:]]" && echo true || echo false)
-					then
-					       	echo true
-					else
-						[[ ${#1} -le $4 ]] && echo false || echo true
-					fi
-					;;
-				"*")
-					exit 1
-					;;
-			esac
+                        case $3 in
+                                "1")
+                                        [[ $2 =~ ^[a-zA-Z][a-zA-Z0-9]{1,64}$ ]] && echo false || echo true
+                                        ;;
+                                "2")
+                                        [[ ! -z $2 ]] && echo false || echo true
+                                        ;;
+                                "3")
+                                        if [ -z "$2" ] || $(echo "$2" | egrep -q "[[:space:]]" && echo true || echo false)
+                                        then
+                                                echo true
+                                        else
+                                                [[ ${#2} -le $4 ]] && echo false || echo true
+                                        fi
+                                        ;;
+                                "*")
+                                        display_error "Error"
+                                        ;;
+                        esac
+                        ;;
+		"dir")
+			[ -d "$2" ] && echo false || echo true
 			;;
 		"domain")
-			[[ $1 =~  ^([a-zA-Z0-9](([a-zA-Z0-9-]){0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]] && echo false || echo true
-			;;
-		"ips")
-			local ip_value
-			IFS=',' read -r -a master_ip_arr <<< $1
-			if [[ ${#master_ip_arr[@]} -eq $3 && $(printf '%s\n' "${master_ip_arr[@]}"|sort|uniq -d|wc -l) -eq 0 ]]
-			then
-				local is_wrong=false
-				for ip_value in "${master_ip_arr[@]}"
-				do
-					$(check_input $ip_value "ip") && is_wrong=true
-				done
-				echo $is_wrong
-			else
-				echo true
-			fi
-			;;
-		"mac")
-			[[ $1 =~ ^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$ ]] && echo false || echo true
+                        [[ $2 =~  ^([a-zA-Z0-9](([a-zA-Z0-9-]){0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]] && echo false || echo true
                         ;;
-		"macs")
-			local mac_value
-                        IFS=',' read -r -a master_mac_arr <<< $1
+		"ip")
+                        local ip
+                        if [[ $2 =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]
+                        then
+                                IFS='.' read -r -a ip <<< $2
+                                [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+                                [[ $? -eq 0 ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
+		"ips")
+                        local ip_value
+                        IFS=',' read -r -a master_ip_arr <<< $2
+                        if [[ ${#master_ip_arr[@]} -eq $3 && $(printf '%s\n' "${master_ip_arr[@]}"|sort|uniq -d|wc -l) -eq 0 ]]
+                        then
+                                local is_wrong=false
+                                for ip_value in "${master_ip_arr[@]}"
+                                do
+                                        $(check_input "ip" $ip_value) && is_wrong=true
+                                done
+                                echo $is_wrong
+                        else
+                                echo true
+                        fi
+                        ;;
+		"mac")
+                        [[ $2 =~ ^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$ ]] && echo false || echo true
+                        ;;
+                "macs")
+                        local mac_value
+                        IFS=',' read -r -a master_mac_arr <<< $2
                         if [[ ${#master_mac_arr[@]} -eq $3 && $(printf '%s\n' "${master_mac_arr[@]}"|sort|uniq -d|wc -l) -eq 0 ]]
                         then
                                 local is_wrong=false
                                 for mac_value in "${master_mac_arr[@]}"
                                 do
-                                        $(check_input $mac_value "mac") && is_wrong=true
+                                        $(check_input "mac" $mac_value) && is_wrong=true
                                 done
                                 echo $is_wrong
                         else
@@ -208,10 +345,10 @@ function check_input() {
                         fi
                         ;;
 		"txt_list")
-			local txt_value
-			local txt_arr
-			IFS=',' read -r -a txt_arr <<< $1
-			if [[ ${#txt_arr[@]} -eq $3 ]]
+                        local txt_value
+                        local txt_arr
+                        IFS=',' read -r -a txt_arr <<< $2
+                        if [[ ${#txt_arr[@]} -eq $3 ]]
                         then
                                 local is_wrong=false
                                 for txt_value in "${txt_arr[@]}"
@@ -223,368 +360,527 @@ function check_input() {
                                 echo true
                         fi
                         ;;
+		"int")
+                        if [[ $2 == +([[:digit:]]) ]]
+                        then
+                                [[ $2 -ge $3 && $2 -le $4 ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
 		"tz")
-			if [[ "$1" =~ ^[a-zA-Z0-9_+-]{1,}/[a-zA-Z0-9_+-]{1,}$ ]]
-			then
-				timedatectl set-timezone "$1" 2>/dev/null
-                        	[[ $? -eq 0 ]] && echo false || echo true
-			else
-				echo true
-			fi
-			;;
-		"td")
-			timedatectl set-time "$1" 2>/dev/null
-			[[ $? -eq 0 ]] && echo false || echo true
-			;;
+                        if [[ "$2" =~ ^[a-zA-Z0-9_+-]{1,}/[a-zA-Z0-9_+-]{1,}$ ]]
+                        then
+                                timedatectl set-timezone "$2" 2>/dev/null
+                                [[ $? -eq 0 ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
+                "td")
+                        timedatectl set-time "$2" 2>/dev/null
+                        [[ $? -eq 0 ]] && echo false || echo true
+                        ;;
 		"nodes")
-			local element1
-			local element2
-			local i=0
-			local node_arr
-			local selected_arr
-			IFS=',' read -r -a selected_arr <<< "$1"
-			IFS=',' read -r -a node_arr <<< "$3"
+                        local element1
+                        local element2
+                        local i=0
+                        local node_arr
+                        local selected_arr
+                        IFS=',' read -r -a selected_arr <<< "$2"
+                        IFS=',' read -r -a node_arr <<< "$3"
                         if [[ $(printf '%s\n' "${selected_arr[@]}"|sort|uniq -d|wc -l) -eq 0 ]]
-			then
-				for element1 in ${selected_arr[@]}; do for element2 in ${node_arr[@]}; do [[ "$element1" == "$element2" ]] && i=$(($i+1));done; done
-				case $5 in
-					"max")
-						[ $i -ge $4 ] && echo false || echo true
-						;;
-					"def")
-						[ $4 -eq $i ] && echo false || echo true
-						;;
-					"*")
-						exit 1
-						;;
-				esac
-				
-			else
-				echo true
-			fi
-			;;
+                        then
+                                for element1 in ${selected_arr[@]}; do for element2 in ${node_arr[@]}; do [[ "$element1" == "$element2" ]] && i=$(($i+1));done; done
+                                case $5 in
+                                        "max")
+                                                [ $i -ge $4 ] && echo false || echo true
+                                                ;;
+                                        "def")
+                                                [ $4 -eq $i ] && echo false || echo true
+                                                ;;
+                                        "*")
+                                                display_error "Incorrect nodes size specification"
+                                                ;;
+                                esac
+                        else
+                                echo true
+                        fi
+                        ;;
 		"cidr")
-			if [[ "$1" =~  ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]{1,2}$ ]]
-			then
-				( ! $(check_input `echo "$1"|awk -F'/' '{print $1}'` "ip") && ! $(check_input `echo "$1"|awk -F'/' '{print $2}'` "int" 8 22) ) && echo false || echo true
-			else
-				echo true
-			fi
-			;;
-		"cidr_list")
-			local cidr_arr
-			local cidr
-			if $3 && [ -z "$1" ]
-			then
-				echo false
-			else
-				if [ -z "$1" ] || $(echo "$1" | egrep -q "[[:space:]]" && echo true || echo false)
-				then
-					echo true
-				else
-					local result=false
-					IFS=',' read -r -a cidr_arr <<< "$1"
-					for cidr in "${cidr_arr[@]}"
-					do
-						check_input "$cidr" "cidr" && result=true
-					done
-					echo $result
-				fi
-			fi
+                        if [[ "$2" =~  ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]{1,2}$ ]]
+                        then
+                                ( ! $(check_input "ip" `echo "$2"|awk -F'/' '{print $1}'`) && ! $(check_input "int" `echo "$2"|awk -F'/' '{print $2}'` 8 22) ) && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
+                "cidr_list")
+                        local cidr_arr
+                        local cidr
+                        if $3 && [ -z "$2" ]
+                        then
+                                echo false
+                        else
+                                if [ -z "$2" ] || $(echo "$2" | egrep -q "[[:space:]]" && echo true || echo false)
+                                then
+                                        echo true
+                                else
+                                        local result=false
+                                        IFS=',' read -r -a cidr_arr <<< "$2"
+                                        for cidr in "${cidr_arr[@]}"
+                                        do
+                                                check_input "cidr" "$cidr" && result=true
+                                        done
+                                        echo $result
+                                fi
+                        fi
                         ;;
 		"jwt")
-			if [ "$1" ]
-			then
-				{ sed 's/\./\n/g' <<< $(cut -d. -f1,2 <<< "$1")|{ base64 --decode 2>/dev/null ;}|jq . ;} 1>/dev/null
-				[[ $? -eq 0 ]] && echo false || echo true
-			else
-				echo true
-			fi
-			;;
-		"cert")
-			if [ "$1" ]
-			then
-				case $3 in
-					"ca")
-						openssl x509 -in "$1" -text -noout &>/dev/null 
-						[[ $? -eq 0 ]] && echo false || echo true
-						;;
-					"app")
-						openssl verify -CAfile "$4" "$1" &>/dev/null
-						[[ $? -eq 0 ]] && echo false || echo true
-						;;
-					"key")
-						openssl rsa -in "$1" -check &>/dev/null
-						if [[ $? -eq 0 ]]
-						then
-							[[ "$(openssl x509 -noout -modulus -in "$4" 2>/dev/null)" == "$(openssl rsa -noout -modulus -in "$1" 2>/dev/null)" ]] && echo false || echo true
-						else
-							echo true
-						fi
-						;;
-					"*")
-						exit 1
-						;;
-				esac
-			else
-				echo true
-			fi
-			;;
-		"ldap_domain")
-			if [ "$1" ]
-			then
-				[[ "$1" =~ ^([dD][cC]=[a-zA-Z-]{2,64},){1,}[dD][cC]=[a-zA-Z-]{2,64}$ ]] && echo false || echo true
-			else
-				echo true
-			fi
-			;;
-		"users_list")
-			local ulist
-			if [ -z "$1" ] || $(echo "$1" | egrep -q "[[:space:]]" && echo true || echo false)
+                        if [ "$2" ]
                         then
-                        	echo true
+                                { sed 's/\./\n/g' <<< $(cut -d. -f1,2 <<< "$2")|{ base64 --decode 2>/dev/null ;}|jq . ;} 1>/dev/null
+                                [[ $? -eq 0 ]] && echo false || echo true
                         else
-				local result=false
-				IFS=',' read -r -a ulist <<< "$1"
-				for user in ${ulist[@]}
-				do
-					[[ "$user" =~ ^[a-zA-Z][a-zA-Z0-9_-]{0,}[a-zA-Z0-9]$ ]] || result=true
-				done
-				echo $result
+                                echo true
+                        fi
+                        ;;
+                "cert")
+                        if [ "$2" ]
+                        then
+                                case $3 in
+                                        "ca")
+                                                openssl x509 -in "$2" -text -noout &>/dev/null
+                                                [[ $? -eq 0 ]] && echo false || echo true
+                                                ;;
+                                        "app")
+                                                openssl verify -CAfile "$4" "$2" &>/dev/null
+                                                [[ $? -eq 0 ]] && echo false || echo true
+                                                ;;
+                                        "key")
+                                                openssl rsa -in "$2" -check &>/dev/null
+                                                if [[ $? -eq 0 ]]
+                                                then
+                                                        [[ "$(openssl x509 -noout -modulus -in "$4" 2>/dev/null)" == "$(openssl rsa -noout -modulus -in "$2" 2>/dev/null)" ]] && echo false || echo true
+                                                else
+                                                        echo true
+                                                fi
+                                                ;;
+                                        "*")
+                                                display_error "Incorrect certificate type"
+                                                ;;
+                                esac
+                        else
+                                echo true
+                        fi
+                        ;;
+		"cs")
+                        [[ $2 == 'C' || $2 == 'S' ]] && echo false || echo true
+                        ;;
+		"ldap_domain")
+                        if [ "$2" ]
+                        then
+                                [[ "$2" =~ ^([dD][cC]=[a-zA-Z-]{2,64},){1,}[dD][cC]=[a-zA-Z-]{2,64}$ ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
+                "users_list")
+                        local ulist
+                        if [ -z "$2" ] || $(echo "$2" | egrep -q "[[:space:]]" && echo true || echo false)
+                        then
+                                echo true
+                        else
+                                local result=false
+                                IFS=',' read -r -a ulist <<< "$2"
+                                for user in ${ulist[@]}
+                                do
+                                        [[ "$user" =~ ^[a-zA-Z][a-zA-Z0-9_-]{0,}[a-zA-Z0-9]$ ]] || result=true
+                                done
+                                echo $result
+                        fi
+                        ;;
+		"ip_range")
+			local rlist
+			local ip_value
+			local is_wrong
+			if [ "$2" ]
+			then
+				if [[ "$2" =~ ^.*-.*$ ]] 
+				then
+					is_wrong=false
+					IFS='-' read -r -a rlist <<< "$2"
+					for ip_value in ${rlist[@]}
+					do
+						$(check_input "ip" $ip_value) && is_wrong=true 
+					done
+					echo $is_wrong
+				else
+					echo true
+				fi
+			else
+				echo true
 			fi
 			;;
-		"*")
-			exit 1
-			;;
+		*)
+			display_error "Error incorrect check_input type"
 	esac
 }
 
-function save_variable() {
-	echo "export $1=$2" >> $file
+function get_input() {
+        unset input_variable
+        msg "$2" 2
+        case $1 in
+                "yn")
+                        $3 && msg "(\e[4mN\e[24m)o/(Y)es: " 0 || msg "(N)o/(\e[4mY\e[24m)es: " 0
+                        read input_variable
+			printf "\e[0m"
+                        $3 && input_variable=${input_variable:-N} || input_variable=${input_variable:-Y}
+                        ;;
+		"dp")
+                        read input_variable
+                        $3 && input_variable=${input_variable:-D} || input_variable=${input_variable:-P}
+                        ;;
+		"list")
+                        msg "" 1
+                        shift
+                        shift
+                        local list=("$@")
+                        display_list $@
+                        msg "Your choice: " 0
+                        read input_variable
+                        input_variable=${input_variable:-${#list[@]}}
+                        ;;
+		"es")
+                        read input_variable
+                        $3 && input_variable=${input_variable:-S} || input_variable=${input_variable:-E}
+                        ;;
+		"txt")
+                        read input_variable
+                        if $3
+                        then
+                                [ -z ${input_variable} ] && input_variable="$4"
+                        fi
+                        ;;
+		"pwd")
+                        local password=""
+                        local password2=""
+                        read -s -p "" password
+                        echo
+			if [ "$password" == "" ] && $3
+			then
+				curr_password="$4";input_variable=false
+			else 
+				if [ "$password" == "" ]
+				then
+					input_variable=true
+				else
+                        		read -s -p ">>> Insert password again: " password2
+                        		echo
+					if [ "$password" == "$password2" ]
+					then
+						curr_password=$password
+						input_variable=false
+					else
+						msg "Please try again" 7
+						input_variable=true
+					fi
+                        	fi
+			fi
+                        ;;
+		"sto")
+                        read input_variable
+                        $3 && input_variable=${input_variable:-R} || input_variable=${input_variable:-O}
+                        ;;
+		"int")
+                        read input_variable
+                        ;;
+		"cs")
+                        read input_variable
+                        $3 && input_variable=${input_variable:-C} || input_variable=${input_variable:-S}
+                        ;;
+		*)
+			display_error "Error"
+	esac
 }
 
-function switch_dnf_sync_off() {
-        if [[ `grep "metadata_timer_sync=" /etc/dnf/dnf.conf|wc -l` -eq 0 ]]
-        then
-                echo "metadata_timer_sync=0" >> /etc/dnf/dnf.conf
-        else
-                sed 's/.*metadata_timer_sync=.*/metadata_timer_sync=0/' /etc/dnf/dnf.conf
-        fi
-}
-
-function get_network_installation_type() {
-	use_air_gap=${use_air_gap:-Z}	
-	while $(check_input ${use_air_gap} "yn")
-	do
-		get_input "yn" "Is your environment air-gapped? - " true
-		use_air_gap=${input_variable^^}
-	done
-	if [ $use_air_gap == 'Y' ] 
-	then 
-		switch_dnf_sync_off
-		save_variable GI_INTERNET_ACCESS "A"
-	else
-		use_proxy=${use_proxy:-Z}
-		while $(check_input ${use_proxy} "dp")
-		do
-			get_input "dp" "Has your environment direct access to the internet or use HTTP proxy? (\e[4mD\e[0m)irect/(P)roxy: " true
-			use_proxy=${input_variable^^}
-		done
-		save_variable GI_INTERNET_ACCESS $use_proxy
-	fi
-}
-
-function select_gi_version() {
-	gi_version_selected=${gi_version_selected:-Z}
-	while $(check_input ${gi_version_selected} "list" ${#gi_versions[@]})
-	do
-		get_input "list" "Select GI version: " "${gi_versions[@]}"
-		gi_version_selected=$input_variable
-	done
-	msg "Guardium Insights installation choice assumes installation of bundled version of ICS" true
-        msg " - ICS 3.7.4 for GI 3.0.0" true
-        msg " - ICS 3.9.0 for GI 3.0.1" true
-        msg " - ICS 3.10.0 for GI 3.0.2" true
-        msg " - ICS 3.14.2 for GI 3.1.0" true
-        msg "If you would like install different ICS version (supported by selected GI) please modify variable.sh file before starting playbooks" true
-        msg "In case of air-gapped installation you must install the bundled ICS version" true
-	gi_version_selected=$(($gi_version_selected-1))
-	save_variable GI_VERSION $gi_version_selected
-	ics_version_selected=${bundled_in_gi_ics_versions[$gi_version_selected]}
-        ics_install='Y'
-        save_variable GI_ICS_VERSION $ics_version_selected
-}
-
-function select_ics_version() {
-	ics_install=${ics_install:-Z}
-	while $(check_input ${ics_install} "yn")
+function prepare_offline_bastion() {
+	local curr_password=""
+	msg "Bastion preparation to managed installation offline (air-gapped)" 7
+	msg "Offline installation requires setup the local image repository on bastion" 8
+        while $(check_input "txt" "${repo_admin}" 1)
         do
-		get_input "yn" "Would you like to install Cloud Packs Foundational Services (IBM Common Services)? " false
-                ics_install=${input_variable^^}
+                if [[ ! -z "$GI_REPO_USER" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_REPO_USER] or insert local registry username: " true "$GI_REPO_USER"
+                else
+                        get_input "txt" "Insert local registry username (default - repoadmin): " true "repoadmin"
+                fi
+                        repo_admin="${input_variable}"
         done
-	if [[ $ics_install == 'Y' ]]
-	then
-		ics_version_selected=${ics_version_selected:-0}
-		while $(check_input ${ics_version_selected} "list" ${#ics_versions[@]})
-		do
-			get_input "list" "Select ICS version: " "${ics_versions[@]}"
-                	ics_version_selected=$input_variable
-		done
-		ics_version_selected=$(($ics_version_selected-1))
-        	save_variable GI_ICS_VERSION $ics_version_selected
-		ics_install='Y'
-	else
-		ics_install='N'
-	fi
+        save_variable GI_REPO_USER $repo_admin
+	input_variable=true
+        while $input_variable
+        do
+                if [ ! -z "$GI_REPO_USER_PWD" ]
+                then
+                        get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_REPO_USER_PWD] or insert new password for $repo_admin user: " true "$GI_REPO_USER_PWD"
+                else
+                        get_input "pwd" "Insert new password for $repo_admin user: " false
+                fi
+        done
+        save_variable GI_REPO_USER_PWD "'$curr_password'"
+	msg "Offline installation requires installation archives preparation using preinstall scripts" 8
+        msg "Archives must be copied to bastion before installation" 8
+        while $(check_input "dir" "${gi_archives}")
+        do
+                if [[ ! -z "$GI_ARCHIVES_DIR" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ARCHIVES_DIR] or insert the full path to installation archives: " true "$GI_ARCHIVES_DIR"
+                else
+                        get_input "txt" "Insert full path to installation archives (default location - $GI_HOME/download): " true "$GI_HOME/download"
+                fi
+                        gi_archives="${input_variable}"
+        done
+        save_variable GI_ARCHIVES_DIR "'$gi_archives'"
+	process_offline_archives
+	software_installation_on_offline
 }
 
-function select_ocp_version() {
-	if [[ $gi_install == 'Y' ]]
-	then
-        	IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
-	elif [[ $ics_install == 'Y' ]]
-	then
-        	IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_ics[$ics_version_selected]}
-	fi
-	local new_major_versions=()
-	local i=1
-        for ocp_version in "${ocp_versions[@]}"
-        do
-		new_major_versions+=("${ocp_major_versions[$ocp_version]}")
-                i=$((i+1))
-        done
-	ocp_major_version=${ocp_major_version:-0}
-	while $(check_input ${ocp_major_version} "list" ${#ocp_versions[@]})
+function process_offline_archives() {
+	msg "Extracting archives - this process can take several minutes and even hours, be patient ..." 7
+	local archive
+	local archives=("os-Fedora_release_*" "coreos-registry-${ocp_release}.tar" "olm-registry-${major_ocp_release}*" "additions-registry-*")
+	local descs=('Fedora files' "CoreOS ${ocp_release} image" "OLM images for CoreOS ${major_ocp_release}" "Additional software images")
+	[ $storage_type == 'R' ] && { archives+=("rook-registry-${rook_version}.tar");descs+=("Rook-Ceph ${rook_version} images");}
+	[ $gi_install == 'Y' ] && { archives+=("gi_registry-${gi_versions[$gi_version_selected]}.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
+	[[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
+	local i=0
+	for archive in ${archives[@]}
 	do
-		get_input "list" "Select OCP major version: " "${new_major_versions[@]}"
-		ocp_major_version=$input_variable
-	done
-	for i in "${!ocp_major_versions[@]}"; do
-   		[[ "${ocp_major_versions[$i]}" = "${new_major_versions[$(($ocp_major_version-1))]}" ]] && break
-	done
-	ocp_major_version=$i
-	if [[ $use_air_gap == 'N' ]]
-	then
-		ocp_release_decision=${ocp_release_decision:-Z}
-		while $(check_input ${ocp_release_decision} "es")
-        	do
-			get_input "es" "Would you provide exact version OC to install (E) or use the latest stable [S]? (E)xact/(\e[4mS\e[0m)table: " true
-                	ocp_release_decision=${input_variable^^}
-        	done
-	else
-		ocp_release_decision='E'
-	fi
-	if [[ $ocp_release_decision == 'E' ]]
-	then
-		msg "Insert minor version of OpenShift ${ocp_major_versions[${ocp_major_version}]}.x" true
-		msg "It must be existing version - you can check list of available version using this URL: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_versions[${ocp_major_version}]}/latest/" true
-		ocp_release_minor=${ocp_release_minor:-Z}
-		while $(check_input ${ocp_release_minor} "int" 0 1000)
-		do
-			get_input "int" "Insert minor version of OCP ${ocp_major_versions[${ocp_major_version}]} to install (must be existing one): " false
-			ocp_release_minor=${input_variable}
-		done
-		ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
-	else
-		ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
-	fi
-	save_variable GI_OCP_RELEASE $ocp_release
-}
+		if [ -e ${gi_archives}/${archive} ] && [ $(ls ${gi_archives}/${archive}|wc -l) -eq 1 ]
+		then
+			case $i in
+				0)
+					msg "Extracting Fedora software packages" 8
+					mkdir -p $GI_TEMP/os
+					tar -C $GI_TEMP/os -xf ${gi_archives}/$archive kernel.txt ansible/* galaxy/* os-packages/* os-updates/*
+					[ $? -ne 0 ] && display_error "Cannot extract content of operating system packages"
+					;;
+				1)
+					msg "Extracting CoreOS images, OCP container images and tools" 8
+					mkdir -p /opt/registry $GI_TEMP/coreos
+					tar -C $GI_TEMP/coreos -xf $gi_archives/$archive oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v0.9.0-linux-amd64.tar.gz
+					tar -C /opt/registry -xf $gi_archives/coreos-registry-${ocp_release}.tar data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract content of CoreOS archive"
+                                        ;;
+				2)
+					msg "Extracting OLM container images" 8
+					mkdir -p $GI_TEMP/olm
+					tar -C $GI_TEMP/olm -xf $gi_archives/$archive manifests-*
+					tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract content of OLM archive"
+					;;
+				3)
+					msg "Extracting additional container images, for instance openldap" 8
+					mkdir -p $GI_TEMP/adds
+					tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
+					tar -C /opt/registry -xf $gi_archives/$archive data/*
+					[ $? -ne 0 ] && display_error "Cannot extract content of archive with additional images"
+                                        ;;
+				4|5|6)
+					if [ "$archive" == rook-registry-${rook_version}.tar ]
+					then
+						msg "Extracting Rook-Ceph container images" 8
+						mkdir -p $GI_TEMP/rook
+						tar -C $GI_TEMP/rook -xf $gi_archives/$archive rook_images_sha
+						tar -C /opt/registry -xf $gi_archives/$archive data/*
+						[ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
+					elif [ "$archive" == gi_registry-${gi_versions[$gi_version_selected]}.tar ]
+					then
+						msg "Extracting Guardium Insights container images" 8
+                                                mkdir -p $GI_TEMP/gi_arch
+						tar -C $GI_TEMP/gi_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz gi_offline/*
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Guardium Insights archive"
+					elif [ "$archive" == ics_registry-${ics_versions[$ics_version_selected]}}.tar ]
+					then
+						msg "Extracting Common Services container images" 8
+                                                mkdir -p $GI_TEMP/ics_arch
+						tar -C $GI_TEMP/ics_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz ics_offline/*
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Common Services archive"
+					else
+						display_error "Problem with extraction of archives, unknown archive type"
+					fi
+					;;
+				*)
+					display_error "Problem with extraction of archives, check their consitency"
+					;;
+			esac
 
-function get_software_selection() {
-	gi_install=${gi_install:-Z}
-	while $(check_input ${gi_install} "yn")
-	do
-		get_input "yn" "Would you like to install Guardium Insights? " false
-		gi_install=${input_variable^^}
+		else
+			display_error "Cannot find the ${descs[$i]} archive, please copy to archive to ${gi_archives} directory and restart init.sh"
+		fi
+		i=$(($i+1))
 	done
-	save_variable GI_INSTALL_GI $gi_install
-	[ $gi_install == 'Y' ] && select_gi_version || select_ics_version
-	save_variable GI_ICS $ics_install
-	select_ocp_version
-	while $(check_input ${install_ldap} "yn")
-        do
-                get_input "yn" "Would you like to install OpenLDAP? " false
-                install_ldap=${input_variable^^}
-        done
-	save_variable GI_INSTALL_LDAP $install_ldap
 }
 
 function get_software_architecture() {
-	msg "OCP can be installed only on 3 nodes which create control and worker plane" true
-	msg "This kind of architecture has some limitations:" true
-	msg " - You cannot isolate storage on separate nodes" true
-	msg " - You cannot isolate GI and CPFS" true
-	is_master_only=${is_master_only:-Z}
-	while $(check_input ${is_master_only} "yn")
-	do
-		get_input "yn" "Is your installation the 3 nodes only? " true
-		is_master_only=${input_variable^^}
-	done
-	save_variable GI_MASTER_ONLY $is_master_only
-	msg "Decide what kind of cluster storage option will be implemented:" true
-	msg " - OpenShift Container Storage - commercial rook-ceph branch from RedHat" true
-	msg " - Rook-Ceph - opensource cluster storage option" true
-	storage_type=${storage_type:-Z}
-	while $(check_input ${storage_type} "sto")
+	msg "Some important architecture decisions and planned software deployment must be made now" 7
+        msg "OCP can be installed only on 3 nodes which create control and worker plane" 8
+        msg "This kind of architecture has some limitations:" 8
+        msg "- You cannot isolate storage on separate nodes" 8
+        msg "- You cannot isolate GI and CPFS" 8
+        while $(check_input "yn" ${is_master_only})
         do
-		get_input "sto" "Choice the cluster storage type? (O)CS/(\e[4mR\e[0m)ook: " true
+                get_input "yn" "Is your installation the 3 nodes only? " true
+                is_master_only=${input_variable^^}
+        done
+        save_variable GI_MASTER_ONLY $is_master_only
+        msg "Decide what kind of cluster storage option will be implemented:" 8
+        msg "- OpenShift Container Storage - commercial rook-ceph branch from RedHat" 8
+        msg "- Rook-Ceph - opensource cluster storage option" 8
+        while $(check_input "sto" ${storage_type})
+        do
+                get_input "sto" "Choice the cluster storage type? (O)CS/(\e[4mR\e[0m)ook: " true
                 storage_type=${input_variable^^}
         done
         save_variable GI_STORAGE_TYPE $storage_type
-	if [[ $storage_type == "O" && $is_master_only == 'N' ]]
-	then
-		msg "OCS tainting will require minimum 3 additional workers in your cluster to manage cluster storage"
-		ocs_tainted=${ocs_tainted:-Z}
-		while $(check_input ${ocs_tainted} "yn")
-		do
-			get_input "yn" "Should be OCS tainted? " true
-			ocs_tainted=${input_variable^^}
-		done
-		save_variable GI_OCS_TAINTED $ocs_tainted
-	else
-		save_variable GI_OCS_TAINTED "N"
-	fi
-	if [[ $gi_install == "Y" ]]
-	then
-		gi_size_selected=${gi_size_selected:-0}
-	        while $(check_input ${gi_size_selected} "list" ${#gi_sizes[@]})
-        	do
-                	get_input "list" "Select Guardium Insights deployment template: " "${gi_sizes[@]}"
-			gi_size_selected=$input_variable
-        	done
-		gi_size="${gi_sizes[$((${gi_size_selected} - 1))]}"
-		save_variable GI_SIZE_GI $gi_size
-	fi
-	if [[ $gi_install == "Y" && $is_master_only == 'N' ]]
-	then
-		msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend"
-                db2_tainted=${db2_tainted:-Z}
-                while $(check_input ${db2_tainted} "yn")
+        if [[ $storage_type == "O" && $is_master_only == 'N' ]]
+        then
+                msg "OCS tainting will require minimum 3 additional workers in your cluster to manage cluster storage" 8
+                while $(check_input "yn" ${ocs_tainted})
+                do
+                        get_input "yn" "Should be OCS tainted? " true
+                        ocs_tainted=${input_variable^^}
+                done
+                save_variable GI_OCS_TAINTED $ocs_tainted
+        else
+                save_variable GI_OCS_TAINTED "N"
+        fi
+        if [[ $gi_install == "Y" ]]
+        then
+                while $(check_input "list" ${gi_size_selected} ${#gi_sizes[@]})
+                do
+                        get_input "list" "Select Guardium Insights deployment template: " "${gi_sizes[@]}"
+                        gi_size_selected=$input_variable
+                done
+                gi_size="${gi_sizes[$((${gi_size_selected} - 1))]}"
+                save_variable GI_SIZE_GI $gi_size
+        fi
+        if [[ $gi_install == "Y" && $is_master_only == 'N' ]]
+        then
+                msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend" 8
+                while $(check_input "yn" ${db2_tainted})
                 do
                         get_input "yn" "Should be DB2 tainted? " true
                         db2_tainted=${input_variable^^}
                 done
                 save_variable GI_DB2_TAINTED $db2_tainted
-	fi
+        fi
+}
+
+function software_installation_on_offline() {
+	local is_updated
+	msg "Update and installation of software packaged" 7
+	if [[ `uname -r` != `cat $GI_TEMP/os/kernel.txt` ]]
+        then
+                msg "Kernel of air-gap bastion differs from air-gap file generator!" 8
+                msg "In most cases the independent kernel update will lead to problems with system libraries" 8
+		while $(check_input "yn" ${is_updated})
+                do
+                        get_input "yn" "Have you updated system before, would you like to continue? " true
+                        is_updated=${input_variable^^}
+                done
+                if [ $is_updated != 'N' ]
+                then
+                        display_error "Upload air-gap files corresponding to bastion kernel or generate files for bastion environment"
+                fi
+        fi
+        msg "Installing OS updates" 7
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os/os-updates/*rpm --allowerasing
+        msg "Installing OS packages" 7
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os/os-packages/*rpm --allowerasing
+        msg "Installing Ansible and python modules" 7
+        cd ${GI_TEMP}/os/ansible
+        pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
+        cd $GI_TEMP/os/galaxy
+        ansible-galaxy collection install community-general-3.3.2.tar.gz
+        cd $GI_HOME
+        mkdir -p /etc/ansible
+        echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
+        msg "OS software update and installation successfully finished" 8
+}
+
+function software_installation_on_online() {
+	msg "Update and installation of software packaged" 7
+	msg "Installing OS updates" 7
+        dnf -qy update
+        msg "Installing OS packages" 8
+        local soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bootimgs" "chrony" "dnsmasq" "unzip" "wget" "httpd-tools" "policycoreutils-python-utils" "python3-ldap" "openldap-servers" "openldap-clients" "pip" "skopeo")
+        for package in "${soft[@]}"
+        do
+                msg "- installing $package ..." 8
+                dnf -qy install $package &>/dev/null
+                [[ $? -ne 0 ]] && display_error "Cannot install $package"
+        done
+        msg "Installing Python packages" 7
+        local python_soft=("passlib" "dnspython" "beautifulsoup4")
+        for package in "${python_soft[@]}"
+        do
+                msg "- installing $package ..." 8
+                [[ $use_proxy == 'D' ]] && pip3 install "$package" || pip3 install "$package" --proxy http://$proxy_ip:$proxy_port
+                [[ $? -ne 0 ]] && display_error "Cannot install python package $package"
+        done
+        msg "Configuring Ansible" 7
+        mkdir -p /etc/ansible
+        [[ $use_proxy == 'P' ]] && echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts || echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
+        msg "Installing Ansible galaxy packages" 7
+	local ansible_galaxy=("community.general")
+        for package in "${ansible_galaxy[@]}"
+        do
+                msg "- installing $package ..." 8
+		ansible-galaxy collection install $package
+                [[ $? -ne 0 ]] && display_error "Cannot install Ansible Galaxy package $package"
+        done
+	mkdir -p ${GI_TEMP}/os
+        echo "pullSecret: '$rhn_secret'" > ${GI_TEMP}/os/pull_secret.tmp
+}
+
+function get_ocp_domain() {
+	msg "Set cluster domain name" 7
+        msg "Insert the OCP cluster domain name - it is local cluster, so it doesn't have to be registered as public one" 8
+        while $(check_input "domain" ${ocp_domain})
+        do
+                if [[ ! -z "$GI_DOMAIN" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DOMAIN] or insert domain name: " true "$GI_DOMAIN"
+                else
+                        get_input "txt" "Insert domain name: " false
+                fi
+                ocp_domain=${input_variable}
+        done
+        save_variable GI_DOMAIN $ocp_domain
 }
 
 function get_bastion_info() {
-	msg "Provide IP address of network interface on bastion which is connected to this same subnet,vlan where the OCP nodes are located" true
-	bastion_ip=${bastion_ip:-Z}
-	while $(check_input ${bastion_ip} "ip")
-	do
-		if [[ ! -z "$GI_BASTION_IP" ]]
-		then
-			get_input "txt" "Push <ENTER> to accept the previous choice [$GI_BASTION_IP] or insert bastion IP: " true "$GI_BASTION_IP"
-		else
-			get_input "txt" "Insert bastion IP: " false
-		fi
-		bastion_ip=${input_variable}
-	done
-	save_variable GI_BASTION_IP $bastion_ip
-	msg "Provide the hostname used to resolve bastion name by local DNS which will be set up" true
-        while $(check_input ${bastion_name} "txt" 1)
+	msg "Collecting data about bastion" 7
+        msg "Provide IP address of network interface on bastion which is connected to this same subnet,vlan where the OCP nodes are located" 8
+        while $(check_input "ip" ${bastion_ip})
+        do
+                if [[ ! -z "$GI_BASTION_IP" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_BASTION_IP] or insert bastion IP: " true "$GI_BASTION_IP"
+                else
+                        get_input "txt" "Insert bastion IP: " false
+                fi
+                bastion_ip=${input_variable}
+        done
+        save_variable GI_BASTION_IP $bastion_ip
+        msg "Provide the hostname used to resolve bastion name by local DNS which will be set up" 8
+        while $(check_input "txt" ${bastion_name} 1)
         do
                 if [[ ! -z "$GI_BASTION_NAME" ]]
                 then
@@ -595,75 +891,61 @@ function get_bastion_info() {
                 bastion_name=${input_variable}
         done
         save_variable GI_BASTION_NAME $bastion_name
-	msg "Provide the IP gateway of subnet where cluster node are located" true
-	while $(check_input ${subnet_gateway} "ip")
-        do
-                if [[ ! -z "$GI_GATEWAY" ]]
-                then
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_GATEWAY] or insert IP address of default gateway: " true "$GI_GATEWAY"
-                else
-                        get_input "txt" "Insert IP address of default gateway: " false
-                fi
-                subnet_gateway=${input_variable}
-        done
-        save_variable GI_GATEWAY $subnet_gateway
-}
-
-
-function get_ocp_domain() {
-	msg "Insert the OCP cluster domain name - it is local private one, so it doesn't have to be in the public domain" true
-	while $(check_input ${ocp_domain} "domain")
-	do
-		if [[ ! -z "$GI_DOMAIN" ]]
-		then
-			get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DOMAIN] or insert domain name: " true "$GI_DOMAIN"
-		else
-			get_input "txt" "Insert domain name: " false
-		fi
-		ocp_domain=${input_variable}
-	done
-	save_variable GI_DOMAIN $ocp_domain
+	if [[ $one_subnet == 'Y' ]]
+	then
+        	msg "Provide the IP gateway of subnet where cluster node are located" 8
+        	while $(check_input "ip" ${subnet_gateway})
+        	do
+                	if [[ ! -z "$GI_GATEWAY" ]]
+                	then
+                        	get_input "txt" "Push <ENTER> to accept the previous choice [$GI_GATEWAY] or insert IP address of default gateway: " true "$GI_GATEWAY"
+                	else
+                        	get_input "txt" "Insert IP address of default gateway: " false
+                	fi
+                	subnet_gateway=${input_variable}
+        	done
+        	save_variable GI_GATEWAY $subnet_gateway
+	fi
 }
 
 function get_nodes_info() {
-	local temp_ip
-	local temp_mac
-	local temp_name
-	case $2	in
-		"ocs")
-			local pl_names=("addresses" "names" "IP's" "hosts") 
-			local node_type="OCS nodes"
-			local global_var_ip=$GI_OCS_IP
-			local global_var_mac=$GI_OCS_MAC_ADDRESS
-			local global_var_name=$GI_OCS_NAME
-			;;
-		"boot")
-			local pl_names=("address" "name" "IP" "host")
+        local temp_ip
+        local temp_mac
+        local temp_name
+        case $2 in
+                "ocs")
+                        local pl_names=("addresses" "names" "IP's" "hosts")
+                        local node_type="OCS nodes"
+                        local global_var_ip=$GI_OCS_IP
+                        local global_var_mac=$GI_OCS_MAC_ADDRESS
+                        local global_var_name=$GI_OCS_NAME
+                        ;;
+                "boot")
+                        local pl_names=("address" "name" "IP" "host")
                         local node_type="bootstrap node"
                         local global_var_ip=$GI_BOOTSTRAP_IP
                         local global_var_mac=$GI_BOOTSTRAP_MAC_ADDRESS
                         local global_var_name=$GI_BOOTSTRAP_NAME
                         ;;
-		"mst")
-			local pl_names=("addresses" "names" "IP's" "hosts") 
-			local node_type="master nodes"
-			local global_var_ip=$GI_MASTER_IP
-			local global_var_mac=$GI_MASTER_MAC_ADDRESS
-			local global_var_name=$GI_MASTER_NAME
-			;;
-		"wrk")
-			local pl_names=("addresses" "names" "IP's" "hosts") 
-			local node_type="worker nodes"
-			local global_var_ip=$GI_WORKER_IP
-			local global_var_mac=$GI_WORKER_MAC_ADDRESS
-			local global_var_name=$GI_WORKER_NAME
-			;;
-		"*")
-			exit 1
-
+                "mst")
+                        local pl_names=("addresses" "names" "IP's" "hosts")
+                        local node_type="master nodes"
+                        local global_var_ip=$GI_MASTER_IP
+                        local global_var_mac=$GI_MASTER_MAC_ADDRESS
+                        local global_var_name=$GI_MASTER_NAME
+                        ;;
+                "wrk")
+                        local pl_names=("addresses" "names" "IP's" "hosts")
+                        local node_type="worker nodes"
+                        local global_var_ip=$GI_WORKER_IP
+                        local global_var_mac=$GI_WORKER_MAC_ADDRESS
+                        local global_var_name=$GI_WORKER_NAME
+                        ;;
+                "*")
+                        exit 1
 	esac
-	msg "Insert $1 ${pl_names[2]} ${pl_names[0]} of $node_type, should be located in subnet with gateway - $subnet_gateway" true
-	while $(check_input ${temp_ip} "ips" $1)
+        msg "Insert $1 ${pl_names[2]} ${pl_names[0]} of $node_type, should be located in subnet with gateway - $subnet_gateway" 8
+        while $(check_input "ips" ${temp_ip} $1)
         do
                 if [ ! -z "$global_var_ip" ]
                 then
@@ -673,8 +955,8 @@ function get_nodes_info() {
                 fi
                 temp_ip=${input_variable}
         done
-	msg "Insert $1 MAC ${pl_names[0]} of $node_type" true
-        while $(check_input ${temp_mac} "macs" $1)
+        msg "Insert $1 MAC ${pl_names[0]} of $node_type" 8
+        while $(check_input "macs" ${temp_mac} $1)
         do
                 if [ ! -z "$global_var_mac" ]
                 then
@@ -684,180 +966,190 @@ function get_nodes_info() {
                 fi
                 temp_mac=${input_variable}
         done
-	msg "Insert $1 ${pl_names[3]} ${pl_names[1]} of $node_type" true
-	while $(check_input ${temp_name} "txt_list" $1)
+        msg "Insert $1 ${pl_names[3]} ${pl_names[1]} of $node_type" 8
+        while $(check_input "txt_list" ${temp_name} $1)
         do
                 if [ ! -z "$global_var_name" ]
                 then
                         get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_name] or insert $node_type ${pl_names[1]}: " true "$global_var_name"
                 else
-                        get_input "txt" "Insert bootstrap ${pl_names[1]}: " false
+                        get_input "txt" "Insert $node_type ${pl_names[1]}: " false
                 fi
                 temp_name=${input_variable}
         done
 	case $2 in
                 "ocs")
-			ocs_ip=$temp_ip
-        		save_variable GI_OCS_IP $temp_ip
-        		save_variable GI_OCS_MAC_ADDRESS $temp_mac
-        		save_variable GI_OCS_NAME $temp_name
+                        ocs_ip=$temp_ip
+                        save_variable GI_OCS_IP $temp_ip
+                        save_variable GI_OCS_MAC_ADDRESS $temp_mac
+                        save_variable GI_OCS_NAME $temp_name
                         ;;
                 "boot")
-			boot_ip=$temp_ip
-        		save_variable GI_BOOTSTRAP_IP $temp_ip
-        		save_variable GI_BOOTSTRAP_MAC_ADDRESS $temp_mac
-        		save_variable GI_BOOTSTRAP_NAME $temp_name
+                        boot_ip=$temp_ip
+                        save_variable GI_BOOTSTRAP_IP $temp_ip
+                        save_variable GI_BOOTSTRAP_MAC_ADDRESS $temp_mac
+                        save_variable GI_BOOTSTRAP_NAME $temp_name
                         ;;
                 "mst")
-			master_ip=$temp_ip
-        		save_variable GI_MASTER_IP $temp_ip
-        		save_variable GI_MASTER_MAC_ADDRESS $temp_mac
-        		save_variable GI_MASTER_NAME $temp_name
+                        master_ip=$temp_ip
+                        save_variable GI_MASTER_IP $temp_ip
+                        save_variable GI_MASTER_MAC_ADDRESS $temp_mac
+                        save_variable GI_MASTER_NAME $temp_name
                         ;;
                 "wrk")
-			worker_ip=$temp_ip
-			worker_name=$temp_name
-        		save_variable GI_WORKER_IP $temp_ip
-        		save_variable GI_WORKER_MAC_ADDRESS $temp_mac
-        		save_variable GI_WORKER_NAME $temp_name
+                        worker_ip=$temp_ip
+                        worker_name=$temp_name
+                        save_variable GI_WORKER_IP $temp_ip
+                        save_variable GI_WORKER_MAC_ADDRESS $temp_mac
+                        save_variable GI_WORKER_NAME $temp_name
                         ;;
-		"*")
-			exit 1
+                "*")
+                        display_error "Incorrect parameters get_node function"
         esac
-
 }
 
 function get_worker_nodes() {
-	local worker_number=3
-	local inserted_worker_number
-	if [[ $is_master_only == 'N' ]]
-	then
-		if [[ $storage_type == 'O' && $ocs_tainted == 'Y' ]]
-		then
-			msg "Because OCS tainting has been chosen you need provide IP and MAC addresses and names of these nodes, values inserted as comma separated list without spaces" true
-			get_nodes_info 3 "ocs"
-		fi
-		if [ $db2_tainted == 'Y' ] 
-		then
-			[ $gi_size == "values-small" ] && worker_number=$(($worker_number+2)) || worker_number=$(($worker_number+1))
-		fi
-		msg "Your cluster architecture decisions require to have minimum $worker_number additional workers" true
-		while $(check_input $inserted_worker_number "int" $worker_number 50)
-		do
-			get_input "int" "How many additional workers would you like to add to cluster?: " false
-			inserted_worker_number=${input_variable}
-		done
-		get_nodes_info $inserted_worker_number "wrk"
-	fi
+        local worker_number=3
+        local inserted_worker_number
+        if [[ $is_master_only == 'N' ]]
+        then
+		msg "Collecting workers data" 7
+                if [[ $storage_type == 'O' && $ocs_tainted == 'Y' ]]
+                then
+			msg "Collecting OCS dedicated nodes data because OCS tainting has been chosen (IP and MAC addresses, node names), values inserted as comma separated list without spaces" 7
+                        get_nodes_info 3 "ocs"
+                fi
+                if [[ "$db2_tainted" == 'Y' ]]
+                then
+                        [[ $gi_size == "values-small" ]] && worker_number=$(($worker_number+2)) || worker_number=$(($worker_number+1))
+                fi
+                msg "Your cluster architecture decisions require to have minimum $worker_number additional workers" 8
+                while $(check_input "int" $inserted_worker_number $worker_number 50)
+                do
+                        get_input "int" "How many additional workers would you like to add to cluster?: " false
+                        inserted_worker_number=${input_variable}
+                done
+		msg "Collecting workers nodes data (IP and MAC addresses, node names), values inserted as comma separated list without spaces" 7
+                get_nodes_info $inserted_worker_number "wrk"
+        fi
 }
 
-function set_bastion_ntp_client {
+function set_bastion_ntpd_client() {
+	msg "Set NTPD configuration" 7
 	sed -i "s/^pool .*/pool $1 iburst/g" /etc/chrony.conf
         systemctl enable chronyd
         systemctl restart chronyd
 }
 
 function get_set_services() {
-	local iz_tz_ok
-	local is_td_ok
-	local ntpd_server
-	local tzone
-	local tida
-	msg "Some additional questions allow to configure supporting services in your environment" true
-	msg "It is recommended to use existing NTPD server in the local intranet but you can also decide to setup bastion as a new one" true
-	while $(check_input $install_ntpd "yn" false)
-	do
-		get_input "yn" "Would you like setup NTP server on bastion?: " false
-		install_ntpd=${input_variable^^}
-	done
-	if [[ $install_ntpd == 'N' ]]
-	then
-		timedatectl set-ntp true
-		while $(check_input ${ntp_server} "ip")
-		do
-			if [ ! -z "$GI_NTP_SRV" ]
-	                then
-        	                get_input "txt" "Push <ENTER> to accept the previous choice [$GI_NTP_SRV] or insert remote NTP server IP address: " true "$GI_NTP_SRV"
-                	else
-                        	get_input "txt" "Insert remote NTP server IP address: " false
-                	fi
-			ntpd_server=${input_variable}
-		done
-		set_bastion_ntpd_client "$ntpd_server"
-		save_variable GI_NTP_SRV $ntpd_server 
-	fi
-	msg "Ensure that TZ and corresponding time is set correctly!" true
-	while $(check_input $is_tz_ok "yn" false)
-	do
-		get_input "yn" "Your Timezone on bastion is set to `timedatectl show|grep Timezone|awk -F '=' '{ print $2 }'`, is it correct one?: " false
-		is_tz_ok=${input_variable^^}
-	done
-	if [[ $is_tz_ok == 'N' ]]
-	then
-		while $(check_input ${tzone} "tz")
-		do
-			get_input "txt" "Insert your Timezone in Linux format (i.e. Europe/Berlin): " false
-			tzone=${input_variable}
-		done
-	fi
-	if [[ $install_ntpd == 'Y' ]]
-        then
-		timedatectl set-ntp false
-		save_variable GI_NTP_SRV $bastion_ip
-		msg "Ensure that date and time are set correctly - it is critical!"
-		while $(check_input $is_td_ok "yn" false)
-        	do
-                	get_input "yn" "Current local time is `date`, is it correct one?: " false
-                	is_td_ok=${input_variable^^}
-        	done
-		if [[ $is_td_ok == 'N' ]]
-	        then
-        	        while $(check_input "${tida}" "td")
-                	do
-                        	get_input "txt" "Insert correct date and time in format \"2012-10-30 18:17:16\": " false
-                        	tida="${input_variable}"
-                	done
-	       	fi
-	fi
-	msg "Provide the DNS which will able to resolve intranet and internet names" true
-	msg "In case of air-gapped installation you can point bastion itself but cluster will not able to resolve intranet names, in this case you must later update manually dnsmasq.conf settings" true
-	while $(check_input ${dns_fw} "ip")
+        local iz_tz_ok
+        local is_td_ok
+        local ntpd_server
+        local tzone
+        local tida
+        msg "Some additional questions allow to configure supporting services in your environment" 8
+	msg "Time settings" 7
+        msg "It is recommended to use existing NTPD server in the local intranet but you can also decide to setup bastion as a new one" 8
+        while $(check_input "yn" $install_ntpd false)
         do
-		if [ ! -z "$GI_DNS_FORWARDER" ]
-		then
-			get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DNS_FORWARDER] or insert DNS server IP address: " true "$GI_DNS_FORWARDER"
-		else
-			get_input "txt" "Insert DNS IP address: " false
-		fi
-		dns_fw=${input_variable}
-	done
+                get_input "yn" "Would you like setup NTP server on bastion?: " false
+                install_ntpd=${input_variable^^}
+        done
+        if [[ $install_ntpd == 'N' ]]
+        then
+                timedatectl set-ntp true
+                while $(check_input "ip" ${ntpd_server})
+                do
+                        if [ ! -z "$GI_NTP_SRV" ]
+                        then
+                                get_input "txt" "Push <ENTER> to accept the previous choice [$GI_NTP_SRV] or insert remote NTP server IP address: " true "$GI_NTP_SRV"
+                        else
+                                get_input "txt" "Insert remote NTP server IP address: " false
+                        fi
+                        ntpd_server=${input_variable}
+                done
+                save_variable GI_NTP_SRV $ntpd_server
+	else
+		ntpd_server=$bastion_ip
+		timedatectl set-ntp false
+        fi
+        set_bastion_ntpd_client "$ntpd_server"
+        msg "Ensure that TZ and corresponding time is set correctly" 7
+        while $(check_input "yn" $is_tz_ok)
+        do
+                get_input "yn" "Your Timezone on bastion is set to `timedatectl show|grep Timezone|awk -F '=' '{ print $2 }'`, is it correct one?: " false
+                is_tz_ok=${input_variable^^}
+        done
+        if [[ $is_tz_ok == 'N' ]]
+        then
+                while "tz" $(check_input ${tzone})
+                do
+                        get_input "txt" "Insert your Timezone in Linux format (i.e. Europe/Berlin): " false
+                        tzone=${input_variable}
+                done
+        fi
+        if [[ $install_ntpd == 'Y' ]]
+        then
+                save_variable GI_NTP_SRV $bastion_ip
+                msg "Ensure that date and time are set correctly" 7
+                while $(check_input "yn" $is_td_ok false)
+                do
+                        get_input "yn" "Current local time is `date`, is it correct one?: " false
+                        is_td_ok=${input_variable^^}
+                done
+                if [[ $is_td_ok == 'N' ]]
+                then
+                        while $(check_input "td" "${tida}")
+                        do
+                                get_input "txt" "Insert correct date and time in format \"2012-10-30 18:17:16\": " false
+                                tida="${input_variable}"
+                        done
+                fi
+	fi
+	msg "DNS settings" 7
+        msg "Provide the DNS which will able to resolve intranet and internet names" 8
+        msg "In case of air-gapped installation you can point bastion itself but cluster will not able to resolve intranet names, in this case you must later update manually dnsmasq.conf settings" 8
+        while $(check_input "ip" ${dns_fw})
+        do
+                if [ ! -z "$GI_DNS_FORWARDER" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DNS_FORWARDER] or insert DNS server IP address: " true "$GI_DNS_FORWARDER"
+                else
+                        get_input "txt" "Insert DNS IP address: " false
+                fi
+                dns_fw=${input_variable}
+        done
         save_variable GI_DNS_FORWARDER $dns_fw
-	IFS=',' read -r -a all_ips <<< `echo $boot_ip","$master_ip","$ocs_ip",$worker_ip"|tr -s ',,' ','|sed 's/,[[:blank:]]*$//g'`
-	save_variable GI_DHCP_RANGE_START `printf '%s\n' "${all_ips[@]}"|sort -t . -k 3,3n -k 4,4n|head -n1`
-	save_variable GI_DHCP_RANGE_STOP `printf '%s\n' "${all_ips[@]}"|sort -t . -k 3,3n -k 4,4n|tail -n1`
+        IFS=',' read -r -a all_ips <<< `echo $boot_ip","$master_ip","$ocs_ip",$worker_ip"|tr -s ',,' ','|sed 's/,[[:blank:]]*$//g'`
+	if [[ "$one_subnet" == 'Y' ]]
+	then
+        	save_variable GI_DHCP_RANGE_START `printf '%s\n' "${all_ips[@]}"|sort -t . -k 3,3n -k 4,4n|head -n1`
+        	save_variable GI_DHCP_RANGE_STOP `printf '%s\n' "${all_ips[@]}"|sort -t . -k 3,3n -k 4,4n|tail -n1`
+	fi
 }
 
 function get_hardware_info() {
-	msg "Automatic CoreOS and storage deployment requires information about NIC and HDD devices" true
-	msg "There is assumption that all cluster nodes including bootstrap machine use this isame HW specification" true
-	msg "The Network Interface Card (NIC) device specification must provide the one of interfaces attached to each cluster node and connected to cluster subnet" true
-	msg "In most cases the first NIC attached to machine will have on Fedora and RedHat the name \"ens192\"" true
-	while $(check_input "${machine_nic}" "txt" 2)
-	do
-		if [ ! -z "$GI_NETWORK_INTERFACE" ]
+	msg "Collecting hardware information" 7
+        msg "Automatic CoreOS and storage deployment requires information about NIC and HDD devices" 8
+        msg "There is assumption that all cluster nodes including bootstrap machine use this isame HW specification" 8
+        msg "The Network Interface Card (NIC) device specification must provide the one of interfaces attached to each cluster node and connected to cluster subnet" 8
+        msg "In most cases the first NIC attached to machine will have on Fedora and RedHat the name \"ens192\"" 8
+        while $(check_input "txt" "${machine_nic}" 2)
+        do
+                if [ ! -z "$GI_NETWORK_INTERFACE" ]
                 then
                         get_input "txt" "Push <ENTER> to accept the previous choice [$GI_NETWORK_INTERFACE] or insert NIC specification: " true "$GI_NETWORK_INTERFACE"
                 else
                         get_input "txt" "Insert NIC specification: " false
                 fi
                 machine_nic="${input_variable}"
-	done
-	save_variable GI_NETWORK_INTERFACE "$machine_nic"
-	msg "There is assumption that all cluster machines use this device specification for boot disk" true
-	msg "In most cases the first boot disk will have specification \"sda\" or \"nvmne0\"" true
-	msg "The inserted value refers to root path located in /dev" true
-	msg "It means that value sda refers to /dev/sda" true
-	while $(check_input "${machine_disk}" "txt" 2)
+        done
+        save_variable GI_NETWORK_INTERFACE "$machine_nic"
+        msg "There is assumption that all cluster machines use this device specification for boot disk" 8
+        msg "In most cases the first boot disk will have specification \"sda\" or \"nvmne0\"" 8
+        msg "The inserted value refers to root path located in /dev" 8
+        msg "It means that value sda refers to /dev/sda" 8
+        while $(check_input "txt" "${machine_disk}" 2)
         do
                 if [ ! -z "$GI_BOOT_DEVICE" ]
                 then
@@ -871,123 +1163,149 @@ function get_hardware_info() {
 }
 
 function get_service_assignment() {
-	local selected_arr
-	local node_arr
-	if [[ $gi_install == 'Y' ]] 
-	then
-		[[ $gi_size == 'values-small' ]] && db2_nodes_size=2 || db2_nodes_size=1
-		if [[ "$db2_tainted" == 'Y' ]]
+	msg "Architecture decisions about service location on cluster nodes" 7
+        local selected_arr
+        local node_arr
+	local element
+	local rook_on_list
+        if [[ $gi_install == 'Y' ]]
+        then
+                [[ $gi_size == 'values-small' ]] && db2_nodes_size=2 || db2_nodes_size=1
+		if [[ $db2_tainted == 'Y' ]]
 		then
-			msg "You decided that DB2 will be installed on dedicated node/nodes in taint mode" true
-			msg "These nodes should not be used as storage cluster nodes" true
+                	msg "You decided that DB2 will be installed on dedicated node/nodes" 8
+                	msg "Node/nodes should not be used as storage cluster nodes" 8
 		else
-			msg "You must point on which node/nodes DB2 will be installed"
+			msg "Insert node/nodes name where DB2 should be installed" 8
 		fi
-		msg "Inserted node/nodes must have propriate resources to serve DB2 instance, check GI documention to get demands"
-		msg "Available worker nodes: $worker_name" true
-		while $(check_input $db2_nodes "nodes" $worker_name $db2_nodes_size "def")
+		msg "DB2 node/nodes should have enough resources (CPU, RAM) to get this role, check GI documentation" 8
+                msg "Available worker nodes: $worker_name" 8
+                while $(check_input "nodes" $db2_nodes $worker_name $db2_nodes_size "def")
                 do
-			if [ ! -z "$GI_DB2_NODES" ]
-			then
-				get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DB2_NODES] or specify $db2_nodes_size node/nodes (comma separated, without spaces)?: " true "$GI_DB2_NODES"
-			else
-				get_input "txt" "Specify $db2_nodes_size node/nodes (comma separated, without spaces)?: " false
-			fi
+                        if [ ! -z "$GI_DB2_NODES" ]
+                        then
+                                get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DB2_NODES] or specify $db2_nodes_size node/nodes (comma separated, without spaces)?: " true "$GI_DB2_NODES"
+                        else
+                                get_input "txt" "Specify $db2_nodes_size node/nodes (comma separated, without spaces)?: " false
+                        fi
                         db2_nodes=${input_variable}
                 done
-		save_variable GI_DB2_NODES "$db2_nodes"
-		IFS=',' read -r -a selected_arr <<< "$db2_nodes"
+                save_variable GI_DB2_NODES "$db2_nodes"
+                IFS=',' read -r -a selected_arr <<< "$db2_nodes"
+                IFS=',' read -r -a node_arr <<< "$worker_name"
+                if [[ "$db2_tainted" == 'N' ]]
+                then
+                        worker_wo_db2_name=$worker_name
+		else
+                	for element in ${selected_arr[@]};do node_arr=("${node_arr[@]/$element}");done
+                	worker_wo_db2_name=`echo ${node_arr[*]}|tr ' ' ','`
+                	workers_for_gi_selection=$worker_wo_db2_name
+                fi
+	else
 		IFS=',' read -r -a node_arr <<< "$worker_name"
-		for element in ${selected_arr[@]};do node_arr=("${node_arr[@]/$element}");done
-		worker_wo_db2_name=`echo ${node_arr[*]}|tr ' ' ','`
-		workers_for_gi_selection=$worker_wo_db2_name
-		if [[ "$db2_tainted" == 'N' ]]
-		then
-			worker_wo_db2_name=$worker_name
-		fi
-	fi
-	if [[ $storage_type == "R" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
-	then
-		msg "You specified Rook-Ceph as cluster storage" true
-		msg "You can force to deploy it on strictly defined node list" true
-		msg "Only disks from specified nodes will be configured as cluster storage" true
-		while $(check_input $rook_on_list "yn" false)
-        	do
-                	get_input "yn" "Would you like to install Rook-Ceph on strictly specified nodes?: " true
-                	rook_on_list=${input_variable^^}
-        	done
-		if [ "$rook_on_list" == 'Y' ]
-		then
-			msg "Available worker nodes: $worker_wo_db2_name" true
-                	while $(check_input $rook_nodes "nodes" $worker_wo_db2_name 3 "def")
-                	do
-                        	if [ ! -z "$GI_ROOK_NODES" ]
-                        	then
-                                	get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ROOK_NODES] or specify 3 nodes (comma separated, without spaces)?: " true "$GI_ROOK_NODES"
-                        	else
-                                	get_input "txt" "Specify 3 nodes (comma separated, without spaces)?: " false
-                        	fi
-                        	rook_nodes=${input_variable}
-                	done
-		fi
-	fi
-        save_variable GI_ROOK_NODES "$rook_nodes"
-	if [[ $ics_install == "Y" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
+                worker_wo_db2_name="${worker_name[@]}"
+        fi
+        if [[ $storage_type == "R" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
         then
-                msg "You can force to deploy ICS on strictly defined node list" true
-                while $(check_input $ics_on_list "yn" false)
+                msg "You specified Rook-Ceph as cluster storage" 8
+                msg "You can force to deploy it on strictly defined node list" 8
+                msg "Only disks from specified nodes will be configured as cluster storage" 8
+                while $(check_input "yn" $rook_on_list false)
+                do
+                        get_input "yn" "Would you like to install Rook-Ceph on strictly specified nodes?: " true
+                        rook_on_list=${input_variable^^}
+                done
+                if [ "$rook_on_list" == 'Y' ]
+                then
+                        msg "Available worker nodes: $worker_wo_db2_name" 8
+                        while $(check_input "nodes" $rook_nodes $worker_wo_db2_name 3 "def")
+                        do
+                                if [ ! -z "$GI_ROOK_NODES" ]
+                                then
+                                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ROOK_NODES] or specify 3 nodes (comma separated, without spaces)?: " true "$GI_ROOK_NODES"
+                                else
+                                        get_input "txt" "Specify 3 nodes (comma separated, without spaces)?: " false
+                                fi
+                                rook_nodes=${input_variable}
+                        done
+                fi
+        fi
+	save_variable GI_ROOK_NODES "$rook_nodes"
+	if [[ $storage_type == "O" && $ocs_tainted == 'N' && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
+        then
+                msg "You must specify cluster nodes for OCS deployment" 8
+                msg "These nodes must have additional disk attached for this purpose" 8
+		msg "Available worker nodes: $worker_wo_db2_name" 8
+                while $(check_input "nodes" $ocs_nodes $worker_wo_db2_name 3 "def")
+	        do
+        	        if [ ! -z "$GI_OCS_NODES" ]
+                        then
+                        	get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCS_NODES] or specify 3 nodes (comma separated, without spaces)?: " true "$GI_OCS_NODES"
+                        else
+                                get_input "txt" "Specify 3 nodes (comma separated, without spaces)?: " false
+                        fi
+                        ocs_nodes=${input_variable}
+                done
+        	save_variable GI_OCS_NODES "$ocs_nodes"
+	else
+		save_variable GI_OCS_NODES "$worker_name"
+        fi
+        if [[ $ics_install == "Y" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
+        then
+                msg "You can force to deploy ICS on strictly defined node list" 8
+                while $(check_input "yn" $ics_on_list false)
                 do
                         get_input "yn" "Would you like to install ICS on strictly specified nodes?: " true
                         ics_on_list=${input_variable^^}
                 done
-		if [ "$ics_on_list" == 'Y' ]
-		then
-                	msg "Available worker nodes: $worker_wo_db2_name" true
-                	while $(check_input $ics_nodes "nodes" $worker_wo_db2_name 3 "def")
-                	do
-                        	if [ ! -z "$GI_ICS_NODES" ]
-                        	then
-                                	get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ICS_NODES] or specify 3 nodes (comma separated, without spaces)?: " true "$GI_ICS_NODES"
-                        	else
-                                	get_input "txt" "Specify 3 nodes (comma separated, without spaces)?: " false
-                        	fi
-                        	ics_nodes=${input_variable}
-                	done
-		fi
-        fi
-	save_variable GI_ICS_NODES "$ics_nodes"
-	if [ "$gi_install" == 'Y' ]
-	then
-		IFS=',' read -r -a worker_arr <<< "$worker_name"
-		if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) ]] || [[ ( $db2_tainted == 'N' && "$gi_size" == "values-small" && ${#worker_arr[@]} -gt 5 ) ]] || [[ ( $db2_tainted == 'N' && "$gi_size" == "values-dev" && ${#worker_arr[@]} -gt 4 ) ]]
-		then
-			msg "You can force to deploy GI on strictly defined node list" true
-                	while $(check_input $gi_on_list "yn" false)
-                	do
-                        	get_input "yn" "Would you like to install GI on strictly specified nodes?: " true
-                        	gi_on_list=${input_variable^^}
-                	done
-		fi
-		if [[ $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ]]
-		then
-			no_nodes_2_select=3
-		else
-			[ "$gi_size" == "values-small" ] && no_nodes_2_select=1 || no_nodes_2_select=2
-		fi
-		if [ "$gi_on_list" == 'Y' ]
+                if [ "$ics_on_list" == 'Y' ]
                 then
-			if [ ! -z "$GI_GI_NODES" ]
-			then
-				local previous_node_ar
-				local current_selection
-				IFS=',' read -r -a previous_node_arr <<< "$GI_GI_NODES"
-				IFS=',' read -r -a db2_node_arr <<< "$db2_nodes"
+                        msg "Available worker nodes: $worker_wo_db2_name" 8
+                        while $(check_input "nodes" $ics_nodes $worker_wo_db2_name 3 "def")
+                        do
+                                if [ ! -z "$GI_ICS_NODES" ]
+                                then
+                                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ICS_NODES] or specify 3 nodes (comma separated, without spaces)?: " true "$GI_ICS_NODES"
+                                else
+                                        get_input "txt" "Specify 3 nodes (comma separated, without spaces)?: " false
+                                fi
+                                ics_nodes=${input_variable}
+                        done
+                fi
+        fi
+        save_variable GI_ICS_NODES "$ics_nodes"
+        if [ "$gi_install" == 'Y' ]
+        then
+                IFS=',' read -r -a worker_arr <<< "$worker_name"
+                if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) ]] || [[ ( $db2_tainted == 'N' && "$gi_size" == "values-small" && ${#worker_arr[@]} -gt 5 ) ]] || [[ ( $db2_tainted == 'N' && "$gi_size" == "values-dev" && ${#worker_arr[@]} -gt 4 ) ]]
+                then
+                        msg "You can force to deploy GI on strictly defined node list" 8
+                        while $(check_input "yn" $gi_on_list false)
+                        do
+                                get_input "yn" "Would you like to install GI on strictly specified nodes?: " true
+                                gi_on_list=${input_variable^^}
+                        done
+                fi
+                if [[ $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ]]
+                then
+                        no_nodes_2_select=3
+                else
+                        [ "$gi_size" == "values-small" ] && no_nodes_2_select=1 || no_nodes_2_select=2
+                fi
+                if [ "$gi_on_list" == 'Y' ]
+                then
+                        if [ ! -z "$GI_GI_NODES" ]
+                        then
+                                local previous_node_ar
+                                local current_selection
+                                IFS=',' read -r -a previous_node_arr <<< "$GI_GI_NODES"
+                                IFS=',' read -r -a db2_node_arr <<< "$db2_nodes"
                                 for element in ${db2_node_arr[@]};do previous_node_arr=("${previous_node_arr[@]/$element}");done
-				current_selection=`echo ${previous_node_arr[*]}|tr ' ' ','`
-			fi
-                        msg "DB2 node/nodes: $db2_nodes are already on the list included, additionally you must select minimum $no_nodes_2_select node/nodes from the list below:" true
-			msg "Available worker nodes: $workers_for_gi_selection" true
-                        while $(check_input $gi_nodes "nodes" $workers_for_gi_selection $no_nodes_2_select "max")
+                                current_selection=`echo ${previous_node_arr[*]}|tr ' ' ','`
+                        fi
+                        msg "DB2 node/nodes: $db2_nodes are already on the list included, additionally you must select minimum $no_nodes_2_select node/nodes from the list below:" 8
+                        msg "Available worker nodes: $workers_for_gi_selection" 8
+                        while $(check_input "nodes" $gi_nodes $workers_for_gi_selection $no_nodes_2_select "max")
                         do
                                 if [ ! -z "$GI_GI_NODES" ]
                                 then
@@ -998,17 +1316,17 @@ function get_service_assignment() {
                                 gi_nodes=${input_variable}
                         done
                 fi
-	fi
+        fi
 	save_variable GI_GI_NODES "${db2_nodes},$gi_nodes"
 }
 
 function get_cluster_storage_info() {
-	# add support to point more than one device per node
-	msg "There is assumption that all storage cluster node use this same device specification for storage disk" true
-        msg "In most cases the second boot disk will have specification \"sdb\" or \"nvmne1\"" true
-        msg "The inserted value refers to root path located in /dev" true
-        msg "It means that value sdb refers to /dev/sdb" true
-        while $(check_input "${storage_device}" "txt" 2)
+	msg "Cluster storage information" 7
+        msg "There is assumption that all storage cluster node use this same device specification for storage disk" 8
+        msg "In most cases the second boot disk will have specification \"sdb\" or \"nvmne1\"" 8
+        msg "The inserted value refers to root path located in /dev" 8
+        msg "It means that value sdb refers to /dev/sdb" 8
+        while $(check_input "txt" "${storage_device}" 2)
         do
                 if [ ! -z "$GI_STORAGE_DEVICE" ]
                 then
@@ -1019,16 +1337,16 @@ function get_cluster_storage_info() {
                 storage_device="${input_variable}"
         done
         save_variable GI_STORAGE_DEVICE "$storage_device"
-	msg "Cluster storage devices ($storage_device)  must be this same size on all storage nodes!" true
-	msg "The minimum size of each disk is 100 GB" true
-        while $(check_input "${storage_device_size}" "int" 100 10000000)
+        msg "Cluster storage devices ($storage_device)  must be this same size on all storage nodes!" 8
+        msg "The minimum size of each disk is 100 GB" 8
+        while $(check_input "int" "${storage_device_size}" 100 10000000)
         do
                 if [ ! -z "$GI_STORAGE_DEVICE_SIZE" ]
                 then
-			get_input "txt" "Push <ENTER> to accept the previous choice [$GI_STORAGE_DEVICE_SIZE] or insert cluster storage disk device size (in GB): " true "$GI_STORAGE_DEVICE_SIZE"
-			storage_device_size="$GI_STORAGE_DEVICE_SIZE"
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_STORAGE_DEVICE_SIZE] or insert cluster storage disk device size (in GB): " true "$GI_STORAGE_DEVICE_SIZE"
+                        storage_device_size="$GI_STORAGE_DEVICE_SIZE"
                 else
-			get_input "txt" "Insert cluster storage disk device size (in GB): " false
+                        get_input "txt" "Insert cluster storage disk device size (in GB): " false
                 fi
                 storage_device_size="${input_variable}"
         done
@@ -1036,21 +1354,22 @@ function get_cluster_storage_info() {
 }
 
 function get_inter_cluster_info() {
-	msg "Pods in cluster communicate with one another using private network, use non-default values only if your physical network use IP address space 10.128.0.0/16" true
-	while $(check_input "${ocp_cidr}" "cidr")
+	msg "Inter-node cluster pod communication" 7
+        msg "Pods in cluster communicate with one another using private network, use non-default values only if your physical network use IP address space 10.128.0.0/16" 8
+        while $(check_input "cidr" "${ocp_cidr}")
         do
                 if [ ! -z "$GI_OCP_CIDR" ]
                 then
-			get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCP_CIDR] or insert cluster interconnect CIDR (IP/MASK): " true "$GI_OCP_CIDR"
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCP_CIDR] or insert cluster interconnect CIDR (IP/MASK): " true "$GI_OCP_CIDR"
                 else
                         get_input "txt" "Insert cluster interconnect CIDR (default - 10.128.0.0/16): " true "10.128.0.0/16"
                 fi
                 ocp_cidr="${input_variable}"
         done
         save_variable GI_OCP_CIDR "$ocp_cidr"
-	cidr_subnet=$(echo "$ocp_cidr"|awk -F'/' '{print $2}')
-	msg "Each pod will reserve IP address range from subnet $ocp_cidr, provide this range using subnet mask (must be higher than $cidr_subnet)" true
-        while $(check_input "${ocp_cidr_mask}" "int" $cidr_subnet 27)
+        cidr_subnet=$(echo "$ocp_cidr"|awk -F'/' '{print $2}')
+        msg "Each pod will reserve IP address range from subnet $ocp_cidr, provide this range using subnet mask (must be higher than $cidr_subnet)" 8
+        while $(check_input "int" "${ocp_cidr_mask}" $cidr_subnet 27)
         do
                 if [ ! -z "$GI_OCP_CIDR_MASK" ]
                 then
@@ -1064,53 +1383,55 @@ function get_inter_cluster_info() {
 }
 
 function get_credentials() {
-	local is_ok=true #there is no possibility to send variable with unescaped json
-	if [ $use_air_gap == 'N' ]
-	then
-		msg "Non air-gapped OCP installations requires access to remote image registries located in the Internet" true
-		msg "Access to OCP images is restricted and requires authorization using RedHat account pull secret" true
-		msg "You can get access to your pull secret at this URL - https://cloud.redhat.com/openshift/install/local" true
-		while $is_ok
-		do
-                	if [ ! -z "$GI_RHN_SECRET" ]
-                	then
-				msg "Push <ENTER> to accept the previous choice" true
-				msg "[$GI_RHN_SECRET]" true
-                        	get_input "txt" "or insert RedHat pull secret: " true "$GI_RHN_SECRET"
-                	else
-                        	get_input "txt" "Insert RedHat pull secret: " false
-                	fi
-                	if [ "${input_variable}" ]
-			then
-				echo ${input_variable}|{ jq .auths 2>/dev/null 1>/dev/null ;}
-				[[ $? -eq 0 ]] && is_ok=false
-				rhn_secret="${input_variable}"
-			fi
-        	done
-        	save_variable GI_RHN_SECRET "'${input_variable}'"
-		if [[ $gi_install == 'Y' ]]
-		then
-			msg "Guardium Insights installation requires access to restricted IBM image registries" true
-			msg "You need provide the IBM Cloud container key located at URL - https://myibm.ibm.com/products-services/containerlibrary" true
-			msg "Your account must be entitled to install GI" true
-			while $(check_input "${ibm_secret}" "jwt")
-        		do
-                		if [ ! -z "$GI_IBM_SECRET" ]
-                		then
-					msg "Push <ENTER> to accept the previous choice" true
-					msg "[$GI_IBM_SECRET]" true
-                        		get_input "txt" "or insert IBM Cloud container key: " true "$GI_IBM_SECRET"
-                		else
-                        		get_input "txt" "Insert IBM Cloud container key: " false
-                		fi
-                		ibm_secret="${input_variable}"
-        		done
-        		save_variable GI_IBM_SECRET "'$ibm_secret'"
-		fi
+	local is_ok
+	msg "Collecting all required credentials" 7
+        local is_ok=true #there is no possibility to send variable with unescaped json
+        if [ $use_air_gap == 'N' ]
+        then
+                msg "Non air-gapped OCP installations requires access to remote image registries located in the Internet" 8
+                msg "Access to OCP images is restricted and requires authorization using RedHat account pull secret" 8
+                msg "You can get access to your pull secret at this URL - https://cloud.redhat.com/openshift/install/local" 8
+                while $is_ok
+                do
+                        if [ ! -z "$GI_RHN_SECRET" ]
+                        then
+                                msg "Push <ENTER> to accept the previous choice" 1
+                                msg "[$GI_RHN_SECRET]" 1
+                                get_input "txt" "or insert RedHat pull secret: " true "$GI_RHN_SECRET"
+                        else
+                                get_input "txt" "Insert RedHat pull secret: " false
+                        fi
+                        if [ "${input_variable}" ]
+                        then
+                                echo ${input_variable}|{ jq .auths 2>/dev/null 1>/dev/null ;}
+                                [[ $? -eq 0 ]] && is_ok=false
+                                rhn_secret="${input_variable}"
+                        fi
+                done
+                save_variable GI_RHN_SECRET "'${input_variable}'"
+                if [[ $gi_install == 'Y' ]]
+                then
+                        msg "Guardium Insights installation requires access to restricted IBM image registries" 8
+                        msg "You need provide the IBM Cloud container key located at URL - https://myibm.ibm.com/products-services/containerlibrary" 8
+                        msg "Your account must be entitled to install GI" 8
+                        while $(check_input "jwt" "${ibm_secret}")
+                        do
+                                if [ ! -z "$GI_IBM_SECRET" ]
+                                then
+                                        msg "Push <ENTER> to accept the previous choice" 1
+                                        msg "[$GI_IBM_SECRET]" 1
+                                        get_input "txt" "or insert IBM Cloud container key: " true "$GI_IBM_SECRET"
+                                else
+                                        get_input "txt" "Insert IBM Cloud container key: " false
+                                fi
+                                ibm_secret="${input_variable}"
+                        done
+                        save_variable GI_IBM_SECRET "'$ibm_secret'"
+                fi
 
-	fi
-	msg "Define user name and password of an additional OpenShift administrator" true
-	while $(check_input "${ocp_admin}" "txt" 2)
+        fi
+	msg "Define user name and password of an additional OpenShift administrator" 8
+        while $(check_input "txt" "${ocp_admin}" 2)
         do
                 if [ ! -z "$GI_OCADMIN" ]
                 then
@@ -1121,163 +1442,75 @@ function get_credentials() {
                 ocp_admin="${input_variable}"
         done
         save_variable GI_OCADMIN "$ocp_admin"
-	while $(check_input "${ocp_password}" "txt" 2)
+        while $(check_input "txt" "${ocp_password}" 2)
         do
                 if [ ! -z "$GI_OCADMIN_PWD" ]
                 then
-                        get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_OCADMIN_PWD] or insert OCP $ocp_admin user password" true "$GI_OCADMIN_PWD"
+                        get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_OCADMIN_PWD] or insert OCP $ocp_admin user password: " true "$GI_OCADMIN_PWD"
                 else
-                        get_input "pwd" "Insert OCP $ocp_admin user password" false
+                        get_input "pwd" "Insert OCP $ocp_admin user password: " false
                 fi
                 ocp_password="${input_variable}"
         done
-        save_variable GI_OCADMIN_PWD "'$ocp_password'"
-	if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' ]]
-	then
-		msg "Define ICS admin user password" true
-	        msg "This same account is used by GI for default account with access management role" true
-		while $(check_input "${ics_password}" "txt" 2)
-        	do
-                	if [ ! -z "$GI_ICSADMIN_PWD" ]
-                	then
-                        	get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_ICSADMIN_PWD] or insert ICS admin user password" true "$GI_ICSADMIN_PWD"
-                	else
-                        	get_input "pwd" "Insert OCP admin user password" false
-                	fi
-                	ics_password="${input_variable}"
-        	done
-        	save_variable GI_ICSADMIN_PWD "'$ics_password'"
-	fi
+        save_variable GI_OCADMIN_PWD "'$curr_password'"
+        if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' ]]
+        then
+                msg "Define ICS admin user password" 8
+                msg "This same account is used by GI for default account with access management role" 8
+                while $(check_input "txt" "${ics_password}" 2)
+                do
+                        if [ ! -z "$GI_ICSADMIN_PWD" ]
+                        then
+                                get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_ICSADMIN_PWD] or insert ICS admin user password: " true "$GI_ICSADMIN_PWD"
+                        else
+                                get_input "pwd" "Insert ICS admin user password: " false
+                        fi
+                        ics_password="${input_variable}"
+                done
+                save_variable GI_ICSADMIN_PWD "'$curr_password'"
+        fi
 	if [[ "$install_ldap" == 'Y' ]]
         then
-                msg "Define LDAP users initial password" true
-                while $(check_input "${ldap_password}" "txt" 2)
+                msg "Define LDAP users initial password" 8
+                while $(check_input "txt" "${ldap_password}" 2)
                 do
                         if [ ! -z "$GI_LDAP_USERS_PWD" ]
                         then
-                                get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_LDAP_USERS_PWD] or insert default LDAP users password" true "$GI_LDAP_USERS_PWD"
+                                get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_LDAP_USERS_PWD] or insert default LDAP users password: " true "$GI_LDAP_USERS_PWD"
                         else
-                                get_input "pwd" "Insert default LDAP users password" false
+                                get_input "pwd" "Insert default LDAP users password: " false
                         fi
                         ldap_password="${input_variable}"
                 done
-                save_variable GI_LDAP_USERS_PWD "'$ldap_password'"
-	fi
-}
-
-function validate_certs() {
-	local pre_value_ca
-	local pre_value_app
-	local pre_value_key
-	local ca_cert
-	local app_cert
-	local app_key
-	local label
-	local cert_info
-	case $1 in
-                "ocp")
-			label="OCP"
-			cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"*.apps.${ocp_domain}\""
-                        pre_value_ca="$GI_OCP_IN_CA"
-                        pre_value_app="$GI_OCP_IN_CERT"
-                        pre_value_key="$GI_OCP_IN_KEY"
-                        ;;
-                "ics")
-			label="ICS"
-			cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"cp-console.apps.${ocp_domain}\""
-                        pre_value_ca="$GI_ICS_IN_CA"
-                        pre_value_app="$GI_ICS_IN_CERT"
-                        pre_value_key="$GI_ICS_IN_KEY"
-			;;
-                "gi")
-			label="GI"
-			cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"insights.apps.${ocp_domain}\""
-                        pre_value_ca="$GI_IN_CA"
-                        pre_value_app="$GI_IN_CERT"
-                        pre_value_key="$GI_IN_KEY"
-			;;
-                "*")
-                        exit 1
-                        ;;
-        esac
-	while $(check_input "${ca_cert}" "cert" "ca")
-	do
-		if [ ! -z "$pre_value_ca" ]
-		then
-			get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_ca] or insert the full path to root CA of $label certificate" true "$pre_value_ca"
-		else
-			get_input "txt" "Insert the full path to root CA of $label certificate: " false
-		fi
-		ca_cert="${input_variable}"
-        done
-	msg "$cert_info" true
-	while $(check_input "${app_cert}" "cert" "app" "$ca_cert")
-	do
-		if [ ! -z "$pre_value_app" ]
-		then
-			get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_app] or insert the full path to $label certificate" true "$pre_value_app"
-		else
-			get_input "txt" "Insert the full path to $label certificate: " false
-		fi
-		app_cert="${input_variable}"
-        done
-	while $(check_input "${app_key}" "cert" "key" "$app_cert")
-	do
-		if [ ! -z "$pre_value_key" ]
-		then
-			get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_key] or insert the full path to $label private key" true "$pre_value_key"
-		else
-			get_input "txt" "Insert the full path to $label private key: " false
-		fi
-		app_key="${input_variable}"
-        done
-
-	case $1 in
-                "ocp")
-			save_variable GI_OCP_IN_CA "$ca_cert"
-			save_variable GI_OCP_IN_CERT "$app_cert"
-			save_variable GI_OCP_IN_KEY "$app_key"
-                        ;;
-                "ics")
-			save_variable GI_ICS_IN_CA "$ca_cert"
-			save_variable GI_ICS_IN_CERT "$app_cert"
-			save_variable GI_ICS_IN_KEY "$app_key"
-                        ;;
-                "gi")
-			save_variable GI_IN_CA "$ca_cert"
-			save_variable GI_IN_CERT "$app_cert"
-			save_variable GI_IN_KEY "$app_key"
-			;;
-                "*")
-                        exit 1
-                        ;;
-        esac
+                save_variable GI_LDAP_USERS_PWD "'$curr_password'"
+        fi
 }
 
 function get_certificates() {
-	msg "You can replace self-signed certicates for UI's by providing your own created by trusted CA" true
-	msg "Certificates must be uploaded to bastion to provide full path to them" true
-	msg "CA cert, service cert and private key files must be stored separately in PEM format" true
-	while $(check_input "$ocp_ext_ingress" "yn" false)
+	msg "Collecting certificates information" 7
+        msg "You can replace self-signed certicates for UI's by providing your own created by trusted CA" 8
+        msg "Certificates must be uploaded to bastion to provide full path to them" 8
+        msg "CA cert, service cert and private key files must be stored separately in PEM format" 8
+        while $(check_input "yn" "$ocp_ext_ingress" false)
         do
-	        get_input "yn" "Would you like to install own certificates for OCP?: " true
+                get_input "yn" "Would you like to install own certificates for OCP?: " true
                 ocp_ext_ingress=${input_variable^^}
-	done
-	save_variable GI_OCP_IN $ocp_ext_ingress
-	[ $ocp_ext_ingress == 'Y' ] && validate_certs "ocp"
-	if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' ]]
+        done
+        save_variable GI_OCP_IN $ocp_ext_ingress
+        [ $ocp_ext_ingress == 'Y' ] && validate_certs "ocp"
+        if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' ]]
         then
-		while $(check_input "$ics_ext_ingress" "yn" false)
-        	do
-                	get_input "yn" "Would you like to install own certificates for ICP?: " true
-                	ics_ext_ingress=${input_variable^^}
-        	done
-        	save_variable GI_ICS_IN $ics_ext_ingress
-        	[ $ics_ext_ingress == 'Y' ] && validate_certs "ics"
-	fi
-	if [[ "$gi_install" == 'Y' ]]
+                while $(check_input "yn" "$ics_ext_ingress" false)
+                do
+                        get_input "yn" "Would you like to install own certificates for ICP?: " true
+                        ics_ext_ingress=${input_variable^^}
+                done
+                save_variable GI_ICS_IN $ics_ext_ingress
+                [ $ics_ext_ingress == 'Y' ] && validate_certs "ics"
+        fi
+        if [[ "$gi_install" == 'Y' ]]
         then
-                while $(check_input "$gi_ext_ingress" "yn" false)
+                while $(check_input "yn" "$gi_ext_ingress" false)
                 do
                         get_input "yn" "Would you like to install own certificates for GI?: " true
                         gi_ext_ingress=${input_variable^^}
@@ -1287,9 +1520,100 @@ function get_certificates() {
         fi
 }
 
+function validate_certs() {
+        local pre_value_ca
+        local pre_value_app
+        local pre_value_key
+        local ca_cert
+        local app_cert
+        local app_key
+        local label
+        local cert_info
+        case $1 in
+                "ocp")
+                        label="OCP"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"*.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_OCP_IN_CA"
+                        pre_value_app="$GI_OCP_IN_CERT"
+                        pre_value_key="$GI_OCP_IN_KEY"
+                        ;;
+                "ics")
+                        label="ICS"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"cp-console.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_ICS_IN_CA"
+                        pre_value_app="$GI_ICS_IN_CERT"
+                        pre_value_key="$GI_ICS_IN_KEY"
+                        ;;
+                "gi")
+                        label="GI"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"insights.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_IN_CA"
+                        pre_value_app="$GI_IN_CERT"
+                        pre_value_key="$GI_IN_KEY"
+                        ;;
+                "*")
+                        display_error "Unknown cert information"
+                        ;;
+        esac
+	while $(check_input "cert" "${ca_cert}" "ca")
+        do
+                if [ ! -z "$pre_value_ca" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_ca] or insert the full path to root CA of $label certificate: " true "$pre_value_ca"
+                else
+                        get_input "txt" "Insert the full path to root CA of $label certificate: " false
+                fi
+                ca_cert="${input_variable}"
+        done
+        msg "$cert_info" 8
+        while $(check_input "cert" "${app_cert}" "app" "$ca_cert")
+        do
+                if [ ! -z "$pre_value_app" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_app] or insert the full path to $label certificate: " true "$pre_value_app"
+                else
+                        get_input "txt" "Insert the full path to $label certificate: " false
+                fi
+                app_cert="${input_variable}"
+        done
+        while $(check_input "cert" "${app_key}" "key" "$app_cert")
+        do
+                if [ ! -z "$pre_value_key" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_key] or insert the full path to $label private key: " true "$pre_value_key"
+                else
+                        get_input "txt" "Insert the full path to $label private key: " false
+                fi
+                app_key="${input_variable}"
+        done
+
+        case $1 in
+                "ocp")
+                        save_variable GI_OCP_IN_CA "$ca_cert"
+                        save_variable GI_OCP_IN_CERT "$app_cert"
+                        save_variable GI_OCP_IN_KEY "$app_key"
+                        ;;
+                "ics")
+                        save_variable GI_ICS_IN_CA "$ca_cert"
+                        save_variable GI_ICS_IN_CERT "$app_cert"
+                        save_variable GI_ICS_IN_KEY "$app_key"
+                        ;;
+                "gi")
+                        save_variable GI_IN_CA "$ca_cert"
+                        save_variable GI_IN_CERT "$app_cert"
+                        save_variable GI_IN_KEY "$app_key"
+                        ;;
+                "*")
+                        display_error "Unknown cert information"
+                        ;;
+        esac
+}
+
 function get_gi_options() {
-	msg "Guardium Insights deployment requires some decisions such as storage size, functions enabled" true
-	while $(check_input "${gi_namespace}" "txt" 3 10)
+	local change_ssh_host
+	msg "Collecting Guardium Insights parameters" 7
+        msg "Guardium Insights deployment requires some decisions such as storage size, functions enabled" 8
+        while $(check_input "txt" "${gi_namespace}" 3 10)
         do
                 if [ ! -z "$GI_NAMESPACE_GI" ]
                 then
@@ -1299,176 +1623,215 @@ function get_gi_options() {
                 fi
                 gi_namespace="${input_variable}"
         done
-	save_variable GI_NAMESPACE_GI $gi_namespace
-	while $(check_input "$db2_enc" "yn" false)
+        save_variable GI_NAMESPACE_GI $gi_namespace
+        while $(check_input "yn" "$db2_enc" false)
         do
                 get_input "yn" "Should be DB2u tablespace encrypted?: " true
                 db2_enc=${input_variable^^}
         done
-	save_variable GI_DB2_ENCRYPTED $db2_enc
-	if [[ $gi_version_selected -ge 3 ]]
+        save_variable GI_DB2_ENCRYPTED $db2_enc
+        if [[ $gi_version_selected -ge 3 ]]
         then
-		while $(check_input "$stap_supp" "yn" false)
-        	do
-                	get_input "yn" "Should be enabled the direct streaming from STAP's?: " false
-                	stap_supp=${input_variable^^}
-        	done
-        	save_variable GI_STAP_STREAMING $stap_supp
+                while $(check_input "yn" "$stap_supp" false)
+                do
+                        get_input "yn" "Should be enabled the direct streaming from STAP's?: " false
+                        stap_supp=${input_variable^^}
+                done
+                save_variable GI_STAP_STREAMING $stap_supp
 
-	fi
-	get_gi_pvc_size
+        fi
+        get_gi_pvc_size
+	msg "GDP integration" 7
+	msg "One of the method to send events to Guardium is integration with Guardium Data Protection" 8
+	msg "In this case the selected collectors will transfer to GI audited events by copying datamarts to GI ssh service" 8
+	msg "As a default the collector sends data to cluster proxy on bastion using random port range 30000-32768" 8
+        while $(check_input "yn" "$change_ssh_host" false)
+        do
+	        get_input "yn" "Would you like to send datamarts using another proxy server?: " false
+                change_ssh_host=${input_variable^^}
+        done
+	if [[ $change_ssh_host == 'Y' ]]
+	then
+		while $(check_input "ip" $ssh_host)
+		do
+			get_input "txt" "Insert IP address of Load Balancer to which datamarts should be redirected: " false
+			ssh_host=${input_variable}
+		done
+	       	save_variable GI_SSH_HOST $ssh_host
+	else
+		save_variable GI_SSH_HOST "0.0.0.0"
+        fi
+	msg "You can define static port on load balancer to send datamarts" 8
+	msg "ssh port change is managed automatically on HA Proxy on bastion, in case of use the separate appliance you must provide the port defined on it" 8
+        while $(check_input "yn" "$change_ssh_port" false)
+        do
+                get_input "yn" "Would you like to set ssh port used to send datamarts?: " true
+                change_ssh_port=${input_variable^^}
+        done
+        if [[ $change_ssh_port == 'Y' ]]
+        then
+                while $(check_input "int" $ssh_port 1024 65635)
+                do
+                        get_input "txt" "Insert port number used on Load Balancer to transfer datamarts to GI: " true
+                        ssh_port=${input_variable}
+                done
+                save_variable GI_SSH_PORT $ssh_port
+	else
+		save_variable GI_SSH_PORT "0"
+        fi
 }
 
 function pvc_sizes() {
-	local global_var
-	local global_var_val
-	local curr_value
-	local size_min=20
-	local size_max=1000000
-	local m_desc
-	local m_ask
-	local v_aux1
-	case $1 in
-		"db2-data")
-			size_min=150
-			[[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
-			m_desc="DB2 DATA pvc - stores activity events, installation proces will create $v_aux1 PVC/PVC's, each instance contains different data"
-			m_ask="DB2 DATA pvc, minium size $size_min GB"
-			global_var="GI_DATA_STORAGE_SIZE"
-			global_var_val="$GI_DATA_STORAGE_SIZE"
-			;;
-		"db2-meta")
-			size_min=100
-			m_desc="DB2 METADATA pvc - stores DB2 shared, temporary, tool files, installation proces will create 1 PVC"
-			m_ask="DB2 METADATA pvc, minimum size $size_min GB"
-			global_var="GI_METADATA_STORAGE_SIZE"
-			global_var_val="$GI_METADATA_STORAGE_SIZE"
-			;;
-		"db2-logs")
-			size_min=100
-			[[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
-			m_desc="DB2 ACTIVELOG pvc - stores DB2 transactional logs, installation process will create $v_aux1 PVC/PVC's, each instance contains different data"
-			m_ask="DB2 ACTIVELOG pvc, minium size $size_min GB"
-			global_var="GI_ACTIVELOGS_STORAGE_SIZE"
-			global_var_val="$GI_ACTIVELOGS_STORAGE_SIZE"
-			;;
-		"mongo-data")
-			size_min=50
-			[[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
-			m_desc="MONGODB DATA pvc - stores MongoDB data related to GI metadata and reports, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
-			m_ask="MONGODB DATA pvc, minium size $size_min GB"
-			global_var="GI_MONGO_DATA_STORAGE_SIZE"
-			global_var_val="$GI_MONGO_DATA_STORAGE_SIZE"
-			;;
-		"mongo-logs")
-			size_min=10
-			[[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
-			m_desc="MONGODB LOG pvc - stores MongoDB logs, installation process will create $v_aux1 PVC/PVC's, each instance contains different data"
-			m_ask="MONGODB LOG pvc, minium size $size_min GB"
-			global_var="GI_MONGO_METADATA_STORAGE_SIZE"
-			global_var_val="$GI_MONGO_METADATA_STORAGE_SIZE"
-			;;
-		"kafka")
-			size_min=50
-			[[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
-			m_desc="KAFKA pvc - stores ML and Streaming data for last 7 days, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
-			m_ask="KAFKA pvc, minium size $size_min GB"
-			global_var="GI_KAFKA_STORAGE_SIZE"
-			global_var_val="$GI_KAFKA_STORAGE_SIZE"
-			;;
-		"zookeeper")
-			size_min=5
-			[[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
-			m_desc="ZOOKEEPER pvc - stores Kafka configuration and health data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
-			m_ask="ZOOKEEPER pvc, minium size $size_min GB"
-			global_var="GI_ZOOKEEPER_STORAGE_SIZE"
-			global_var_val="$GI_ZOOKEEPER_STORAGE_SIZE"
-			;;
-		"*")
-			exit 1
-			;;
-	esac
-	while $(check_input "${curr_value}" "int" $size_min $size_max)
-	do
-		msg "$m_desc" true
-		if [ ! -z "$global_var_val" ]
-		then
-			get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_val] or insert size of $m_ask: " true "$global_var_val"
-		else
-			get_input "txt" "Insert size of $m_ask: " false
-		fi
-		curr_value="${input_variable}"
-	done
-	save_variable $global_var $curr_value
+        local global_var
+        local global_var_val
+        local curr_value
+        local size_min=20
+        local size_max=1000000
+        local m_desc
+        local m_ask
+        local v_aux1
+        case $1 in
+                "db2-data")
+                        size_min=200
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
+                        m_desc="DB2 DATA pvc - stores activity events, installation proces will create $v_aux1 PVC/PVC's, each instance contains different data"
+                        m_ask="DB2 DATA pvc, minium size $size_min GB"
+                        global_var="GI_DATA_STORAGE_SIZE"
+                        global_var_val="$GI_DATA_STORAGE_SIZE"
+                        ;;
+                "db2-meta")
+                        size_min=150
+                        m_desc="DB2 METADATA pvc - stores DB2 shared, temporary, tool files, installation proces will create 1 PVC"
+                        m_ask="DB2 METADATA pvc, minimum size $size_min GB"
+                        global_var="GI_METADATA_STORAGE_SIZE"
+                        global_var_val="$GI_METADATA_STORAGE_SIZE"
+                        ;;
+                "db2-logs")
+                        size_min=150
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
+                        m_desc="DB2 ACTIVELOG pvc - stores DB2 transactional logs, installation process will create $v_aux1 PVC/PVC's, each instance contains different data"
+                        m_ask="DB2 ACTIVELOG pvc, minium size $size_min GB"
+                        global_var="GI_ACTIVELOGS_STORAGE_SIZE"
+                        global_var_val="$GI_ACTIVELOGS_STORAGE_SIZE"
+                        ;;
+                "mongo-data")
+                        size_min=50
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="MONGODB DATA pvc - stores MongoDB data related to GI metadata and reports, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_ask="MONGODB DATA pvc, minium size $size_min GB"
+                        global_var="GI_MONGO_DATA_STORAGE_SIZE"
+                        global_var_val="$GI_MONGO_DATA_STORAGE_SIZE"
+                        ;;
+                "mongo-logs")
+                        size_min=10
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="MONGODB LOG pvc - stores MongoDB logs, installation process will create $v_aux1 PVC/PVC's, each instance contains different data"
+                        m_ask="MONGODB LOG pvc, minium size $size_min GB"
+                        global_var="GI_MONGO_METADATA_STORAGE_SIZE"
+                        global_var_val="$GI_MONGO_METADATA_STORAGE_SIZE"
+                        ;;
+                "kafka")
+                        size_min=50
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="KAFKA pvc - stores ML and Streaming data for last 7 days, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_ask="KAFKA pvc, minium size $size_min GB"
+                        global_var="GI_KAFKA_STORAGE_SIZE"
+                        global_var_val="$GI_KAFKA_STORAGE_SIZE"
+                        ;;
+                "zookeeper")
+                        size_min=5
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="ZOOKEEPER pvc - stores Kafka configuration and health data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_ask="ZOOKEEPER pvc, minium size $size_min GB"
+                        global_var="GI_ZOOKEEPER_STORAGE_SIZE"
+                        global_var_val="$GI_ZOOKEEPER_STORAGE_SIZE"
+                        ;;
+                "*")
+                        display_error "Wrong PVC type name"
+                        ;;
+        esac
+	while $(check_input "int" "${curr_value}" $size_min $size_max)
+        do
+                msg "$m_desc" 8
+                if [ ! -z "$global_var_val" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_val] or insert size of $m_ask: " true "$global_var_val"
+                else
+                        get_input "txt" "Insert size of $m_ask: " false
+                fi
+                curr_value="${input_variable}"
+        done
+        save_variable $global_var $curr_value
 }
 
 function get_gi_pvc_size() {
-	local custom_pvc
-	msg "The cluster storage contains 3 disks - ${storage_device_size} GB each" true
-	[[ "storage_type" == 'O' ]] && msg "OCS creates 3 copies of data chunks so you have ${storage_device_size} of GB effective space for PVC's" true || msg "Rook-Ceph creates 2 copies of data chunks so you have $((2*${storage_device_size})) GB effective space for PVC's" true
-	while $(check_input "$custom_pvc" "yn")
+        local custom_pvc
+        msg "The cluster storage contains 3 disks - ${storage_device_size} GB each" 8
+        [[ "storage_type" == 'O' ]] && msg "OCS creates 3 copies of data chunks so you have ${storage_device_size} of GB effective space for PVC's" 8 || msg "Rook-Ceph creates 2 copies of data chunks so you have $((2*${storage_device_size})) GB effective space for PVC's" 8
+        while $(check_input "yn" "$custom_pvc")
         do
-		get_input "yn" "Would you like customize Guardium Insights PVC sizes (default) or use default settings?: " false
+                get_input "yn" "Would you like customize Guardium Insights PVC sizes (default) or use default settings?: " false
                 custom_pvc=${input_variable^^}
         done
-	if [ $custom_pvc == 'Y' ]
-	then
-		pvc_arr=("db2-data" "db2-meta" "db2-logs" "mongo-data" "mongo-logs" "kafka" "zookeeper")
-		for pvc in ${pvc_arr[@]};do pvc_sizes $pvc;done
-	else
-		local pvc_variables=("GI_DATA_STORAGE_SIZE" "GI_METADATA_STORAGE_SIZE" "GI_ACTIVELOGS_STORAGE_SIZE" "GI_MONGO_DATA_STORAGE_SIZE" "GI_MONGO_METADATA_STORAGE_SIZE" "GI_KAFKA_STORAGE_SIZE" "GI_ZOOKEEPER_STORAGE_SIZE")
-		for pvc in ${pvc_variables[@]};do save_variable $pvc 0;done
-	fi
+        if [ $custom_pvc == 'Y' ]
+        then
+                pvc_arr=("db2-data" "db2-meta" "db2-logs" "mongo-data" "mongo-logs" "kafka" "zookeeper")
+                for pvc in ${pvc_arr[@]};do pvc_sizes $pvc;done
+        else
+                local pvc_variables=("GI_DATA_STORAGE_SIZE" "GI_METADATA_STORAGE_SIZE" "GI_ACTIVELOGS_STORAGE_SIZE" "GI_MONGO_DATA_STORAGE_SIZE" "GI_MONGO_METADATA_STORAGE_SIZE" "GI_KAFKA_STORAGE_SIZE" "GI_ZOOKEEPER_STORAGE_SIZE")
+                for pvc in ${pvc_variables[@]};do save_variable $pvc 0;done
+        fi
 }
 
 function get_ics_options() {
-	local operand
-	local curr_op
-	msg "ICS provides set of operands which can be installed during installation, some of them are required and others can be used by IBM Cloud Packs installed on the top of it" true
-	msg "Define which operands should be additionally installed" true
-	local operand_list=("Zen,N" "Monitoring,Y" "Event_Streams,Y" "Logging,Y" "MongoDB,Y" "User_Data_Services",N" ""Apache_Spark,N" "IBM_API_Catalog,N" "Business_Teams,N")
-	declare -a ics_ops
-	for operand in ${operand_list[@]}
-	do
-		unset op_option
-		IFS="," read -r -a curr_op <<< $operand
-		while $(check_input "$op_option" "yn")
-		do
-			get_input "yn"  "Would you like to install ${curr_op[0]//_/ } operand: " $([[ "${curr_op[1]}" != 'Y' ]] && echo true || echo false)
-                	op_option=${input_variable^^}
-		done
-		ics_ops+=($op_option)
-	done
-	save_variable GI_ICS_OPERANDS $(echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1')
+	msg "Collecting Common Services parameters" 7
+        local operand
+        local curr_op
+        msg "ICS provides set of operands which can be installed during installation, some of them are required and others can be used by IBM Cloud Packs installed on the top of it" 8
+        msg "Define which operands should be additionally installed" 8
+        local operand_list=("Zen,N" "Monitoring,Y" "Event_Streams,Y" "Logging,Y" "MongoDB,Y" "User_Data_Services",N" ""Apache_Spark,N" "IBM_API_Catalog,N" "Business_Teams,N")
+        declare -a ics_ops
+        for operand in ${operand_list[@]}
+        do
+                unset op_option
+                IFS="," read -r -a curr_op <<< $operand
+                while $(check_input "yn" "$op_option")
+                do
+                        get_input "yn"  "Would you like to install ${curr_op[0]//_/ } operand: " $([[ "${curr_op[1]}" != 'Y' ]] && echo true || echo false)
+                        op_option=${input_variable^^}
+                done
+                ics_ops+=($op_option)
+        done
+        save_variable GI_ICS_OPERANDS $(echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1')
 }
 
 function get_ldap_options() {
-	msg "OpenLDAP deployment parameters"
-	while $(check_input "$ldap_depl" "cs")
+        msg "Collecting OpenLDAP deployment parameters" 7
+        while $(check_input "cs" "$ldap_depl")
         do
-		get_input "cs" "Decide where LDAP instance should be deployed as Container on OpenShift (default) or as Standalone installation on bastion:? (\e[4mC\e[0m)ontainer/Ba(s)tion " true
+                get_input "cs" "Decide where LDAP instance should be deployed as Container on OpenShift (default) or as Standalone installation on bastion:? (\e[4mC\e[0m)ontainer/Ba(s)tion " true
 
                 ldap_depl=${input_variable^^}
         done
-	save_variable GI_LDAP_DEPLOYMENT $ldap_depl
-	msg "Define LDAP domain distinguished name, only DC components are allowed" true
-        while $(check_input "${ldap_domain}" "ldap_domain")
+        save_variable GI_LDAP_DEPLOYMENT $ldap_depl
+        msg "Define LDAP domain distinguished name, only DC components are allowed" 8
+        while $(check_input "ldap_domain" "${ldap_domain}")
         do
-        	if [ ! -z "$GI_LDAP_DOMAIN" ]
-        	then
-	        	get_input "txt" "Push <ENTER> to accept the previous choice [$GI_LDAP_DOMAIN] or insert LDAP organization domain DN: " true "$GI_LDAP_DOMAIN"
-        	else
-                	get_input "txt" "Insert LDAP organization domain DN (for example: DC=io,DC=priv): " false
-        	fi
+                if [ ! -z "$GI_LDAP_DOMAIN" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_LDAP_DOMAIN] or insert LDAP organization domain DN: " true "$GI_LDAP_DOMAIN"
+                else
+                        get_input "txt" "Insert LDAP organization domain DN (for example: DC=io,DC=priv): " false
+                fi
                         ldap_domain="${input_variable}"
         done
         save_variable GI_LDAP_DOMAIN "'$ldap_domain'"
-	msg "Provide list of users which will be created in OpenLDAP instance" true
-        while $(check_input "${ldap_users}" "users_list")
+        msg "Provide list of users which will be created in OpenLDAP instance" 8
+        while $(check_input "users_list" "${ldap_users}" )
         do
                 if [ ! -z "$GI_LDAP_USERS" ]
                 then
-			get_input "txt" "Push <ENTER> to accept the previous choice [$GI_LDAP_USERS] or insert comma separated list of LDAP users (without spaces): " true "$GI_LDAP_USERS"
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_LDAP_USERS] or insert comma separated list of LDAP users (without spaces): " true "$GI_LDAP_USERS"
                 else
                         get_input "txt" "Insert comma separated list of LDAP users (without spaces): " false
                 fi
@@ -1478,21 +1841,22 @@ function get_ldap_options() {
 }
 
 function configure_os_for_proxy() {
-	msg "To support installation over Proxy some additional information must be gathered and bastion network services reconfiguration" true
-	msg "HTTP Proxy IP address" true
-	while $(check_input "${proxy_ip}" "ip")
+	msg "Configuring proxy settings" 7
+        msg "To support installation over Proxy some additional information must be gathered and bastion network services reconfiguration" 8
+        msg "HTTP Proxy IP address" 8
+        while $(check_input "ip" "${proxy_ip}")
         do
                 if [[ ! -z "$GI_PROXY_URL" && "$GI_PROXY_URL" != "NO_PROXY" ]]
                 then
-			local saved_proxy_ip=$(echo "$GI_PROXY_URL"|awk -F':' '{print $1}')
+                        local saved_proxy_ip=$(echo "$GI_PROXY_URL"|awk -F':' '{print $1}')
                         get_input "txt" "Push <ENTER> to accept the previous choice [$saved_proxy_ip] or insert IP address of Proxy server: " true "$saved_proxy_ip"
                 else
                         get_input "txt" "Insert IP address of Proxy server: " false
                 fi
                         proxy_ip="${input_variable}"
         done
-	msg "HTTP Proxy port" true
-        while $(check_input "${proxy_port}" "int" 1024 65535)
+        msg "HTTP Proxy port" 8
+        while $(check_input "int" "${proxy_port}" 1024 65535)
         do
                 if [[ ! -z "$GI_PROXY_URL" && "$GI_PROXY_URL" != "NO_PROXY" ]]
                 then
@@ -1503,19 +1867,19 @@ function configure_os_for_proxy() {
                 fi
                         proxy_port="${input_variable}"
         done
-	msg "You can exclude from proxy redirection the access to the intranet subnets" true
-	no_proxy="init_value"
-	while $(check_input "${no_proxy}" "cidr_list" true)
+        msg "You can exclude from proxy redirection the access to the intranet subnets" 8
+        no_proxy="init_value"
+        while $(check_input "cidr_list" "${no_proxy}" true)
         do
                         get_input "txt" "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxied (do not need provide here cluster addresses): " false
                         no_proxy="${input_variable}"
         done
         no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy"
-        msg "Your proxy settings are:" true
-        msg "Proxy URL: http://$proxy_ip:$proxy_port" true
-	msg "System will not use proxy for: $no_proxy" true
-        msg "Setting your HTTP proxy environment on bastion" true
-        msg "- Modyfying /etc/profile" true
+        msg "Your proxy settings are:" 8
+        msg "Proxy URL: http://$proxy_ip:$proxy_port" 8
+        msg "System will not use proxy for: $no_proxy" 8
+        msg "Setting your HTTP proxy environment on bastion" 8
+        msg "- Modyfying /etc/profile" 8
         cp -f /etc/profile /etc/profile.gi_no_proxy
         if [[ `cat /etc/profile | grep "export http_proxy=" | wc -l` -ne 0 ]]
         then
@@ -1541,7 +1905,7 @@ function configure_os_for_proxy() {
         else
                 echo "export no_proxy=\"$no_proxy\"" >> /etc/profile
         fi
-        msg "- Add proxy settings to DNF config file" true
+        msg "- Add proxy settings to DNF config file" 8
         cp -f /etc/dnf/dnf.conf /etc/dnf/dnf.conf.gi_no_proxy
         if [[ `cat /etc/dnf/dnf.conf | grep "proxy=" | wc -l` -ne 0 ]]
         then
@@ -1549,12 +1913,13 @@ function configure_os_for_proxy() {
         else
                 echo "proxy=http://$proxy_ip:$proxy_port" >> /etc/dnf/dnf.conf
         fi
-	save_variable GI_NOPROXY_NET "$no_proxy"
-	save_variable GI_PROXY_URL "$proxy_ip:$proxy_port"
+        save_variable GI_NOPROXY_NET "$no_proxy"
+        save_variable GI_PROXY_URL "$proxy_ip:$proxy_port"
 }
 
 function unset_proxy_settings() {
-	if [[ -f /etc/profile.gi_no_proxy ]]
+	msg "Configuring proxy settings" 7
+        if [[ -f /etc/profile.gi_no_proxy ]]
         then
                 mv -f /etc/profile.gi_no_proxy /etc/profile
         fi
@@ -1562,150 +1927,89 @@ function unset_proxy_settings() {
         then
                 mv -f /etc/dnf/dnf.conf.gi_no_proxy /etc/dnf/dnf.conf
         fi
-	save_variable GI_PROXY_URL "NO_PROXY"
-
+        save_variable GI_PROXY_URL "NO_PROXY"
 }
 
 function create_cluster_ssh_key() {
-	msg "*** Add a new RSA SSH key ***" true
-	cluster_id=$(mktemp -u -p ~/.ssh/ cluster_id_rsa.XXXXXXXXXXXX)
-	msg "*** Cluster key: ~/.ssh/${cluster_id}, public key: ~/.ssh/${cluster_id}.pub ***" true
-	ssh-keygen -N '' -f ${cluster_id} -q <<< y > /dev/null
-	echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
-	cat ${cluster_id}.pub >> /root/.ssh/authorized_keys
-	save_variable GI_SSH_KEY "${cluster_id}"
-	msg "Save SSH keys names: ${cluster_id} and ${cluster_id}.pub, each init.sh execution create new with random name" true
+        msg "Add a new RSA SSH key" 7
+        cluster_id=$(mktemp -u -p ~/.ssh/ cluster_id_rsa.XXXXXXXXXXXX)
+        msg "*** Cluster key: ~/.ssh/${cluster_id}, public key: ~/.ssh/${cluster_id}.pub ***" 8
+        ssh-keygen -N '' -f ${cluster_id} -q <<< y > /dev/null
+        echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
+        cat ${cluster_id}.pub >> /root/.ssh/authorized_keys
+        save_variable GI_SSH_KEY "${cluster_id}"
+        msg "Save SSH keys names: ${cluster_id} and ${cluster_id}.pub, each init.sh execution create new key with random name" 8
 }
 
-function setup_online_installation() {
-	msg "*** Updating Fedora to have up to date software packages ***" true
-        dnf -qy update
-        msg "*** Installing Ansible and other Fedora packages ***" true
-	local soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bootimgs" "chrony" "dnsmasq" "unzip" "wget" "jq" "httpd-tools" "policycoreutils-python-utils" "python3-ldap" "openldap-servers" "openldap-clients" "pip" "skopeo")
-	for package in "${soft[@]}"
+function get_network_architecture {
+	msg "Network subnet assignment for OCP nodes" 7
+	msg "OpenShift cluster nodes can be located in the different subnets" 8
+	msg "If you plan to place individual nodes in separate subnets it is necessary to ensure that DHCP requests are forwarded to the bastion ($bastion_ip) using DHCP relay" 8
+	msg "It is also recommended to place the bastion outside the subnets used by the cluster" 8
+	msg "If you cannot setup DHCP relay in your network, all cluster nodes and bastion must be located in this same subnet (DHCP broadcast network)" 8
+	while $(check_input "yn" "$one_subnet")
+        do
+                get_input "yn"  "Would you like to place the cluster nodes in one subnet?: " false
+                one_subnet=${input_variable^^}
+        done
+        save_variable GI_ONE_SUBNET $one_subnet
+}
+
+function get_subnets {
+	local i
+	local gtws=()
+	local ip_ranges=()
+	msg "Collecting OCP cluster subnets" 7
+	msg "Number of subnets used by cluster" 8
+	while $(check_input "int" ${number_dhcp_subnets} 1 10)
+        do
+	        get_input "txt" "Insert number of subnets used by cluster nodes: " false
+        	number_dhcp_subnets=${input_variable}
+        done
+	msg "For each subnet you must provide the IP address range to serve by DHCP server on bastion and subnet default gateway" 8
+	for i in $(seq 1 $number_dhcp_subnets)
 	do
-		msg " - installing $package ..." true
-		dnf -qy install $package &>/dev/null
-		[[ $? -ne 0 ]] && exit 1
+		unset l_gtw
+		while $(check_input "ip" ${l_gtw})
+        	do
+                       	get_input "txt" "Insert default gateway IP address of vlan#${i}: " false
+                	l_gtw=${input_variable}
+        	done
+		gtws+=($l_gtw)
+		unset l_range
+		while $(check_input "ip_range" ${l_range})
+                do
+			get_input "txt" "Insert IP address range (in format x.x.x.x-y.y.y.y) to serve by bastion DHCP server for vlan#${i}: " false
+                        l_range=${input_variable}
+                done
+		ip_ranges+=($l_range)
 	done
-        msg "*** Installing Python packages ***" true
-	local python_soft=("passlib" "dnspython" "beautifulsoup4")
-	for package in "${python_soft[@]}"
-	do
-		msg " - installing $package ..." true
-		[[ $use_proxy == 'D' ]] && pip3 install "$package" || pip3 install "$package" --proxy http://$proxy_ip:$proxy_port
-		[[ $? -ne 0 ]] && exit 1
-	done
-        msg "*** Configuring Ansible ***" true
-        mkdir -p /etc/ansible
-        [[ $use_proxy == 'P' ]] && echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts || echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
-        echo "pullSecret: '$rhn_secret'" > scripts/pull_secret.tmp
-}
-
-function setup_offline_installation() {
-	msg "Offline installation requires setup the local image repository on bastion" true
-	while $(check_input "${repo_admin}" "txt" 1)
-        do
-                if [[ ! -z "$GI_REPO_USER" ]]
-                then
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_REPO_USER] or insert local registry username: " true "$GI_REPO_USER"
-                else
-			get_input "txt" "Insert local registry username (default - repoadmin): " true "repoadmin"
-                fi
-                        repo_admin="${input_variable}"
-        done
-	save_variable GI_REPO_USER $repo_admin
-	while $(check_input "${repo_admin_pwd}" "txt" 2)
-        do
-                if [ ! -z "$GI_REPO_USER_PWD" ]
-                then
-                        get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_REPO_USER_PWD] or insert new local image registry $repo_admin user password" true "$GI_REPO_USER_PWD"
-                else
-                        get_input "pwd" "Insert OCP $ocp_admin user password" false
-                fi
-                repo_admin_pwd="${input_variable}"
-        done
-        save_variable GI_REPO_USER_PWD "'$repo_admin_pwd'"
-	msg "Offline installation requires installation archives preparation using preinstall scripts" true
-	msg "Archives must be copied to bastion before installation" true
-	while $(check_input "${gi_archives}" "txt" 2)
-        do
-                if [[ ! -z "$GI_ARCHIVES_DIR" ]]
-                then
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ARCHIVES_DIR] or insert the full path to installation archives: " true "$GI_ARCHIVES_DIR"
-                else
-			get_input "txt" "Insert full path to installation archives (default location - $GI_HOME/download): " true "$GI_HOME/download"
-                fi
-                        gi_archives="${input_variable}"
-        done
-	save_variable GI_ARCHIVES_DIR "$gi_archives"	
-	mkdir $GI_TEMP
-        msg "*** Check OS files archive existence ***" true
-        if [[ `ls $gi_archives/os*.tar 2>/dev/null|wc -l` -ne 1 ]]
-        then
-                echo "You did not upload os-<version>.tar to $gi_archives directory on bastion"
-                exit 1
-        fi
-        msg "*** Checking source and target kernel ***" true
-        tar -C $GI_TEMP -xf ${gi_archives}/os*.tar kernel.txt ansible/* galaxy/* os-packages/* os-updates/*
-        if [[ `uname -r` != `cat $GI_TEMP/kernel.txt` ]]
-        then
-                msg "Kernel of air-gap bastion differs from air-gap file generator!" true
-		msg "In most cases the independent kernel update will lead to problems with system libraries" true 
-                read -p "Have you updated system before, would you like to continue (Y/N)?: " is_updated
-                if [ $is_updated != 'N' ]
-                then
-                        msg "Upload air-gap files corresponding to bastion kernel or generate files for bastion environment." true
-                        exit 1
-                fi
-        fi
-	rm -f $GI_TEMP/kernel.txt
-        msg  "*** Installing OS updates ***" true
-        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os-updates/*rpm --allowerasing
-        rm -rf ${GI_TEMP}/os-updates
-        msg "*** Installing OS packages ***" true
-        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os-packages/*rpm --allowerasing
-        rm -rf ${GI_TEMP}/os-packages
-        msg "*** Installing Ansible and python modules ***" true
-        cd ${GI_TEMP}/ansible
-        pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
-        pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
-        cd $GI_HOME
-        rm -rf ${GI_TEMP}/ansible
-        cd ${GI_TEMP}/galaxy
-        ansible-galaxy collection install community-general-3.3.2.tar.gz
-        cd $GI_HOME
-        rm -rf ${GI_TEMP}/galaxy
-        # Configure Ansible
-        mkdir -p /etc/ansible
-        echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
-        rm -rf $GI_TEMP/*
-        msg "*** OS software update and installation successfully finished ***" true
-}
-
-function prepare_bastion_to_execute_playbooks() {
-	msg "Installation process is managed by Ansible playbooks, now additional software will be installed ..." true
-	[[ "$use_air_gap" == 'N' ]] && setup_online_installation || setup_offline_installation
+	save_variable GI_SUBNETS_GATEWAYS `echo ${gtws[*]}|tr " " ","`
+	save_variable GI_SUBNETS_IP_RANGES `echo ${ip_ranges[*]}|tr " " ","`
 }
 
 #MAIN PART
-
-msg "#gi-runner configuration file" true > $file
-msg "This script must be executed from gi-runner home directory" true
-msg "*** Checking OS release ***" true
-#install tools for init.sh
+echo "#gi-runner configuration file" > $file
+msg "This script must be executed from gi-runner home directory" 8
+msg "Checking OS release" 7
 save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
 check_bastion_os
+msg "Deployment decisions with/without Internet Access" 7
 get_network_installation_type
-[[ "$use_air_gap" == 'Y' ]] && prepare_bastion_to_execute_playbooks
-[[ "$use_air_gap" == 'N' ]] && dnf -qy install jq
+msg "Deployment deicisons about the software and its releases to install" 7
 get_software_selection
 get_software_architecture
+mkdir -p $GI_TEMP
+[[ "$use_air_gap" == 'Y' ]] && prepare_offline_bastion
+msg "Installing tools for init.sh" 7
+[[ "$use_air_gap" == 'N' ]] && { dnf -qy install jq;[[ $? -ne 0 ]] && display_error "Cannot install jq"; }
 get_ocp_domain
+get_network_architecture
+[[ $one_subnet == 'N' ]] && get_subnets
 get_bastion_info
-msg "Provide information about bootstrap node IP and MAC address and its name" true
+msg "Collecting data about bootstrap node (IP and MAC addres, name)" 7
 get_nodes_info 1 "boot"
-msg "Control Plane requires 3 master nodes, provide information about their IP and MAC addresses and names, values inserted as comma separated list without spaces" true
+msg "Collecting Control Plane nodes data (IP and MAC addres, name), values must be inserted as comma separated list without spaces" 7
 get_nodes_info 3 "mst"
 get_worker_nodes
 get_set_services
@@ -1719,10 +2023,24 @@ get_certificates
 [[ "$gi_install" == 'Y' ]] && save_variable GI_ICS_OPERANDS "N,N,Y,Y,Y,N,N,N,N"
 [[ "$ics_install" == 'Y' && "$gi_install" == 'N' ]] && get_ics_options
 [[ "$install_ldap" == 'Y' ]] && get_ldap_options
-[[ $use_air_gap == 'N' && $use_proxy == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
+[[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
+[[ "$use_air_gap" == 'N' ]] && software_installation_on_online
 create_cluster_ssh_key
-[[ "$use_air_gap" == 'N' ]] && prepare_bastion_to_execute_playbooks
-msg "*** Execute commands below ***" true
-[[ $use_proxy == 'P' ]] &&  echo "- import PROXY settings: \". /etc/profile\""
-msg " - import variables: \". $file\"" true
-msg " - start first playbook: \"ansible-playbook playbooks/01-finalize-bastion-setup.yaml\"" true
+#ln /usr/bin/python3 /usr/bin/python
+msg "All information to deploy environment collected" 6
+if LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then true; else false; fi;
+then
+	msg "System reboot required because new kernel has been installed" 6
+	msg "Execute these commands after relogin to bastion:" 6
+	msg "- go to gi-runner home directory: \"cd $GI_HOME\"" 6
+	msg "- import variables: \". $file\"" 6
+        msg "- start first playbook: \"ansible-playbook playbooks/install_all.yaml\"" 6
+	read -p "Press enter to continue to reboot system"
+	shutdown -r now
+else
+	msg "Execute commands below to continue:" 6
+	[[ $use_proxy == 'P' ]] &&  msg "- import PROXY settings: \". /etc/profile\"" 6
+	msg "- import variables: \". $file\"" 6
+	msg "- start playbook: \"ansible-playbook playbooks/install_all.yaml\"" 6
+fi
+trap - EXIT

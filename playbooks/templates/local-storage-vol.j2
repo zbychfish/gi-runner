@@ -10,7 +10,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-{% for name in nodes%}
+{% for name in temp_nodes %}
           - {{ name }}.{{ domain }}
 {% endfor %}
   storageClassDevices:

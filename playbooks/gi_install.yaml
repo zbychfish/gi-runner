@@ -1,0 +1,186 @@
+- name: Label GI nodes
+  shell:
+    cmd: "oc label node {{ item }}.{{ domain }} gi_role=yes --overwrite=true"
+  with_items: "{{ gi_dedicated_nodes|list }}"
+  when: gi_dedicated_nodes|length > 2
+
+- name: Create GI namespace with node selector
+  shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc create namespace  {{ gi_namespace }} || echo 'Namespace exists'"
+    - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"gi_role=yes\"}}}'"
+  when: gi_dedicated_nodes|length > 2
+
+- name: Create GI operator namespace
+  shell:
+    cmd: "oc create namespace {{ gi_namespace }}||true"
+
+- name: Save portable repo credentials
+  shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action configure-creds-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }}\""
+  when: internet_type == 'A'
+
+- name: GI download case file
+  shell:
+    cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_case }} --outputdir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }} --tolerance 1"
+  when: internet_type != 'A'
+
+- name: GI preinstall task
+  shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
+
+- name: Install GI catalog in air-gapped
+  shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
+  when: internet_type == 'A'
+
+- name: Install GI catalog online (3.0.0)
+  shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry docker.io\""
+  when: internet_type != 'A' and gi_version == '3.0.0'
+
+- name: Install GI catalog online (3.0.1+)
+  shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1"
+  when: internet_type != 'A' and gi_version != '3.0.0'
+
+- name: Wait for GI catalog (part1)
+  shell:
+    cmd: "oc get pods -n openshift-marketplace|grep ibm-db2uoperator-catalog|grep 1/1|grep Running|wc -l"
+  register: db2_catalog_status
+  until: "db2_catalog_status.stdout == \"1\""
+  retries: 30
+  delay: 10
+
+- name: Wait for GI catalog (part2)
+  shell:
+    cmd: "oc get pods -n openshift-marketplace|grep ibm-cloud-databases-redis-operator-catalog|grep 1/1|grep Running|wc -l"
+  register: redis_catalog_status
+  until: "redis_catalog_status.stdout == \"1\""
+  retries: 30
+  delay: 10
+
+- name: Install GI operators in air-gapped env
+  shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key\""
+  when: internet_type == 'A'
+
+- name: Install GI operators online
+  shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
+  when: internet_type != 'A'
+
+- name: Wait for GI operators before 3.1
+  shell:
+    cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
+  register: operator_status
+  until: "operator_status.stdout == \"1\""
+  retries: 30
+  delay: 10
+  with_items:
+    - { operator_pattern: "db2u-operator-manager" }
+    - { operator_pattern: "ibm-cloud-databases-redis-operator" }
+    - { operator_pattern: "mongodb-kubernetes-operator" }
+    - { operator_pattern: "guardiuminsights-controller-manager" }
+  when: gi_version_index|int < 3
+
+- name: Wait for GI operators from 3.1
+  shell:
+    cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
+  register: operator_status
+  until: "operator_status.stdout == \"1\""
+  retries: 30
+  delay: 10
+  with_items:
+    - { operator_pattern: "ibm-cloud-databases-redis-operator" }
+    - { operator_pattern: "mongodb-kubernetes-operator" }
+    - { operator_pattern: "guardiuminsights-controller-manager" }
+  when: gi_version_index|int > 2
+
+- name: Generate GI deployment file
+  template:
+    src: "gi.j2"
+    dest: "{{ temp_dir }}/gi_arch/gi.yaml"
+
+- name: Deploy GI
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/gi_arch/gi.yaml"
+
+- name: Wait for completion of db2-inst - OOMKilled BUG workaround
+  shell: ../scripts/db2_oomkilled.sh
+  when: gi_version_index|int < 3
+
+- name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part1)
+  shell:
+    cmd: "oc get sts -n gi|grep db2-db2u|wc -l"
+  register: db2u_initiated
+  until: "db2u_initiated.stdout == \"1\""
+  retries: 80
+  delay: 20
+  when: gi_version == '3.0.0'
+
+- name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part2)
+  shell:
+    cmd: "oc patch sts c-{{ gi_namespace }}-db2-db2u -p='{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"db2u\",\"tty\":false}]}}}}}'"
+  when: gi_version == '3.0.0'
+
+- name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part3)
+  shell:
+    cmd: "oc get sts -n gi|grep db2-db2u|grep 1/1|wc -l"
+  register: db2u_initiated
+  until: "db2u_initiated.stdout == \"1\""
+  retries: 80
+  delay: 20
+  when: gi_version == '3.0.0'
+
+- name: Wait for successful GI deployment (takes 20-60 minutes)
+  shell:
+    cmd: "oc get guardiuminsights -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
+  register: gi_deployment_status
+  until: "gi_deployment_status.stdout == \"{{ gi_version }}\""
+  retries: 100
+  delay: 60
+
+- name: Get ssh service node port
+  shell:
+    cmd: "oc get services -n {{ gi_namespace }} {{ gi_namespace }}-ssh-service -o json|jq .spec.ports[0].nodePort"
+  register: ssh_node_port
+
+- name: Open ssh-service port on bastion
+  firewalld:
+    port: "{{ item.port }}/{{ item.type }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  with_items:
+    - { port: "{{ ssh_node_port.stdout }}", type: "tcp" }
+
+- name: Create HA Proxy config file with ssh-service
+  template:
+    src: haproxy_with_ssh.j2
+    dest: /etc/haproxy/haproxy.cfg.ssh
+  vars:
+    masters: "{{ master_name|zip(master_ip)|list }}"
+    nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
+    ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
+    workers: "{{ nodes|zip(ips)|list }}"
+  when: is_master_only == 'N'
+
+- name: Create HA Proxy config file with ssh-service (no dedicated workers)
+  template:
+    src: haproxy_with_ssh_masters_only.j2
+    dest: /etc/haproxy/haproxy.cfg.ssh
+  vars:
+    masters: "{{ master_name|zip(master_ip)|list }}"
+  when: is_master_only == 'Y'
+
+- name: Modify HA Proxy config file
+  shell:
+    cmd: cat /etc/haproxy/haproxy.cfg.ssh >> /etc/haproxy/haproxy.cfg
+
+- name: Restart HA Proxy
+  service:
+    name: haproxy
+    state: restarted
+
