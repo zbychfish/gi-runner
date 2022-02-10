@@ -1,0 +1,766 @@
+- name: Create temp subdirectories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+  with_items:
+    - { path: "{{ temp_dir }}/coreos" }
+    - { path: "{{ temp_dir }}/adds" }
+    - { path: "{{ temp_dir }}/os" }
+    - { path: "{{ temp_dir }}/rook" }
+    - { path: "{{ temp_dir }}/olm" }
+    - { path: "{{ temp_dir }}/ics_arch" }
+    - { path: "{{ temp_dir }}/gi_arch" }
+
+- name: Create portable registry directories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+  with_items:
+    - { path: "/opt/registry/auth" }
+    - { path: "/opt/registry/certs" }
+          #        - { path: "../ssl/csr" }
+  when: internet_type == 'A'
+
+- name: Create certificate for registry
+  shell:
+    cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ domain }}\" -addext \"subjectAltName = DNS:registry.{{ domain }}\""
+  when: internet_type == 'A'
+
+- name: Copy CA cert to Centos PKI
+  copy:
+    src: /opt/registry/certs/bastion.repo.crt
+    dest: /etc/pki/ca-trust/source/anchors/
+  when: internet_type == 'A'
+
+- name: Register self-signed CA
+  shell:
+    cmd: update-ca-trust extract
+  when: internet_type == 'A'
+
+- name: Cleanup httpasswd file
+  file:
+    path: /opt/registry/auth/bastion.repo.htpasswd
+    state: absent
+  when: internet_type == 'A'
+
+- name: Create htpasswd file
+  htpasswd:
+    path: /opt/registry/auth/bastion.repo.htpasswd
+    name: "{{ repo_user }}"
+    crypt_scheme: bcrypt
+    password: "{{ repo_user_password }}"
+  when: internet_type == 'A'
+
+- name: Start firewall
+  service:
+    name: firewalld
+    state: started
+    enabled: yes
+
+- name: Open ports on bastion for offline installation
+  firewalld:
+    port: "{{ item.port }}/{{ item.type }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  with_items:
+    - { port: "5000", type: "tcp" }
+  when: internet_type == 'A'
+
+- name: Open ports on bastion for offline installation
+  firewalld:
+    service: http
+    permanent: yes
+    state: enabled
+
+- name: Open ports on bastion
+  firewalld:
+    port: "{{ item.port }}/{{ item.type }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  with_items:
+    - { port: "67-69", type: "udp" } #dhcp, bootp, tftp
+    - { port: "8080", type: "tcp" } #matchbox
+    - { port: "53", type: "udp" } #dns
+    - { port: "6443", type: "tcp" } #cluster API
+    - { port: "22623", type: "tcp" } #cluster API
+    - { port: "80", type: "tcp" } #cluster app access
+    - { port: "443", type: "tcp" } #cluster app access
+    - { port: "123", type: "udp" } #ntpd
+
+- name: Load image registry into local repository
+  shell:
+    cmd: "podman load -i {{ temp_dir }}/coreos/oc-registry.tar"
+  when: internet_type == 'A'
+
+- name: Check image repository existence
+  shell:
+    cmd: podman ps -a|grep bastion-registry|wc -l
+  register: is_repo_available
+  when: internet_type == 'A'
+
+- name: Remove existing bastion image registry container
+  shell:
+    cmd: "{{ item }}"
+  loop:
+    - podman stop bastion-registry
+    - "podman container prune <<< 'Y'"
+  when: internet_type == 'A' and is_repo_available.stdout == '1'
+
+- name: Setup image registry
+  shell:
+    cmd: 'podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/bastion.repo.htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:{{ registry_version }}'
+    chdir: /opt/registry
+  when: internet_type == 'A'
+
+- name: Set SELINUX permissive access for NetworkManager
+  shell:
+    cmd: semanage permissive -a NetworkManager_t
+
+- name: Cleanup configuration files
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items:
+    - { path: "/etc/systemd/system/matchbox.service" }
+    - { path: "/usr/local/bin/matchbox" }
+    - { path: "/var/lib/matchbox" }
+    - { path: "/var/lib/tftp" }
+    - { path: "../ocp" }
+
+- name: Create temp subdirectories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+  with_items:
+    - { path: "../ocp" }
+
+- name: Set variable for public SSH key
+  shell: >
+    cat "{{ ssh_key }}.pub"
+  register: ssh_pub_key
+
+- name: Check original resolved.conf file existence
+  stat:
+    path: "/etc/systemd/resolved.conf.orig"
+  register: resolved_config_presence
+
+- name: Check original nsswitch.conf file existence
+  stat:
+    path: "/etc/nsswitch.conf.orig"
+  register: nsswitch_config_presence
+
+- name: Copy original nsswitch.conf file
+  copy:
+    src: "/etc/nsswitch.conf"
+    dest: "/etc/nsswitch.conf.orig"
+  when: nsswitch_config_presence.stat.exists == false
+
+- name: Restore original nsswitch.conf file
+  copy:
+    src: "/etc/nsswitch.conf.orig"
+    dest: "/etc/nsswitch.conf"
+  when: nsswitch_config_presence.stat.exists == true
+
+- name: Unlink resolv.conf
+  file:
+    path: "/etc/resolv.conf"
+    state: absent
+
+- name: Link resolv.conf
+  file:
+    src: "/run/systemd/resolve/resolv.conf"
+    dest: "/etc/resolv.conf"
+    state: link
+
+- name: Clean TFTP directory
+  file:
+    path: "/var/lib/tftp"
+    state: absent
+
+- name: Create TFTP directory
+  file:
+    path: "/var/lib/tftp"
+    state: directory
+    mode: '0755'
+
+- name: Add the user 'matchbox'
+  user:
+    name: matchbox
+
+- name: Clean matchbox directory
+  file:
+    path: "/var/lib/matchbox"
+    state: absent
+
+- name: Create Matchbox directories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "0755"
+    owner: matchbox
+    group: matchbox
+  with_items:
+    - { path: "/var/lib/matchbox" }
+    - { path: "/var/lib/matchbox/assets" }
+    - { path: "/var/lib/matchbox/groups" }
+    - { path: "/var/lib/matchbox/ignition" }
+    - { path: "/var/lib/matchbox/profiles" }
+
+- name: Check matchbox package presence
+  stat:
+    path: "{{ temp_dir }}/coreos/matchbox-{{ matchbox_version }}-linux-amd64.tar.gz"
+  register: matchbox_presence
+
+- name: Stop if matchbox not uploaded for air-gapped installation
+  fail:
+    msg: "Please upload matchbox to download directory"
+  when: internet_type == 'A' and matchbox_presence.stat.exists == false
+
+- name: Download matchbox
+  get_url:
+    url: "https://github.com/poseidon/matchbox/releases/download/{{ matchbox_version }}/matchbox-{{ matchbox_version }}-linux-amd64.tar.gz"
+    dest: "{{ temp_dir }}/coreos"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  when: matchbox_presence.stat.exists == false and internet_type != 'A'
+
+- name: Unzip matchbox
+  command:
+    cmd: "tar zxf {{ temp_dir }}/coreos/matchbox-{{ matchbox_version }}-linux-amd64.tar.gz -C {{ temp_dir }}"
+  args:
+    warn: false
+
+- name: Copy matchbox to bin
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - { src: "{{ temp_dir }}/matchbox-v0.9.0-linux-amd64/matchbox", dest: "/usr/local/bin" }
+
+- name: Copy matchbox service file
+  copy:
+    src: "{{ temp_dir }}/matchbox-v0.9.0-linux-amd64/contrib/systemd/matchbox.service"
+    dest: "/etc/systemd/system/matchbox.service"
+    owner: root
+    mode: 0644
+
+- name: Start and enable matchbox
+  service:
+    name: matchbox
+    state: restarted
+    enabled: yes
+
+- name: Clean matchbox temp directory
+  file:
+    path: "{{ temp_dir }}/matchbox-v0.9.0-linux-amd64"
+    state: absent
+
+- name: Check original chrony config file existence
+  stat:
+    path: "/etc/chrony.conf.orig"
+  register: chrony_config_presence
+
+- name: Restore original chrony config file
+  copy:
+    dest: /etc/chrony.conf
+    src: /etc/chrony.conf.orig
+  when: chrony_config_presence.stat.exists == true
+
+- name: Copy original chrony config file
+  copy:
+    src: /etc/chrony.conf
+    dest: /etc/chrony.conf.orig
+  when: chrony_config_presence.stat.exists == false
+
+- name: Modify chrony.conf
+  lineinfile:
+    path: /etc/chrony.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { regexp: '^#allow 192.168.0.0/16', line: "allow all" }
+    - { regexp: '^#local stratum 10', line: "local stratum 10" }
+  when: ntp_server == bas_ip
+
+- name: Set SE Linux for chronyd
+  shell:
+    cmd: semanage permissive -a chronyd_t
+  when: ntp_server == bas_ip and false
+
+- name: Start and enable chronyd
+  service:
+    name: chronyd
+    state: restarted
+    enabled: yes
+  when: ntp_server == bas_ip
+
+- name: Check presence of RHCOS images
+  stat:
+    path: "{{ temp_dir }}/coreos/{{ item.file }}"
+  register: rhcos_images
+  with_items:
+    - { file: "rhcos-live-initramfs.x86_64.img" }
+    - { file: "rhcos-live-kernel-x86_64" }
+    - { file: "rhcos-live-rootfs.x86_64.img" }
+  ignore_errors: true
+
+- name: Stop if RHCOS images are not uploaded for air-gapped installation
+  fail:
+    msg: "Please upload RHCOS images to download directory"
+  with_items: "{{ rhcos_images.results }}"
+  when: item.stat.exists == False and internet_type == 'A'
+
+- name: Download RHCOS images {{ ocp_major_release }}
+  get_url:
+    url: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/{{ ocp_major_release }}/latest/{{ item.item.file }}
+    dest: "{{ temp_dir }}/coreos"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  with_items: "{{ rhcos_images.results }}"
+  when: item.stat.exists == False and internet_type != 'A'
+
+- name: Copy RHCOS images to matchbox assets
+  file:
+    src: "{{ temp_dir }}/coreos/{{ item.name }}"
+    dest: "/var/lib/matchbox/assets/{{ item.name }}"
+    owner: matchbox
+    group: matchbox
+    state: hard
+  with_items:
+    - { name: "rhcos-live-initramfs.x86_64.img" }
+    - { name: "rhcos-live-kernel-x86_64" }
+    - { name: "rhcos-live-rootfs.x86_64.img" }
+
+- name: prepare TFTP for iPXE
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: dnsmasq
+    group: dnsmasq
+    mode: 0644
+  with_items:
+    - { src: "/usr/share/ipxe/undionly.kpxe", dest: "/var/lib/tftp" }
+    - { src: "/usr/share/ipxe/ipxe-i386.efi", dest: "/var/lib/tftp" }
+    - { src: "/usr/share/ipxe/ipxe-x86_64.efi", dest: "/var/lib/tftp" }
+
+- name: Matchbox bootstrap group json
+  vars:
+    id: "{{ item.id }}"
+    name: "{{ item.name }}"
+    profile: "{{ item.profile }}"
+    mac: "{{ item.mac }}"
+  template:
+    src: "groups.j2"
+    dest: "/var/lib/matchbox/groups/{{ item.id }}.json"
+  with_items:
+    - { id: "bootstrap", name: "Bootstrap node", profile: "bootstrap", mac: "{{ boot_mac }}" }
+
+- name: Matchbox masters group json
+  template:
+    src: "groups.j2"
+    dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
+  vars:
+    id: "master"
+    name: "OCP master"
+    profile: "master"
+    mac: "{{ item }}"
+  with_items:
+    - "{{ master_mac|list }}"
+
+- name: Matchbox ocs group json
+  template:
+    src: "groups.j2"
+    dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
+  vars:
+    id: "worker"
+    name: "OCP worker"
+    profile: "worker"
+    mac: "{{ item }}"
+  with_items:
+    - "{{ ocs_mac|list }}"
+  when: is_ocs_tainted == 'Y'
+
+- name: Matchbox worker group json
+  template:
+    src: "groups.j2"
+    dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
+  vars:
+    id: "worker"
+    name: "OCP worker"
+    profile: "worker"
+    mac: "{{ item }}"
+  with_items:
+    - "{{ worker_mac|list }}"
+  when: is_master_only == 'N'
+
+- name: Matchbox profiles files
+  vars:
+    id: "{{ item.id }}"
+    name: "{{ item.name }}"
+    ign_file: "{{ item.ign_file }}"
+    dom: "{{ item.dom }}"
+  template:
+    src: "profile.j2"
+    dest: "/var/lib/matchbox/profiles/{{ item.id }}.json"
+  with_items:
+    - { id: "bootstrap", name: "Bootstrap node", ign_file: "bootstrap.ign", dom: "{{ domain }}" }
+    - { id: "master", name: "OCP master", ign_file: "master.ign", dom: "{{ domain }}" }
+    - { id: "worker", name: "OCP worker", ign_file: "worker.ign", dom: "{{ domain }}" }
+
+- name: Prepare PTR name for bastion
+  shell: >
+    echo "{{ bas_ip }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
+  register: bas_ptr
+
+- name: Prepare PTR name for boot
+  shell: >
+    echo "{{ boot_ip }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
+  register: boot_ptr
+
+- name: Prepare PTR name for nodes
+  shell: >
+    echo "ptr-record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ item.1 }}.{{ domain }}"
+  register: node_ptr
+  with_together:
+    - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+    - "{{ master_name+worker_name|default([])+ocs_name|default([]) }}"
+
+- name: Prepare DHCP entries for nodes
+  shell: >
+    echo "dhcp-host={{ item.0 }},{{ item.1 }},12h"
+  register: node_dhcp
+  with_together:
+    - "{{ master_mac+worker_mac|default([])+ocs_mac|default([]) }}"
+    - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+
+- name: Prepare DNS entries for nodes
+  shell: >
+    echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
+  register: node_dns
+  with_together:
+    - "{{ master_name+worker_name|default([])+ocs_name|default([]) }}"
+    - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+
+- name: Check original dnsmasq config file existence
+  stat:
+    path: "/etc/dnsmasq.conf.orig"
+  register: dnsmasq_config_presence
+
+- name: Restore original dnsmasq config file
+  copy:
+    src: "/etc/dnsmasq.conf.orig"
+    dest: "/etc/dnsmasq.conf"
+  when: dnsmasq_config_presence.stat.exists == true
+
+- name: Copy original NIC config file
+  copy:
+    src: "/etc/dnsmasq.conf"
+    dest: "/etc/dnsmasq.conf.orig"
+  when: dnsmasq_config_presence.stat.exists == false
+
+- name: Modify dnsmasq.conf file
+  lineinfile:
+    path: /etc/dnsmasq.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { regexp: '^#interface=', line: 'interface={{ bas_int }}' }
+
+- name: Add lines to dnsmasq.conf
+  lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item }}"
+  with_items:
+    - "#Gateway"
+    - "dhcp-option=2,7200"
+    - "dhcp-option=42,{{ ntp_server }}"
+    - "dhcp-option=66,{{ bas_ip }}"
+    - "#DNS"
+    - "dhcp-option=6,{{ bas_ip }}"
+    - "dhcp-host={{ boot_mac }},{{ boot_ip }},12h"
+    - "domain={{ domain }}"
+    - "#Static DNS"
+    - "address=/{{ bas_name }}.{{ domain }}/{{ bas_ip }}"
+    - "address=/registry.{{ domain }}/{{ bas_ip }}"
+    - "address=/{{ boot_name }}.{{ domain }}/{{ boot_ip }}"
+    - "ptr-record={{ boot_ptr.stdout }},{{ boot_name }}.{{ domain }}"
+    - "ptr-record={{ bas_ptr.stdout }},{{ bas_name }}.{{ domain }}"
+    - "address=/matchbox.{{ domain }}/{{ bas_ip }}"
+    - "address=/api.{{ domain }}/{{ bas_ip }}"
+    - "address=/api-int.{{ domain }}/{{ bas_ip }}"
+    - "address=/.apps.{{ domain }}/{{ bas_ip }}"
+    - "#TFTP"
+    - "enable-tftp"
+    - "tftp-root=/var/lib/tftp"
+    - "tftp-secure"
+    - "dhcp-match=set:bios,option:client-arch,0"
+    - "dhcp-boot=tag:bios,undionly.kpxe"
+    - "dhcp-match=set:efi32,option:client-arch,6"
+    - "dhcp-boot=tag:efi32,ipxe.efi"
+    - "dhcp-match=set:efibc,option:client-arch,7"
+    - "dhcp-boot=tag:efibc,ipxe.efi"
+    - "dhcp-match=set:efi64,option:client-arch,9"
+    - "dhcp-boot=tag:efi64,ipxe.efi"
+    - "dhcp-userclass=set:ipxe,iPXE"
+    - "dhcp-boot=tag:ipxe,http://matchbox.{{ domain }}:8080/boot.ipxe"
+
+- name: Add gateways to dnsmasq.conf for multiple subnets installation
+  lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "dhcp-option=vlan{{ ansible_loop.index }},3,{{ item }}"
+  with_items: "{{ gateways_list }}"
+  loop_control:
+    extended: yes
+  when: one_subnet == 'N'
+
+- name: Add dhcp ranges to dnsmasq.conf for multiple subnets installation
+  lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "dhcp-range=vlan{{ ansible_loop.index }},{{ item | replace('-',',') }},12h"
+  with_items: "{{ dhcp_ranges_list }}"
+  loop_control:
+    extended: yes
+  when: one_subnet == 'N'
+
+- name: Add lines to dnsmasq.conf for one subnet installation
+  lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item }}"
+  with_items:
+    - "dhcp-option=3,{{ bas_gw }}"
+    - "dhcp-range={{ dhcp_range_start }},{{ dhcp_range_stop }},12h"
+  when: one_subnet == 'Y'
+
+- name: Add  PTR lines to dnsmasq.conf
+  lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item.stdout }}"
+  with_items: "{{ node_ptr.results }}"
+
+- name: Add DHCP lines to dnsmasq.conf
+  lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item.stdout }}"
+  with_items: "{{ node_dhcp.results }}"
+
+- name: Add DNS lines to dnsmasq.conf
+  lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item.stdout }}"
+  with_items: "{{ node_dns.results }}"
+
+- name: Add DNS forwarder to dnsmasq.conf
+  lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "server={{ dns_forwarder }}"
+
+- name: Get bastion interface name
+  shell:
+    cmd: nmcli c show | grep ens192 | awk '{print $1}'
+  register: bas_int_name
+
+- name: Set self DNS for interface
+  command:
+    cmd: "{{ item }}"
+  with_items:
+    - "nmcli c modify {{ bas_int_name.stdout }} ipv4.dns \"{{ bas_ip }}\""
+
+- name: Start and enable dnsmasq
+  service:
+    name: dnsmasq
+    state: restarted
+    enabled: yes
+
+- name: Restart systemd-resolved
+  service:
+    name: systemd-resolved
+    state: restarted
+
+- name: Restart Network Manager
+  service:
+    name: NetworkManager
+    state: restarted
+
+- name: Resolve some cluster names to check DNS state
+  debug:
+    msg:
+      - "Resolve IP of {{ bas_name }}.{{ domain }} - {{ lookup('dig', '{{ bas_name }}.{{ domain }}.', '@127.0.0.1') }}"
+      - "Resolve IP of registry.{{ domain }} - {{ lookup('dig', 'registry.{{ domain }}.', '@127.0.0.1') }}"
+      - "Resolve IP of {{ boot_name }}.{{ domain }} - {{ lookup('dig', '{{ boot_name }}.{{ domain }}.', '@127.0.0.1') }}"
+      - "Resolve IP of api.{{ domain }} - {{ lookup('dig', 'api.{{ domain }}.', '@127.0.0.1') }}"
+      - "Resolve IP of api-int.{{ domain }} - {{ lookup('dig', 'api-int.{{ domain }}.', '@127.0.0.1') }}"
+      - "Resolve IP of insights.apps.{{ domain }} - {{ lookup('dig', 'insights.apps.{{ domain }}.', '@127.0.0.1') }}"
+      - "Resolve name from IP for {{ boot_ip }} - {{ lookup('dig', '{{ boot_ptr.stdout }}./PTR', '@127.0.0.1') }}"
+
+- name: Set SELINUX for dnsmasq
+  shell:
+    cmd: semanage permissive -a dnsmasq_t
+
+- name: Check repository health
+  shell:
+    cmd: curl -u {{ repo_user }}:{{ repo_user_password }} -k https://registry.{{ domain }}:5000/v2/_catalog
+    warn: false
+  register: repo_status
+  failed_when:
+    - repo_status.rc != 0 or "\"ocp4/openshift4\"" not in repo_status.stdout
+  when: internet_type == 'A'
+
+- name: Check presence of RHCOS tools
+  stat:
+    path: "{{ temp_dir }}/coreos/{{ item.file }}"
+  register: rhcos_tools
+  with_items:
+    - { file: "openshift-client-linux.tar.gz" }
+    - { file: "openshift-install-linux.tar.gz" }
+  ignore_errors: true
+
+- name: Stop if RHCOS tools are not uploaded for air-gapped installation
+  fail:
+    msg: "Please upload RHCOS tools to download directory"
+  with_items: "{{ rhcos_tools.results }}"
+  when: item.stat.exists == False and internet_type == 'A'
+
+- name: "Download RHCOS tools {{ ocp_release }}"
+  get_url:
+    url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/{{ 'stable-'+ocp_major_release if ocp_minor_release == 'latest' else ocp_release }}/{{ item.item.file }}"
+    dest: "{{ temp_dir }}/coreos"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  with_items: "{{ rhcos_tools.results }}"
+  when: item.stat.exists == False and internet_type != 'A'
+
+- name: Unpack OCP tools
+  shell:
+    cmd: "tar xf {{ temp_dir }}/coreos/{{ item.src }} -C /usr/local/bin"
+    warn: no
+  with_items:
+    - { src: "openshift-client-linux.tar.gz" }
+    - { src: "openshift-install-linux.tar.gz" }
+
+- name: Define base and ocp domain
+  set_fact:
+    base_domain: "{{ domain.split('.')[1:] | join('.') }}"
+    ocp_domain: "{{ domain.split('.')[0] }}"
+
+- name: Create local repo authentication string
+  shell:
+    cmd: "echo -n '{{ repo_user }}:{{ repo_user_password }}' | base64 -w0"
+  register: repo_cred_base64
+  when: internet_type == 'A'
+
+- name: Copy local image repository certificate into variable
+  shell:
+    cmd: "cat /opt/registry/certs/bastion.repo.crt | awk '{print \"  \"$0}'"
+  register: repo_cert
+  when: internet_type == 'A'
+
+- name: Create OCP config file in air-gapped env
+  template:
+    src: install-config-air-gapped.j2
+    dest: ../ocp/install-config.yaml
+  vars:
+    n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
+    n_masters: "{{ master_ip|length }}"
+  when: internet_type == 'A'
+
+- name: Create OCP config for standard deployment
+  template:
+    src: install-config.j2
+    dest: ../ocp/install-config.yaml
+  vars:
+    n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
+    n_masters: "{{ master_ip|length }}"
+  when: internet_type == 'D'
+
+- name: Create OCP config file with proxy
+  template:
+    src: install-config-proxy.j2
+    dest: ../ocp/install-config.yaml
+  vars:
+    n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
+    n_masters: "{{ master_ip|length }}"
+  when: internet_type == 'P'
+
+- name: Add RHN Pull Secret - ansible replaces /" to /'
+  shell:
+    cmd: "cat {{ temp_dir }}/os/pull_secret.tmp >> ../ocp/install-config.yaml"
+  when: internet_type != 'A'
+
+- name: Copy install-config for troubleshooting
+  copy:
+    src: "../ocp/install-config.yaml"
+    dest: "{{ temp_dir }}/coreos/install-config.yaml"
+
+- name: Create manifests files
+  command:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "openshift-install create manifests --dir=../ocp" }
+
+- name: Create ignition files
+  command:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "openshift-install create ignition-configs --dir=../ocp" }
+
+- name: Copy ignition files to matchbox
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: matchbox
+    mode: 0755
+  with_items:
+    - { src: "../ocp/bootstrap.ign", dest: "/var/lib/matchbox/ignition/" }
+    - { src: "../ocp/master.ign", dest: "/var/lib/matchbox/ignition/" }
+    - { src: "../ocp/worker.ign", dest: "/var/lib/matchbox/ignition/" }
+
+- name: Check original HA Proxy config file existence
+  stat:
+    path: "/etc/haproxy/haproxy.cfg.orig"
+  register: haproxy_config_presence
+
+- name: Restore original HA Proxy config file
+  copy:
+    dest: "/etc/haproxy/haproxy.cfg"
+    src: "/etc/haproxy/haproxy.cfg.orig"
+  when: haproxy_config_presence.stat.exists == true
+
+- name: Copy original HA Proxy config file
+  copy:
+    src: /etc/haproxy/haproxy.cfg
+    dest: /etc/haproxy/haproxy.cfg.orig
+
+- name: Create HA Proxy config file
+  template:
+    src: haproxy.j2
+    dest: /etc/haproxy/haproxy.cfg
+  vars:
+    masters: "{{ master_name|zip(master_ip)|list }}"
+    nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
+    ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
+    workers: "{{ nodes|zip(ips)|list }}"
+  when: is_master_only == 'N'
+
+- name: Create HA Proxy config file
+  template:
+    src: haproxy-no-workers.j2
+    dest: /etc/haproxy/haproxy.cfg
+  vars:
+    masters: "{{ master_name|zip(master_ip)|list }}"
+  when: is_master_only == 'Y'
+
+- name: Set SELinux for HA Proxy
+  command:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "setsebool -P haproxy_connect_any=1" }
+    - { cmd: "semanage permissive -a haproxy_t" }
+
+- name: Start and enable HA Proxy
+  service:
+    name: haproxy
+    state: restarted
+    enabled: yes
+

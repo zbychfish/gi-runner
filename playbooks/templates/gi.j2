@@ -4,6 +4,15 @@ metadata:
   #name: This must be 10 or less characters
   name: {{ gi_namespace }}
 spec:
+{% if gi_ssh_host != '0.0.0.0' or gi_ssh_port|int != 0 %}
+  ibm-insights-sequencer:
+{% endif %}
+{% if gi_ssh_host != '0.0.0.0' %}
+    GUARDIUM_AGENT_SCP_TARGET_HOST: {{ gi_ssh_host }}
+{% endif %}
+{% if gi_ssh_port|int != 0 %}
+    GUARDIUM_AGENT_SCP_TARGET_PORT: {{ gi_ssh_port }}
+{% endif %}
   version: {{ gi_version }}
 {% if stap_supp == 'Y' %}
   connections:

@@ -6,7 +6,7 @@ metadata:
 spec:
   failureDomain: host
   replicated:
-    size: 3
+    size: 2
     # Disallow setting pool with replica 1, this could lead to data loss without recovery.
     # Make sure you're *ABSOLUTELY CERTAIN* that is what you want
     requireSafeReplicaSize: {{ requires_replica }}
