@@ -628,7 +628,6 @@ function prepare_offline_bastion() {
                 else
                         get_input "pwd" "Insert new password for $repo_admin user: " false
                 fi
-<<<<<<< HEAD
         done
         save_variable GI_REPO_USER_PWD "'$curr_password'"
 	msg "Offline installation requires installation archives preparation using preinstall scripts" 8
@@ -643,22 +642,6 @@ function prepare_offline_bastion() {
                 fi
                         gi_archives="${input_variable}"
         done
-=======
-        done
-        save_variable GI_REPO_USER_PWD "'$curr_password'"
-	msg "Offline installation requires installation archives preparation using preinstall scripts" 8
-        msg "Archives must be copied to bastion before installation" 8
-        while $(check_input "dir" "${gi_archives}")
-        do
-                if [[ ! -z "$GI_ARCHIVES_DIR" ]]
-                then
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ARCHIVES_DIR] or insert the full path to installation archives: " true "$GI_ARCHIVES_DIR"
-                else
-                        get_input "txt" "Insert full path to installation archives (default location - $GI_HOME/download): " true "$GI_HOME/download"
-                fi
-                        gi_archives="${input_variable}"
-        done
->>>>>>> 1ec701d91cccdcb9e8e5605b8a5605fbf5aeefc7
         save_variable GI_ARCHIVES_DIR "'$gi_archives'"
 	process_offline_archives
 	software_installation_on_offline
@@ -1180,40 +1163,6 @@ function get_hardware_info() {
 }
 
 function get_service_assignment() {
-<<<<<<< HEAD
-	msg "Architecture decisions about service location on cluster nodes" 7
-        local selected_arr
-        local node_arr
-	local element
-	local rook_on_list
-        if [[ $gi_install == 'Y' ]]
-        then
-                [[ $gi_size == 'values-small' ]] && db2_nodes_size=2 || db2_nodes_size=1
-		if [[ $db2_tainted == 'Y' ]]
-=======
-<<<<<<< HEAD
-	local selected_arr
-	local node_arr
-	if [[ $gi_install == 'Y' ]] 
-	then
-		[[ $gi_size == 'values-small' ]] && db2_nodes_size=2 || db2_nodes_size=1
-		if [[ "$db2_tainted" == 'Y' ]]
->>>>>>> 1ec701d91cccdcb9e8e5605b8a5605fbf5aeefc7
-		then
-                	msg "You decided that DB2 will be installed on dedicated node/nodes" 8
-                	msg "Node/nodes should not be used as storage cluster nodes" 8
-		else
-			msg "Insert node/nodes name where DB2 should be installed" 8
-		fi
-<<<<<<< HEAD
-		msg "DB2 node/nodes should have enough resources (CPU, RAM) to get this role, check GI documentation" 8
-                msg "Available worker nodes: $worker_name" 8
-                while $(check_input "nodes" $db2_nodes $worker_name $db2_nodes_size "def")
-=======
-		msg "Inserted node/nodes must have propriate resources to serve DB2 instance, check GI documention to get demands"
-		msg "Available worker nodes: $worker_name" true
-		while $(check_input $db2_nodes "nodes" $worker_name $db2_nodes_size "def")
-=======
 	msg "Architecture decisions about service location on cluster nodes" 7
         local selected_arr
         local node_arr
@@ -1232,8 +1181,6 @@ function get_service_assignment() {
 		msg "DB2 node/nodes should have enough resources (CPU, RAM) to get this role, check GI documentation" 8
                 msg "Available worker nodes: $worker_name" 8
                 while $(check_input "nodes" $db2_nodes $worker_name $db2_nodes_size "def")
->>>>>>> b09
->>>>>>> 1ec701d91cccdcb9e8e5605b8a5605fbf5aeefc7
                 do
                         if [ ! -z "$GI_DB2_NODES" ]
                         then
@@ -1661,46 +1608,7 @@ function validate_certs() {
                         ;;
         esac
 }
-<<<<<<< HEAD
 
-<<<<<<< HEAD
-=======
-function get_certificates() {
-	msg "You can replace self-signed certicates for UI's by providing your own created by trusted CA" true
-	msg "Certificates must be uploaded to bastion to provide full path to them" true
-	msg "CA cert, service cert and private key files must be stored separately in PEM format" true
-	while $(check_input "$ocp_ext_ingress" "yn" false)
-        do
-	        get_input "yn" "Would you like to install own certificates for OCP?: " true
-                ocp_ext_ingress=${input_variable^^}
-	done
-	save_variable GI_OCP_IN $ocp_ext_ingress
-	[ $ocp_ext_ingress == 'Y' ] && validate_certs "ocp"
-	if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' ]]
-        then
-		while $(check_input "$ics_ext_ingress" "yn" false)
-        	do
-                	get_input "yn" "Would you like to install own certificates for ICP?: " true
-                	ics_ext_ingress=${input_variable^^}
-        	done
-        	save_variable GI_ICS_IN $ics_ext_ingress
-        	[ $ics_ext_ingress == 'Y' ] && validate_certs "ics"
-	fi
-	if [[ "$gi_install" == 'Y' ]]
-        then
-                while $(check_input "$gi_ext_ingress" "yn" false)
-                do
-                        get_input "yn" "Would you like to install own certificates for GI?: " true
-                        gi_ext_ingress=${input_variable^^}
-                done
-                save_variable GI_IN $gi_ext_ingress
-                [ $gi_ext_ingress == 'Y' ] && validate_certs "gi"
-        fi
-}
-=======
->>>>>>> b09
-
->>>>>>> 1ec701d91cccdcb9e8e5605b8a5605fbf5aeefc7
 function get_gi_options() {
 	local change_ssh_host
 	msg "Collecting Guardium Insights parameters" 7
@@ -2115,17 +2023,8 @@ get_certificates
 [[ "$gi_install" == 'Y' ]] && save_variable GI_ICS_OPERANDS "N,N,Y,Y,Y,N,N,N,N"
 [[ "$ics_install" == 'Y' && "$gi_install" == 'N' ]] && get_ics_options
 [[ "$install_ldap" == 'Y' ]] && get_ldap_options
-<<<<<<< HEAD
 [[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
 [[ "$use_air_gap" == 'N' ]] && software_installation_on_online
-=======
-<<<<<<< HEAD
-[[ $use_air_gap == 'N' && $use_proxy == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
-=======
-[[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
-[[ "$use_air_gap" == 'N' ]] && software_installation_on_online
->>>>>>> b09
->>>>>>> 1ec701d91cccdcb9e8e5605b8a5605fbf5aeefc7
 create_cluster_ssh_key
 #ln /usr/bin/python3 /usr/bin/python
 msg "All information to deploy environment collected" 6
