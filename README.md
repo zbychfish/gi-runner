@@ -17,9 +17,6 @@ Release description:
 <LI>Hardcoded ens192 NIC interface reference in stage1 playbook removed
 <LI>Rook-Ceph support for OCP 4.6 and 4.7 removed because the latest Ceph releases supports only OCP 4.8+
 <LI>Incorrect reference to subdirectory in rook-uninstall.sh corrected
-</UL>
-<LI>Implemented installation flow to support multi-subnet location of OCP nodes. DHCP Relay must be set on routers and points the bastion.
-<LI>Possible selection different ICS version than default for GI installation (except air-gapped approach)
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
