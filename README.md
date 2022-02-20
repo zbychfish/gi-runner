@@ -13,10 +13,17 @@
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
 Release description:
-<P>v0.7.0
-<LI>Support GI 3.1.3 and ICS 3.15
-<LI>init.sh modified to evaluate inputs and provides more readable output
-<LI>Playbooks modified, only one playbook must be manually started, the others will be started automatically based on installation decisions
+<P>v0.7.1
+<LI>Hardcoded ens192 NIC interface reference in stage1 playbook removed
+<LI>Rook-Ceph support for OCP 4.6 and 4.7 removed because the latest Ceph releases supports only OCP 4.8+
+<LI>Incorrect reference to subdirectory in rook-uninstall.sh corrected
+</UL>
+<LI>Implemented installation flow to support multi-subnet location of OCP nodes. DHCP Relay must be set on routers and points the bastion.
+<LI>Possible selection different ICS version than default for GI installation (except air-gapped approach)
+<HR>
+Files:
+<LI>init.sh - configures installation parameters
+<LI>playbook/install_all.yaml - Ansible playbook to manage installation flow
 <LI>Playbook install_all.yaml accept option -e "skip_phase=X", where X:
 <UL>
 <LI>1 - skips bastion preparation and continue from stage2
@@ -26,12 +33,6 @@ Release description:
 <LI>5 - skips all OCP installation steps, ICS and GI
 <LI>6 - skips all OCP installation steps, ICS, GI and LDAP
 </UL>
-<LI>Implemented installation flow to support multi-subnet location of OCP nodes. DHCP Relay must be set on routers and points the bastion.
-<LI>Possible selection different ICS version than default for GI installation (except air-gapped approach)
-<HR>
-Files:
-<LI>init.sh - configures installation parameters
-<LI>playbook/install_all.yaml - Ansible playbook to manage installation flow
 <LI>playbook/15-uninstall-gi.yaml - Ansible playbook to uninstall GI
 <LI>playbook/21-shutdown-gi.yaml - Ansible playbook to shutdown GI instance for administration purposes on CPFS and OCP level
 <LI>playbook/22-start-gi.yaml - Ansible playbook to start GI instance after shutdown with playbook 21
@@ -47,6 +48,21 @@ Files:
 <LI>scripts/ics-uninstall.sh - native DEV team script to remove ICS instances
 <HR>
 Releases history:
+<P>v0.7.0
+<LI>Support GI 3.1.3 and ICS 3.15
+<LI>init.sh modified to evaluate inputs and provides more readable output
+<LI>Playbooks modified, only one playbook must be manually started, the others will be started automatically based on installation decisions
+<LI>Playbook install_all.yaml accept option -e "skip_phase=X", where X:
+<UL>
+<LI>1 - skips bastion preparation and continue from stage2
+<LI>2 - skips all steps before storage setup on OCP
+<LI>3 - skips all OCP installation steps and installs configured applications (ICS, GI, LDAP)
+<LI>4 - skips all OCP installation steps and ICS
+<LI>5 - skips all OCP installation steps, ICS and GI
+<LI>6 - skips all OCP installation steps, ICS, GI and LDAP
+</UL>
+<LI>Implemented installation flow to support multi-subnet location of OCP nodes. DHCP Relay must be set on routers and points the bastion.
+<LI>Possible selection different ICS version than default for GI installation (except air-gapped approach)
 <P>v0.6.2
 <LI>Solved bug with rook-ceph installation when nodes are not dedicated
 <LI>Identified bug with OCS installation on cluster with more that 3 workers, in this case storage must be assigned to first 3 nodes - will be solved in next release
