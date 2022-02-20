@@ -21,7 +21,9 @@ then
         oc delete cephcluster rook-ceph -n rook-ceph
 fi
 echo "Remove Rook operator"
-oc delete -f gi-temp/rook-latest-operator.yaml
+oc delete -f gi-temp/rook/rook-latest-operator.yaml
+echo "Remove Rook toolbox"
+oc delete -f gi-temp/rook/rook-toolbox.yaml
 #for op in $(oc get deployments -n rook-ceph -o name | grep rook)
 #do
 #        oc delete -n rook-ceph $op
