@@ -559,7 +559,7 @@
 
 - name: Get bastion interface name
   shell:
-    cmd: nmcli c show | grep ens192 | awk '{print $1}'
+    cmd: "nmcli c show | grep {{ bas_int }} | awk '{print $1}'"
   register: bas_int_name
 
 - name: Set self DNS for interface

@@ -738,14 +738,21 @@ function get_software_architecture() {
                 is_master_only=${input_variable^^}
         done
         save_variable GI_MASTER_ONLY $is_master_only
-        msg "Decide what kind of cluster storage option will be implemented:" 8
-        msg "- OpenShift Container Storage - commercial rook-ceph branch from RedHat" 8
-        msg "- Rook-Ceph - opensource cluster storage option" 8
-        while $(check_input "sto" ${storage_type})
-        do
-                get_input "sto" "Choice the cluster storage type? (O)CS/(\e[4mR\e[0m)ook: " true
-                storage_type=${input_variable^^}
-        done
+	if [[ $ocp_major_version -lt 2 ]]
+	then
+		msg "New Rook-Ceph releases do not support OCP 4.6 and 4.7" 8
+		msg "You must install OCS" 8
+		storage_type="O"
+	else
+	        msg "Decide what kind of cluster storage option will be implemented:" 8
+       		msg "- OpenShift Container Storage - commercial rook-ceph branch from RedHat" 8
+        	msg "- Rook-Ceph - opensource cluster storage option" 8
+        	while $(check_input "sto" ${storage_type})
+        	do
+                	get_input "sto" "Choice the cluster storage type? (O)CS/(\e[4mR\e[0m)ook: " true
+                	storage_type=${input_variable^^}
+        	done
+	fi
         save_variable GI_STORAGE_TYPE $storage_type
         if [[ $storage_type == "O" && $is_master_only == 'N' ]]
         then
@@ -1272,8 +1279,8 @@ function get_service_assignment() {
                                 ics_nodes=${input_variable}
                         done
                 fi
+        	save_variable GI_ICS_NODES "$ics_nodes"
         fi
-        save_variable GI_ICS_NODES "$ics_nodes"
         if [ "$gi_install" == 'Y' ]
         then
                 IFS=',' read -r -a worker_arr <<< "$worker_name"
@@ -1315,9 +1322,11 @@ function get_service_assignment() {
                                 fi
                                 gi_nodes=${input_variable}
                         done
+			save_variable GI_GI_NODES "${db2_nodes},$gi_nodes"
+		else
+			save_variable GI_GI_NODES ""
                 fi
         fi
-	save_variable GI_GI_NODES "${db2_nodes},$gi_nodes"
 }
 
 function get_cluster_storage_info() {
@@ -1647,7 +1656,7 @@ function get_gi_options() {
 	msg "As a default the collector sends data to cluster proxy on bastion using random port range 30000-32768" 8
         while $(check_input "yn" "$change_ssh_host" false)
         do
-	        get_input "yn" "Would you like to send datamarts using another proxy server?: " false
+	        get_input "yn" "Would you like to send datamarts using another proxy server?: " true
                 change_ssh_host=${input_variable^^}
         done
 	if [[ $change_ssh_host == 'Y' ]]
