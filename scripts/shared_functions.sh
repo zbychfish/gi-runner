@@ -13,6 +13,14 @@ function pre_scripts_init() {
 	dnf -qy install jq
 }
 
+function pre_scripts_init_no_jq() {
+        mkdir -p $air_dir
+        rm -rf $GI_TEMP
+        rm -rf /opt/registry
+        mkdir -p $GI_TEMP
+}
+
+
 function msg() {
         $2 && printf "$1\n" || printf "$1"
 }
@@ -380,7 +388,7 @@ function get_ocp_version_prescript() {
 	if [[ "$1" != "major" ]]
 	then
         	msg "Insert minor version of OpenShift ${ocp_major_versions[${ocp_major_version}]}.x" true
-        	msg "It must be existing version - you can check list of available version using this URL: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_versions[${ocp_major_version}]}/latest/" true
+        	msg "It must be existing version - you can check the latest stable version using this URL: https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-${ocp_major_versions[${ocp_major_version}]}" true
         	ocp_release_minor=${ocp_release_minor:-Z}
         	while $(check_input ${ocp_release_minor} "int" 0 1000)
         	do
@@ -389,6 +397,22 @@ function get_ocp_version_prescript() {
         	done
         	ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
 	fi
+}
+
+function get_ics_version_prescript() {
+	while $(check_input ${ics_version} "list" ${#ics_versions[@]})
+        do
+                get_input "list" "Select ICS version: " "${ics_versions[@]}"
+                ics_version=$input_variable
+        done
+}
+
+function get_gi_version_prescript() {
+	while $(check_input ${gi_version} "list" ${#gi_versions[@]})
+        do
+                get_input "list" "Select GI version: " "${gi_versions[@]}"
+                gi_version=$input_variable
+        done
 }
 
 function get_pull_secret() {
@@ -473,5 +497,16 @@ function install_ocp_tools() {
 	msg "Install OCP tools ..." true
 	tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
 	tar xf $GI_TEMP/opm-linux.tar.gz -C /usr/local/bin &>/dev/null
+}
+
+function install_app_tools() {
+	if [[ $files_type == "ICS" ]]
+	then
+		tar xf $GI_TEMP/cloudctl-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
+		mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
+		tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
+	else
+		exit 0
+	fi
 }
 

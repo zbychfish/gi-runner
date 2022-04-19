@@ -1,8 +1,8 @@
 <B>OpenShift Cluster, IBM Common Services and Guardium Insights installation automation on bare metal</B>
 <HR>
-<P>Automates OCP installation for releases: 4.6, 4.7, 4.8, 4.9
-<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.2, 3,15.0
-<P>Automates GI installation for releases: 3.0.0, 3.0.1, 3.0.2, 3.1.0, 3.1.2, 3.1.3
+<P>Automates OCP installation for releases: 4.6, 4.7, 4.8, 4.9, 4.10
+<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.2, 3.15.1, 3.16.3, 3.17.0
+<P>Automates GI installation for releases: 3.0.0, 3.0.1, 3.0.2, 3.1.0, 3.1.2, 3.1.3, 3.1.4, 3.1.5
 <P>Supports installation with direct access to the Internet, using proxy and air-gapped (restricted) approach
 <P>Implemented OCP architectures:
 <LI>3 masters and 3+n workers with OCS or rook-ceph
@@ -13,10 +13,10 @@
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
 Release description:
-<P>v0.7.1
-<LI>Hardcoded ens192 NIC interface reference in stage1 playbook removed
-<LI>Rook-Ceph support for OCP 4.6 and 4.7 removed because the latest Ceph releases supports only OCP 4.8+
-<LI>Incorrect reference to subdirectory in rook-uninstall.sh corrected
+<P>v0.8.0
+<LI>Added installation support for GI 3.1.4 and 3.1.5, OCP 4.10.x, ICS 3.16.x and 3.17.x
+<LI>Some bugs in air-gapped installation removed (tested installation OCP 4.8.35 with ICS 3.14.2 and GI 3.1.5 
+<LI>prescripts use new function approach
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
@@ -45,6 +45,10 @@ Files:
 <LI>scripts/ics-uninstall.sh - native DEV team script to remove ICS instances
 <HR>
 Releases history:
+<P>v0.7.1
+<LI>Hardcoded ens192 NIC interface reference in stage1 playbook removed
+<LI>Rook-Ceph support for OCP 4.6 and 4.7 removed because the latest Ceph releases supports only OCP 4.8+
+<LI>Incorrect reference to subdirectory in rook-uninstall.sh corrected
 <P>v0.7.0
 <LI>Support GI 3.1.3 and ICS 3.15
 <LI>init.sh modified to evaluate inputs and provides more readable output
