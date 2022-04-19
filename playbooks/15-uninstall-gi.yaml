@@ -23,9 +23,9 @@
   - name: Set GI installation variables
     set_fact:
       gi_case_inventory_setup: "install"
-      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' if gi_version_index == '3' else 'ibm-guardium-insights-2.1.2.tgz' if gi_version_index == '4' else 'ibm-guardium-insights-2.1.3.tgz' }}"
+      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' if gi_version_index == '3' else 'ibm-guardium-insights-2.1.2.tgz' if gi_version_index == '4' else 'ibm-guardium-insights-2.1.3.tgz' if gi_version_index == '5' else 'ibm-guardium-insights-2.1.4.tgz' if gi_version_index == '6' else 'ibm-guardium-insights-2.1.5.tgz' }}"
       offline_inventory: "gi_offline"
-      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' if gi_version_index == '3' else '3.1.2' if gi_version_index == '4' else '3.1.3' }}"
+      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' if gi_version_index == '3' else '3.1.2' if gi_version_index == '4' else '3.1.3' if gi_version_index == '5' else '3.1.4' if gi_version_index == '6' else '3.1.5' }}"
 
   - name: Delete GI operator instance
     shell:

@@ -814,7 +814,7 @@ function software_installation_on_offline() {
         pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
         cd $GI_TEMP/os/galaxy
-        ansible-galaxy collection install community-general-3.3.2.tar.gz
+        ansible-galaxy collection install community-general-${galaxy_community_general}.tar.gz
         cd $GI_HOME
         mkdir -p /etc/ansible
         echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts

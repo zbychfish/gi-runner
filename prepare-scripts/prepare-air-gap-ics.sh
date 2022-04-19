@@ -1,126 +1,64 @@
 #!/bin/bash
+set -e
+trap "exit 1" ERR
 
-function check_exit_code() {
-        if [[ $1 -ne 0 ]]
-        then
-                echo $2
-                echo "Please check the reason of problem and restart script"
-                exit 1
-        else
-                echo "OK"
-        fi
-}
+source scripts/init.globals.sh
+source scripts/shared_functions.sh
 
-echo "Setting environment"
-registry_version=2.7.1
-local_directory=`pwd`
-host_fqdn=$( hostname --long )
-temp_dir=$local_directory/gi-temp
-air_dir=$local_directory/air-gap
-# Creates target download directory
-mkdir -p $temp_dir
-# Creates temporary directory
-mkdir -p $air_dir
-read -p "Insert RH account name: " rh_account
-read -sp "Insert RH account password: " rh_account_pwd
-declare -a declare -a ics_versions=(3.7.4 3.8.1 3.9.1 3.10.0 3.11.0 3.12.1 3.13.0 3.14.2)
-declare -a cases=(ibm-cp-common-services-1.3.4.tgz ibm-cp-common-services-1.4.1.tgz ibm-cp-common-services-1.5.1.tgz ibm-cp-common-services-1.6.0.tgz ibm-cp-common-services-1.7.0.tgz ibm-cp-common-services-1.8.1.tgz ibm-cp-common-services-1.9.0.tgz ibm-cp-common-services-1.10.2.tgz)
-while [[ ( -z $ics_version_selected ) || ( $ics_version_selected -lt 1 || $ics_version_selected -gt $i ) ]]
+get_pre_scripts_variables
+pre_scripts_init
+get_ics_version_prescript
+ics_version=$(($ics_version-1))
+msg "Access to ICS packages requires RedHat account authentication for some container images" true
+get_account "Insert RedHat account name"
+rh_account=$curr_value
+echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
+curr_value=""
+while $(check_input "${curr_value}" "txt" 2)
 do
-	echo "Select ICS version to mirror:"
-        i=1
-        for ics_version in "${ics_versions[@]}"
-        do
-        	echo "$i - $ics_version"
-                i=$((i+1))
-        done
-        read -p "Your choice?: " ics_version_selected
+        get_input "txt" "Insert password for RedHat account $rh_account: " false
+        curr_value="$input_variable"
 done
-ics_version_selected=$(($ics_version_selected-1))
-# Gets source bastion release (supported CentOS 8)
-dnf -qy install python3 podman wget
-check_exit_code $? "Cannot download image registry"
-# - cleanup repository if exists
-echo "Installing local image registry ..."
-podman stop bastion-registry
-podman container prune <<< 'Y'
-rm -rf /opt/registry
-# - Pulls image of portable registry and save it 
-podman pull docker.io/library/registry:${registry_version}
-check_exit_code $? "Cannot download image registry image"
-# - Prepares portable registry directory structure
-mkdir -p /opt/registry/{auth,certs,data}
-# - Creates SSL cert for portable registry (only for mirroring, new one will be created in disconnected env)
-openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:`hostname --long`"
-check_exit_code $? "Cannot create SSl certificate"
-cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
-update-ca-trust extract
-# - Creates user to get access to portable repository
-dnf -qy install httpd-tools
-check_exit_code $? "Cannot install httpd-tools"
-htpasswd -bBc /opt/registry/auth/htpasswd admin guardium
-# - Sets firewall settings
-systemctl enable firewalld
-systemctl start firewalld
-firewall-cmd --zone=public --add-port=5000/tcp --permanent
-firewall-cmd --zone=public --add-service=http --permanent
-firewall-cmd --reload
-# - Sets SE Linux for NetworkManager
-semanage permissive -a NetworkManager_t
-# - Starts portable registry
-echo "Starting mirror image registry ..."
-podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version}
-check_exit_code $? "Cannot start temporary image registry"
-# Packs together centos updates, packages, python libraries and portable image
-cd $temp_dir
+rh_account_pwd=$curr_value
+msg "Setup mirror image registry ..." true
+setup_local_registry
+msg "Download support tools ..." true
+cd $GI_TEMP
 declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
 for file in ${ocp_files[@]}
 do
-        wget $file > /dev/null
-        check_exit_code $? "Cannot donwload $file"
+        download_file $file
 done
-tar xf cloudctl-linux-amd64.tar.gz -C /usr/local/bin
-tar xf openshift-client-linux.tar.gz -C /usr/local/bin
+files_type="ICS"
+install_app_tools
 rm -f openshift-client-linux.tar.gz
-mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
-echo "Mirroring ICS ${ics_versions[${ics_version_selected}]}"
-# Mirrors OCP images to portable repository
-dnf -qy install jq
-check_exit_code $? "Cannot install jq package"
+echo "Mirroring ICS ${ics_versions[${ics_version}]}"
 dnf -qy install skopeo
 check_exit_code $? "Cannot install skopeo package"
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
-# Mirroring ICS images
-# - install Skopeo utility
-# - declares cases files per ICS release
-# - declares variables
-CASE_ARCHIVE=${cases[${ics_version_selected}]}
+CASE_ARCHIVE=${ics_cases[${ics_version}]}
 CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
-# - downloads manifests
-cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $temp_dir/ics_offline
+cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $GI_TEMP/ics_offline
 check_exit_code $? "Cannot download ICS case file"
-# - authenticates in external repositories
 sites="cp.icr.io registry.redhat.io registry.access.redhat.com"
 for site in $sites
 do
 	echo $site
-        cloudctl case launch --case $temp_dir/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry $site --user $rh_account --pass $rh_account_pwd"
+        cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry $site --user $rh_account --pass $rh_account_pwd"
 	check_exit_code $? "Cannot configure credentials for site $site"
 done
-cloudctl case launch --case $temp_dir/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry `hostname --long`:5000 --user admin --pass guardium"
-# - mirrors ICS images
-cloudctl case launch --case $temp_dir/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir $temp_dir/ics_offline"
+cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry `hostname --long`:5000 --user admin --pass guardium"
+cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/ics_offline"
 check_exit_code $? "Cannot mirror ICS images"
 podman stop bastion-registry
 cd /opt/registry
-tar cf ${air_dir}/ics_registry-${ics_versions[${ics_version_selected}]}.tar data
-cd $temp_dir
-tar -rf ${air_dir}/ics_registry-${ics_versions[${ics_version_selected}]}.tar ics_offline cloudctl-linux-amd64.tar.gz
-cd $local_directory
+tar cf ${air_dir}/ics_registry-${ics_versions[${ics_version}]}.tar data
+cd $GI_TEMP
+tar -rf ${air_dir}/ics_registry-${ics_versions[${ics_version}]}.tar ics_offline cloudctl-linux-amd64.tar.gz
 # Cleanup gi-temp, portable-registry
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
-rm -rf $temp_dir
-echo "ICS ${ics_versions[${ics_version_selected}]} files prepared - copy $air_dir/ics_registry-${ics_versions[${ics_version_selected}]}.tar to air-gapped bastion machine"
+rm -rf $GI_TEMP
+echo "ICS ${ics_versions[${ics_version}]} files prepared - copy $air_dir/ics_registry-${ics_versions[${ics_version}]}.tar to air-gapped bastion machine"

@@ -1,0 +1,6 @@
+oc exec c-{{ gi_namespace }}-db2-db2u-0 -n {{ gi_namespace }} -it su - db2inst1 << EOF
+/mnt/blumeta0/home/db2inst1/sqllib/bin/db2 connect to bludb
+/mnt/blumeta0/home/db2inst1/sqllib/bin/db2 update db cfg using DFT_DEGREE 2 immediate
+/mnt/blumeta0/home/db2inst1/sqllib/bin/db2 get db cfg|grep DFT_DEGREE
+EOF
+

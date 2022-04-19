@@ -6,13 +6,13 @@
     matchbox_version: "v0.9.0"
     rook_operator_version: "v1.8.2"
     rook_ceph_version: "v16.2.7"
-    ics_versions: [ "3.7.4","3.8.1","3.9.1","3.10.0","3.11.0","3.12.1","3.13.0", "3.14.2", "3.15.0" ]
-    ics_cases: [ "ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz","ibm-cp-common-services-1.5.1.tgz","ibm-cp-common-services-1.6.0.tgz","ibm-cp-common-services-1.7.0.tgz","ibm-cp-common-services-1.8.1.tgz","ibm-cp-common-services-1.9.0.tgz", "ibm-cp-common-services-1.10.2.tgz", "ibm-cp-common-services-1.11.0.tgz" ]
+    ics_versions: [ "3.7.4","3.8.1","3.9.1","3.10.0","3.11.0","3.12.1","3.13.0", "3.14.2", "3.15.1", "3.16.3"]
+    ics_cases: [ "ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz","ibm-cp-common-services-1.5.1.tgz","ibm-cp-common-services-1.6.0.tgz","ibm-cp-common-services-1.7.0.tgz","ibm-cp-common-services-1.8.1.tgz","ibm-cp-common-services-1.9.0.tgz", "ibm-cp-common-services-1.10.2.tgz", "ibm-cp-common-services-1.11.1.tgz", "ibm-cp-common-services-1.12.3.tgz" ]
     ics_operator_namespace: "common-service"
     ics_case_name: "ibm-cp-common-services"
     ics_case_inventory_setup: "ibmCommonServiceOperatorSetup"
-    gi_versions: [ "3.0.0","3.0.1","3.0.2","3.1.0","3.1.2", "3.1.3" ]
-    gi_cases: [ 'ibm-guardium-insights-2.0.0.tgz','ibm-guardium-insights-2.0.1.tgz','ibm-guardium-insights-2.0.2.tgz','ibm-guardium-insights-2.1.0.tgz','ibm-guardium-insights-2.1.2.tgz', 'ibm-guardium-insights-2.1.3.tgz' ]
+    gi_versions: [ "3.0.0","3.0.1","3.0.2","3.1.0","3.1.2", "3.1.3", "3.1.4", "3.1.5" ]
+    gi_cases: [ 'ibm-guardium-insights-2.0.0.tgz','ibm-guardium-insights-2.0.1.tgz','ibm-guardium-insights-2.0.2.tgz','ibm-guardium-insights-2.1.0.tgz','ibm-guardium-insights-2.1.2.tgz', 'ibm-guardium-insights-2.1.3.tgz', 'ibm-guardium-insights-2.1.4.tgz', 'ibm-guardium-insights-2.1.5.tgz' ]
     gi_case_inventory_setup: "install"
     internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     domain: "{{ lookup('env','GI_DOMAIN') }}"

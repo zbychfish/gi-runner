@@ -184,3 +184,11 @@
     name: haproxy
     state: restarted
 
+- name: Set script for DB2 parallelism
+  template:
+    src: db2_parallelism.j2
+    dest: ../scripts/db2_parallelism.sh
+
+- name: Setup DB2 parameters for parallelism
+  shell:
+    cmd: bash ../scripts/db2_parallelism.sh

@@ -80,30 +80,30 @@
     - "ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/inetorgperson.ldif"
   when: ldap_depl_type == "S"
 
-- name: Add User OU
-  community.general.ldap_entry:
-    dn: "ou=users,{{ ldap_domain }}"
-    objectClass: organizationalUnit
-    bind_dn: "cn=admin,{{ ldap_domain }}"
-    bind_pw: "{{ ldap_password }}"
-    server_uri: ldap://{{ bas_ip }}/
-  when: ldap_depl_type == "S"
+    #- name: Add User OU
+    #community.general.ldap_entry:
+    #dn: "ou=users,{{ ldap_domain }}"
+    #objectClass: organizationalUnit
+    #bind_dn: "cn=admin,{{ ldap_domain }}"
+    #bind_pw: "{{ ldap_password }}"
+    #server_uri: ldap://{{ bas_ip }}/
+    #when: ldap_depl_type == "S"
 
-- name: Add Users
-  community.general.ldap_entry:
-    dn: "cn={{ item }},ou=users,{{ ldap_domain }}"
-    objectClass: inetOrgPerson
-    attributes:
-      cn: "{{ item }}"
-      sn: "{{ item }}"
-      uid: "{{ item }}"
-      userPassword: "{{ ldap_password }}"
-    bind_dn: "cn=admin,{{ ldap_domain }}"
-    bind_pw: "{{ ldap_password }}"
-    server_uri: "ldap://{{ bas_ip }}/"
-  with_items:
-    - "{{ ldap_users.msg | list }}"
-  when: ldap_depl_type == "S"
+    #- name: Add Users
+    #community.general.ldap_entry:
+    #dn: "cn={{ item }},ou=users,{{ ldap_domain }}"
+    #objectClass: inetOrgPerson
+    #attributes:
+    #  cn: "{{ item }}"
+    #  sn: "{{ item }}"
+    #  uid: "{{ item }}"
+    #  userPassword: "{{ ldap_password }}"
+    #bind_dn: "cn=admin,{{ ldap_domain }}"
+    #bind_pw: "{{ ldap_password }}"
+    #server_uri: "ldap://{{ bas_ip }}/"
+    #with_items:
+    #- "{{ ldap_users.msg | list }}"
+    #when: ldap_depl_type == "S"
 
 - name: Check openldap namespace existence
   shell:
