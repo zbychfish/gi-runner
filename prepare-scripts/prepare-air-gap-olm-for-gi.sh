@@ -115,14 +115,14 @@ fi
 # - Clean up
 podman stop bastion-registry
 cd /opt/registry
-tar cf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar data
+tar cf $air_dir/olm-registry-${ocp_major_release}-for-gi-`date +%Y-%m-%d`.tar data
 cd $GI_TEMP
-tar -rf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar manifests-*
+tar -rf $air_dir/olm-registry-${ocp_major_release}-for-gi-`date +%Y-%m-%d`.tar manifests-*
 cd $air_dir
-tar -rf $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar operators.txt
+tar -rf $air_dir/olm-registry-${ocp_major_release}-for-gi-`date +%Y-%m-%d`.tar operators.txt
 rm -rf $GI_TEMP
 rm -f  $air_dir/operators.txt
 podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry
-echo "OLM images prepared for ${ocp_major_release} - copy $air_dir/olm-registry-${ocp_major_release}-`date +%Y-%m-%d`.tar to air-gapped bastion machine"
+echo "OLM images prepared for ${ocp_major_release} - copy $air_dir/olm-registry-${ocp_major_release}-for-gi-`date +%Y-%m-%d`.tar to air-gapped bastion machine"
