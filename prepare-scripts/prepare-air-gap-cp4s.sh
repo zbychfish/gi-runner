@@ -43,23 +43,23 @@ then
 fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
-echo "Mirroring GI ${gi_versions[${gi_version}]}"
-CASE_ARCHIVE=${gi_cases[${gi_version}]}
-CASE_INVENTORY_SETUP=install
+echo "Mirroring GI ${cp4s_versions[0]}"
+CASE_ARCHIVE=${cp4s_cases[0]}
+CASE_INVENTORY_SETUP=ibmSecurityOperatorSetup
 if [ $# -eq 0 ]
 then
-	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $GI_TEMP/gi_offline
+	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $GI_TEMP/cp4s_offline
 	check_exit_code $? "Cannot download GI case file"
 	sites="cp.icr.io"
 	for site in $sites
 	do
 		echo $site
-	        cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry $site --user cp --pass $ibm_account_key"
+	        cloudctl case launch --case $GI_TEMP/cp4s_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry $site --user cp --pass $ibm_account_key"
 		check_exit_code $? "Cannot configure credentials for site $site"
 	done
-	cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium"
+	cloudctl case launch --case $GI_TEMP/cp4s_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium"
 fi
-cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/gi_offline"
+cloudctl case launch --case $GI_TEMP/cp4s_offline/${CASE_ARCHIVE} --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/cp4s_offline"
 mirror_status=$?
 echo "Mirroring status: $mirror_status"
 if [ $mirror_status -ne 0 ]
@@ -69,12 +69,12 @@ then
 fi
 podman stop bastion-registry
 cd $GI_TEMP
-tar cf ${air_dir}/gi_registry-${gi_versions[${gi_version}]}.tar gi_offline cloudctl-linux-amd64.tar.gz
+tar cf ${air_dir}/cp4s_registry-${cp4s_versions[0]}.tar cp4s_offline cloudctl-linux-amd64.tar.gz
 cd /opt/registry
-tar -rf ${air_dir}/gi_registry-${gi_versions[${gi_version}]}.tar data
+tar -rf ${air_dir}/cp4s_registry-${cp4s_versions[0]}.tar data
 cd $GI_TEMP
 rm -rf /opt/registry
 podman rm bastion-registry
 podman rmi --all
 rm -rf $GI_TEMP
-echo "GI ${gi_versions[${gi_version}]} files prepared - copy $air_dir/gi_registry-${gi_versions[${gi_version}]}.tar to air-gapped bastion machine"
+echo "CP4S ${cp4s_versions[0]} files prepared - copy $air_dir/cp4s_registry-${cp4s_versions[0]}.tar to air-gapped bastion machine"
