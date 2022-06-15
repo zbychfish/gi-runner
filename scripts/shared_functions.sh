@@ -14,12 +14,11 @@ function pre_scripts_init() {
 }
 
 function pre_scripts_init_no_jq() {
-        mkdir -p $air_dir
-        rm -rf $GI_TEMP
-        rm -rf /opt/registry
-        mkdir -p $GI_TEMP
+       	mkdir -p $air_dir
+       	rm -rf $GI_TEMP
+       	rm -rf /opt/registry
+       	mkdir -p $GI_TEMP
 }
-
 
 function msg() {
         $2 && printf "$1\n" || printf "$1"

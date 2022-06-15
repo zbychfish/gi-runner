@@ -5,6 +5,21 @@
     state: latest
   when: internet_type != 'A' and ldap_depl_type == "S"
 
+- name: Archive clean openldap configuration
+  shell:
+    cmd: "tar cvf openldap_fresh.tar *"
+    chdir: /etc/openldap
+  when: ldap_depl_type == "S"
+  args:
+    warn: no
+
+- name: Move archive to ldap directory
+  shell:
+    cmd: "mv /etc/openldap/openldap_fresh.tar ../ldap"
+  when: ldap_depl_type == "S"
+  args:
+    warn: no
+
 - name: Create LDAP directory
   file:
     path: ../ldap
@@ -48,13 +63,12 @@
 - name: "Prepare ldif's"
   template:
     src: "{{ item.src }}"
-    dest: "{{{{ item.dest }}"
+    dest: "{{ item.dest }}"
   with_items:
     - { src: "ldap/config.j2", dest: "{{ temp_dir }}/adds/config.ldif" }
     - { src: "ldap/admin_passwd.j2", dest: "{{ temp_dir }}/adds/admin_passwd.ldif" }
     - { src: "ldap/monitor.j2", dest: "{{ temp_dir }}/adds/monitor.ldif" }
     - { src: "ldap/root_dn.j2", dest: "{{ temp_dir }}/adds/root_dn.ldif" }
-          #- { src: "ldap/users.j2", dest: "ldap/users.ldif" }
   when: ldap_depl_type == "S"
 
 - name: Modify LDAP domain
@@ -80,30 +94,31 @@
     - "ldapadd -Y EXTERNAL -H ldapi:// -f /etc/openldap/schema/inetorgperson.ldif"
   when: ldap_depl_type == "S"
 
-    #- name: Add User OU
-    #community.general.ldap_entry:
-    #dn: "ou=users,{{ ldap_domain }}"
-    #objectClass: organizationalUnit
-    #bind_dn: "cn=admin,{{ ldap_domain }}"
-    #bind_pw: "{{ ldap_password }}"
-    #server_uri: ldap://{{ bas_ip }}/
-    #when: ldap_depl_type == "S"
+- name: Add User OU
+  community.general.ldap_entry:
+    dn: "ou=users,{{ ldap_domain }}"
+    objectClass: organizationalUnit
+    bind_dn: "cn=admin,{{ ldap_domain }}"
+    bind_pw: "{{ ldap_password }}"
+    server_uri: ldap://{{ bas_ip }}/
+  when: ldap_depl_type == "S"
 
-    #- name: Add Users
-    #community.general.ldap_entry:
-    #dn: "cn={{ item }},ou=users,{{ ldap_domain }}"
-    #objectClass: inetOrgPerson
-    #attributes:
-    #  cn: "{{ item }}"
-    #  sn: "{{ item }}"
-    #  uid: "{{ item }}"
-    #  userPassword: "{{ ldap_password }}"
-    #bind_dn: "cn=admin,{{ ldap_domain }}"
-    #bind_pw: "{{ ldap_password }}"
-    #server_uri: "ldap://{{ bas_ip }}/"
-    #with_items:
-    #- "{{ ldap_users.msg | list }}"
-    #when: ldap_depl_type == "S"
+- name: Add Users
+  community.general.ldap_entry:
+    dn: "cn={{ item }},ou=users,{{ ldap_domain }}"
+    objectClass: inetOrgPerson
+    attributes:
+      cn: "{{ item }}"
+      sn: "{{ item }}"
+      uid: "{{ item }}"
+      userPassword: "{{ ldap_password }}"
+      mail: "{{ item }}@{{ domain }}"
+    bind_dn: "cn=admin,{{ ldap_domain }}"
+    bind_pw: "{{ ldap_password }}"
+    server_uri: "ldap://{{ bas_ip }}/"
+  with_items:
+    - "{{ ldap_users | list }}"
+  when: ldap_depl_type == "S"
 
 - name: Check openldap namespace existence
   shell:
@@ -192,7 +207,7 @@
   shell:
     cmd: "cloudctl tokens|grep Access|awk -F ':' '{ print $2 }'|awk -F ' ' '{ print $2}'"
   register: access_token
-  when: install_ics == 'Y'
+  when: install_ics == 'Y' or install_cp4s == 'Y'
 
 - name: Set LDAP URL for container
   set_fact:
@@ -204,6 +219,11 @@
     ldap_url: "{{ bas_ip }}:389"
   when: ldap_depl_type == "S"
 
+- name: Check HA proxy with OpenLDAP
+  shell:
+    cmd: cat /etc/haproxy/haproxy.cfg|grep "frontend openldap"|wc -l
+  register: is_openldap_in_haproxy
+
 - name: Create HA Proxy config file with openldap
   template:
     src: haproxy_with_ldap.j2
@@ -213,7 +233,7 @@
     nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
     ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
     workers: "{{ nodes|zip(ips)|list }}"
-  when: is_master_only == 'N' and ldap_depl_type == "C"
+  when: is_master_only == 'N' and ldap_depl_type == "C" and is_openldap_in_haproxy.stdout == "0"
 
 - name: Create HA Proxy config file with ldap (no dedicated workers)
   template:
@@ -221,12 +241,12 @@
     dest: /etc/haproxy/haproxy.cfg.ldap
   vars:
     masters: "{{ master_name|zip(master_ip)|list }}"
-  when: is_master_only == 'Y' and ldap_depl_type == "C"
+  when: is_master_only == 'Y' and ldap_depl_type == "C" and is_openldap_in_haproxy.stdout == "0"
 
 - name: Update HA proxy config
   shell:
     cmd: cat /etc/haproxy/haproxy.cfg.ldap >> /etc/haproxy/haproxy.cfg
-  when: ldap_depl_type == "C"
+  when: ldap_depl_type == "C" and is_openldap_in_haproxy.stdout == "0"
 
 - name: Open openldap port on load balancer (bastion)
   firewalld:
@@ -240,13 +260,41 @@
   service:
     name: haproxy
     state: restarted
+  when: ldap_depl_type == "C" and is_openldap_in_haproxy.stdout == "0"
+
+- name: Add email address to users
+  community.general.ldap_attrs:
+    dn: "cn={{ item }},ou=users,{{ ldap_domain }}"
+    attributes:
+        mail: "{{ item }}@{{ domain }}"
+        cn: "{{ item }}"
+        sn: "{{ item }}"
+    state: exact
+    server_uri: "ldap://{{ ldap_url }}"
+    bind_dn: "cn=admin,{{ ldap_domain }}"
+    bind_pw: "{{ ldap_password }}"
+  with_items:
+    - "{{ ldap_users | list }}"
   when: ldap_depl_type == "C"
+
+- name: Remove LDAP from ICS if exists
+  uri:
+    url: "https://cp-console.apps.{{ domain }}/idmgmt/identity/api/v1/directory/ldap/offboardDirectory"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ access_token.stdout }}"
+    validate_certs: no
+    use_proxy: no
+  environment:
+    no_proxy: cp-console.apps.{{ domain }}
+  when: install_ics == 'Y' or install_cp4s == 'Y'
+  ignore_errors: yes
 
 - name: Add OpenLDAP to ICS configuration for standalone
   uri:
     url: 'https://cp-console.apps.{{ domain }}/idmgmt/identity/api/v1/directory/ldap/onboardDirectory'
     method: POST
-    body: "{\"LDAP_ID\": \"local_ldap\", \"LDAP_URL\": \"ldap://{{ ldap_url }}\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"\", \"LDAP_GROUPMEMBERIDMAP\": \"\"}"
+    body: "{\"LDAP_ID\": \"local_ldap\", \"LDAP_URL\": \"ldap://{{ ldap_url }}\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"(&(cn=%v)(objectclass=groupOfNames))\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"*:cn\", \"LDAP_GROUPMEMBERIDMAP\": \"groupOfNames:member\"}"
     body_format: json
     headers:
       Authorization: 'bearer {{ access_token.stdout }}'
@@ -255,13 +303,13 @@
     use_proxy: no
   environment:
     no_proxy: cp-console.apps.{{ domain }}
-  when: ldap_depl_type == "S" and install_ics == 'Y'
+  when: ldap_depl_type == "S" and (install_ics == 'Y' or install_cp4s == 'Y') and ldap_connections.json[0].LDAP_ID
 
 - name: Add OpenLDAP to ICS configuration fo container
   uri:
     url: 'https://cp-console.apps.{{ domain }}/idmgmt/identity/api/v1/directory/ldap/onboardDirectory'
     method: POST
-    body: "{\"LDAP_ID\": \"openldap\", \"LDAP_URL\": \"ldap://{{ ldap_url }}\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"\", \"LDAP_GROUPMEMBERIDMAP\": \"\"}"
+    body: "{\"LDAP_ID\": \"openldap\", \"LDAP_URL\": \"ldap://{{ ldap_url }}\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"(&(cn=%v)(objectclass=groupOfNames))\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"*:cn\", \"LDAP_GROUPMEMBERIDMAP\": \"groupOfNames:member\"}"
     body_format: json
     headers:
       Authorization: 'bearer {{ access_token.stdout }}'
@@ -270,5 +318,5 @@
     use_proxy: no
   environment:
     no_proxy: cp-console.apps.{{ domain }}
-  when: ldap_depl_type == "C" and install_ics == 'Y'
+  when: ldap_depl_type == "C" and (install_ics == 'Y' or install_cp4s == 'Y')
 

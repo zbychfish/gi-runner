@@ -40,8 +40,12 @@ do
 	test $(check_exit_code $?) || (msg "Cannot download Ansible extension - $package" true; exit 1)
 	msg "Downloaded: $package" true
 done
-wget -P galaxy https://galaxy.ansible.com/download/community-general-${galaxy_community_general}.tar.gz
-test $(check_exit_code $?) || (msg "Cannot download Ansible galaxy packages" true; exit 1)
+galaxy_packages="community-general-${galaxy_community_general}.tar.gz ansible-utils-${galaxy_ansible_utils}.tar.gz"
+for galaxy_package in $galaxy_packages
+do
+	wget -P galaxy https://galaxy.ansible.com/download/${galaxy_package}
+	test $(check_exit_code $?) || (msg "Cannot download Ansible galaxy package ${galaxy_package}" true; exit 1)
+done
 tar cf $air_dir/os-`cat /etc/system-release|sed -e "s/ /_/g"`-`date +%Y-%m-%d`.tar os-updates os-packages ansible galaxy os_release.txt kernel.txt
 cd $iGI_HOME
 rm -rf $GI_TEMP

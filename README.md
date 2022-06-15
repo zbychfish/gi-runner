@@ -1,22 +1,36 @@
 <B>OpenShift Cluster, IBM Common Services and Guardium Insights installation automation on bare metal</B>
 <HR>
 <P>Automates OCP installation for releases: 4.6, 4.7, 4.8, 4.9, 4.10
-<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.2, 3.15.1, 3.16.3, 3.17.0
-<P>Automates GI installation for releases: 3.0.0, 3.0.1, 3.0.2, 3.1.0, 3.1.2, 3.1.3, 3.1.4, 3.1.5
+<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.2, 3.15.1, 3.16.3, 3.17.0, 3.18.0
+<P>Automates GI installation for releases: 3.0.0, 3.0.1, 3.0.2, 3.1.0, 3.1.2, 3.1.3, 3.1.4, 3.1.5, 3.1.6, 3.1.7
+<P>Automates CP4S installation for 1.9 channel (only online installation)
 <P>Supports installation with direct access to the Internet, using proxy and air-gapped (restricted) approach
 <P>Implemented OCP architectures:
 <LI>3 masters and 3+n workers with OCS or rook-ceph
 <LI>3 masters only with OCS or rook-ceph
 <LI>3 masters and 3+n workers and OCS tainted on 3 additional infra nodes
-<LI>Bastion setup requires Fedora 34 or 35 as a operating system
+<LI>Bastion setup requires Fedora 34, 35 or 36 as a operating system
 <HR>
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
 Release description:
-<P>v0.8.0
-<LI>Added installation support for GI 3.1.4 and 3.1.5, OCP 4.10.x, ICS 3.16.x and 3.17.x
-<LI>Some bugs in air-gapped installation removed (tested installation OCP 4.8.35 with ICS 3.14.2 and GI 3.1.5 
-<LI>prescripts use new function approach
+<P>v0.9.0
+<LI>added support of Fedora 36 as a bastion
+<LI>playbook/16-uninstall-ldap.yaml - new playbook allows safely uninstall OpenLDAP instance
+<LI>OpenLDAP users have now mail attribute set (support CP4S demands for LDAP users)
+<LI>introduced installation support for Cloud Pack for Security (channel 1.9)
+<UL>
+<LI>only online installation implemented at this moment
+<LI>ICS installed from CP4S operator inheritance
+<LI>supports all standard CR installation options (application selection, storage class, backup PVC size)
+</UL>
+<LI>added support for GI 3.1.6, 3.1.7, ICS 3.18.0, Fedora 36 as a bastion
+<LI>new playbook for upgrade GI to the latest version, if you installed GI prior 3.1.6, you must before install additional galaxy package - "ansible-galaxy collection install ansible.utils"
+<UL>
+<LI>only online installations supported
+<LI>only upgrade from 3.1.x to 3.1.y supported
+<LI>possible upgrade of ICS by manual modification the variable GI_ICS_VERSION
+</UL>
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
@@ -25,14 +39,14 @@ Files:
 <UL>
 <LI>1 - skips bastion preparation and continue from stage2
 <LI>2 - skips all steps before storage setup on OCP
-<LI>3 - skips all OCP installation steps and installs configured applications (ICS, GI, LDAP)
+<LI>3 - skips all OCP installation steps and installs configured applications (ICS, GI/CP4S, LDAP)
 <LI>4 - skips all OCP installation steps and ICS
-<LI>5 - skips all OCP installation steps, ICS and GI
-<LI>6 - skips all OCP installation steps, ICS, GI and LDAP
+<LI>5 - skips all OCP installation steps, ICS and GI/CP4S
+<LI>6 - skips all OCP installation steps, ICS, GI/CP4S and LDAP
 </UL>
-<LI>playbook/15-uninstall-gi.yaml - Ansible playbook to uninstall GI
-<LI>playbook/21-shutdown-gi.yaml - Ansible playbook to shutdown GI instance for administration purposes on CPFS and OCP level
-<LI>playbook/22-start-gi.yaml - Ansible playbook to start GI instance after shutdown with playbook 21
+<LI>playbook/uninstall-gi.yaml - Ansible playbook to uninstall GI
+<LI>playbook/shutdown-gi.yaml - Ansible playbook to shutdown GI instance for administration purposes on CPFS and OCP level
+<LI>playbook/start-gi.yaml - Ansible playbook to start GI instance after shutdown with playbook 21
 <LI>variables.sh - shell script with OCP environment variables, should loaded after login to bastion (. variables.sh)
 <LI>prepare-scripts/prepare-air-gap-os-files.sh - script to gather software and OS packaged to setup bastion in air-gapped environment
 <LI>prepare-scripts/prepare-air-gap-coreos.sh - script to gather OCP installation tools and container images to install OCP in air-gapped environment
@@ -45,6 +59,10 @@ Files:
 <LI>scripts/ics-uninstall.sh - native DEV team script to remove ICS instances
 <HR>
 Releases history:
+<P>v0.8.0
+<LI>Added installation support for GI 3.1.4 and 3.1.5, OCP 4.10.x, ICS 3.16.x and 3.17.x
+<LI>Some bugs in air-gapped installation removed (tested installation OCP 4.8.35 with ICS 3.14.2 and GI 3.1.5 
+<LI>prescripts use new function approach
 <P>v0.7.1
 <LI>Hardcoded ens192 NIC interface reference in stage1 playbook removed
 <LI>Rook-Ceph support for OCP 4.6 and 4.7 removed because the latest Ceph releases supports only OCP 4.8+

@@ -43,25 +43,25 @@ then
 	REDHAT_OPERATORS=$REDHAT_OPERATORS_OVERRIDE
 else
 
-	REDHAT_OPERATORS="local-storage-operator,ocs-operator"
+	REDHAT_OPERATORS="local-storage-operator,ocs-operator,serverless-operator"
 fi
 if [[ ! -z "$CERTIFIED_OPERATORS_OVERRIDE" ]]
 then
 	CERTIFIED_OPERATORS=$CERTIFIED_OPERATORS_OVERRIDE
 else
-	CERTIFIED_OPERATORS="cic-operator,portworx-certified"
+	CERTIFIED_OPERATORS="cic-operator"
 fi
 if [[ ! -z "$MARKETPLACE_OPERATORS_OVERRIDE" ]]
 then
 	MARKETPLACE_OPERATORS=$MARKETPLACE_OPERATORS_OVERRIDE
 else
-	MARKETPLACE_OPERATORS="mongodb-enterprise-rhmp"
+	MARKETPLACE_OPERATORS=""
 fi
 if [[ ! -z "$COMMUNITY_OPERATORS_OVERRIDE" ]]
 then
 	COMMUNITY_OPERATORS=$COMMUNITY_OPERATORS_OVERRIDE
 else
-	COMMUNITY_OPERATORS="portworx-essentials"
+	COMMUNITY_OPERATORS=""
 fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
@@ -76,30 +76,42 @@ podman login $LOCAL_REGISTRY -u admin -p guardium
 check_exit_code $? "Cannot login to local image registry"
 podman login registry.redhat.io -u "$rh_account" -p "$rh_account_pwd"
 check_exit_code $? "Cannot login to RedHat image repository"
-msg "Mirrorring RedHat Operators - ${REDHAT_OPERATORS} ..." true
-opm index prune -f registry.redhat.io/redhat/redhat-operator-index:v${ocp_major_release} -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
-podman push $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
-oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
-check_exit_code $? "Error during mirroring of RedHat operators"
-msg "Mirrorring Certified Operators - ${CERTIFIED_OPERATORS} ..." true
-opm index prune -f registry.redhat.io/redhat/certified-operator-index:v${ocp_major_release} -p $CERTIFIED_OPERATORS -t $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release}
-podman push $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release}
-oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
-check_exit_code $? "Error during mirroring of RedHat operators"
-msg "Mirrorring Marketplace Operators - ${MARKETPLACE_OPERATORS} ..." true
-opm index prune -f registry.redhat.io/redhat/redhat-marketplace-index:v${ocp_major_release} -p $MARKETPLACE_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release}
-podman push $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release}
-oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
-msg "Mirrorring Community Operators - ${COMMUNITY_OPERATORS} ..." true
-opm index prune -f registry.redhat.io/redhat/community-operator-index:latest -p $COMMUNITY_OPERATORS -t $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
-podman push $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
-oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/community-operator-index:latest $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
-check_exit_code $? "Error during mirroring of RedHat operators"
-# - Rename manifest to have constant name
-mv manifests-redhat-operator-index-* manifests-redhat-operator-index
-mv manifests-certified-operator-index-* manifests-certified-operator-index
-mv manifests-redhat-marketplace-index-* manifests-redhat-marketplace-index
-mv manifests-community-operator-index-* manifests-community-operator-index
+if [[ ${REDHAT_OPERATORS} != "" ]]
+then
+	msg "Mirrorring RedHat Operators - ${REDHAT_OPERATORS} ..." true
+	opm index prune -f registry.redhat.io/redhat/redhat-operator-index:v${ocp_major_release} -p $REDHAT_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
+	podman push $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release}
+	oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+	check_exit_code $? "Error during mirroring of RedHat operators"
+	mv manifests-redhat-operator-index-* manifests-redhat-operator-index
+fi
+if [[ ${CERTIFIED_OPERATORS} != "" ]]
+then
+	msg "Mirrorring Certified Operators - ${CERTIFIED_OPERATORS} ..." true
+	opm index prune -f registry.redhat.io/redhat/certified-operator-index:v${ocp_major_release} -p $CERTIFIED_OPERATORS -t $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release}
+	podman push $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release}
+	oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/certified-operator-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+	check_exit_code $? "Error during mirroring of RedHat operators"
+	mv manifests-certified-operator-index-* manifests-certified-operator-index
+fi
+if [[ ${MARKETPLACE_OPERATORS} != "" ]]
+then
+	msg "Mirrorring Marketplace Operators - ${MARKETPLACE_OPERATORS} ..." true
+	opm index prune -f registry.redhat.io/redhat/redhat-marketplace-index:v${ocp_major_release} -p $MARKETPLACE_OPERATORS -t $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release}
+	podman push $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release}
+	oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/redhat-marketplace-index:v${ocp_major_release} $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+	check_exit_code $? "Error during mirroring of RedHat operators"
+	mv manifests-redhat-marketplace-index-* manifests-redhat-marketplace-index
+fi
+if [[ ${COMMUNITY_OPERATORS} != "" ]]
+then
+	msg "Mirrorring Community Operators - ${COMMUNITY_OPERATORS} ..." true
+	opm index prune -f registry.redhat.io/redhat/community-operator-index:latest -p $COMMUNITY_OPERATORS -t $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
+	podman push $LOCAL_REGISTRY/olm-v1/community-operator-index:latest
+	oc adm catalog mirror $LOCAL_REGISTRY/olm-v1/community-operator-index:latest $LOCAL_REGISTRY --insecure -a pull-secret-update.txt --filter-by-os=linux/amd64
+	check_exit_code $? "Error during mirroring of RedHat operators"
+	mv manifests-community-operator-index-* manifests-community-operator-index
+fi
 # - Archvining manifests
 # - Clean up
 podman stop bastion-registry

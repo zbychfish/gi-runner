@@ -1,19 +1,5 @@
 - hosts: bastion
   vars:
-    skip_phase: 0
-    temp_dir: "../gi-temp"
-    registry_version: "2.7.1"
-    matchbox_version: "v0.9.0"
-    rook_operator_version: "v1.8.2"
-    rook_ceph_version: "v16.2.7"
-    ics_versions: [ "3.7.4","3.8.1","3.9.1","3.10.0","3.11.0","3.12.1","3.13.0", "3.14.2", "3.15.1", "3.16.3"]
-    ics_cases: [ "ibm-cp-common-services-1.3.4.tgz","ibm-cp-common-services-1.4.1.tgz","ibm-cp-common-services-1.5.1.tgz","ibm-cp-common-services-1.6.0.tgz","ibm-cp-common-services-1.7.0.tgz","ibm-cp-common-services-1.8.1.tgz","ibm-cp-common-services-1.9.0.tgz", "ibm-cp-common-services-1.10.2.tgz", "ibm-cp-common-services-1.11.1.tgz", "ibm-cp-common-services-1.12.3.tgz" ]
-    ics_operator_namespace: "common-service"
-    ics_case_name: "ibm-cp-common-services"
-    ics_case_inventory_setup: "ibmCommonServiceOperatorSetup"
-    gi_versions: [ "3.0.0","3.0.1","3.0.2","3.1.0","3.1.2", "3.1.3", "3.1.4", "3.1.5" ]
-    gi_cases: [ 'ibm-guardium-insights-2.0.0.tgz','ibm-guardium-insights-2.0.1.tgz','ibm-guardium-insights-2.0.2.tgz','ibm-guardium-insights-2.1.0.tgz','ibm-guardium-insights-2.1.2.tgz', 'ibm-guardium-insights-2.1.3.tgz', 'ibm-guardium-insights-2.1.4.tgz', 'ibm-guardium-insights-2.1.5.tgz' ]
-    gi_case_inventory_setup: "install"
     internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     domain: "{{ lookup('env','GI_DOMAIN') }}"
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
@@ -42,8 +28,10 @@
     storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
     install_gi: "{{ lookup('env','GI_INSTALL_GI') }}"
     install_ics: "{{ lookup('env','GI_ICS') }}"
+    install_cp4s: "{{ lookup('env','GI_CP4S') }}"
     one_subnet: "{{ lookup('env','GI_ONE_SUBNET') }}"
-
+  vars_files:
+    - version_vars.yaml
 
   tasks:
     - name: Check standard configuration parameters
@@ -76,6 +64,7 @@
         - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
         - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
         - { name: "GI_ICS", value: "{{ install_ics }}" }
+        - { name: "GI_CP4S", value: "{{ install_cp4s }}" }
         - { name: "GI_ONE_SUBNET", value: "{{ one_subnet }}" }
 
     - name: Set parameters for one subnet installation
@@ -226,7 +215,6 @@
         - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
         - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
         - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
-        - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
         - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
         - { name: "GI_METADATA_STORAGE_SIZE", value: "{{ gi_meta_size }}" }
         - { name: "GI_ACTIVELOGS_STORAGE_SIZE", value: "{{ gi_logs_size }}" }
@@ -238,7 +226,32 @@
         - { name: "GI_SSH_PORT", value: "{{ gi_ssh_port }}" }
       when: install_gi == 'Y' and item.value == ""
 
-    - name: Set GI installation variables from env
+    - name: Set CP4S installation variables from env
+      set_fact:
+        cp4s_namespace: "{{ lookup('env','GI_CP4S_NS') }}"
+        cp4s_admin: "{{ lookup('env','GI_CP4S_ADMIN') }}"
+        cp4s_sc: "{{ lookup('env','GI_CP4S_SC') }}"
+        cp4s_backup_sc: "{{ lookup('env','GI_CP4S_SC_BACKUP') }}"
+        cp4s_backup_size: "{{ lookup('env','GI_CP4S_BACKUP_SIZE') }}"
+        cp4s_options: "{{ lookup('env','GI_CP4S_OPTS').split(',') }}"
+        ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+        cp4s_ext_ingress: "{{ lookup('env','GI_CP4S_IN') }}"
+      when: install_cp4s == 'Y'
+
+    - name: Check CP4S variables
+      fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_CP4S_NS", value: "{{ cp4s_namespace }}" }
+        - { name: "GI_CP4S_ADMIN", value: "{{ cp4s_admin }}" }
+        - { name: "GI_CP4S_SC", value: "{{ cp4s_sc }}" }
+        - { name: "GI_CP4S_SC_BACKUP", value: "{{ cp4s_backup_sc }}" }
+        - { name: "GI_CP4S_BACKUP_SIZE", value: "{{ cp4s_backup_size }}" }
+        - { name: "GI_CP4S_OPTS", value: "{{ cp4s_options }}" }
+        - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
+        - { name: "GI_CP4S_IN", value: "{{ cp4s_ext_ingress }}" }
+      when: install_cp4s == 'Y' and item.value == ""
+
+    - name: Set LDAP installation variables from env
       set_fact:
         ldap_domain: "{{ lookup('env','GI_LDAP_DOMAIN') }}"
         ldap_password: "{{ lookup('env','GI_LDAP_USERS_PWD') }}"
@@ -247,7 +260,7 @@
         ldap_depl_type: "{{ lookup('env','GI_LDAP_DEPLOYMENT') }}"
       when: install_ldap == 'Y'
 
-    - name: Check GI variables
+    - name: Check LDAP variables
       fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_LDAP_DOMAIN", value: "{{ ldap_domain }}" }
@@ -270,13 +283,13 @@
     - name: Set parameters for non air-gapped installation
       set_fact:
         ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
-      when: install_gi == 'Y' and internet_type != 'A'
+      when: (install_gi == 'Y' or install_cp4s == 'Y') and internet_type != 'A'
 
     - name: Check configuration parameters for non air-gapped installation
       fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_IBM_SECRET", value: "{{ ibm_secret }}" }
-      when: internet_type != 'A' and install_gi == 'Y' and item.value == ""
+      when: internet_type != 'A' and (install_gi == 'Y' or install_cp4s == 'Y') and item.value == ""
 
     - name: Set OCP ingress cert variables
       set_fact:
@@ -322,6 +335,21 @@
         - { name: "GI_IN_CERT", value: "{{ gi_cert }}" }
         - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
       when: install_gi == 'Y' and gi_ext_ingress == 'Y' and item.value == ""
+
+    - name: Set endpoint cert variables
+      set_fact:
+        cp4s_ca: "{{ lookup('env', 'GI_CP4S_CA') }}"
+        cp4s_cert: "{{ lookup('env', 'GI_CP4S_CERT') }}"
+        cp4s_key: "{{ lookup('env', 'GI_CP4S_KEY') }}"
+      when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y'
+
+    - name: Check ICS endpoint cert variables
+      fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_CP4S_CA", value: "{{ cp4s_ca }}" }
+        - { name: "GI_CP4S_CERT", value: "{{ cp4s_cert }}" }
+        - { name: "GI_CP4S_KEY", value: "{{ cp4s_key }}" }
+      when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y' and item.value == ""
 
     - name: ICS size
       set_fact:
@@ -404,6 +432,10 @@
       include: gi_install.yaml
       when: skip_phase|int < 5 and install_gi == 'Y'
 
+    - name: Install CP4S
+      include: cp4s_install.yaml
+      when: skip_phase|int < 5 and install_cp4s == 'Y'
+
     - name: Install openldap
       include: openldap_install.yaml
       when: skip_phase|int < 6 and install_ldap == 'Y'
@@ -433,8 +465,16 @@
           - Update the hosts file on your web browser workstation
           - "{{ bas_ip }} insights.apps.{{ domain }}"
           - "Login to GI console as admin - https://insights.apps.{{ domain }}"
-          - "{{ '' if skip_phase|int > 5 else 'SSH port '+ssh_node_port.stdout+' integration with GDP routed and opened on bastion' }}"
+          - "{{ '' if skip_phase|int > 4 else 'SSH port '+ssh_node_port.stdout+' integration with GDP routed and opened on bastion' }}"
       when: install_gi == 'Y'
+
+    - name: CP4S info
+      debug:
+        msg:
+          - "CP4S installation finished"
+          - Update the hosts file on your web browser workstation
+          - "{{ bas_ip }} cp4s.apps.{{ domain }}"
+      when: install_cp4s == 'Y'
 
     - name: LDAP info
       debug:

@@ -4,6 +4,10 @@
     domain: "{{ lookup('env','GI_DOMAIN') }}"
     gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
     gi_namespace:  "{{ lookup('env','GI_NAMESPACE_GI') }}"
+    install_gi: "{{ lookup('env','GI_INSTALL_GI') }}"
+    ics_manifest_dir: "gi_offline"
+  vars_files:
+    - version_vars.yaml
 
   tasks:
   - name: Check other configuration parameters
@@ -15,18 +19,36 @@
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
 
-  - name: Set GI installation variables
+  - meta: end_play
+    when: install_gi == 'N'
+
+  - name: Set GI variables
     set_fact:
-      gi_case_archive: "{{ 'ibm-guardium-insights-2.0.0.tgz' if gi_version_index == '0' else 'ibm-guardium-insights-2.0.1.tgz' if gi_version_index == '1' else 'ibm-guardium-insights-2.0.2.tgz' if gi_version_index == '2' else 'ibm-guardium-insights-2.1.0.tgz' }}"
-      gi_version: "{{ '3.0.0' if gi_version_index == '0' else '3.0.1' if gi_version_index == '1' else '3.0.2' if gi_version_index == '2' else '3.1.0' }}"
+      gi_case_archive: "{{ gi_cases[gi_version_index|int] }}"
+      gi_version: "{{ gi_versions[gi_version_index|int] }}"
 
   - name: Set correct namespace context
     shell:
       cmd: "oc project {{ gi_namespace }}"
 
-  - name: Extract case file
+  - name: GI download case file
     shell:
-      cmd: "tar -C ../gi-temp/gi_offline -xf ../gi-temp/gi_offline/{{ gi_case_archive }}"
+      cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_case_archive }} --outputdir {{ temp_dir }}/gi_arch/{{ offline_inventory }} --tolerance 1"
+    when: internet_type != 'A'
+
+  - name: gunzip case file
+    shell:
+      cmd: "cd {{ temp_dir }}/gi_arch/{{ offline_inventory }};gunzip {{ gi_case_archive }}"
+    ignore_errors: yes
+    when: internet_type != 'A'
+
+  - name: Unpack case file
+    shell:
+      cmd: "tar xf {{ temp_dir }}/gi_arch/{{ offline_inventory }}/{{ gi_case_archive|splitext|first }}.tar -C {{ temp_dir }}/gi_arch/{{ offline_inventory }}"
+
+  - name: Scale gi controller to 0
+    shell:
+      cmd: "oc scale $(oc get deploy -oname | grep guardiuminsights-controller-manager) --replicas=0 -n {{ gi_namespace }}"
 
   - name: Stop cronjobs
     shell:
@@ -34,7 +56,7 @@
 
   - name: Drain kafka
     shell:
-      cmd: ../gi-temp/gi_offline/ibm-guardium-insights/inventory/install/files/support/kafka_drain_test.sh -n gi -v|grep "Kafka system is drained"|wc -l
+      cmd: '{{ temp_dir }}/gi_arch/{{ offline_inventory }}/ibm-guardium-insights/inventory/install/files/support/kafka_drain_test.sh -n gi -v|grep "Kafka system is drained"|wc -l'
     register: kafka_drain
     until: "kafka_drain.stdout == \"1\""
     retries: 10
@@ -42,12 +64,19 @@
 
   - name: Are GI service sizes available?
     stat:
-      path: ../gi-temp/gi_offline/.previousGuardiumInsightsReplicas
+      path: "{{ temp_dir }}/gi_arch/{{ offline_inventory }}/.previousGuardiumInsightsReplicas"
     register: is_gis_size
+
+  - debug:
+      msg: GI is stopped! Halt playbook now
+    when: is_gis_size.stat.exists == True
+
+  - meta: end_play
+    when: is_gis_size.stat.exists == True
 
   - name: Stop Guardium Insights service
     shell:
-      chdir: ../gi-temp/gi_offline
+      chdir: "{{ temp_dir }}/gi_arch/{{ offline_inventory }}"
       cmd: ibm-guardium-insights/inventory/install/files/support/startorstopGuardiumInsights.sh stop
     when: is_gis_size.stat.exists == False
 
@@ -89,7 +118,7 @@
 
   - name: Are auxilliary service sizes available?
     stat:
-      path: ../gi-temp/aux_size.tmp
+      path: "{{ temp_dir }}/gi_arch/{{ offline_inventory }}/aux_size.tmp"
     register: is_aux_size
 
   - name: Get auxilliary services size
@@ -97,31 +126,31 @@
       cmd: "{{ item }}"
     register: aux_size
     with_items:
-      - "oc get sts {{ gi_namespace }}-zookeeper -n {{ gi_namespace }} -o json|jq .spec.replicas"
       - "oc get sts {{ gi_namespace }}-kafka -n {{ gi_namespace }} -o json|jq .spec.replicas"
+      - "oc get sts {{ gi_namespace }}-zookeeper -n {{ gi_namespace }} -o json|jq .spec.replicas"
       - "oc get sts {{ gi_namespace }}-mongodb -n {{ gi_namespace }} -o json|jq .spec.replicas"
-      - "oc get sts c-{{ gi_namespace }}-redis-m -n {{ gi_namespace }} -o json|jq .spec.replicas"
       - "oc get sts c-{{ gi_namespace }}-redis-s -n {{ gi_namespace }} -o json|jq .spec.replicas"
+      - "oc get sts c-{{ gi_namespace }}-redis-m -n {{ gi_namespace }} -o json|jq .spec.replicas"
     when: is_aux_size.stat.exists == False
 
   - name: Save auxilliary services size 
     copy:
-      dest: ../gi-temp/aux_size.tmp
+      dest: "{{ temp_dir }}/gi_arch/{{ offline_inventory }}/aux_size.tmp"
       content: |
-        {{ gi_namespace }}-zookeeper,{{ aux_size['results'][0].stdout }}
         {{ gi_namespace }}-kafka,{{ aux_size['results'][1].stdout }}
+        {{ gi_namespace }}-zookeeper,{{ aux_size['results'][0].stdout }}
         {{ gi_namespace }}-mongodb,{{ aux_size['results'][2].stdout }}
-        c-{{ gi_namespace }}-redis-m,{{ aux_size['results'][3].stdout }}
         c-{{ gi_namespace }}-redis-s,{{ aux_size['results'][4].stdout }}
+        c-{{ gi_namespace }}-redis-m,{{ aux_size['results'][3].stdout }}
     when: is_aux_size.stat.exists == False
 
   - name: Stop auxilliary services
     shell:
       cmd: "oc scale sts {{ item }} --replicas=0 -n {{ gi_namespace }}"
     with_items:
-      - "{{ gi_namespace }}-zookeeper"
       - "{{ gi_namespace }}-kafka"
+      - "{{ gi_namespace }}-zookeeper"
       - "{{ gi_namespace }}-mongodb"
-      - "c-{{ gi_namespace }}-redis-m"
       - "c-{{ gi_namespace }}-redis-s"
+      - "c-{{ gi_namespace }}-redis-m"
 
