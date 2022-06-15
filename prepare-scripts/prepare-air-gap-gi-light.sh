@@ -66,7 +66,7 @@ do
                 #echo "IMAGE: $image"
                 if [[ $(echo $image|awk -F "," '{print $7}') == "amd64"|| $(echo $image|awk -F "," '{print $7}') == "x86_64" || $(echo $image|awk -F "," '{print $5}') == "LIST" ]]
                 then
-                        if [[ $csv =~ .*ibm-guardium-insights.* && $(echo $image|awk -F "," '{print $3}') =~ .*v${gi_versions[${gi_version}]}.* ]]
+			if [[ $csv =~ .*ibm-guardium-insights.* && ($(echo $image|awk -F "," '{print $3}') =~ .*v${gi_versions[${gi_version}]}.* || $(echo $image|awk -F "," '{print $3}') =~ .*v${gi_versions[$((gi_version-1))]}.*) ]]
                         then
                                 echo $image
 				skopeo copy --retry-times=10 --all docker://$(echo $image|awk -F "," '{print $1"/"$2"@"$4}') docker://$(hostname --long):5000\/$(echo $image|awk -F "," '{print $2":"$3}') --tls-verify=false
