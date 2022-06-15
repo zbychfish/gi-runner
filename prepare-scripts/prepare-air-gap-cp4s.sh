@@ -17,9 +17,6 @@ if [ $# -eq 0 ]
 then
 	pre_scripts_init
 fi
-get_gi_version_prescript
-gi_version=$(($gi_version-1))
-
 if [ $# -eq 0 ]
 then
 	echo "Cleanup temp directory $temp_dir"

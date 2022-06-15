@@ -17,6 +17,7 @@ ocs_sc=("ocs-storagecluster-cephfs" "ocs-storagecluster-ceph-rbd")
 galaxy_community_general="4.8.1"
 galaxy_ansible_utils="2.6.1"
 cp4s_channel="1.9"
+declare -a cp4s_cases=(ibm-cp-security-1.0.24.tgz)
 GI_HOME=`pwd`
 GI_TEMP=$GI_HOME/gi-temp
 file=$GI_HOME/variables.sh
