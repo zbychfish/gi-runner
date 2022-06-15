@@ -1,12 +1,1 @@
-- playbook/16-uninstall-ldap.yaml - new playbook allows safely uninstall OpenLDAP instance
-- OpenLDAP users have now mail attribute set (support CP4S demands for LDAP users)
-- introduced installation support for Cloud Pack for Security (channel 1.9)
-	- only online installation implemented at this moment
-	- ICS installed from CP4S operator inheritance
-	- supports all standard CR installation options (application selection, storage class, backup PVC size)
-- added support for GI 3.1.6, 3.1.7, ICS 3.18.0, Fedora 36 as a bastion
-- new playbook for upgrade GI to the latest version
-	- if you installed GI prior 3.1.6, you must before install additional galaxy package - "ansible-galaxy collection install ansible.utils"
-	- only online installations supported
-	- only upgrade from 3.1.x to 3.1.y supported
-	- possible upgrade of ICS by manual modification the variable GI_ICS_VERSION
+New features and changes:
