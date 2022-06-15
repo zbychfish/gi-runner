@@ -140,6 +140,7 @@
     - manifests-redhat-marketplace-index
     - manifests-community-operator-index
   when: internet_type == 'A'
+  ignore_errors: yes
 
 - name: Set correct image registry mirror name in imageContentSourcePolicy
   shell:
@@ -152,6 +153,7 @@
     - manifests-redhat-marketplace-index
     - manifests-community-operator-index
   when: internet_type == 'A'
+  ignore_errors: yes
 
 - name: Configure mirrored catalogSources
   shell:
@@ -164,6 +166,7 @@
     - manifests-redhat-marketplace-index
     - manifests-community-operator-index
   when: internet_type == 'A'
+  ignore_errors: yes
 
 - name: Configure mirrored imageContentSourcePolicy.yaml
   shell:
@@ -173,9 +176,10 @@
   with_items:
     - manifests-redhat-operator-index
     - manifests-certified-operator-index
-      #- manifests-redhat-marketplace-index
+    - manifests-redhat-marketplace-index
     - manifests-community-operator-index
   when: internet_type == 'A'
+  ignore_errors: yes
 
 - name: Clean manifests in temp directory
   shell:

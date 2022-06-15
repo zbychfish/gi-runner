@@ -1,0 +1,23 @@
+apiVersion: isc.ibm.com/v1
+kind: CP4SThreatManagement
+metadata:
+     name: threatmgmt
+     namespace: {{ cp4s_namespace }}
+spec:
+     acceptLicense: true
+     basicDeploymentConfiguration:
+         adminUser: {{ cp4s_admin }}
+         domain: "cp4s.apps.{{ domain }}"
+         storageClass: "{{ cp4s_sc }}"
+     extendedDeploymentConfiguration:
+         airgapInstall: false
+         backupStorageClass: "{{ cp4s_backup_sc }}"
+         backupStorageSize: "{{ cp4s_backup_size_final }}Gi"
+         imagePullPolicy: IfNotPresent
+         repository: cp.icr.io/cp/cp4s
+         repositoryType: entitled
+         roksAuthentication: false
+     threatManagementCapabilities:
+         deployDRC: {{ cp4s_option_drc }}
+         deployRiskManager: {{ cp4s_option_rm }}
+         deployThreatInvestigator: {{ cp4s_option_ti }}

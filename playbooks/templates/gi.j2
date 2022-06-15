@@ -87,6 +87,12 @@ spec:
   dependency-db2:
     db2:
       size: "{{ db2_nodes_array|length }}"
+      #resources:
+        #cpu: "6"
+        #memory: "48Gi"
+      #limits:
+        #cpu: "6"
+        #memory: "48Gi"
       dbSettings:
 {% if db2_enc %}
         encrypt: "YES"

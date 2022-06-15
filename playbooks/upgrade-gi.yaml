@@ -1,0 +1,167 @@
+- hosts: bastion
+  vars_files:
+    - version_vars.yaml
+
+  tasks:
+
+    - name: Set variables for upgrade
+      set_fact:
+        gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
+        gi_dedicated_nodes: "{{ lookup('env', 'GI_GI_NODES').split(',') }}"
+        gi_namespace: "{{ lookup('env','GI_NAMESPACE_GI') }}"
+        db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
+        db2_tainted: "{{ lookup('env','GI_DB2_TAINTED') }}"
+        gi_ext_ingress: "{{ lookup('env','GI_IN') }}"
+        gi_ssh_host: "{{ lookup('env','GI_SSH_HOST') }}"
+        gi_ssh_port: "{{ lookup('env','GI_SSH_PORT') }}"
+        domain: "{{ lookup('env','GI_DOMAIN') }}"
+        ics_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
+        ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
+
+    - name: Check GI variables
+      fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+        - { name: "GI_GI_NODES", value: "{{ gi_dedicated_nodes }}" }
+        - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
+        - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
+        - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
+        - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
+        - { name: "GI_SSH_HOST", value: "{{ gi_ssh_host }}" }
+        - { name: "GI_SSH_PORT", value: "{{ gi_ssh_port }}" }
+        - { name: "GI_DOMAIN", value: "{{ domain }}" }
+        - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
+        - { name: "GI_IBM_SECRET", value: "{{ ibm_secret }}" }
+      when: item.value == ""
+
+    - name: Set GI upgrade variables
+      set_fact:
+        gi_version: "{{ gi_versions[gi_version_index|int] }}"
+        gi_case: "{{ gi_cases[gi_version_index|int] }}"
+        db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
+        gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int > 2 else 'L-OOLE-C2ASKR' }}"
+
+    - name: Is update supported?
+      fail: 
+        msg: "Upgrade from GI version {{ gi_version }} is not supported by gi-runner"
+      when: gi_version_index|int < 3
+
+    - name: Upgrade confirmation
+      pause:
+        echo: no
+        prompt: "GI {{ gi_version }} will be upgraded to {{ gi_versions|last }}, press any key to continue or CTRL+C to interrupt"
+
+    - name: Create GI upgrade directory
+      file:
+        path: "{{ temp_dir }}/gi_upgrade-{{ gi_versions|last }}"
+        state: directory
+        mode: 0755
+
+    - name: "Download GI {{ gi_versions|last }} case file"
+      shell:
+        cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_cases|last }} --outputdir {{ temp_dir }}/gi_upgrade-{{ gi_versions|last }} --tolerance 1"
+
+    - name: Login to IBM Cloud Private interface
+      shell:
+        cmd: "cloudctl login -a $(oc get routes cp-console -n ibm-common-services -ojsonpath='{.spec.host}') -u admin -p $(oc get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' -n ibm-common-services|base64 -d) --skip-ssl-validation -n {{ gi_namespace }}"
+
+    - name: Check installed version of ICS
+      shell:
+        cmd: oc get csv -n ibm-common-services -ojson|jq -r '.items[].spec|select(.displayName=="IBM Cloud Pak foundational services")|.version'
+      register: installed_ics_version
+
+    - debug:
+        msg:
+        - "Installed ICS version is {{ installed_ics_version.stdout }}"
+        - "Configured version in variables.sh is {{ ics_versions[ics_version_hint|int] }}"
+
+    - name: Is ICS installation flow correct?
+      fail:
+        msg: "You try upgrade GI to release {{ gi_versions|last }} with unsupported version of ICS {{ ics_versions[ics_version_hint|int] }}. Please update variables.sh file and re-read variables into shell"
+      when: ics_version_hint|int < 7 
+
+    - name: "Patch IBM catalog to ICS version {{ ics_versions[ics_version_hint|int] }}"
+      shell:
+        cmd: "oc patch catalogsource opencloud-operators --type json -p '[{\"op\": \"replace\", \"path\": \"/spec/image\", \"value\": \"icr.io/cpopen/ibm-common-service-catalog:{{ ics_versions[ics_version_hint|int] }}\"}]' -n openshift-marketplace"
+      when: installed_ics_version.stdout != ics_versions[ics_version_hint|int]
+
+    - name: Wait for successfull ICS upgrade initialization
+      shell:
+        cmd: oc get csv -n ibm-common-services -ojson|jq -r '.items[].spec|select(.displayName=="IBM Cloud Pak foundational services")|.version'
+      register: new_installed_ics_version
+      retries: 100
+      delay: 15
+      until: new_installed_ics_version.stdout == ics_versions[ics_version_hint|int]
+      when: installed_ics_version.stdout != ics_versions[ics_version_hint|int]
+
+    - name: Wait for ICS upgrade status refresh
+      pause:
+        minutes: 3
+      when: installed_ics_version.stdout != ics_versions[ics_version_hint|int]
+
+    - name: Wait for successfull ICS upgrade finalization
+      shell:
+        cmd: oc get csv -n ibm-common-services -ojson|jq -r '.items[]|select(.spec.displayName=="IBM Cloud Pak foundational services")|.status.reason'
+      register: is_installed_ics_version
+      retries: 100
+      delay: 30
+      until: is_installed_ics_version.stdout == "InstallSucceeded"
+      when: installed_ics_version.stdout != ics_versions[ics_version_hint|int]
+
+    - name: Install new GI catalog
+      shell:
+        cmd: "cloudctl case launch --case {{ temp_dir }}/gi_upgrade-{{ gi_versions|last }}/{{ gi_cases|last }} --namespace openshift-marketplace --inventory install --action install-catalog --tolerance 1"
+
+    - name: Install new GI operator
+      shell:
+        cmd: "cloudctl case launch --case {{ temp_dir }}/gi_upgrade-{{ gi_versions|last }}/{{ gi_cases|last }} --namespace {{ gi_namespace }} --inventory install --action install-operator --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
+
+    - name: Update GI version in csv
+      shell:
+        cmd: "oc patch guardiuminsights gi --type json -p '[{\"op\": \"replace\", \"path\": \"/spec/version\", \"value\": \"{{ gi_versions|last }}\"}]' -n {{ gi_namespace }}"
+
+    - name: Get minisniff list
+      shell:
+        cmd: "oc get tenantminisnif -o name -n {{ gi_namespace }}"
+      register: minisnif_list
+
+    - name: Get universal connector list
+      shell:
+        cmd: "oc get tenantguc -o name -n {{ gi_namespace }}"
+      register: tuc_list
+
+    - name: Update minisnif's
+      shell:
+        cmd: "oc patch {{ item }} --type json -p '[{\"op\": \"replace\", \"path\": \"/spec/version\", \"value\": \"{{ gi_versions|last }}\"}]' -n {{ gi_namespace }}"
+      with_items: "{{ minisnif_list.stdout_lines }}"
+
+    - name: Update tuc's
+      shell:
+        cmd: "oc patch {{ item }} --type json -p '[{\"op\": \"replace\", \"path\": \"/spec/version\", \"value\": \"{{ gi_versions|last }}\"}]' -n {{ gi_namespace }}"
+      with_items: "{{ tuc_list.stdout_lines }}"
+
+    - name: Wait for GI upgrade finalization
+      shell:
+        cmd: "oc get guardiuminsights {{ gi_namespace }} -o jsonpath='{.status.versions.reconciled}' -n {{ gi_namespace }}"
+      register: gi_reconciled
+      until: gi_reconciled.stdout == gi_versions|last
+      retries: 100
+      delay: 45
+
+    - name: Remove unused mount points
+      shell:
+        cmd: "oc get deployment -oyaml {{ gi_namespace }}-insights | sed 's#/node_app/src/static/insights_exports#/tmp/ignore#g' | oc replace -f -"
+
+    - name: Set GI versions index
+      ansible.builtin.set_fact:
+        gi_index: "{{ gi_versions|ansible.utils.index_of('eq', gi_versions|last) }}"
+
+    - name: Update variable.sh
+      lineinfile:
+        path: ../variables.sh
+        regexp: '^export GI_VERSION='
+        line: "export GI_VERSION={{ gi_index }}"
+
+    - debug:
+        msg: "GI upgraded to version {{ gi_versions|last }}"
+

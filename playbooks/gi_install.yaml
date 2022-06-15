@@ -1,3 +1,9 @@
+- name: Link python3 to python name
+  file:
+    src: /usr/bin/python3
+    dest: /usr/bin/python
+    state: link
+
 - name: Label GI nodes
   shell:
     cmd: "oc label node {{ item }}.{{ domain }} gi_role=yes --overwrite=true"
@@ -16,33 +22,55 @@
   shell:
     cmd: "oc create namespace {{ gi_namespace }}||true"
 
-- name: Save portable repo credentials
-  shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action configure-creds-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }}\""
-  when: internet_type == 'A'
-
 - name: GI download case file
   shell:
     cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_case }} --outputdir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }} --tolerance 1"
   when: internet_type != 'A'
 
+- name: Get OpenSSL version on bastion
+  shell:
+    cmd: openssl version
+  register: openssl_version
+
+- name: gunzip case file
+  shell:
+    cmd: "cd {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }};gunzip {{ gi_case }}"
+  ignore_errors: yes
+  when: internet_type != 'A'
+
+- name: Unpack case file
+  shell:
+    cmd: "tar xf {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case|splitext|first }}.tar -C {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}"
+
+- name: Modify prereqs for OpenSSL
+  lineinfile:
+    path: "{{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/prereqs.yaml"
+    regexp: '.*OpenSSL 1.1.1.*'
+    line: '        versionRegex: "OpenSSL 1.1.1*|OpenSSL 3.*"'
+  when: openssl_version.stdout|regex_search("^OpenSSL 3.*$") and internet_type != 'A'
+
+- name: Save portable repo credentials
+  shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action configure-creds-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }}\""
+  when: internet_type == 'A'
+
 - name: GI preinstall task
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
 
 - name: Install GI catalog in air-gapped
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
   when: internet_type == 'A'
 
 - name: Install GI catalog online (3.0.0)
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry docker.io\""
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry docker.io\""
   when: internet_type != 'A' and gi_version == '3.0.0'
 
 - name: Install GI catalog online (3.0.1+)
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1"
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1"
   when: internet_type != 'A' and gi_version != '3.0.0'
 
 - name: Wait for GI catalog (part1)
@@ -63,12 +91,12 @@
 
 - name: Install GI operators in air-gapped env
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key\""
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key\""
   when: internet_type == 'A'
 
 - name: Install GI operators online
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
   when: internet_type != 'A'
 
 - name: Wait for GI operators before 3.1

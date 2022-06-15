@@ -53,23 +53,32 @@ if [ $# -eq 0 ]
 then
 	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $GI_TEMP/gi_offline
 	check_exit_code $? "Cannot download GI case file"
-	sites="cp.icr.io"
-	for site in $sites
-	do
-		echo $site
-	        cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry $site --user cp --pass $ibm_account_key"
-		check_exit_code $? "Cannot configure credentials for site $site"
-	done
-	cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium"
+	skopeo login cp.icr.io -u cp -p $ibm_account_key
+	skopeo login $(hostname --long):5000 -u admin -p guardium
 fi
-cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/gi_offline"
-mirror_status=$?
-echo "Mirroring status: $mirror_status"
-if [ $mirror_status -ne 0 ]
-then
-	echo "Mirroring process failed, restart script with parameter repeat to finish"
-	exit 1
-fi
+list_csv=$(ls $GI_TEMP/gi_offline/*images.csv)
+for csv in $list_csv
+do
+        echo "CSV file: $csv"
+        images=$(cat ${csv}|tail -n +2)
+        for image in $images
+        do
+                #echo "IMAGE: $image"
+                if [[ $(echo $image|awk -F "," '{print $7}') == "amd64"|| $(echo $image|awk -F "," '{print $7}') == "x86_64" || $(echo $image|awk -F "," '{print $5}') == "LIST" ]]
+                then
+                        if [[ $csv =~ .*ibm-guardium-insights.* && $(echo $image|awk -F "," '{print $3}') =~ .*v${gi_versions[${gi_version}]}.* ]]
+                        then
+                                echo $image
+				skopeo copy --retry-times=10 --all docker://$(echo $image|awk -F "," '{print $1"/"$2"@"$4}') docker://$(hostname --long):5000\/$(echo $image|awk -F "," '{print $2":"$3}') --tls-verify=false
+                        elif [[ ! $csv =~ .*ibm-guardium-insights.* ]]
+                        then
+                                echo $image
+				skopeo copy --retry-times=10 --all docker://$(echo $image|awk -F "," '{print $1"/"$2"@"$4}') docker://$(hostname --long):5000\/$(echo $image|awk -F "," '{print $2":"$3}') --tls-verify=false
+                        fi
+                fi
+                [ $? -ne 0 ] && exit 1
+        done
+done
 podman stop bastion-registry
 cd $GI_TEMP
 tar cf ${air_dir}/gi_registry-${gi_versions[${gi_version}]}.tar gi_offline cloudctl-linux-amd64.tar.gz

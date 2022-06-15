@@ -96,11 +96,24 @@ function switch_dnf_sync_off() {
 function get_software_selection() {
         while $(check_input "yn" ${gi_install})
         do
-                get_input "yn" "Would you like to install Guardium Insights? " false
+		get_input "yn" "Would you like to install Guardium Insights (GI)? " false
                 gi_install=${input_variable^^}
         done
-        save_variable GI_INSTALL_GI $gi_install
-        [ $gi_install == 'Y' ] && select_gi_version || select_ics_version
+	save_variable GI_INSTALL_GI $gi_install
+	if [[ $gi_install == 'N' && $use_air_gap == 'N' ]]
+	then
+		msg "gi-runner offers installation of Cloud Pak for Security (CP4s) - latest version from channel $cp4s_channel" 8
+		while $(check_input "yn" ${cp4s_install})
+		do
+			get_input "yn" "Would you like to install CP4S? " false
+			cp4s_install=${input_variable^^}
+		done
+		[ $cp4s_install == 'Y' ] && ics_install='N'
+	else
+		cp4s_install='N'
+	fi
+        save_variable GI_CP4S $cp4s_install
+	[ $gi_install == 'Y' ] && select_gi_version || ([ $cp4s_install == 'N' ] && select_ics_version)
         save_variable GI_ICS $ics_install
         select_ocp_version
         while $(check_input "yn" ${install_ldap})
@@ -125,7 +138,7 @@ function select_ics_version() {
 	ics_version_selected=""
         while $(check_input "yn" ${ics_install})
         do
-                get_input "yn" "Would you like to install Cloud Packs Foundational Services (IBM Common Services)? " false
+                get_input "yn" "Would you like to install Cloud Pak Foundational Services (IBM Common Services)? " false
                 ics_install=${input_variable^^}
         done
         if [[ $ics_install == 'Y' ]]
@@ -163,7 +176,7 @@ function select_gi_version() {
 		msg "Check documentation before to avoid GI installation problems" 8
 		while $(check_input "yn" ${nd_ics_install})
         	do
-                	get_input "yn" "Would you like to install non-default Cloud Packs Foundational Services for GI? " true
+                	get_input "yn" "Would you like to install non-default Cloud Pak Foundational Services for GI? " true
                 	nd_ics_install="${input_variable^^}"
         	done
 		[[ "$nd_ics_install" == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
@@ -179,6 +192,9 @@ function select_ocp_version() {
         if [[ $gi_install == 'Y' ]]
         then
                 IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
+	elif [[ $cp4s_install == 'Y' ]]
+	then
+		IFS=':' read -r -a ocp_versions <<< $ocp_supported_by_cp4s
         elif [[ $ics_install == 'Y' ]]
         then
                 IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_ics[$ics_version_selected]}
@@ -815,6 +831,7 @@ function software_installation_on_offline() {
         pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
         cd $GI_TEMP/os/galaxy
         ansible-galaxy collection install community-general-${galaxy_community_general}.tar.gz
+        ansible-galaxy collection install ansible-utils-${galaxy_ansible_utils}.tar.gz
         cd $GI_HOME
         mkdir -p /etc/ansible
         echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
@@ -845,12 +862,15 @@ function software_installation_on_online() {
         mkdir -p /etc/ansible
         [[ $use_proxy == 'P' ]] && echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts || echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
         msg "Installing Ansible galaxy packages" 7
-	local ansible_galaxy=("community.general")
+	local ansible_galaxy=("community-general-${galaxy_community_general}" "ansible-utils-${galaxy_ansible_utils}")
         for package in "${ansible_galaxy[@]}"
         do
                 msg "- installing $package ..." 8
-		ansible-galaxy collection install $package
+		wget https://galaxy.ansible.com/download/${package}.tar.gz
                 [[ $? -ne 0 ]] && display_error "Cannot install Ansible Galaxy package $package"
+		ansible-galaxy collection install ${package}.tar.gz
+                [[ $? -ne 0 ]] && display_error "Cannot install Ansible Galaxy package $package"
+		rm -f ${package}.tar.gz
         done
 	mkdir -p ${GI_TEMP}/os
         echo "pullSecret: '$rhn_secret'" > ${GI_TEMP}/os/pull_secret.tmp
@@ -1418,10 +1438,10 @@ function get_credentials() {
                         fi
                 done
                 save_variable GI_RHN_SECRET "'${input_variable}'"
-                if [[ $gi_install == 'Y' ]]
+                if [[ $gi_install == 'Y' || $cp4s_install == 'Y' ]]
                 then
-                        msg "Guardium Insights installation requires access to restricted IBM image registries" 8
-                        msg "You need provide the IBM Cloud container key located at URL - https://myibm.ibm.com/products-services/containerlibrary" 8
+                        msg "GI and CP4S require access to restricted IBM image registries" 8
+                        msg "You need provide the IBM Cloud containers key located at URL - https://myibm.ibm.com/products-services/containerlibrary" 8
                         msg "Your account must be entitled to install GI" 8
                         while $(check_input "jwt" "${ibm_secret}")
                         do
@@ -1462,7 +1482,7 @@ function get_credentials() {
                 ocp_password="${input_variable}"
         done
         save_variable GI_OCADMIN_PWD "'$curr_password'"
-        if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' ]]
+        if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' || "$cp4s_install" == 'Y' ]]
         then
                 msg "Define ICS admin user password" 8
                 msg "This same account is used by GI for default account with access management role" 8
@@ -1527,6 +1547,16 @@ function get_certificates() {
                 save_variable GI_IN $gi_ext_ingress
                 [ $gi_ext_ingress == 'Y' ] && validate_certs "gi"
         fi
+	if [[ "$cp4s_install" == 'Y' && "$use_air_gap" == 'N' ]]
+        then
+                while $(check_input "yn" "$cp4s_ext_ingress" false)
+                do
+                        get_input "yn" "Would you like to install own certificates for CP4S?: " true
+                        cp4s_ext_ingress=${input_variable^^}
+                done
+		save_variable GI_CP4S_IN $cp4s_ext_ingress
+                [ $cp4s_ext_ingress == 'Y' ] && validate_certs "cp4s"
+        fi
 }
 
 function validate_certs() {
@@ -1560,6 +1590,14 @@ function validate_certs() {
                         pre_value_app="$GI_IN_CERT"
                         pre_value_key="$GI_IN_KEY"
                         ;;
+		"cp4s")
+                        label="CP4S"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"*.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_CP4S_CA"
+                        pre_value_app="$GI_CP4S_CERT"
+                        pre_value_key="$GI_CP4S_KEY"
+                        ;;
+
                 "*")
                         display_error "Unknown cert information"
                         ;;
@@ -1612,6 +1650,11 @@ function validate_certs() {
                         save_variable GI_IN_CERT "$app_cert"
                         save_variable GI_IN_KEY "$app_key"
                         ;;
+                "cp4s")
+                        save_variable GI_CP4S_CA "$ca_cert"
+                        save_variable GI_CP4S_CERT "$app_cert"
+                        save_variable GI_CP4S_KEY "$app_key"
+                        ;;
                 "*")
                         display_error "Unknown cert information"
                         ;;
@@ -1622,6 +1665,7 @@ function get_gi_options() {
 	local change_ssh_host
 	msg "Collecting Guardium Insights parameters" 7
         msg "Guardium Insights deployment requires some decisions such as storage size, functions enabled" 8
+	msg "Namespace define the space where most GI pods, objects and supporting services will be located" 8
         while $(check_input "txt" "${gi_namespace}" 3 10)
         do
                 if [ ! -z "$GI_NAMESPACE_GI" ]
@@ -1796,7 +1840,7 @@ function get_ics_options() {
 	msg "Collecting Common Services parameters" 7
         local operand
         local curr_op
-        msg "ICS provides set of operands which can be installed during installation, some of them are required and others can be used by IBM Cloud Packs installed on the top of it" 8
+        msg "ICS provides set of operands which can be installed during installation, some of them are required and others can be used by IBM Cloud Pak's installed on the top of it" 8
         msg "Define which operands should be additionally installed" 8
         local operand_list=("Zen,N" "Monitoring,Y" "Event_Streams,Y" "Logging,Y" "MongoDB,Y" "User_Data_Services",N" ""Apache_Spark,N" "IBM_API_Catalog,N" "Business_Teams,N")
         declare -a ics_ops
@@ -1846,7 +1890,86 @@ function get_ldap_options() {
                 fi
                         ldap_users="${input_variable}"
         done
+	if [[ $cp4s_install == 'Y' ]]
+	then
+		IFS="," read -r -a curr_ldap_users <<< $ldap_users
+		[[ ${curr_ldap_users[*]} =~ (^|[[:space:]])"${cp4s_admin}"($|[[:space:]]) ]] || ldap_users="${ldap_users},${cp4s_admin}"
+	fi
         save_variable GI_LDAP_USERS "'$ldap_users'"
+}
+
+function get_cp4s_options() {
+	msg "Collecting CP4S deployment parameters" 7
+	msg "Namespace define the space where most CP4S pods, objects and supporting services will be located" 8
+        while $(check_input "txt" "${cp4s_namespace}" 3 10)
+        do
+                if [ ! -z "$GI_CP4S_NS" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_CP4S_NS] or insert GI namespace name (maximum 10 characters)" true "$GI_CP4S_NS"
+                else
+                        get_input "txt" "Insert CP4S namespace name (maximum 10 characters, default cp4s): " true "cp4s"
+                fi
+                cp4s_namespace="${input_variable}"
+        done
+        save_variable GI_CP4S_NS $cp4s_namespace
+	msg "Enter the name of the directory service account to which the role of privilege administrator will be attached?" 8
+	[ $install_ldap == 'Y' ] && msg "Because the OpenLDAP will be installed in this procedure the pointed account will be created automatically during LDAP deployment." 8
+	while $(check_input "txt" "${cp4s_admin}" 2)
+        do
+                if [ ! -z "$GI_CP4S_ADMIN" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_CP4S_ADMIN] or insert CP4S admin username: " true "$GI_CP4S_ADMIN"
+                else
+                        get_input "txt" "Insert CP4S admin username (default - cp4sadmin): " true "cp4sadmin"
+                fi
+                cp4s_admin="${input_variable}"
+        done
+        save_variable GI_CP4S_ADMIN "$cp4s_admin"
+	msg "Enter default storage class for CP4S." 8
+	msg "All CP4S PVC's use RWO access." 8
+	[ $storage_type == 'R' ] && sc_list=(${rook_sc[@]}) || sc_list=(${ocs_sc[@]})
+	while $(check_input "list" ${cp4s_sc_selected} ${#sc_list[@]})
+        do
+	        get_input "list" "Select storage class: " "${sc_list[@]}"
+                cp4s_sc_selected=$input_variable
+        done
+        cp4s_sc="${sc_list[$((${cp4s_sc_selected} - 1))]}"
+        save_variable GI_CP4S_SC $cp4s_sc
+	msg "Enter default storage class for CP4S backup, it uses RWO access." 8
+        while $(check_input "list" ${cp4s_sc_backup_selected} ${#sc_list[@]})
+        do
+                get_input "list" "Select storage class: " "${sc_list[@]}"
+                cp4s_sc_backup_selected=$input_variable
+        done
+        cp4s_sc_backup="${sc_list[$((${cp4s_sc_backup_selected} - 1))]}"
+        save_variable GI_CP4S_SC_BACKUP $cp4s_sc_backup
+	msg "Enter the backup PVC size for CP4S. Minimum and default value 500 GB" 8
+	while $(check_input "int" "$cp4s_backup_size" 499 999999)
+        do
+                if [ ! -z "$GI_CP4S_BACKUP_SIZE" ]
+                then
+			get_input "txt" "Push <ENTER> to accept the previous choice [${GI_CP4S_BACKUP_SIZE}] or insert size of backup PVC (in GB): " true "$GI_CP4S_BACKUP_SIZE"
+                else
+			get_input "txt" "Insert size of backup PVC or press <ENTER> to set default value [500] (in GB): " true 500
+                fi
+                cp4s_backup_size="${input_variable}"
+        done
+        save_variable GI_CP4S_BACKUP_SIZE $cp4s_backup_size
+	msg "Some CP4S functions can be installed optionally, select desired ones." 8
+	local cp4s_features=("Detection_and_Response_Center,Y" "Security_Risk_Manager,Y" "Thread_Investigator,Y")
+        declare -a cp4s_opts
+        for opt in ${cp4s_features[@]}
+        do
+                unset op_option
+                IFS="," read -r -a curr_op <<< $opt
+                while $(check_input "yn" "$op_option")
+                do
+                        get_input "yn"  "Would you like to install ${curr_op[0]//_/ } application: " $([[ "${curr_op[1]}" != 'Y' ]] && echo true || echo false)
+                        op_option=${input_variable^^}
+                done
+                cp4s_opts+=($op_option)
+        done
+        save_variable GI_CP4S_OPTS $(echo ${cp4s_opts[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1')
 }
 
 function configure_os_for_proxy() {
@@ -2031,6 +2154,7 @@ get_certificates
 [[ "$gi_install" == 'Y' ]] && get_gi_options
 [[ "$gi_install" == 'Y' ]] && save_variable GI_ICS_OPERANDS "N,N,Y,Y,Y,N,N,N,N"
 [[ "$ics_install" == 'Y' && "$gi_install" == 'N' ]] && get_ics_options
+[[ "$cp4s_install" == 'Y' ]] && get_cp4s_options
 [[ "$install_ldap" == 'Y' ]] && get_ldap_options
 [[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
 [[ "$use_air_gap" == 'N' ]] && software_installation_on_online

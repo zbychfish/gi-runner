@@ -1,0 +1,8 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+     name: cp4s-operator-group
+     namespace: {{ cp4s_namespace }}
+spec:
+     targetNamespaces:
+          - {{ cp4s_namespace }}
