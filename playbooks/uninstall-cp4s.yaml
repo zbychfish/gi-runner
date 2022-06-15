@@ -7,7 +7,7 @@
     ocadmin_password:  "{{ lookup('env','GI_OCADMIN_PWD') }}"
     domain:  "{{ lookup('env','GI_DOMAIN') }}"
     gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
-    gi_namespace: "{{ lookup('env', 'GI_NAMESPACE_GI') }}"
+    cp4s_namespace: "{{ lookup('env', 'GI_CP4S_NS') }}"
     install_ldap: "{{ lookup('env', 'GI_INSTALL_LDAP') }}"
   vars_files:
     - version_vars.yaml
@@ -15,8 +15,8 @@
   tasks:
   - name: Set GI variables
     set_fact:
-      gi_case_archive: "{{ gi_cases[gi_version_index|int] }}"
-      gi_version: "{{ gi_versions[gi_version_index|int] }}"
+      cp4s_case_archive: "{{ cp4s_cases[0] }}"
+      cp4s_version: "{{ cp4s_versions[0] }}"
 
   - name: Check other configuration parameters
     fail: msg="Variable {{ item.name }} is not set"
@@ -25,8 +25,13 @@
       - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
       - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
-      - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
-      - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
+      - { name: "GI_CP4S_NS", value: "{{ cp4s_namespace }}" }
+
+  - name: "Download GI {{ gi_versions|last }} case file"
+    shell:
+      cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ cp4s_case_archive }} --outputdir {{ temp_dir }}/cp4s_arch/cp4s_offline --tolerance 1"
+
+  - meta: end_play
 
   - name: Delete GI operator instance
     shell:
