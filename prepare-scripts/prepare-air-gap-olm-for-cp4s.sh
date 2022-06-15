@@ -42,7 +42,7 @@ if [[ ! -z "$REDHAT_OPERATORS_OVERRIDE" ]]
 then
 	REDHAT_OPERATORS=$REDHAT_OPERATORS_OVERRIDE
 else
-	REDHAT_OPERATORS="local-storage-operator,ocs-operator,serverless-operator,web-terminal-operator,devworkspace-operator"
+	REDHAT_OPERATORS="local-storage-operator,ocs-operator,serverless-operator,web-terminal"
 fi
 if [[ ! -z "$CERTIFIED_OPERATORS_OVERRIDE" ]]
 then
