@@ -1,4 +1,4 @@
-<B>OpenShift Cluster, IBM Common Services and Guardium Insights installation automation on bare metal</B>
+<B>OpenShift Cluster, IBM Common Services, Guardium Insights, Cloud Pak for Security installation automation on bare metal</B>
 <HR>
 <P>Automates OCP installation for releases: 4.6, 4.7, 4.8, 4.9, 4.10
 <P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.2, 3.15.1, 3.16.3, 3.17.0, 3.18.0
@@ -25,7 +25,7 @@ Release description:
 <LI>supports all standard CR installation options (application selection, storage class, backup PVC size)
 </UL>
 <LI>added support for GI 3.1.6, 3.1.7, ICS 3.18.0, Fedora 36 as a bastion
-<LI>new playbook for upgrade GI to the latest version, if you installed GI prior 3.1.6, you must before install additional galaxy package - "ansible-galaxy collection install ansible.utils"
+<LI>new playbook - upgrade-gi.yaml - for upgrade GI to the latest version, if you installed GI prior 3.1.6, you must before install additional galaxy package - "ansible-galaxy collection install ansible.utils"
 <UL>
 <LI>only online installations supported
 <LI>only upgrade from 3.1.x to 3.1.y supported
