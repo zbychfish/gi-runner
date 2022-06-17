@@ -54,12 +54,12 @@ then
 	for site in $sites
 	do
 		echo $site
-	        cloudctl case launch --case $GI_TEMP/cp4s_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry $site --user cp --pass $ibm_account_key"
+	        cloudctl case launch --case $GI_TEMP/cp4s_offline/ibm-cp-security --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry $site --user cp --pass $ibm_account_key"
 		check_exit_code $? "Cannot configure credentials for site $site"
 	done
-	cloudctl case launch --case $GI_TEMP/cp4s_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium"
+	cloudctl case launch --case $GI_TEMP/cp4s_offline/ibm-cp-security --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium"
 fi
-cloudctl case launch --case $GI_TEMP/cp4s_offline/${CASE_ARCHIVE} --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/cp4s_offline"
+cloudctl case launch --case $GI_TEMP/cp4s_offline/ibm-cp-security --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/cp4s_offline"
 mirror_status=$?
 echo "Mirroring status: $mirror_status"
 if [ $mirror_status -ne 0 ]
