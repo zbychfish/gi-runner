@@ -20,8 +20,8 @@ fi
 if [ $# -eq 0 ]
 then
 	echo "Cleanup temp directory $temp_dir"
-	rm -rf $GI_TEMP
-	mkdir -p $GI_TEMP
+	#rm -rf $GI_TEMP
+	#mkdir -p $GI_TEMP
 	mkdir -p $air_dir
 fi
 read -sp "Insert your IBM Cloud Key: " ibm_account_key
