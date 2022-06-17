@@ -56,7 +56,7 @@ then
 	done
 	cloudctl case launch --case $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium" --tolerance 1
 fi
-cloudctl case launch --case $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/cp4s_offline" --tolerance 1
+cloudctl case launch --case $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/cp4s_arch/cp4s_offline" --tolerance 1
 mirror_status=$?
 echo "Mirroring status: $mirror_status"
 if [ $mirror_status -ne 0 ]
@@ -65,8 +65,9 @@ then
 	exit 1
 fi
 podman stop bastion-registry
+rm -rf $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security
 cd $GI_TEMP
-tar cf ${air_dir}/cp4s_registry-${cp4s_versions[0]}.tar cp4s_offline cloudctl-linux-amd64.tar.gz
+tar cf ${air_dir}/cp4s_registry-${cp4s_versions[0]}.tar cp4s_arch/cp4s_offline cloudctl-linux-amd64.tar.gz
 cd /opt/registry
 tar -rf ${air_dir}/cp4s_registry-${cp4s_versions[0]}.tar data
 cd $GI_TEMP
