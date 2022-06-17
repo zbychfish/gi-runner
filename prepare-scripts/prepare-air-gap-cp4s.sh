@@ -15,16 +15,10 @@ source scripts/shared_functions.sh
 get_pre_scripts_variables
 if [ $# -eq 0 ]
 then
-	#pre_scripts_init
+	pre_scripts_init
 	echo ""
 fi
-if [ $# -eq 0 ]
-then
-	echo "Cleanup temp directory $temp_dir"
-	#rm -rf $GI_TEMP
-	#mkdir -p $GI_TEMP
-	mkdir -p $air_dir
-fi
+mkdir $GI_TEMP/cp4s_arch
 read -sp "Insert your IBM Cloud Key: " ibm_account_key
 if [ $# -eq 0 ]
 then
@@ -49,18 +43,20 @@ CASE_ARCHIVE=${cp4s_cases[0]}
 CASE_INVENTORY_SETUP=ibmSecurityOperatorSetup
 if [ $# -eq 0 ]
 then
-	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $GI_TEMP/cp4s_offline
+	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $GI_TEMP/cp4s_arch/cp4s_offline
 	check_exit_code $? "Cannot download GI case file"
+	tar xvf $GI_TEMP/cp4s_arch/${CASE_ARCHIVE} -C $GI_TEMP/cp4s_arch/
+	sed -i '/versionRegex/d' $GI_TEMP/cp4s_arch/ibm-cp-security/prereqs.yaml
 	sites="cp.icr.io"
 	for site in $sites
 	do
 		echo $site
-	        cloudctl case launch --case $GI_TEMP/cp4s_offline/ibm-cp-security --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry $site --user cp --pass $ibm_account_key" --tolerance 1
+	        cloudctl case launch --case $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry $site --user cp --pass $ibm_account_key" --tolerance 1
 		check_exit_code $? "Cannot configure credentials for site $site"
 	done
-	cloudctl case launch --case $GI_TEMP/cp4s_offline/ibm-cp-security --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium" --tolerance 1
+	cloudctl case launch --case $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium" --tolerance 1
 fi
-cloudctl case launch --case $GI_TEMP/cp4s_offline/ibm-cp-security --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/cp4s_offline" --tolerance 1
+cloudctl case launch --case $GI_TEMP/_arch/_offline/ibm-cp-security --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/cp4s_offline" --tolerance 1
 mirror_status=$?
 echo "Mirroring status: $mirror_status"
 if [ $mirror_status -ne 0 ]
