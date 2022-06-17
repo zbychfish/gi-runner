@@ -15,7 +15,8 @@ source scripts/shared_functions.sh
 get_pre_scripts_variables
 if [ $# -eq 0 ]
 then
-	pre_scripts_init
+	#pre_scripts_init
+	echo ""
 fi
 if [ $# -eq 0 ]
 then
