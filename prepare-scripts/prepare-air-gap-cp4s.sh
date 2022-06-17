@@ -45,7 +45,7 @@ if [ $# -eq 0 ]
 then
 	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $GI_TEMP/cp4s_arch/cp4s_offline
 	check_exit_code $? "Cannot download GI case file"
-	tar xvf $GI_TEMP/cp4s_arch/cp4s_offline/${CASE_ARCHIVE} -C $GI_TEMP/cp4s_arch/
+	tar xvf $GI_TEMP/cp4s_arch/cp4s_offline/${CASE_ARCHIVE} -C $GI_TEMP/cp4s_arch/cp4s_offline
 	sed -i '/versionRegex/d' $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security/prereqs.yaml
 	sites="cp.icr.io"
 	for site in $sites
