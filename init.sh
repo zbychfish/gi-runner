@@ -113,7 +113,8 @@ function get_software_selection() {
 		cp4s_install='N'
 	fi
         save_variable GI_CP4S $cp4s_install
-	[ $gi_install == 'Y' ] && select_gi_version || ([ $cp4s_install == 'N' ] && select_ics_version)
+	[ $gi_install == 'Y' ] && select_gi_version
+       	[[ $cp4s_install == 'N' && $gi_install == 'N' ]] && select_ics_version
         save_variable GI_ICS $ics_install
         select_ocp_version
         while $(check_input "yn" ${install_ldap})
@@ -151,9 +152,6 @@ function select_ics_version() {
                 done
                 ics_version_selected=$(($ics_version_selected-1))
                 save_variable GI_ICS_VERSION $ics_version_selected
-                ics_install='Y'
-        else
-                ics_install='N'
         fi
 }
 

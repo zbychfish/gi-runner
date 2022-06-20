@@ -1,0 +1,57 @@
+- hosts: bastion
+  vars:
+    ics_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
+    ics_operands: "{{ lookup('env','GI_ICS_OPERANDS').split(',') }}"
+    ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+    ocadmin:  "{{ lookup('env','GI_OCADMIN') }}"
+    ocadmin_password:  "{{ lookup('env','GI_OCADMIN_PWD') }}"
+    domain:  "{{ lookup('env','GI_DOMAIN') }}"
+    gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
+    cp4s_namespace: "{{ lookup('env', 'GI_CP4S_NS') }}"
+    install_ldap: "{{ lookup('env', 'GI_INSTALL_LDAP') }}"
+  vars_files:
+    - version_vars.yaml
+
+  tasks:
+  - name: Set CP4S variables
+    set_fact:
+      cp4s_case_archive: "{{ cp4s_cases[0] }}"
+      cp4s_version: "{{ cp4s_versions[0] }}"
+
+  - name: Check other configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
+      - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
+      - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
+      - { name: "GI_CP4S_NS", value: "{{ cp4s_namespace }}" }
+
+  - name: "Download CP4S {{ cp4s_versions[0] }} case file"
+    shell:
+      cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ cp4s_case_archive }} --outputdir {{ temp_dir }}/cp4s_arch/cp4s_offline --tolerance 1"
+
+  - name: Uninstall CP4S
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/cp4s_arch/cp4s_offline/{{ cp4s_case_archive }} --namespace {{ cp4s_namespace }} --inventory {{ cp4s_case_inventory_setup }} --action uninstall --tolerance 1"
+
+  - name: Remove CP4S crd's
+    shell:
+      cmd: "cloudctl case launch --case ../gi-temp/cp4s_arch/cp4s_offline/{{ cp4s_case_archive }} --namespace {{ cp4s_namespace }} --inventory {{ cp4s_case_inventory_setup }} --action uninstall --args \"--deleteCrd\"  --tolerance 1"
+
+  - name: Wait for GI pods removal
+    shell:
+      cmd: "oc get pods -n {{ gi_namespace }} --no-headers|grep -v -e Running -e Completed|wc -l"
+    register: gi_pods
+    until: "gi_pods.stdout == \"0\""
+    retries: 20
+    delay: 20
+
+  - name: Delete sandbox namespace
+    shell:
+      cmd: "oc delete namespace {{ cp4s_namespace }}-sandbox"
+
+  - debug:
+        msg:
+          - "CP4S uninstalled with success."
+
