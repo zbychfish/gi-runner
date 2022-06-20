@@ -14,23 +14,8 @@
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
 Release description:
-<P>v0.9.0
-<LI>added support of Fedora 36 as a bastion
-<LI>playbook/16-uninstall-ldap.yaml - new playbook allows safely uninstall OpenLDAP instance
-<LI>OpenLDAP users have now mail attribute set (support CP4S demands for LDAP users)
-<LI>introduced installation support for Cloud Pack for Security (channel 1.9)
-<UL>
-<LI>only online installation implemented at this moment
-<LI>ICS installed from CP4S operator inheritance
-<LI>supports all standard CR installation options (application selection, storage class, backup PVC size)
-</UL>
-<LI>added support for GI 3.1.6, 3.1.7, ICS 3.18.0, Fedora 36 as a bastion
-<LI>new playbook - upgrade-gi.yaml - for upgrade GI to the latest version, if you installed GI prior 3.1.6, you must before install additional galaxy package - "ansible-galaxy collection install ansible.utils"
-<UL>
-<LI>only online installations supported
-<LI>only upgrade from 3.1.x to 3.1.y supported
-<LI>possible upgrade of ICS by manual modification the variable GI_ICS_VERSION
-</UL>
+<P>v0.9.1
+<LI>Resolved bug with ICS variables when only GI and ICS is installed
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
@@ -59,6 +44,23 @@ Files:
 <LI>scripts/ics-uninstall.sh - native DEV team script to remove ICS instances
 <HR>
 Releases history:
+<P>v0.9.0
+<LI>added support of Fedora 36 as a bastion
+<LI>playbook/16-uninstall-ldap.yaml - new playbook allows safely uninstall OpenLDAP instance
+<LI>OpenLDAP users have now mail attribute set (support CP4S demands for LDAP users)
+<LI>introduced installation support for Cloud Pack for Security (channel 1.9)
+<UL>
+<LI>only online installation implemented at this moment
+<LI>ICS installed from CP4S operator inheritance
+<LI>supports all standard CR installation options (application selection, storage class, backup PVC size)
+</UL>
+<LI>added support for GI 3.1.6, 3.1.7, ICS 3.18.0, Fedora 36 as a bastion
+<LI>new playbook - upgrade-gi.yaml - for upgrade GI to the latest version, if you installed GI prior 3.1.6, you must before install additional galaxy package - "ansible-galaxy collection install ansible.utils"
+<UL>
+<LI>only online installations supported
+<LI>only upgrade from 3.1.x to 3.1.y supported
+<LI>possible upgrade of ICS by manual modification the variable GI_ICS_VERSION
+</UL>
 <P>v0.8.0
 <LI>Added installation support for GI 3.1.4 and 3.1.5, OCP 4.10.x, ICS 3.16.x and 3.17.x
 <LI>Some bugs in air-gapped installation removed (tested installation OCP 4.8.35 with ICS 3.14.2 and GI 3.1.5 
