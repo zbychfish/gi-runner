@@ -1,0 +1,31 @@
+kind: StorageCluster
+apiVersion: core.libopenstorage.org/v1
+metadata:
+  name: px-cluster
+  namespace: kube-system
+  annotations:
+    portworx.io/misc-args: "--oem esse"
+    portworx.io/is-openshift: "true"    
+spec:
+  image: portworx/oci-monitor:{{ px_version }}
+  imagePullPolicy: Always
+  kvdb:
+    internal: true
+  storage:
+    useAllWithPartitions: true
+    forceUseDisks: true
+  secretsProvider: k8s
+  stork:
+    enabled: true
+    args:
+      webhook-controller: "true"
+  autopilot:
+    enabled: true
+  csi:
+    enabled: true
+  monitoring:
+    prometheus:
+      enabled: true
+      exportMetrics: true
+  deleteStrategy:
+    type: UninstallAndWipe

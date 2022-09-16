@@ -46,12 +46,14 @@ then
 fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
-echo "Mirroring GI ${gi_versions[${gi_version}]}"
+msg "Mirroring GI ${gi_versions[${gi_version}]}" true
 CASE_ARCHIVE=${gi_cases[${gi_version}]}
+CASE_RELEASE=${CASE_ARCHIVE#"ibm-guardium-insights-"}
+CASE_RELEASE=${CASE_RELEASE%".tgz"}
 CASE_INVENTORY_SETUP=install
 if [ $# -eq 0 ]
 then
-	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $GI_TEMP/gi_offline
+	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-guardium-insights/${CASE_RELEASE}/${CASE_ARCHIVE} --outputdir $GI_TEMP/gi_offline
 	check_exit_code $? "Cannot download GI case file"
 	sites="cp.icr.io"
 	for site in $sites
@@ -64,7 +66,7 @@ then
 fi
 cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/gi_offline"
 mirror_status=$?
-echo "Mirroring status: $mirror_status"
+msg "Mirroring status: $mirror_status" true
 if [ $mirror_status -ne 0 ]
 then
 	echo "Mirroring process failed, restart script with parameter repeat to finish"
@@ -76,8 +78,8 @@ tar cf ${air_dir}/gi_registry-${gi_versions[${gi_version}]}.tar gi_offline cloud
 cd /opt/registry
 tar -rf ${air_dir}/gi_registry-${gi_versions[${gi_version}]}.tar data
 cd $GI_TEMP
-rm -rf /opt/registry
+rm -rf /opt/registry/data
 podman rm bastion-registry
 podman rmi --all
 rm -rf $GI_TEMP
-echo "GI ${gi_versions[${gi_version}]} files prepared - copy $air_dir/gi_registry-${gi_versions[${gi_version}]}.tar to air-gapped bastion machine"
+msg "GI ${gi_versions[${gi_version}]} files prepared - copy $air_dir/gi_registry-${gi_versions[${gi_version}]}.tar to air-gapped bastion machine" true

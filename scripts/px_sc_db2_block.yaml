@@ -1,0 +1,15 @@
+allowVolumeExpansion: true
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: portworx-db2-rwo-sc
+parameters:
+  allow_others: "true"
+  block_size: 4096b
+  io_profile: db
+  priority_io: high
+  repl: "2"
+  sharedv4: "false"
+provisioner: kubernetes.io/portworx-volume
+reclaimPolicy: Delete
+volumeBindingMode: Immediate

@@ -14,7 +14,11 @@ networking:
   clusterNetwork:
   - cidr: {{ cluster_network }}
     hostPrefix: {{ cluster_network_subnet }}
+{% if ocp_cni == 'S' %}
   networkType: OpenShiftSDN
+{% else %}
+  networkType: OVNKubernetes
+{% endif %}
   serviceNetwork:
   - 172.30.0.0/16
 platform:

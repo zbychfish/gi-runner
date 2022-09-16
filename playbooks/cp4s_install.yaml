@@ -1,8 +1,3 @@
-- name: Create temp directory for CP4S files
-  file:
-    path: "../cp4s"
-    state: directory
-
 - name: Create all required namespaces
   shell:
     cmd: "oc create namespace {{ item }}"
@@ -70,7 +65,7 @@
 - name: Setup CP4S deployment files
   template:
     src: "{{ item }}.j2"
-    dest: "../cp4s/{{ item }}.yaml"
+    dest: "{{ temp_dir }}/cp4s/{{ item }}.yaml"
   vars:
     cp4s_backup_size_final: "{{ '' if cp4s_backup_size == '0' else cp4s_backup_size }}"
     cp4s_option_drc: "{{ true if cp4s_options[0] == 'Y' else false }}"
@@ -85,8 +80,8 @@
   shell:
     cmd: "oc apply -f {{ item }}"
   with_items:
-    - "../cp4s/cp4s_og.yaml"
-    - "../cp4s/cp4s_sub.yaml"
+    - "{{ temp_dir }}/cp4s/cp4s_og.yaml"
+    - "{{ temp_dir }}/cp4s/cp4s_sub.yaml"
 
 - name: Wait for CP4S operator
   shell:
@@ -98,7 +93,7 @@
 
 - name: Deploy CP4S
   shell:
-    cmd: "oc apply -f ../cp4s/cp4s_cr.yaml"
+    cmd: "oc apply -f {{ temp_dir }}/cp4s/cp4s_cr.yaml"
 
 - name: Wait for CR deployment initiation
   pause:
@@ -130,7 +125,7 @@
 - name: Download cloud tool
   get_url:
     url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz"
-    dest: "../cp4s"
+    dest: "{{ temp_dir }}/cp4s"
     use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
   when: internet_type != 'A'
 
@@ -144,7 +139,7 @@
 
 - name: Unpack cloudctl tools
   shell:
-    cmd: "tar xf ../cp4s/{{ item.src }} -C /usr/local/bin"
+    cmd: "tar xf {{ temp_dir }}/cp4s/{{ item.src }} -C /usr/local/bin"
     warn: no
   with_items:
     - { src: "cloudctl-linux-amd64.tar.gz" }

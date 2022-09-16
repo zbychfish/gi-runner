@@ -14,7 +14,11 @@ metadata:
   name: ibm-common-service-operator
   namespace: common-service
 spec:
+{% if ics_update_channel.split('.')[1]|int > 19 %}
+  channel: v{{ ics_update_channel }}
+{% else %}
   channel: v3
+{% endif %}
   installPlanApproval: Automatic
   name: ibm-common-service-operator
   source: opencloud-operators

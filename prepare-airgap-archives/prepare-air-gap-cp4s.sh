@@ -11,7 +11,8 @@ fi
 
 source scripts/init.globals.sh
 source scripts/shared_functions.sh
-
+msg "Installing podman-docker ..." true
+dnf -qy install podman-docker
 get_pre_scripts_variables
 if [ $# -eq 0 ]
 then
@@ -26,7 +27,8 @@ then
 	setup_local_registry
 	msg "Download support tools ..." true
 	cd $GI_TEMP
-	declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
+	declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.10/openshift-client-linux.tar.gz")
+	#declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
 	for file in ${ocp_files[@]}
 	do
         	download_file $file
@@ -40,13 +42,15 @@ b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
 echo "Mirroring GI ${cp4s_versions[0]}"
 CASE_ARCHIVE=${cp4s_cases[0]}
+CASE_RELEASE=${CASE_ARCHIVE#"ibm-cp-security-"}
+CASE_RELEASE=${CASE_RELEASE%".tgz"}
 CASE_INVENTORY_SETUP=ibmSecurityOperatorSetup
 if [ $# -eq 0 ]
 then
-	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $GI_TEMP/cp4s_arch/cp4s_offline
+	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-cp-security/${CASE_RELEASE}/${CASE_ARCHIVE} --outputdir $GI_TEMP/cp4s_arch/cp4s_offline
 	check_exit_code $? "Cannot download GI case file"
 	tar xvf $GI_TEMP/cp4s_arch/cp4s_offline/${CASE_ARCHIVE} -C $GI_TEMP/cp4s_arch/cp4s_offline
-	sed -i '/versionRegex/d' $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security/prereqs.yaml
+	#sed -i '/versionRegex/d' $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security/prereqs.yaml
 	sites="cp.icr.io"
 	for site in $sites
 	do
@@ -58,7 +62,7 @@ then
 fi
 cloudctl case launch --case $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/cp4s_arch/cp4s_offline" --tolerance 1
 mirror_status=$?
-echo "Mirroring status: $mirror_status"
+msg "Mirroring status: $mirror_status" true
 if [ $mirror_status -ne 0 ]
 then
 	echo "Mirroring process failed, restart script with parameter repeat to finish"
@@ -71,8 +75,8 @@ tar cf ${air_dir}/cp4s_registry-${cp4s_versions[0]}.tar cp4s_arch/cp4s_offline c
 cd /opt/registry
 tar -rf ${air_dir}/cp4s_registry-${cp4s_versions[0]}.tar data
 cd $GI_TEMP
-rm -rf /opt/registry
+rm -rf /opt/registry/data
 podman rm bastion-registry
 podman rmi --all
 rm -rf $GI_TEMP
-echo "CP4S ${cp4s_versions[0]} files prepared - copy $air_dir/cp4s_registry-${cp4s_versions[0]}.tar to air-gapped bastion machine"
+msg "CP4S ${cp4s_versions[0]} files prepared - copy $air_dir/cp4s_registry-${cp4s_versions[0]}.tar to air-gapped bastion machine" true
