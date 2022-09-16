@@ -1,16 +1,16 @@
 - name: Create ICS operator namespace
-  shell:
+  ansible.builtin.shell:
     cmd: "oc create namespace {{ ics_operator_namespace }} || echo 'Namespace exists'"
   ignore_errors: yes
 
 - name: Label ICS nodes
-  shell:
+  ansible.builtin.shell:
     cmd: "oc label node {{ item }}.{{ domain }} ics_role=yes --overwrite=true"
   with_items: "{{ ics_dedicated_nodes|list }}"
   when: ics_dedicated_nodes|length > 2
 
 - name: Create ICS namespace with node selector
-  shell:
+  ansible.builtin.shell:
     cmd: "{{ item }}"
   with_items:
     - oc create namespace ibm-common-services || echo "Namespace exists"
@@ -18,7 +18,7 @@
   when: ics_dedicated_nodes|length > 2
 
 - name: Check presence of cloudctl tool
-  stat:
+  ansible.builtin.stat:
     path: "{{ temp_dir }}/{{ offline_inventory }}/{{ item.file }}"
   register: cloudctl_tool
   with_items:
@@ -26,30 +26,30 @@
   ignore_errors: true
 
 - name: Stop if cloudct tool is not uploaded for air-gapped installation
-  fail:
+  ansible.builtin.fail:
     msg: "Please upload cloud tool to download directory"
   with_items: "{{ cloudctl_tool.results }}"
   when: item.stat.exists == False and internet_type == 'A'
 
 - name: "Download cloud tool"
-  get_url:
+  ansible.builtin.get_url:
     url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz"
     dest: "{{ temp_dir }}/{{ offline_inventory }}"
     use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
   when: internet_type != 'A'
 
 - name: Unpack cloudctl tools
-  shell:
+  ansible.builtin.shell:
     cmd: "tar xf {{ temp_dir }}/{{ offline_inventory }}/{{ item.src }} -C /usr/local/bin"
     warn: no
   with_items:
     - { src: "cloudctl-linux-amd64.tar.gz" }
 
 - name: Standarize cloudctl name
-  command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
+  ansible.builtin.command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
 
 - name: Set correct rights for RHCOS tools in /usr/local/bin
-  file:
+  ansible.builtin.file:
     path: "/usr/local/bin/{{ item.file }}"
     owner: root
     group: root
@@ -58,22 +58,22 @@
     - { file: "cloudctl" }
 
 - name: Switch ICS inventory to portable registry
-  shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ ics_case }} --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
+  ansible.builtin.shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-cp-common-services-{{ ics_case }}.tgz --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
   when: internet_type == 'A' and install_gi == 'N'
 
 - name: Switch GI inventory to portable registry
-  shell:
+  ansible.builtin.shell:
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
   when: internet_type == 'A' and install_gi == 'Y'
 
 - name: Wait for cluster reconfiguration
-  pause:
+  ansible.builtin.pause:
     minutes: 8
   when: internet_type == 'A' and ocp_release|int < 2
 
 - name: Check cluster nodes health after Content Source Policy change
-  shell: ../scripts/check_cluster_health_operators.sh
+  ansible.builtin.shell: ../scripts/check_cluster_health_operators.sh
   register: cluster_health_operators
   until: cluster_health_operators.stdout == "0"
   retries: 100
@@ -81,7 +81,7 @@
   when: internet_type == 'A' and ocp_release|int < 2
 
 - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
   register: co_status
   until: "co_status.stdout == \"0\""
@@ -90,23 +90,23 @@
   when: internet_type == 'A' and ocp_release|int < 2
 
 - name: Create ICS catalog file
-  template:
+  ansible.builtin.template:
     src: ics_catalog.j2
     dest: "{{ temp_dir }}/ics_arch/ics_catalog.yaml"
   when: internet_type != 'A'
 
 - name: Publish ICS catalog
-  shell:
+  ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/ics_arch/ics_catalog.yaml"
   when: internet_type != 'A'
 
 - name: Publish ICS catalog in air-gap
-  shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ ics_case }}  --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
+  ansible.builtin.shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-cp-common-services-{{ ics_case }}.tgz  --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
   when: internet_type == 'A'
 
 - name: Wait for ICS catalog
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get pods -n openshift-marketplace|grep opencloud-operators|grep 1/1|grep Running|wc -l"
   register: ics_catalog_status
   until: "ics_catalog_status.stdout == \"1\""
@@ -114,19 +114,24 @@
   delay: 10
 
 - name: Wait for ICS catalog source
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get catalogsource -n openshift-marketplace|grep opencloud-operators|wc -l"
   register: ics_catalog_source_status
   until: "ics_catalog_source_status.stdout == \"1\""
   retries: 30
   delay: 10
 
+- name: Create ICS subscription file
+  ansible.builtin.template:
+    src: ics_subscription.j2
+    dest: "{{ temp_dir }}/ics_arch/ics_subscription.yaml"
+
 - name: Subscribe ICS operator
-  shell:
-    cmd: "oc apply -f ../scripts/ics_subscription.yaml"
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/ics_arch/ics_subscription.yaml"
 
 - name: Wait for ICS csv
-  shell:
+  ansible.builtin.shell:
     cmd: "oc -n common-service get csv|grep ibm-common-service-operator|grep Succeeded|wc -l"
   register: ics_csv_status
   until: "ics_csv_status.stdout == \"1\""
@@ -134,7 +139,7 @@
   delay: 10
 
 - name: Wait for ICS crd's
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get crd | grep operandrequest|wc -l"
   register: ics_crd_status
   until: "ics_crd_status.stdout == \"1\""
@@ -142,11 +147,11 @@
   delay: 10
 
 - name: Set ICS deployment size
-  shell:
+  ansible.builtin.shell:
     cmd: "oc patch commonservice common-service -n ibm-common-services --type=\"json\" -p='[{\"op\": \"replace\", \"path\": \"/spec/size\", \"value\": \"{{ ics_size }}\"}]'"
 
 - name: Wait for deployment size change
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get commonservice common-service -n ibm-common-services -o json|jq -r .status.phase"
   register: ics_commonservice_status
   until: "ics_commonservice_status.stdout == \"Succeeded\""
@@ -154,20 +159,20 @@
   delay: 10
 
 - name: Generate operands file
-  template:
+  ansible.builtin.template:
     src: "ics_operands.j2"
     dest: "{{ temp_dir }}/ics_arch/ics_operands.yaml"
 
 - name: Deploy ICS
-  shell:
+  ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/ics_arch/ics_operands.yaml"
 
 - name: Wait for operands deployment initiation
-  pause:
+  ansible.builtin.pause:
     minutes: 3
 
 - name: Wait for successful ICS deployment (takes 20-60 minutes)
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
   register: ics_pods_status
   until: "ics_pods_status.stdout == \"0\""
@@ -175,7 +180,7 @@
   delay: 20
 
 - name: Check pod's containers status
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get pods -n ibm-common-services|grep Running|awk '{print $2}'|awk -F'/' '$1!=$2'|wc -l"
   register: ics_containers_status
   until: "ics_containers_status.stdout == \"0\""
@@ -183,19 +188,19 @@
   delay: 20
 
 - name: Login to ICS
-  shell:
+  ansible.builtin.shell:
     cmd: "cloudctl login -a https://cp-console.apps.{{ domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
 
 - name: Set ICS admin password
-  shell:
+  ansible.builtin.shell:
     cmd: "cloudctl pm update-secret ibm-common-services platform-auth-idp-credentials -f -d admin_password='{{ ics_admin_password }}'"
 
 - name: Wait for authentication changes
-  pause:
+  ansible.builtin.pause:
     minutes: 3
 
 - name: Wait for successful password change
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
   register: ics_pods_status
   until: "ics_pods_status.stdout == \"0\""
@@ -203,12 +208,12 @@
   delay: 20
 
 - name: Switch off automatic endpoint certificate recreation
-  shell:
+  ansible.builtin.shell:
     cmd: oc -n ibm-common-services patch managementingress default --type merge --patch '{"spec":{"ignoreRouteCert":true}}'
   when: ics_ext_ingress == 'Y'
 
 - name: Wait for endpoint configuration change
-  shell:
+  ansible.builtin.shell:
     cmd: "oc logs `oc get pods -n ibm-common-services | grep ibm-management-ingress-operator|awk '{print $1}'` -n ibm-common-services|grep 'IgnoreRouteCert is true'|wc -l"
   register: ics_pod_status
   until: "ics_pods_status.stdout != \"1\""
@@ -217,7 +222,7 @@
   when: ics_ext_ingress == 'Y'
 
 - name: Change endpoint cert
-  shell:
+  ansible.builtin.shell:
     cmd: "{{ item }}"
   with_items:
     - "oc -n ibm-common-services delete certificates.v1alpha1.certmanager.k8s.io route-cert"
@@ -228,7 +233,7 @@
   when: ics_ext_ingress == 'Y'
 
 - name: Wait for successful cert replacement
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
   register: ics_pods_status
   until: "ics_pods_status.stdout == \"0\""

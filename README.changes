@@ -1,2 +1,10 @@
 New features and changes:
-Resolved bug with ICS variables in case OCP and ICS installation only
+Added support for GI 3.2
+Added support for ICS 3.20.x
+Added support for CP4S 1.10.x
+Updated matchbox to 0.9.1
+Updates rook-ceph to 1.9.9
+Added support for ODF for OCP 4.9+
+Added support for Portworx Essentials (only online installation)
+Possibility to select non-default CNI
+

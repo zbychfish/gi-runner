@@ -21,6 +21,12 @@ do
         curr_value="$input_variable"
 done
 rh_account_pwd=$curr_value
+olm_for_cp4s=""
+while $(check_input "$olm_for_cp4s" "yn" false)
+do
+	get_input "yn" "Do you plan install CP4S?: " true
+        olm_for_cp4s=${input_variable^^}
+done
 msg "Setup mirror image registry ..." true
 setup_local_registry
 msg "Download support tools ..." true
@@ -38,11 +44,23 @@ cat /etc/containers/policy.json|jq '.transports += {"docker": {"registry.redhat.
 mv -f /etc/containers/policy-new.json /etc/containers/policy.json
 msg "Mirroring OLM ${ocp_major_release} images ..." true
 LOCAL_REGISTRY="$host_fqdn:5000"
+declare -a ocp_by_ocs=("4.6" "4.7" "4.8")
+if  grep -q ${ocp_major_release} <<< ${ocp_by_ocs[@]}
+then
+	native_storage_operator="ocs-operator"
+else
+	native_storage_operator="odf-operator,ocs-operator,mcg-operator,odf-csi-addons-operator"
+fi
 if [[ ! -z "$REDHAT_OPERATORS_OVERRIDE" ]]
 then
 	REDHAT_OPERATORS=$REDHAT_OPERATORS_OVERRIDE
 else
-	REDHAT_OPERATORS="local-storage-operator,ocs-operator,web-terminal"
+	if [ "${olm_for_cp4s}" == 'Y' ]
+	then
+		REDHAT_OPERATORS="local-storage-operator,${native_storage_operator},serverless-operator,web-terminal"
+	else
+		REDHAT_OPERATORS="local-storage-operator,${native_storage_operator},web-terminal"
+	fi
 fi
 if [[ ! -z "$CERTIFIED_OPERATORS_OVERRIDE" ]]
 then
@@ -124,5 +142,9 @@ rm -rf $GI_TEMP
 rm -f  $air_dir/operators.txt
 podman rm bastion-registry
 podman rmi --all
-rm -rf /opt/registry
-echo "OLM images prepared for ${ocp_major_release} - copy $air_dir/olm-registry-${ocp_major_release}-for-gi-`date +%Y-%m-%d`.tar to air-gapped bastion machine"
+rm -rf /opt/registry/data
+if [ "${olm_for_cp4s}" == 'Y' ]
+then
+	mv $air_dir/olm-registry-${ocp_major_release}-for-gi-`date +%Y-%m-%d`.tar $air_dir/olm-registry-${ocp_major_release}-for-gi-and-cp4s-`date +%Y-%m-%d`.tar
+fi
+msg "OLM images prepared for ${ocp_major_release} - copy $air_dir/olm-registry-${ocp_major_release}-*.tar to air-gapped bastion machine" true

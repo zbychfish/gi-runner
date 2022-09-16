@@ -32,14 +32,16 @@ done
 files_type="ICS"
 install_app_tools
 rm -f openshift-client-linux.tar.gz
-echo "Mirroring ICS ${ics_versions[${ics_version}]}"
+msg "Mirroring ICS ${ics_versions[${ics_version}]}" true
 dnf -qy install skopeo
 check_exit_code $? "Cannot install skopeo package"
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
 CASE_ARCHIVE=${ics_cases[${ics_version}]}
+CASE_RELEASE=${CASE_ARCHIVE#"ibm-cp-common-services-"}
+CASE_RELEASE=${CASE_RELEASE%".tgz"}
 CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
-cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${CASE_ARCHIVE} --outputdir $GI_TEMP/ics_offline
+cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-cp-common-services/${CASE_RELEASE}/${CASE_ARCHIVE} --outputdir $GI_TEMP/ics_offline
 check_exit_code $? "Cannot download ICS case file"
 sites="cp.icr.io registry.redhat.io registry.access.redhat.com"
 for site in $sites
@@ -59,6 +61,6 @@ tar -rf ${air_dir}/ics_registry-${ics_versions[${ics_version}]}.tar ics_offline 
 # Cleanup gi-temp, portable-registry
 podman rm bastion-registry
 podman rmi --all
-rm -rf /opt/registry
+rm -rf /opt/registry/data
 rm -rf $GI_TEMP
-echo "ICS ${ics_versions[${ics_version}]} files prepared - copy $air_dir/ics_registry-${ics_versions[${ics_version}]}.tar to air-gapped bastion machine"
+msg "ICS ${ics_versions[${ics_version}]} files prepared - copy $air_dir/ics_registry-${ics_versions[${ics_version}]}.tar to air-gapped bastion machine" true

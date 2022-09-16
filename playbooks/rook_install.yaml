@@ -1,5 +1,5 @@
 - name: Set digests for images in order
-  shell:
+  ansible.builtin.shell:
     cmd: "IFS=',' read -r -a rook_v_oper <<< `cat {{ temp_dir }}/rook/rook_images_sha|grep {{ item }}`;echo \"`echo ${rook_v_oper[1]}|awk -F '/' '{print $NF}'|awk -F':' '{print $1}'`@${rook_v_oper[2]}\""
   register: rook_digests
   with_items:
@@ -15,62 +15,62 @@
   when: internet_type == 'A'
 
 - name: Set rook-registry URL
-  set_fact:
+  ansible.builtin.set_fact:
     rook_registry: "{{ 'quay.io/ceph/ceph:'+rook_ceph_version if internet_type != 'A' else 'registry.'+domain+':5000/rook/ceph:'+rook_ceph_version }}"
     rook_ceph_image: "{{ 'ceph:'+rook_ceph_version if internet_type != 'A' else rook_digests.results[1].stdout }}"
 
 - name: Label rook storage nodes for dedicated node space
-  shell:
+  ansible.builtin.shell:
     cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --overwrite=true;oc label node {{ item }}.{{ domain }} storage=rook --overwrite=true"
   with_items: "{{ rook_dedicated_nodes|list }}"
   when: rook_dedicated_nodes|length > 2
 
 - name: Configure rook-ceph CRD's
-  shell:
+  ansible.builtin.shell:
     cmd: "oc apply -f ../scripts/rook-latest-crds.yaml"
 
 - name: Configure common rook settings
-  shell:
+  ansible.builtin.shell:
     cmd: "oc apply -f ../scripts/rook-latest-common.yaml"
 
 - name: Configure rook-ceph cluster file
-  vars:
-    multiple_per_node: "true"
-  template:
+  ansible.builtin.template:
     src: "rook-latest-cluster.j2"
     dest: "{{ temp_dir }}/rook/rook-cluster.yaml"
+  vars:
+    multiple_per_node: "true"
 
 - name: Configure rook-ceph-rbd-sc file
+  ansible.builtin.template:
+    src: "rook-storage_class_rbd.j2"
+    dest: "{{ temp_dir }}/rook/rook-storage_class_rbd.yaml"
   vars:
     replica_size: "2"
     requires_replica: "true"
-  template:
-    src: "rook-storage_class_rbd.j2"
-    dest: "{{ temp_dir }}/rook/rook-storage_class_rbd.yaml"
 
 - name: Configure rook operator file
-  template:
+  ansible.builtin.template:
     src: "{{ 'rook-latest-operator.j2' if internet_type != 'A' else 'rook-latest-operator-offline.j2' }}"
     dest: "{{ temp_dir }}/rook/rook-latest-operator.yaml"
 
 - name: Configure rook toolbox
-  template:
+  ansible.builtin.template:
     src: "{{ 'rook-toolbox.j2' if internet_type != 'A' else 'rook-toolbox-offline.j2' }}"
     dest: "{{ temp_dir }}/rook/rook-toolbox.yaml"
 
 - name: Deploy rook toolbox
-  shell:
+  ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/rook/rook-toolbox.yaml"
 
 - name: Configure rook operator
-  shell:
+  ansible.builtin.shell:
     cmd: "{{ item }}"
   loop:
     - "oc apply -f {{ temp_dir }}/rook/rook-latest-operator.yaml"
     - "oc apply -f ../scripts/rook-latest-filesystem.yaml"
 
 - name: Wait for Rook operator
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get pods -n rook-ceph --selector app=rook-ceph-operator --no-headers -o custom-columns=STATUS:.status.phase|grep -v Running|wc -l"
   register: rook_operator_status
   until: "rook_operator_status.stdout == \"0\""
@@ -78,13 +78,13 @@
   delay: 10
 
 - name: Deploy rook-ceph cluster
-  shell:
+  ansible.builtin.shell:
     cmd: "{{ item.cmd }}"
   with_items:
     - { cmd: "oc apply -f {{ temp_dir }}/rook/'rook-cluster.yaml'" }
 
 - name: Wait for correct Rook Ceph cluster deployment
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get cephcluster -n rook-ceph --no-headers -o custom-columns=HEALTH:.status.ceph.health"
   register: ceph_installation_status
   until: "ceph_installation_status.stdout == \"HEALTH_OK\" or ceph_installation_status.stdout == \"HEALTH_WARN\""
@@ -92,7 +92,7 @@
   delay: 15
 
 - name: Configure storage classes
-  shell:
+  ansible.builtin.shell:
     cmd: "{{ item.cmd }}"
   with_items:
     - { cmd: "oc apply -f {{ temp_dir }}/rook/rook-storage_class_rbd.yaml" }

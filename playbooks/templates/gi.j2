@@ -14,7 +14,7 @@ spec:
     GUARDIUM_AGENT_SCP_TARGET_PORT: {{ gi_ssh_port }}
 {% endif %}
   version: {{ gi_version }}
-{% if stap_supp == 'Y' %}
+{% if stap_supp == 'Y' and gi_version_index|int < 3 %}
   connections:
     insightsEnv:
       FEATURE_STAP_STREAMING: "true"
@@ -23,6 +23,10 @@ spec:
     accept: true
     licenseType: "{{ gi_license }}"
   guardiumInsightsGlobal:
+{% if storage_type == 'P' %}
+    deploySettings:
+      ensureDb2InstallPlacement: true
+{% endif %}
     dev: "false"
     licenseAccept: true
     # Guardium Insights template size can be defined as below using the size parameter
@@ -42,24 +46,24 @@ spec:
         namespace: ibm-common-services
         registry: common-service
     #storageClassName: Change this to a ReadWriteMany StorageClass!!!
-    storageClassName: "{{ storage_class_fs }}"
+    storageClassName: "{{ storage_class_rw_many }}"
   dependency-kafka:
     kafka:
       storage:
-        class: "{{ storage_class_block }}"
+        class: "{{ storage_class_rw_one }}"
 {% if gi_kafka_size|int != 0 %}
         size: {{ gi_kafka_size }}Gi
 {% endif %}
     zookeeper:
       storage:
-        class: "{{ storage_class_block }}"
+        class: "{{ storage_class_rw_one }}"
 {% if gi_zookeeper_size|int != 0 %}
         size: {{ gi_zookeeper_size }}Gi
 {% endif %}
   dependency-redis:
     size: 3
     persistence:
-      storageClass: "{{ storage_class_block }}"
+      storageClass: "{{ storage_class_rw_one }}"
   dependency-mongodb:
     storage:
     - metadata:
@@ -72,7 +76,7 @@ spec:
           requests:
             storage: {{ gi_mongo_size }}Gi
 {% endif %}
-        storageClassName: "{{ storage_class_block }}"
+        storageClassName: "{{ storage_class_rw_one }}"
     - metadata:
         name: logs-volume
       spec:
@@ -83,9 +87,12 @@ spec:
           requests:
             storage: {{ gi_mongo_meta_size }}Gi
 {% endif %}
-        storageClassName: "{{ storage_class_fs }}"
+        storageClassName: "{{ storage_class_rw_many }}"
   dependency-db2:
     db2:
+      instance:
+        registry:
+          DB2_4K_DEVICE_SUPPORT: "ON"
       size: "{{ db2_nodes_array|length }}"
       #resources:
         #cpu: "6"
@@ -105,7 +112,7 @@ spec:
         spec:
           accessModes:
           - ReadWriteOnce
-          storageClassName: "{{ storage_class_block }}"
+          storageClassName: "{{ db2_class_block }}"
           resources:
             requests:
               storage: "{{ gi_logs_size }}Gi"
@@ -119,7 +126,7 @@ spec:
             requests:
               storage: {{ gi_meta_size }}Gi
 {% endif %}
-          storageClassName: "{{ storage_class_fs }}"
+          storageClassName: "{{ db2_class_fs }}"
         type: create
       - name: data
         spec:
@@ -128,7 +135,7 @@ spec:
           resources:
             requests:
               storage: "{{ gi_ds_size }}Gi"
-          storageClassName: "{{ storage_class_block }}"
+          storageClassName: "{{ db2_class_block }}"
         type: template
     mln:
       distribution: 0:0
@@ -136,16 +143,16 @@ spec:
   mini-snif:
     persistentVolumesClaims:
       mini-snif-shared:
-        storageClassName: "{{ storage_class_fs }}"
+        storageClassName: "{{ storage_class_rw_many }}"
   universal-connector-manager:
     persistentVolumesClaims:
       universal-connector-manager-shared:
-        storageClassName: "{{ storage_class_fs }}"
+        storageClassName: "{{ storage_class_rw_many }}"
   settings-datasources:
     persistentVolumesClaims:
       settings-datasources:
-        storageClassName: "{{ storage_class_fs }}"
+        storageClassName: "{{ storage_class_rw_many }}"
   ticketing:
     persistentVolumesClaims:
       ticketing-keystore:
-        storageClassName: "{{ storage_class_fs }}"
+        storageClassName: "{{ storage_class_rw_many }}"

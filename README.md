@@ -1,21 +1,29 @@
 <B>OpenShift Cluster, IBM Common Services, Guardium Insights, Cloud Pak for Security installation automation on bare metal</B>
 <HR>
 <P>Automates OCP installation for releases: 4.6, 4.7, 4.8, 4.9, 4.10
-<P>Automates ICS installation for releases: 3.7.4, 3.8.1, 3.9.1, 3.10.0, 3.11.0, 3.12.1, 3.13.0, 3.14.2, 3.15.1, 3.16.3, 3.17.0, 3.18.0
-<P>Automates GI installation for releases: 3.0.0, 3.0.1, 3.0.2, 3.1.0, 3.1.2, 3.1.3, 3.1.4, 3.1.5, 3.1.6, 3.1.7
-<P>Automates CP4S installation for 1.9 channel (only online installation)
+<P>Automates ICS installation for releases: 3.7.4, 3.18.0, 3.19.4, 3.20.1
+<P>Automates GI installation for releases: 3.1.9, 3.1.10, 3.2.0
+<P>Automates CP4S installation for 1.10 channel (only online installation)
 <P>Supports installation with direct access to the Internet, using proxy and air-gapped (restricted) approach
 <P>Implemented OCP architectures:
 <LI>3 masters and 3+n workers with OCS or rook-ceph
-<LI>3 masters only with OCS or rook-ceph
+<LI>3 masters only with OCS/ODF, rook-ceph, Portworx Essentials (online only)
 <LI>3 masters and 3+n workers and OCS tainted on 3 additional infra nodes
-<LI>Bastion setup requires Fedora 34, 35 or 36 as a operating system
+<LI>Bastion setup requires Fedora 35 or 36 as a operating system
 <HR>
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
 Release description:
-<P>v0.9.1
-<LI>Resolved bug with ICS variables when only GI and ICS is installed
+<P>v0.10.0
+<LI>Guardium Insights 3.2 support
+<LI>Added support for ODF in case of OCP 4.9+
+<LI>ICS 3.19 and 3.20 support
+<LI>CP4S 1.10.x support (online installation only)
+<LI>Added support Portworx Essentials as a storage backend (online installation only)
+<LI>Added support for OVN CNI
+<LI>Update rook-cepth to 1.9.9
+<LI>Update matchbox to 0.9.1
+<LI>Added activation STAP streaming and outliers Demo Mode in the installation process
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
@@ -44,6 +52,8 @@ Files:
 <LI>scripts/ics-uninstall.sh - native DEV team script to remove ICS instances
 <HR>
 Releases history:
+<P>v0.9.1
+<LI>Resolved bug with ICS variables when only GI and ICS is installed
 <P>v0.9.0
 <LI>added support of Fedora 36 as a bastion
 <LI>playbook/16-uninstall-ldap.yaml - new playbook allows safely uninstall OpenLDAP instance

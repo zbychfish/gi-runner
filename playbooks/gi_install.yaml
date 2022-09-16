@@ -24,7 +24,7 @@
 
 - name: GI download case file
   shell:
-    cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/{{ gi_case }} --outputdir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }} --tolerance 1"
+    cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-guardium-insights/{{ gi_case_version }}/{{ gi_case }} --outputdir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }} --tolerance 1"
   when: internet_type != 'A'
 
 - name: Get OpenSSL version on bastion
@@ -47,7 +47,7 @@
     path: "{{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/prereqs.yaml"
     regexp: '.*OpenSSL 1.1.1.*'
     line: '        versionRegex: "OpenSSL 1.1.1*|OpenSSL 3.*"'
-  when: openssl_version.stdout|regex_search("^OpenSSL 3.*$") and internet_type != 'A'
+  when: openssl_version.stdout|regex_search("^OpenSSL 3.*$") and gi_version_index|int < gi_31_32_index
 
 - name: Save portable repo credentials
   shell:
@@ -58,20 +58,37 @@
   shell:
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
 
+- name: Prepare case files for ICS
+  ansible.builtin.get_url:
+    url: "{{ item }}"
+    dest: "{{ temp_dir }}/gi_arch/cases"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  with_items:
+    - "https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-cp-common-services/{{ ics_cases[ics_version_hint|int] }}/ibm-cp-common-services-{{ ics_cases[ics_version_hint|int] }}.tgz"
+  when: internet_type != 'A' and gi_version_index|int >= gi_31_32_index
+
+- name: Copy DB2 case file to cases directory
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ temp_dir }}/gi_arch/cases"
+  with_fileglob:
+    - "{{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-db2uoperator-*.tgz"
+  when: gi_version_index|int >= gi_31_32_index
+
 - name: Install GI catalog in air-gapped
   shell:
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
   when: internet_type == 'A'
 
-- name: Install GI catalog online (3.0.0)
-  shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry docker.io\""
-  when: internet_type != 'A' and gi_version == '3.0.0'
-
-- name: Install GI catalog online (3.0.1+)
+- name: Install GI catalog online before 3.2
   shell:
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1"
-  when: internet_type != 'A' and gi_version != '3.0.0'
+  when: internet_type != 'A' and gi_version_index|int < gi_31_32_index
+
+- name: Install GI catalog online 3.2+
+  shell:
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir {{ temp_dir }}/{{ offline_inventory }}/cases\""
+  when: internet_type != 'A' and gi_version_index|int >= gi_31_32_index
 
 - name: Wait for GI catalog (part1)
   shell:
@@ -99,21 +116,7 @@
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
   when: internet_type != 'A'
 
-- name: Wait for GI operators before 3.1
-  shell:
-    cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
-  register: operator_status
-  until: "operator_status.stdout == \"1\""
-  retries: 30
-  delay: 10
-  with_items:
-    - { operator_pattern: "db2u-operator-manager" }
-    - { operator_pattern: "ibm-cloud-databases-redis-operator" }
-    - { operator_pattern: "mongodb-kubernetes-operator" }
-    - { operator_pattern: "guardiuminsights-controller-manager" }
-  when: gi_version_index|int < 3
-
-- name: Wait for GI operators from 3.1
+- name: Wait for GI operators
   shell:
     cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
   register: operator_status
@@ -124,7 +127,6 @@
     - { operator_pattern: "ibm-cloud-databases-redis-operator" }
     - { operator_pattern: "mongodb-kubernetes-operator" }
     - { operator_pattern: "guardiuminsights-controller-manager" }
-  when: gi_version_index|int > 2
 
 - name: Generate GI deployment file
   template:
@@ -135,40 +137,89 @@
   shell:
     cmd: "oc apply -f {{ temp_dir }}/gi_arch/gi.yaml"
 
-- name: Wait for completion of db2-inst - OOMKilled BUG workaround
-  shell: ../scripts/db2_oomkilled.sh
-  when: gi_version_index|int < 3
-
-- name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part1)
-  shell:
-    cmd: "oc get sts -n gi|grep db2-db2u|wc -l"
-  register: db2u_initiated
-  until: "db2u_initiated.stdout == \"1\""
-  retries: 80
-  delay: 20
-  when: gi_version == '3.0.0'
-
-- name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part2)
-  shell:
-    cmd: "oc patch sts c-{{ gi_namespace }}-db2-db2u -p='{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"db2u\",\"tty\":false}]}}}}}'"
-  when: gi_version == '3.0.0'
-
-- name: Wait for initiation of db2u deployment - /dev/tty BUG workaround (part3)
-  shell:
-    cmd: "oc get sts -n gi|grep db2-db2u|grep 1/1|wc -l"
-  register: db2u_initiated
-  until: "db2u_initiated.stdout == \"1\""
-  retries: 80
-  delay: 20
-  when: gi_version == '3.0.0'
-
 - name: Wait for successful GI deployment (takes 20-60 minutes)
   shell:
-    cmd: "oc get guardiuminsights -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
+    cmd: "oc get guardiuminsights -n {{ gi_namespace }} -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
   register: gi_deployment_status
-  until: "gi_deployment_status.stdout == \"{{ gi_version }}\""
+  until: gi_deployment_status.stdout == gi_version
   retries: 100
   delay: 60
+
+- name: Enable STAP streaming and Outliers features for 3.2+
+  block:
+  - name: Generate basic token
+    shell:
+      cmd: "echo -n admin:{{ ics_admin_password }} | base64"
+    register: basic_token
+
+  - name: Set features
+    uri:
+      url: "https://insights.apps.{{ domain }}/api/v3/feature_flags/{{ item }}"
+      method: PATCH
+      headers:
+        Authorization: "Basic {{ basic_token.stdout }}"
+      body_format: json
+      body: '{"value": true}"}'
+      validate_certs: no
+      use_proxy: no
+    with_items:
+    - STAP_STREAMING
+    - OUTLIERS_ENGINE
+    - GDP_OUTLIER_SUMMARIZED
+  when: gi_version_index|int >= gi_31_32_index and stap_supp == 'Y'
+
+- name: Set Outliers detection in Demo mode
+  block:
+  - name: Get tenant
+    shell:
+      cmd: "../scripts/db2_get_tenant.sh 2>&- | tail -n1 | xargs"
+    register: tenant
+    when: false
+
+  - name: Get JWT token
+    uri:
+      url: "https://insights.apps.{{ domain }}/api/v1/authorization"
+      method: POST
+      headers:
+        Authorization: "Basic {{ basic_token.stdout }}"
+      body_format: json
+      body: '{"IsRenew": false}'
+      validate_certs: no
+      use_proxy: no
+    register: jwt
+
+  - debug:
+      msg: "{{ jwt.json.JWT }}"
+
+  - name: Get Outliers settings
+    uri:
+      url: "https://insights.apps.{{ domain }}/api/v1/configs"
+      method: GET
+      headers:
+        Authorization: "{{ jwt.json.JWT }}"
+      validate_certs: no
+      use_proxy: no
+    register: gi_configs
+
+  - debug:
+      msg: "{{ gi_configs.json|community.general.json_query(j_query) }}"
+    vars:
+      j_query: "Configs[?Name=='Outliers']._id"
+    register: outliers_id
+
+  - name: Set Outliers in demo mode
+    uri:
+      url: "https://insights.apps.{{ domain }}/api/v1/configs/{{ outliers_id.msg[0] }}"
+      method: PATCH
+      headers:
+        Authorization: "{{ jwt.json.JWT }}"
+      body_format: json
+      body: '{"Name": "","_id": "{{ outliers_id.msg[0] }}","Options": {"demoMode": "1","minDaysForAlerts": "0","intervalAlertsThreshold": "0.5","minNumIntervalsForMessageScorers": "2","minNumIntervalsForIntervalScorers": "2","alertsPerDay": "100"}}'
+      validate_certs: no
+      use_proxy: no
+    vars:
+      j_query: "Configs[?Name=='Outliers']._id"
+  when: gi_version_index|int >= gi_31_32_index and outliers_demo == 'Y'
 
 - name: Get ssh service node port
   shell:
@@ -214,8 +265,11 @@
 
 - name: Set script for DB2 parallelism
   template:
-    src: db2_parallelism.j2
-    dest: ../scripts/db2_parallelism.sh
+    src: "{{ item }}.j2"
+    dest: "../scripts/{{ item }}.sh"
+  with_items:
+    - db2_parallelism
+    - db2_get_tenant
 
 - name: Setup DB2 parameters for parallelism
   shell:

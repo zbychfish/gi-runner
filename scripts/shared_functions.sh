@@ -1,5 +1,4 @@
 function get_pre_scripts_variables() {
-	registry_version=2.7.1
 	air_dir=$GI_HOME/air-gap
 	host_fqdn=$( hostname --long )
 }
@@ -7,18 +6,35 @@ function get_pre_scripts_variables() {
 function pre_scripts_init() {
 	mkdir -p $air_dir
 	rm -rf $GI_TEMP
-	rm -rf /opt/registry
+	rm -rf /opt/registry/data
 	mkdir -p $GI_TEMP
-	#jq required for scripts
 	dnf -qy install jq
 }
 
 function pre_scripts_init_no_jq() {
        	mkdir -p $air_dir
        	rm -rf $GI_TEMP
-       	rm -rf /opt/registry
+       	rm -rf /opt/registry/data
        	mkdir -p $GI_TEMP
 }
+
+function check_linux_distribution_and_release() {
+	msg "Check OS distribution and release" true
+        linux_distribution=`cat /etc/os-release | grep ^ID | awk -F'=' '{print $2}'`
+        fedora_release=`cat /etc/os-release | grep VERSION_ID | awk -F'=' '{print $2}'`
+        is_supported_fedora_release=`case "${fedora_supp_releases[@]}" in  *"${fedora_release}"*) echo 1 ;; *) echo 0 ;; esac`
+        if [ $linux_distribution != 'fedora' ]
+        then
+                msg "ERROR: Only Fedora is supported" true
+                exit 1
+        fi
+        if [ $is_supported_fedora_release -eq 0 ]
+        then
+                msg "ERROR: Supported Fedora release are ${fedora_supp_releases[*]}" true
+                exit 1
+        fi
+}
+
 
 function msg() {
         $2 && printf "$1\n" || printf "$1"
@@ -52,9 +68,13 @@ function get_input() {
                         read input_variable
                         $3 && input_variable=${input_variable:-D} || input_variable=${input_variable:-P}
                         ;;
-                "cs")
+                "ys")
                         read input_variable
                         $3 && input_variable=${input_variable:-C} || input_variable=${input_variable:-S}
+                        ;;
+                "sk")
+                        read input_variable
+                        $3 && input_variable=${input_variable:-S} || input_variable=${input_variable:-K}
                         ;;
                 "list")
                         msg "" true
@@ -120,6 +140,9 @@ function check_input() {
                         ;;
                 "cs")
                         [[ $1 == 'C' || $1 == 'S' ]] && echo false || echo true
+                        ;;
+                "sk")
+                        [[ $1 == 'S' || $1 == 'K' ]] && echo false || echo true
                         ;;
                 "list")
                         if [[ $1 == +([[:digit:]]) ]]

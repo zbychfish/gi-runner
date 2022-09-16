@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 set -e
 trap "exit 1" ERR
 
@@ -8,6 +7,7 @@ source scripts/shared_functions.sh
 
 get_pre_scripts_variables
 pre_scripts_init_no_jq
+check_linux_distribution_and_release
 
 msg "Gathering OS release and kernel version" true
 echo `cat /etc/system-release|sed -e "s/ /_/g"` > $GI_TEMP/os_release.txt
@@ -33,21 +33,21 @@ msg "Installing missing packages ..." true
 dnf -qy install python3 podman wget python3-pip
 test $(check_exit_code $?) || (msg "Cannot install support tools" true; exit 1)
 msg "Downloading python packages for Ansible extensions ..." true
-packages="passlib dnspython beautifulsoup4"
+packages="passlib dnspython beautifulsoup4 argparse jmespath"
 for package in $packages
 do
         python3 -m pip download --only-binary=:all: $package -d ansible > /dev/null 2>&1
-	test $(check_exit_code $?) || (msg "Cannot download Ansible extension - $package" true; exit 1)
+	test $(check_exit_code $?) || (msg "Cannot download Python module - $package" true; exit 1)
 	msg "Downloaded: $package" true
 done
-galaxy_packages="community-general-${galaxy_community_general}.tar.gz ansible-utils-${galaxy_ansible_utils}.tar.gz"
+galaxy_packages="community-general-${galaxy_community_general} ansible-utils-${galaxy_ansible_utils} community-crypto-${galaxy_community_crypto} containers-podman-${galaxy_containers_podman}"
 for galaxy_package in $galaxy_packages
 do
-	wget -P galaxy https://galaxy.ansible.com/download/${galaxy_package}
+	wget -P galaxy https://galaxy.ansible.com/download/${galaxy_package}.tar.gz
 	test $(check_exit_code $?) || (msg "Cannot download Ansible galaxy package ${galaxy_package}" true; exit 1)
 done
 tar cf $air_dir/os-`cat /etc/system-release|sed -e "s/ /_/g"`-`date +%Y-%m-%d`.tar os-updates os-packages ansible galaxy os_release.txt kernel.txt
-cd $iGI_HOME
+cd $GI_HOME
 rm -rf $GI_TEMP
 wget -P $air_dir https://github.com/zbychfish/gi-runner/archive/refs/heads/main.zip
 test $(check_exit_code $?) || (msg "Cannot download gi-runner archive from github" true; exit 1)

@@ -1,14 +1,14 @@
 - name: Waiting for OCP cluster deployment (it takes 15-40 minutes)
-  command: openshift-install --dir=../ocp wait-for bootstrap-complete
+  ansible.builtin.command: openshift-install --dir=../ocp wait-for bootstrap-complete
 
 - name: Check bootstrap availability
-  command:
+  ansible.builtin.command:
     cmd: "ping -c 1 {{ boot_name }}.{{ domain }}"
   register: boot_availability
   ignore_errors: yes
 
 - name: Stop bootstrap
-  shell:
+  ansible.builtin.shell:
     cmd: "ssh -l core {{ boot_name }}.{{ domain }} -i {{ ssh_key }} sudo shutdown -h +1"
   remote_user: core
   args:
@@ -16,12 +16,12 @@
   when: boot_availability.rc != 2 and boot_availability.rc != 1
 
 - name: Wait for boostrap shutdown
-  pause:
+  ansible.builtin.pause:
     minutes: 1
   when: boot_availability.rc != 2 and boot_availability.rc != 1
 
 - name: Remove DNS records
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/dnsmasq.conf
     regexp: "{{ item.regexp }}"
     state: absent
@@ -36,13 +36,13 @@
     - { regexp: "^dhcp-userclass" }
 
 - name: Restart dnsmasq
-  service:
+  ansible.builtin.service:
     name: dnsmasq
     state: restarted
     enabled: yes
 
 - name: Stop unused services
-  service:
+  ansible.builtin.service:
     name: "{{ item.name }}"
     state: stopped
     enabled: no
@@ -50,7 +50,7 @@
     - { name: "matchbox" }
 
 - name: Reconfigure HA Proxy
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/haproxy/haproxy.cfg
     regexp: "{{ item.regexp }}"
     state: absent
@@ -58,27 +58,27 @@
     - { regexp: '^ server m0' }
 
 - name: Restart HA Proxy
-  service:
+  ansible.builtin.service:
     name: haproxy
     state: restarted
     enabled: yes
 
 - name: Copy main HA Proxy config file
-  copy:
+  ansible.builtin.copy:
     src: /etc/haproxy/haproxy.cfg
     dest: /etc/haproxy/haproxy.cfg.main
 
 - name: Check cluster nodes health and approve CSR's if needed
+  ansible.builtin.shell: ../scripts/check_cluster_health.sh
   vars:
     node_number: "{{ master_ip|length+worker_ip|default([])|length+ocs_ip|default([])|length }}"
-  shell: ../scripts/check_cluster_health.sh
   register: cluster_health
   until: node_number == cluster_health.stdout
   retries: 30
   delay: 60
 
 - name: Wait for cluster operators
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get co --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
   register: co_status
   until: "co_status.stdout == \"0\""
@@ -86,19 +86,19 @@
   delay: 10
 
 - name: Is htpasswd secret available
-  shell:
+  ansible.builtin.shell:
     cmd: "oc get secret htpass-secret -n openshift-config -oname|wc -l"
   register: is_htpasswd_secret
 
 - name: Create htpasswd file
-  htpasswd:
+  community.general.htpasswd:
     path: "{{ temp_dir }}/ocadmin.htpasswd"
     name: "{{ ocadmin }}"
     password: "{{ ocadmin_password }}"
   when: is_htpasswd_secret.stdout|int == 0
 
 - name: Register htpasswd file in OCP
-  shell:
+  ansible.builtin.shell:
     cmd: "{{ item.cmd }}"
   with_items:
     - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocadmin.htpasswd -n openshift-config" }
@@ -108,29 +108,29 @@
   when: is_htpasswd_secret.stdout|int == 0
 
 - name: Disable default image sources
-  shell:
+  ansible.builtin.shell:
     cmd: "oc patch OperatorHub cluster --type json -p '[{\"op\": \"add\", \"path\": \"/spec/disableAllDefaultSources\", \"value\": true}]'"
   when: internet_type == 'A'
 
 - name: Wait 1 minute before adding admin
-  pause:
+  ansible.builtin.pause:
     minutes: 1
   when: is_htpasswd_secret.stdout|int == 0
 
 - name: Identify image registry name in the import
-  shell:
+  ansible.builtin.shell:
     cmd: "cd {{ temp_dir }}/olm/manifests-redhat-operator-index;cat catalogSource.yaml | grep image | awk '{print $2}'| awk -F':' '{print $1}'"
   register: old_registry_name
   when: internet_type == 'A'
 
 - name: Copy OLM conf file for modification
-  copy:
+  ansible.builtin.copy:
     src: "{{ temp_dir }}/olm/"
     dest: "{{ temp_dir }}/olm_copy/"
   when: internet_type == 'A'
 
 - name: Set correct image registry mirror name in catalogSources
-  shell:
+  ansible.builtin.shell:
     cmd: "sed -i 's/{{ old_registry_name.stdout }}/registry.{{ domain }}/g' catalogSource.yaml"
     chdir: "{{ temp_dir }}/olm_copy/{{ item }}"
     warn: false
@@ -143,7 +143,7 @@
   ignore_errors: yes
 
 - name: Set correct image registry mirror name in imageContentSourcePolicy
-  shell:
+  ansible.builtin.shell:
     cmd: "sed -i 's/{{ old_registry_name.stdout }}/registry.{{ domain }}/g' imageContentSourcePolicy.yaml"
     chdir: "{{ temp_dir }}/olm_copy/{{ item }}"
     warn: false
@@ -156,7 +156,7 @@
   ignore_errors: yes
 
 - name: Configure mirrored catalogSources
-  shell:
+  ansible.builtin.shell:
     cmd: "oc apply -f catalogSource.yaml"
     chdir: "{{ temp_dir }}/olm_copy/{{ item }}"
     warn: false
@@ -169,7 +169,7 @@
   ignore_errors: yes
 
 - name: Configure mirrored imageContentSourcePolicy.yaml
-  shell:
+  ansible.builtin.shell:
     cmd: "oc apply -f imageContentSourcePolicy.yaml"
     chdir: "{{ temp_dir }}/olm_copy/{{ item }}"
     warn: false
@@ -182,14 +182,14 @@
   ignore_errors: yes
 
 - name: Clean manifests in temp directory
-  shell:
+  ansible.builtin.shell:
     cmd: "rm -rf {{ temp_dir }}/olm_copy"
   args:
     warn: false
   when: internet_type == 'A'
 
 - name: Configure rook-ceph imagecontentsourcepolicy files
-  template:
+  ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
   with_items:
@@ -197,14 +197,14 @@
   when: internet_type == 'A' and storage_type == 'R'
 
 - name: Configure imageContentSourcePolicy for rook-ceph
-  shell:
+  ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/rook/{{ item }}"
   with_items:
     - rook_icsp.yaml
   when: internet_type == 'A' and storage_type == 'R'
 
 - name: Configure openldap imagecontentsourcepolicy files
-  template:
+  ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
   with_items:
@@ -212,19 +212,19 @@
   when: internet_type == 'A' and install_ldap == 'Y'
 
 - name: Configure imageContentSourcePolicy for openldap
-  shell:
+  ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/adds/{{ item }}"
   with_items:
     - openldap_icsp.yaml
   when: internet_type == 'A' and install_ldap == 'Y'
 
 - name: Wait - cluster stabilization
-  pause:
+  ansible.builtin.pause:
     minutes: 5
   when: internet_type == 'A'
 
 - name: Check cluster nodes health after Content Source Policy change
-  shell: ../scripts/check_cluster_health_operators.sh
+  ansible.builtin.shell: ../scripts/check_cluster_health_operators.sh
   register: cluster_health_operators
   until: cluster_health_operators.stdout == "0"
   retries: 100
@@ -232,7 +232,7 @@
   when: internet_type == 'A'
 
 - name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
-  shell:
+  ansible.builtin.shell:
       cmd: "oc get co --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
   register: co_status
   until: "co_status.stdout == \"0\""
@@ -241,22 +241,22 @@
   when: internet_type == 'A'
 
 - name: Add CM with new CA cert
-  shell:
+  ansible.builtin.shell:
     cmd: "oc create configmap gn-ca --from-file=ca-bundle.crt={{ ocp_ca }} -n openshift-config"
   when: ocp_ext_ingress == 'Y'
 
 - name: Add CA cert to OCP proxy configuration
-  shell:
+  ansible.builtin.shell:
     cmd: "oc patch proxy/cluster --type=merge -p '{\"spec\":{\"trustedCA\":{\"name\":\"gn-ca\"}}}'"
   when: ocp_ext_ingress == 'Y'
 
 - name: Wait - cluster stabilization
-  pause:
+  ansible.builtin.pause:
     minutes: 5
   when: ocp_ext_ingress == 'Y'
 
 - name: Check cluster nodes health after proxy certificate change
-  shell: ../scripts/check_cluster_health_operators.sh
+  ansible.builtin.shell: ../scripts/check_cluster_health_operators.sh
   register: cluster_health_operators
   until: cluster_health_operators.stdout == "0"
   retries: 100
@@ -264,22 +264,22 @@
   when: ocp_ext_ingress == 'Y'
 
 - name: Add secret with new cert
-  shell:
+  ansible.builtin.shell:
     cmd: "oc create secret tls gncert --cert={{ ocp_cert }} --key={{ ocp_key }} -n openshift-ingress"
   when: ocp_ext_ingress == 'Y'
 
 - name: Modify certificate for ingress
-  shell:
+  ansible.builtin.shell:
     cmd: "oc patch ingresscontroller.operator default --type=merge -p '{\"spec\":{\"defaultCertificate\": {\"name\": \"gncert\"}}}' -n openshift-ingress-operator"
   when: ocp_ext_ingress == 'Y'
 
 - name: Wait - cluster stabilization
-  pause:
+  ansible.builtin.pause:
     minutes: 1
   when: ocp_ext_ingress == 'Y'
 
 - name: Check cluster nodes health after ingress change
-  shell: ../scripts/check_cluster_health_operators.sh
+  ansible.builtin.shell: ../scripts/check_cluster_health_operators.sh
   register: cluster_health_operators
   until: cluster_health_operators.stdout == "0"
   retries: 100
