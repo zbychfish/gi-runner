@@ -398,6 +398,7 @@ function display_default_ics() {
                 msg "ICS - ${ics_versions[${bundled_in_gi_ics_versions[$i]}]} for GI $gi_version" 8
                 i=$((i+1))
         done
+	save_variable GI_ICS_VERSION "${ics_versions[${bundled_in_gi_ics_versions[$i]}]}"
 }
 
 function display_list () {
