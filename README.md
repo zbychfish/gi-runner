@@ -14,16 +14,8 @@
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
 Release description:
-<P>v0.10.0
-<LI>Guardium Insights 3.2 support
-<LI>Added support for ODF in case of OCP 4.9+
-<LI>ICS 3.19 and 3.20 support
-<LI>CP4S 1.10.x support (online installation only)
-<LI>Added support Portworx Essentials as a storage backend (online installation only)
-<LI>Added support for OVN CNI
-<LI>Update rook-cepth to 1.9.9
-<LI>Update matchbox to 0.9.1
-<LI>Added activation STAP streaming and outliers Demo Mode in the installation process
+<P>v0.10.1
+<LI>Bugs related to problem with air-gapped installation removed
 <HR>
 Files:
 <LI>init.sh - configures installation parameters
@@ -52,6 +44,16 @@ Files:
 <LI>scripts/ics-uninstall.sh - native DEV team script to remove ICS instances
 <HR>
 Releases history:
+<P>v0.10.0
+<LI>Guardium Insights 3.2 support
+<LI>Added support for ODF in case of OCP 4.9+
+<LI>ICS 3.19 and 3.20 support
+<LI>CP4S 1.10.x support (online installation only)
+<LI>Added support Portworx Essentials as a storage backend (online installation only)
+<LI>Added support for OVN CNI
+<LI>Update rook-cepth to 1.9.9
+<LI>Update matchbox to 0.9.1
+<LI>Added activation STAP streaming and outliers Demo Mode in the installation process
 <P>v0.9.1
 <LI>Resolved bug with ICS variables when only GI and ICS is installed
 <P>v0.9.0

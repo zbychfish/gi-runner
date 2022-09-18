@@ -645,17 +645,11 @@
   shell:
     cmd: semanage permissive -a dnsmasq_t
 
-- name: Check repository health
-  ansible.builtin.uri:
-    url: "https://registry.{{ domain }}:5000/v2/_catalog"
-    return_content: yes
-    url_username: "{{ repo_user }}"
-    url_password: "{{ repo_user_password }}"
-    validate_certs: no
-    #cmd: curl -u {{ repo_user }}:{{ repo_user_password }} -k https://registry.{{ domain }}:5000/v2/_catalog
-    #warn: false
+- name: Gather info about specific pods
+  containers.podman.podman_container_info:
+    name: bastion-registry
   register: repo_status
-  failed_when:   "'ocp4/openshift4' not in repo_status.json.repositories"
+  failed_when:   "'5000/tcp' not in repo_status.containers[0].HostConfig.PortBindings"
   when: internet_type == 'A'
   
 - name: Check presence of RHCOS tools

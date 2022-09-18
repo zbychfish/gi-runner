@@ -36,7 +36,6 @@
   shell:
     cmd: "cd {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }};gunzip {{ gi_case }}"
   ignore_errors: yes
-  when: internet_type != 'A'
 
 - name: Unpack case file
   shell:
