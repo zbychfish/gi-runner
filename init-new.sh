@@ -16,8 +16,8 @@ msg "Checking OS release" task
 save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
 check_linux_distribution_and_release
 msg "Deployment decisions with/without Internet Access" task
-exit 0
 get_network_installation_type
+exit 0
 msg "Deployment deicisons about the software and its releases to install" 7
 get_software_selection
 get_software_architecture

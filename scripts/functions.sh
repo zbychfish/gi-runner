@@ -1,5 +1,5 @@
 # functions used in init.sh
-function check_input() {
+function check_input_delete() {
         case $1 in
 		"cert")
                         if [ "$2" ]
@@ -277,11 +277,6 @@ function check_input() {
 		"uuid")
 			[[ "$2" =~ ^\{?[A-Z0-9a-z]{8}-[A-Z0-9a-z]{4}-[A-Z0-9a-z]{4}-[A-Z0-9a-z]{4}-[A-Z0-9a-z]{12}\}?$ ]] && echo false || echo true
 			;;
-                "yn")
-                        [[ $2 == 'N' || $2 == 'Y' ]] && echo false || echo true
-                        ;;
-                *)
-                        display_error "Error incorrect check_input type"
         esac
 }
 
@@ -397,12 +392,6 @@ function display_list () {
                 fi
                 i=$((i+1))
         done
-}
-
-function display_error() {
-        msg "$1" 9
-        trap - EXIT
-        kill -s TERM $MPID
 }
 
 function get_bastion_info() {
@@ -869,7 +858,7 @@ function get_ics_options() {
         save_variable GI_ICS_OPERANDS $(echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1')
 }
 
-function get_input() {
+function get_input_old() {
         unset input_variable
         msg "$2" 2
         case $1 in
@@ -1042,26 +1031,6 @@ function get_network_architecture {
                 one_subnet=${input_variable^^}
         done
         save_variable GI_ONE_SUBNET $one_subnet
-}
-
-function get_network_installation_type() {
-        while $(check_input "yn" ${use_air_gap})
-        do
-                get_input "yn" "Is your environment air-gapped? - " true
-                use_air_gap=${input_variable^^}
-        done
-        if [ $use_air_gap == 'Y' ]
-        then
-                switch_dnf_sync_off
-                save_variable GI_INTERNET_ACCESS "A"
-        else
-                while $(check_input "dp" ${use_proxy})
-                do
-                        get_input "dp" "Has your environment direct access to the internet or use HTTP proxy? (\e[4mD\e[0m)irect/(P)roxy: " true
-                        use_proxy=${input_variable^^}
-                done
-                save_variable GI_INTERNET_ACCESS $use_proxy
-        fi
 }
 
 function get_nodes_info() {
@@ -1809,10 +1778,6 @@ function pvc_sizes() {
         save_variable $global_var $curr_value
 }
 
-function save_variable() {
-        echo "export $1=$2" >> $file
-}
-
 function select_gi_version() {
         local nd_ics_install
         while $(check_input "list" ${gi_version_selected} ${#gi_versions[@]})
@@ -2003,15 +1968,6 @@ function software_installation_on_online() {
         echo "pullSecret: '$rhn_secret'" > ${GI_TEMP}/os/pull_secret.tmp
 }
 
-function switch_dnf_sync_off() {
-        if [[ `grep "metadata_timer_sync=" /etc/dnf/dnf.conf|wc -l` -eq 0 ]]
-        then
-                echo "metadata_timer_sync=0" >> /etc/dnf/dnf.conf
-        else
-                sed -i 's/.*metadata_timer_sync=.*/metadata_timer_sync=0/' /etc/dnf/dnf.conf
-        fi
-}
-
 function unset_proxy_settings() {
         msg "Configuring proxy settings" 7
         if [[ -f /etc/profile.gi_no_proxy ]]
@@ -2128,12 +2084,92 @@ function validate_certs() {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Switch off the dnf sync for offline installation
+function switch_dnf_sync_off() {
+        if [[ `grep "metadata_timer_sync=" /etc/dnf/dnf.conf|wc -l` -eq 0 ]]
+        then
+                echo "metadata_timer_sync=0" >> /etc/dnf/dnf.conf
+        else
+                sed -i 's/.*metadata_timer_sync=.*/metadata_timer_sync=0/' /etc/dnf/dnf.conf
+        fi
+}
+
+function get_input() {
+        unset input_variable
+        msg "$2" monit
+        case $1 in
+		"dp")
+                        read input_variable
+                        $3 && input_variable=${input_variable:-D} || input_variable=${input_variable:-P}
+                        ;;
+		"yn")
+                        $3 && msg "(\e[4mN\e[24m)o/(Y)es: " continue || msg "(N)o/(\e[4mY\e[24m)es: " continue
+                        read input_variable
+                        printf "\e[0m"
+                        $3 && input_variable=${input_variable:-N} || input_variable=${input_variable:-Y}
+                        ;;
+                *)
+                        display_error "Unknown get_input function type"
+        esac
+}
+
+function check_input() {
+        case $1 in
+		"dp")
+                        [[ $2 == 'D' || $2 == 'P' ]] && echo false || echo true
+                        ;;
+		"yn")
+                        [[ $2 == 'N' || $2 == 'Y' ]] && echo false || echo true
+                        ;;
+                *)
+                        display_error "Uknown check_input function type"
+        esac
+}
+
+function get_network_installation_type() {
+        while $(check_input "yn" ${use_air_gap})
+        do
+                get_input "yn" "Is your environment air-gapped? - " true
+                use_air_gap=${input_variable^^}
+        done
+        if [ $use_air_gap == 'Y' ]
+        then
+                switch_dnf_sync_off
+                save_variable GI_INTERNET_ACCESS "A"
+        else
+                while $(check_input "dp" ${use_proxy})
+                do
+                        get_input "dp" "Has your environment direct access to the internet or use HTTP proxy? (\e[4mD\e[0m)irect/(P)roxy: " true
+                        use_proxy=${input_variable^^}
+                done
+                save_variable GI_INTERNET_ACCESS $use_proxy
+        fi
+}
+
 function check_linux_distribution_and_release() {
         msg "Check OS distribution and release" task
         linux_distribution=`cat /etc/os-release | grep ^ID | awk -F'=' '{print $2}'`
         fedora_release=`cat /etc/os-release | grep VERSION_ID | awk -F'=' '{print $2}'`
         is_supported_fedora_release=`case "${fedora_supp_releases[@]}" in  *"${fedora_release}"*) echo 1 ;; *) echo 0 ;; esac`
-	echo $linux_distribution $fedora_release $is_supported_fedora_release
         if [ $linux_distribution != 'fedora' ]
         then
                 msg "Only Fedora is supported" error
@@ -2148,13 +2184,13 @@ function check_linux_distribution_and_release() {
 
 function msg() {
         case "$2" in
-                "0")
+                "continue")
                         printf "$1"
                         ;;
-                "1")
+                "newline")
                         printf "$1\n"
                         ;;
-                "2")
+                "monit")
                         printf "\e[1m>>> $1"
                         ;;
                 "6")
@@ -2187,5 +2223,9 @@ function display_error() {
         msg "$1" error
         trap - EXIT
         kill -s TERM $MPID
+}
+
+function save_variable() {
+        echo "export $1=$2" >> $file
 }
 
