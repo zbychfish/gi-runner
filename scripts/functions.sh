@@ -2118,7 +2118,7 @@ function get_input() {
                         $3 && input_variable=${input_variable:-S} || input_variable=${input_variable:-E}
                         ;;
 		"list")
-                        msg "" continue
+                        msg "" newline
                         shift
                         shift
                         local list=("$@")
