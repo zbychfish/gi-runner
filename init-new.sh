@@ -28,11 +28,11 @@ get_ocp_domain
 get_network_architecture
 [[ $one_subnet == 'N' ]] && get_subnets
 get_bastion_info
-exit 0
-msg "Collecting data about bootstrap node (IP and MAC addres, name)" 7
+msg "Collecting data about bootstrap node (IP and MAC addres, name)" task
 get_nodes_info 1 "boot"
-msg "Collecting Control Plane nodes data (IP and MAC addres, name), values must be inserted as comma separated list without spaces" 7
+msg "Collecting Control Plane nodes data (IP and MAC addres, name), values must be inserted as comma separated list without spaces" task
 get_nodes_info 3 "mst"
+exit 0
 get_worker_nodes
 get_set_services
 get_hardware_info

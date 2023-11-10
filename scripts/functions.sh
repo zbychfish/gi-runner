@@ -1,4 +1,102 @@
-
+function get_nodes_info() {
+        local temp_ip
+        local temp_mac
+        local temp_name
+        case $2 in
+                "ocs")
+                        local pl_names=("addresses" "names" "IP's" "hosts")
+                        local node_type="OCS nodes"
+                        local global_var_ip=$GI_OCS_IP
+                        local global_var_mac=$GI_OCS_MAC_ADDRESS
+                        local global_var_name=$GI_OCS_NAME
+                        ;;
+                "boot")
+                        local pl_names=("address" "name" "IP" "host")
+                        local node_type="bootstrap node"
+                        local global_var_ip=$GI_BOOTSTRAP_IP
+                        local global_var_mac=$GI_BOOTSTRAP_MAC_ADDRESS
+                        local global_var_name=$GI_BOOTSTRAP_NAME
+                        ;;
+                "mst")
+                        local pl_names=("addresses" "names" "IP's" "hosts")
+                        local node_type="master nodes"
+                        local global_var_ip=$GI_MASTER_IP
+                        local global_var_mac=$GI_MASTER_MAC_ADDRESS
+                        local global_var_name=$GI_MASTER_NAME
+                        ;;
+                "wrk")
+                        local pl_names=("addresses" "names" "IP's" "hosts")
+                        local node_type="worker nodes"
+                        local global_var_ip=$GI_WORKER_IP
+                        local global_var_mac=$GI_WORKER_MAC_ADDRESS
+                        local global_var_name=$GI_WORKER_NAME
+                        ;;
+                "*")
+                        exit 1
+        esac
+	msg "Insert $1 ${pl_names[2]} ${pl_names[0]} of $node_type, should be located in subnet with gateway - $subnet_gateway" info
+        while $(check_input "ips" ${temp_ip} $1)
+        do
+                if [ ! -z "$global_var_ip" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_ip] or insert $node_type ${pl_names[2]}: " true "$global_var_ip"
+                else
+                        get_input "txt" "Insert $node_type IP: " false
+                fi
+                temp_ip=${input_variable}
+        done
+        msg "Insert $1 MAC ${pl_names[0]} of $node_type" info
+        while $(check_input "macs" ${temp_mac} $1)
+        do
+                if [ ! -z "$global_var_mac" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_mac] or insert $node_type MAC ${pl_names[0]}: " true "$global_var_mac"
+                else
+                        get_input "txt" "Insert $node_type MAC ${pl_names[0]}: " false
+                fi
+                temp_mac=${input_variable}
+        done
+        msg "Insert $1 ${pl_names[3]} ${pl_names[1]} of $node_type" info
+        while $(check_input "txt_list" ${temp_name} $1)
+        do
+                if [ ! -z "$global_var_name" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_name] or insert $node_type ${pl_names[1]}: " true "$global_var_name"
+                else
+                        get_input "txt" "Insert $node_type ${pl_names[1]}: " false
+                fi
+                temp_name=${input_variable}
+        done
+        case $2 in
+                "ocs")
+                        ocs_ip=$temp_ip
+                        save_variable GI_OCS_IP $temp_ip
+                        save_variable GI_OCS_MAC_ADDRESS $temp_mac
+                        save_variable GI_OCS_NAME $temp_name
+                        ;;
+                "boot")
+                        boot_ip=$temp_ip
+                        save_variable GI_BOOTSTRAP_IP $temp_ip
+                        save_variable GI_BOOTSTRAP_MAC_ADDRESS $temp_mac
+                        save_variable GI_BOOTSTRAP_NAME $temp_name
+                        ;;
+                "mst")
+                        master_ip=$temp_ip
+                        save_variable GI_MASTER_IP $temp_ip
+                        save_variable GI_MASTER_MAC_ADDRESS $temp_mac
+                        save_variable GI_MASTER_NAME $temp_name
+                        ;;
+                "wrk")
+                        worker_ip=$temp_ip
+                        worker_name=$temp_name
+                        save_variable GI_WORKER_IP $temp_ip
+                        save_variable GI_WORKER_MAC_ADDRESS $temp_mac
+                        save_variable GI_WORKER_NAME $temp_name
+                        ;;
+                "*")
+                        display_error "Incorrect parameters get_node function"
+	esac
+}
 
 function get_bastion_info() {
         msg "Collecting data about bastion" task
@@ -388,10 +486,43 @@ function check_input() {
                                 echo true
                         fi
                         ;;
+		"ips")
+                        local ip_value
+                        IFS=',' read -r -a master_ip_arr <<< $2
+                        if [[ ${#master_ip_arr[@]} -eq $3 && $(printf '%s\n' "${master_ip_arr[@]}"|sort|uniq -d|wc -l) -eq 0 ]]
+                        then
+                                local is_wrong=false
+                                for ip_value in "${master_ip_arr[@]}"
+                                do
+                                        $(check_input "ip" $ip_value) && is_wrong=true
+                                done
+                                echo $is_wrong
+                        else
+                                echo true
+                        fi
+                        ;;
 		"list")
                         if [[ $2 == +([[:digit:]]) ]]
                         then
                                 [[ $2 -gt 0 && $2 -le $3 ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
+		"mac")
+                        [[ $2 =~ ^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$ ]] && echo false || echo true
+                        ;;
+                "macs")
+                        local mac_value
+                        IFS=',' read -r -a master_mac_arr <<< $2
+                        if [[ ${#master_mac_arr[@]} -eq $3 && $(printf '%s\n' "${master_mac_arr[@]}"|sort|uniq -d|wc -l) -eq 0 ]]
+                        then
+                                local is_wrong=false
+                                for mac_value in "${master_mac_arr[@]}"
+                                do
+                                        $(check_input "mac" $mac_value) && is_wrong=true
+                                done
+                                echo $is_wrong
                         else
                                 echo true
                         fi
@@ -419,6 +550,22 @@ function check_input() {
                                         display_error "Error"
                                         ;;
                         esac
+                        ;;
+		"txt_list")
+                        local txt_value
+                        local txt_arr
+                        IFS=',' read -r -a txt_arr <<< $2
+                        if [[ ${#txt_arr[@]} -eq $3 ]]
+                        then
+                                local is_wrong=false
+                                for txt_value in "${txt_arr[@]}"
+                                do
+                                        [[ "$txt_value" =~ ^[a-zA-Z][a-zA-Z0-9_-]{0,}[a-zA-Z0-9]$ ]] || is_wrong=true
+                                done
+                                echo $is_wrong
+                        else
+                                echo true
+                        fi
                         ;;
 		"yn")
                         [[ $2 == 'N' || $2 == 'Y' ]] && echo false || echo true
