@@ -678,7 +678,6 @@
 - name: Unpack OCP tools
   ansible.builtin.shell:
     cmd: "tar xf {{ temp_dir }}/coreos/{{ item.src }} -C /usr/local/bin"
-    warn: no
   with_items:
     - { src: "openshift-client-linux.tar.gz" }
     - { src: "openshift-install-linux.tar.gz" }
