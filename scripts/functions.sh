@@ -2097,9 +2097,9 @@ function display_list () {
         do
                 if [[ $i -eq ${#list[@]} ]]
                 then
-                        msg "    \e[4m$i\e[24m - $element" continue
+                        msg "    \e[4m$i\e[24m - $element" newline
                 else
-                        msg "    $i - $element" continue
+                        msg "    $i - $element" newline
                 fi
                 i=$((i+1))
         done
