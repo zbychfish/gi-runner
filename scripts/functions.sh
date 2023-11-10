@@ -1,3 +1,97 @@
+function set_bastion_ntpd_client() {
+        msg "Set NTPD configuration" task
+        sed -i "s/^pool .*/pool $1 iburst/g" /etc/chrony.conf
+        systemctl enable chronyd
+        systemctl restart chronyd
+}
+
+function get_set_services() {
+        local iz_tz_ok
+        local is_td_ok
+        local ntpd_server
+        local tzone
+        local tida
+        msg "Some additional questions allow to configure supporting services in your environment" info
+        msg "Time settings" task
+        msg "It is recommended to use existing NTPD server in the local intranet but you can also decide to setup bastion as a new one" info
+        while $(check_input "yn" $install_ntpd false)
+        do
+                get_input "yn" "Would you like setup NTP server on bastion?: " false
+                install_ntpd=${input_variable^^}
+        done
+        if [[ $install_ntpd == 'N' ]]
+        then
+                timedatectl set-ntp true
+                while $(check_input "ip" ${ntpd_server})
+                do
+                        if [ ! -z "$GI_NTP_SRV" ]
+                        then
+                                get_input "txt" "Push <ENTER> to accept the previous choice [$GI_NTP_SRV] or insert remote NTP server IP address: " true "$GI_NTP_SRV"
+                        else
+                                get_input "txt" "Insert remote NTP server IP address: " false
+                        fi
+                        ntpd_server=${input_variable}
+                done
+                save_variable GI_NTP_SRV $ntpd_server
+        else
+                ntpd_server=$bastion_ip
+                timedatectl set-ntp false
+        fi
+        set_bastion_ntpd_client "$ntpd_server"
+        msg "Ensure that TZ and corresponding time is set correctly" task
+        while $(check_input "yn" $is_tz_ok)
+        do
+                get_input "yn" "Your Timezone on bastion is set to `timedatectl show|grep Timezone|awk -F '=' '{ print $2 }'`, is it correct one?: " false
+                is_tz_ok=${input_variable^^}
+        done
+        if [[ $is_tz_ok == 'N' ]]
+        then
+                while "tz" $(check_input ${tzone})
+                do
+                        get_input "txt" "Insert your Timezone in Linux format (i.e. Europe/Berlin): " false
+                        tzone=${input_variable}
+                done
+        fi
+        if [[ $install_ntpd == 'Y' ]]
+        then
+                save_variable GI_NTP_SRV $bastion_ip
+                msg "Ensure that date and time are set correctly" 7
+                while $(check_input "yn" $is_td_ok false)
+                do
+                        get_input "yn" "Current local time is `date`, is it correct one?: " false
+                        is_td_ok=${input_variable^^}
+                done
+                if [[ $is_td_ok == 'N' ]]
+                then
+                        while $(check_input "td" "${tida}")
+                        do
+                                get_input "txt" "Insert correct date and time in format \"2012-10-30 18:17:16\": " false
+                                tida="${input_variable}"
+                        done
+                fi
+        fi
+        msg "DNS settings" task
+        msg "Provide the DNS which will able to resolve intranet and internet names" info
+        msg "In case of air-gapped installation you can point bastion itself but cluster will not able to resolve intranet names, in this case you must later update manually dnsmasq.conf settings" info
+        while $(check_input "ip" ${dns_fw})
+        do
+                if [ ! -z "$GI_DNS_FORWARDER" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DNS_FORWARDER] or insert DNS server IP address: " true "$GI_DNS_FORWARDER"
+                else
+                        get_input "txt" "Insert DNS IP address: " false
+                fi
+                dns_fw=${input_variable}
+        done
+        save_variable GI_DNS_FORWARDER $dns_fw
+        IFS=',' read -r -a all_ips <<< `echo $boot_ip","$master_ip","$ocs_ip",$worker_ip"|tr -s ',,' ','|sed 's/,[[:blank:]]*$//g'`
+        if [[ "$one_subnet" == 'Y' ]]
+        then
+                save_variable GI_DHCP_RANGE_START `printf '%s\n' "${all_ips[@]}"|sort -t . -k 3,3n -k 4,4n|head -n1`
+                save_variable GI_DHCP_RANGE_STOP `printf '%s\n' "${all_ips[@]}"|sort -t . -k 3,3n -k 4,4n|tail -n1`
+        fi
+}
+
 function get_worker_nodes() {
         local worker_number=3
         local inserted_worker_number
@@ -561,6 +655,10 @@ function check_input() {
 		"stopx")
                         [[ $2 == 'O' || $2 == 'R' || $2 == 'P' ]] && echo false || echo true
                         ;;
+		"td")
+                        timedatectl set-time "$2" 2>/dev/null
+                        [[ $? -eq 0 ]] && echo false || echo true
+                        ;;
 		"txt")
                         case $3 in
 				"alphanumeric_max64_chars")
@@ -594,6 +692,15 @@ function check_input() {
                                         [[ "$txt_value" =~ ^[a-zA-Z][a-zA-Z0-9_-]{0,}[a-zA-Z0-9]$ ]] || is_wrong=true
                                 done
                                 echo $is_wrong
+                        else
+                                echo true
+                        fi
+                        ;;
+		"tz")
+                        if [[ "$2" =~ ^[a-zA-Z0-9_+-]{1,}/[a-zA-Z0-9_+-]{1,}$ ]]
+                        then
+                                timedatectl set-timezone "$2" 2>/dev/null
+                                [[ $? -eq 0 ]] && echo false || echo true
                         else
                                 echo true
                         fi
