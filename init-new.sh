@@ -20,15 +20,15 @@ get_network_installation_type
 msg "Deployment decisions about the software and its releases" task
 get_software_selection
 get_software_architecture
-exit 0
 mkdir -p $GI_TEMP
 [[ "$use_air_gap" == 'Y' ]] && prepare_offline_bastion
-msg "Installing tools for init.sh" 7
+msg "Installing tools for init.sh" task
 [[ "$use_air_gap" == 'N' ]] && { dnf -qy install jq;[[ $? -ne 0 ]] && display_error "Cannot install jq"; }
 get_ocp_domain
 get_network_architecture
 [[ $one_subnet == 'N' ]] && get_subnets
 get_bastion_info
+exit 0
 msg "Collecting data about bootstrap node (IP and MAC addres, name)" 7
 get_nodes_info 1 "boot"
 msg "Collecting Control Plane nodes data (IP and MAC addres, name), values must be inserted as comma separated list without spaces" 7

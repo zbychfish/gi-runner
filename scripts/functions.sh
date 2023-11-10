@@ -1,13 +1,86 @@
 
 
+function get_bastion_info() {
+        msg "Collecting data about bastion" task
+        msg "Provide IP address of network interface on bastion which is connected to this same subnet,vlan where the OCP nodes are located" info
+        while $(check_input "ip" ${bastion_ip})
+        do
+                if [[ ! -z "$GI_BASTION_IP" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_BASTION_IP] or insert bastion IP: " true "$GI_BASTION_IP"
+                else
+                        get_input "txt" "Insert bastion IP: " false
+                fi
+                bastion_ip=${input_variable}
+        done
+        save_variable GI_BASTION_IP $bastion_ip
+        msg "Provide the hostname used to resolve bastion name by local DNS which will be set up" info
+        while $(check_input "txt" ${bastion_name} 1)
+        do
+                if [[ ! -z "$GI_BASTION_NAME" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_BASTION_NAME] or insert bastion name: " true "$GI_BASTION_NAME"
+                else
+                        get_input "txt" "Insert bastion name: " false
+                fi
+                bastion_name=${input_variable}
+        done
+        save_variable GI_BASTION_NAME $bastion_name
+        if [[ $one_subnet == 'Y' ]]
+        then
+                msg "Provide the IP gateway of subnet where cluster node are located" info
+                while $(check_input "ip" ${subnet_gateway})
+                do
+                        if [[ ! -z "$GI_GATEWAY" ]]
+                        then
+                                get_input "txt" "Push <ENTER> to accept the previous choice [$GI_GATEWAY] or insert IP address of default gateway: " true "$GI_GATEWAY"
+                        else
+                                get_input "txt" "Insert IP address of default gateway: " false
+                        fi
+                        subnet_gateway=${input_variable}
+                done
+                save_variable GI_GATEWAY $subnet_gateway
+        fi
+}
 
+function get_subnets {
+	# empty for test
+}
 
+function get_network_architecture {
+        msg "Network subnet assignment for OCP nodes" task
+        msg "OpenShift cluster nodes can be located in the different subnets" info
+        msg "If you plan to place individual nodes in separate subnets it is necessary to ensure that DHCP requests are forwarded to the bastion ($bastion_ip) using DHCP relay" info
+        msg "It is also recommended to place the bastion outside the subnets used by the cluster" info
+        msg "If you cannot setup DHCP relay in your network, all cluster nodes and bastion must be located in this same subnet (DHCP broadcast network)" info
+        while $(check_input "yn" "$one_subnet")
+        do
+                get_input "yn"  "Would you like to place the cluster nodes in one subnet?: " false
+                one_subnet=${input_variable^^}
+        done
+        save_variable GI_ONE_SUBNET $one_subnet
+}
 
+function get_ocp_domain() {
+        msg "Set cluster domain name" task
+        msg "Insert the OCP cluster domain name - it is local cluster, so it doesn't have to be registered as public one" info
+        while $(check_input "domain" ${ocp_domain})
+        do
+                if [[ ! -z "$GI_DOMAIN" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DOMAIN] or insert domain name: " true "$GI_DOMAIN"
+                else
+                        get_input "txt" "Insert domain name: " false
+                fi
+                ocp_domain=${input_variable}
+        done
+        save_variable GI_DOMAIN $ocp_domain
+}
 
-
-
-
-
+function prepare_offline_bastion() {
+        local curr_password=""
+	# empty for test
+}
 
 function get_software_architecture() {
         msg "Some important architecture decisions and planned software deployment must be made now" task
@@ -286,6 +359,9 @@ function get_input() {
 
 function check_input() {
         case $1 in
+		"domain")
+                        [[ $2 =~  ^([a-zA-Z0-9](([a-zA-Z0-9-]){0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]] && echo false || echo true
+                        ;;
 		"dp")
                         [[ $2 == 'D' || $2 == 'P' ]] && echo false || echo true
                         ;;
@@ -296,6 +372,17 @@ function check_input() {
                         if [[ $2 == +([[:digit:]]) ]]
                         then
                                 [[ $2 -ge $3 && $2 -le $4 ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
+		"ip")
+                        local ip
+                        if [[ $2 =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]
+                        then
+                                IFS='.' read -r -a ip <<< $2
+                                [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+                                [[ $? -eq 0 ]] && echo false || echo true
                         else
                                 echo true
                         fi
