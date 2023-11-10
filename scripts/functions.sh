@@ -2123,7 +2123,7 @@ function get_input() {
                         shift
                         local list=("$@")
                         display_list $@
-                        msg "Your choice: " 0
+                        msg "Your choice: " continue
                         read input_variable
                         input_variable=${input_variable:-${#list[@]}}
                         ;;
