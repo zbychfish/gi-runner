@@ -1,3 +1,161 @@
+function software_installation_on_online() {
+        msg "Update and installation of software packaged" task
+        msg "Installing OS updates, takes a few minutes" task
+        dnf -qy update
+        msg "Installing OS packages" task
+        local soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bootimgs" "chrony" "dnsmasq" "unzip" "wget" "httpd-tools" "policycoreutils-python-utils" "python3-ldap" "openldap-servers" "openldap-clients" "pip" "skopeo")
+        for package in "${soft[@]}"
+        do
+                msg "- installing $package ..." info
+                dnf -qy install $package &>/dev/null
+                [[ $? -ne 0 ]] && display_error "Cannot install $package"
+        done
+        msg "Installing Python packages" task
+        local python_soft=("passlib" "dnspython" "beautifulsoup4" "argparse" "jmespath")
+        for package in "${python_soft[@]}"
+        do
+                msg "- installing $package ..." info
+                [[ $use_proxy == 'D' ]] && pip3 install "$package" || pip3 install "$package" --proxy http://$proxy_ip:$proxy_port
+                [[ $? -ne 0 ]] && display_error "Cannot install python package $package"
+        done
+        msg "Configuring Ansible" task
+        mkdir -p /etc/ansible
+        [[ $use_proxy == 'P' ]] && echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts || echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
+        msg "Installing Ansible galaxy packages" task
+        local ansible_galaxy=("community-general-${galaxy_community_general}" "ansible-utils-${galaxy_ansible_utils}" "community-crypto-${galaxy_community_crypto}" "containers-podman-${galaxy_containers_podman}" )
+        for package in "${ansible_galaxy[@]}"
+        do
+                msg "- installing $package ..." info
+                wget https://galaxy.ansible.com/download/${package}.tar.gz
+                [[ $? -ne 0 ]] && display_error "Cannot download Ansible Galaxy package $package"
+                ansible-galaxy collection install ${package}.tar.gz
+                [[ $? -ne 0 ]] && display_error "Cannot install Ansible Galaxy package $package"
+                rm -f ${package}.tar.gz
+        done
+        mkdir -p ${GI_TEMP}/os
+        echo "pullSecret: '$rhn_secret'" > ${GI_TEMP}/os/pull_secret.tmp
+}
+
+function unset_proxy_settings() {
+        msg "Configuring proxy settings" task
+        if [[ -f /etc/profile.gi_no_proxy ]]
+        then
+                mv -f /etc/profile.gi_no_proxy /etc/profile
+        fi
+        if [[ -f /etc/dnf/dnf.conf.gi_no_proxy ]]
+        then
+                mv -f /etc/dnf/dnf.conf.gi_no_proxy /etc/dnf/dnf.conf
+        fi
+        save_variable GI_PROXY_URL "NO_PROXY"
+}
+
+function configure_os_for_proxy() {
+	local test=""
+}
+
+function get_credentials() {
+        local is_ok
+        msg "Collecting all required credentials" task
+        local is_ok=true #there is no possibility to send variable with unescaped json
+        if [ $use_air_gap == 'N' ]
+        then
+                msg "Non air-gapped OCP installations requires access to remote image registries located in the Internet" info
+                msg "Access to OCP images is restricted and requires authorization using RedHat account pull secret" info
+                msg "You can get access to your pull secret at this URL - https://cloud.redhat.com/openshift/install/local" info
+                while $is_ok
+                do
+                        if [ ! -z "$GI_RHN_SECRET" ]
+                        then
+                                msg "Push <ENTER> to accept the previous choice" newline
+                                msg "[$GI_RHN_SECRET]" newline
+                                get_input "txt" "or insert RedHat pull secret: " true "$GI_RHN_SECRET"
+                        else
+                                get_input "txt" "Insert RedHat pull secret: " false
+                        fi
+                        if [ "${input_variable}" ]
+                        then
+                                echo ${input_variable}|{ jq .auths 2>/dev/null 1>/dev/null ;}
+                                [[ $? -eq 0 ]] && is_ok=false
+                                rhn_secret="${input_variable}"
+                        fi
+                done
+                save_variable GI_RHN_SECRET "'${input_variable}'"
+                if [[ $gi_install == 'Y' || $cp4s_install == 'Y' ]]
+                then
+                        msg "GI and CP4S require access to restricted IBM image registries" info
+                        msg "You need provide the IBM Cloud containers key located at URL - https://myibm.ibm.com/products-services/containerlibrary" info
+                        msg "Your account must be entitled to install GI" info
+                        while $(check_input "jwt" "${ibm_secret}")
+                        do
+                                if [ ! -z "$GI_IBM_SECRET" ]
+                                then
+                                        msg "Push <ENTER> to accept the previous choice" newline
+                                        msg "[$GI_IBM_SECRET]" newline
+                                        get_input "txt" "or insert IBM Cloud container key: " true "$GI_IBM_SECRET"
+                                else
+                                        get_input "txt" "Insert IBM Cloud container key: " false
+                                fi
+                                ibm_secret="${input_variable}"
+                        done
+                        save_variable GI_IBM_SECRET "'$ibm_secret'"
+                fi
+        fi
+        msg "Define user name and password of an additional OpenShift administrator" info
+        while $(check_input "txt" "${ocp_admin}" "non_empty")
+        do
+                if [ ! -z "$GI_OCADMIN" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCADMIN] or insert OCP admin username: " true "$GI_OCADMIN"
+                else
+                        get_input "txt" "Insert OCP admin username (default - ocadmin): " true "ocadmin"
+                fi
+                ocp_admin="${input_variable}"
+        done
+        save_variable GI_OCADMIN "$ocp_admin"
+        while $(check_input "txt" "${ocp_password}" "non_empty")
+        do
+                if [ ! -z "$GI_OCADMIN_PWD" ]
+                then
+                        get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_OCADMIN_PWD] or insert OCP $ocp_admin user password: " true "$GI_OCADMIN_PWD"
+                else
+                        get_input "pwd" "Insert OCP $ocp_admin user password: " false
+                fi
+                ocp_password="${input_variable}"
+        done
+        save_variable GI_OCADMIN_PWD "'$curr_password'"
+        if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' || "$cp4s_install" == 'Y' ]]
+        then
+                msg "Define ICS admin user password" info
+                msg "This same account is used by GI for default account with access management role" info
+                while $(check_input "txt" "${ics_password}" "non_empty")
+                do
+                        if [ ! -z "$GI_ICSADMIN_PWD" ]
+                        then
+                                get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_ICSADMIN_PWD] or insert ICS admin user password: " true "$GI_ICSADMIN_PWD"
+                        else
+                                get_input "pwd" "Insert ICS admin user password: " false
+                        fi
+                        ics_password="${input_variable}"
+                done
+                save_variable GI_ICSADMIN_PWD "'$curr_password'"
+        fi
+        if [[ "$install_ldap" == 'Y' ]]
+        then
+                msg "Define LDAP users initial password" info
+                while $(check_input "txt" "${ldap_password}" "non_empty")
+                do
+                        if [ ! -z "$GI_LDAP_USERS_PWD" ]
+                        then
+                                get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_LDAP_USERS_PWD] or insert default LDAP users password: " true "$GI_LDAP_USERS_PWD"
+                        else
+                                get_input "pwd" "Insert default LDAP users password: " false
+                        fi
+                        ldap_password="${input_variable}"
+                done
+                save_variable GI_LDAP_USERS_PWD "'$curr_password'"
+        fi
+}
+
 function get_inter_cluster_info() {
         msg "CNI plug-in selection" task
         while $(check_input "sk" ${ocp_cni})
@@ -828,6 +986,32 @@ function get_input() {
                         read input_variable
                         input_variable=${input_variable:-${#list[@]}}
                         ;;
+		"pwd")
+                        local password=""
+                        local password2=""
+                        read -s -p "" password
+                        echo
+                        if [ "$password" == "" ] && $3
+                        then
+                                curr_password="$4";input_variable=false
+                        else
+                                if [ "$password" == "" ]
+                                then
+                                        input_variable=true
+                                else
+                                        read -s -p ">>> Insert password again: " password2
+                                        echo
+                                        if [ "$password" == "$password2" ]
+                                        then
+                                                curr_password=$password
+                                                input_variable=false
+                                        else
+                                                msg "Please try again" 7
+                                                input_variable=true
+                                        fi
+                                fi
+                        fi
+                        ;;
 		"sk")
                         read input_variable
                         $3 && input_variable=${input_variable:-S} || input_variable=${input_variable:-K}
@@ -924,6 +1108,15 @@ function check_input() {
                                         $(check_input "ip" $ip_value) && is_wrong=true
                                 done
                                 echo $is_wrong
+                        else
+                                echo true
+                        fi
+                        ;;
+		"jwt")
+                        if [ "$2" ]
+                        then
+                                { sed 's/\./\n/g' <<< $(cut -d. -f1,2 <<< "$2")|{ base64 --decode 2>/dev/null ;}|jq . ;} 1>/dev/null
+                                [[ $? -eq 0 ]] && echo false || echo true
                         else
                                 echo true
                         fi

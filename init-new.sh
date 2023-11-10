@@ -38,19 +38,17 @@ get_hardware_info
 get_service_assignment
 get_cluster_storage_info
 get_inter_cluster_info
-exit 0
 get_credentials
-get_certificates
-[[ "$gi_install" == 'Y' ]] && get_gi_options
-#[[ "$gi_install" == 'Y' ]] && save_variable GI_ICS_OPERANDS "Y,N,N,N,N,N"
-[[ "$ics_install" == 'Y' || "$gi_install" == 'Y' ]] && get_ics_options
-[[ "$cp4s_install" == 'Y' ]] && get_cp4s_options
-[[ "$install_ldap" == 'Y' ]] && get_ldap_options
+#get_certificates
+#[[ "$gi_install" == 'Y' ]] && get_gi_options
+#[[ "$ics_install" == 'Y' || "$gi_install" == 'Y' ]] && get_ics_options
+#[[ "$cp4s_install" == 'Y' ]] && get_cp4s_options
+#[[ "$install_ldap" == 'Y' ]] && get_ldap_options
 [[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
 [[ "$use_air_gap" == 'N' ]] && software_installation_on_online
 create_cluster_ssh_key
-#ln /usr/bin/python3 /usr/bin/python
 msg "All information to deploy environment collected" 6
+exit 0
 if LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then true; else false; fi;
 then
 	msg "System reboot required because new kernel has been installed" 6
