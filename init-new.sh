@@ -47,21 +47,20 @@ get_credentials
 [[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
 [[ "$use_air_gap" == 'N' ]] && software_installation_on_online
 create_cluster_ssh_key
-msg "All information to deploy environment collected" 6
-exit 0
+msg "All information to deploy environment collected" info
 if LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then true; else false; fi;
 then
-	msg "System reboot required because new kernel has been installed" 6
-	msg "Execute these commands after relogin to bastion:" 6
-	msg "- go to gi-runner home directory: \"cd $GI_HOME\"" 6
-	msg "- import variables: \". $file\"" 6
-        msg "- start first playbook: \"ansible-playbook playbooks/install_all.yaml\"" 6
+	msg "System reboot required because new kernel has been installed" info
+	msg "Execute these commands after relogin to bastion:" info
+	msg "- go to gi-runner home directory: \"cd $GI_HOME\"" info
+	msg "- import variables: \". $file\"" info
+        msg "- start first playbook: \"ansible-playbook playbooks/install_all.yaml\"" info
 	read -p "Press enter to continue to reboot system"
 	shutdown -r now
 else
-	msg "Execute commands below to continue:" 6
-	[[ $use_proxy == 'P' ]] &&  msg "- import PROXY settings: \". /etc/profile\"" 6
-	msg "- import variables: \". $file\"" 6
-	msg "- start playbook: \"ansible-playbook playbooks/install_all.yaml\"" 6
+	msg "Execute commands below to continue:" info
+	[[ $use_proxy == 'P' ]] &&  msg "- import PROXY settings: \". /etc/profile\"" info
+	msg "- import variables: \". $file\"" info
+	msg "- start playbook: \"ansible-playbook playbooks/install_all.yaml\"" info
 fi
 trap - EXIT

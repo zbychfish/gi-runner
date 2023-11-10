@@ -1,5 +1,16 @@
+function create_cluster_ssh_key() {
+        msg "Add a new RSA SSH key" task
+        cluster_id=$(mktemp -u -p ~/.ssh/ cluster_id_rsa.XXXXXXXXXXXX)
+        msg "*** Cluster key: ~/.ssh/${cluster_id}, public key: ~/.ssh/${cluster_id}.pub ***" info
+        ssh-keygen -N '' -f ${cluster_id} -q <<< y > /dev/null
+        echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
+        cat ${cluster_id}.pub >> /root/.ssh/authorized_keys
+        save_variable GI_SSH_KEY "${cluster_id}"
+        msg "Save SSH keys names: ${cluster_id} and ${cluster_id}.pub, each init.sh execution create new key with random name" info
+}
+
 function software_installation_on_online() {
-        msg "Update and installation of software packaged" task
+        msg "Update and installation of software packages" task
         msg "Installing OS updates, takes a few minutes" task
         dnf -qy update
         msg "Installing OS packages" task
@@ -107,7 +118,7 @@ function get_credentials() {
                 then
                         get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCADMIN] or insert OCP admin username: " true "$GI_OCADMIN"
                 else
-                        get_input "txt" "Insert OCP admin username (default - ocadmin): " true "ocadmin"
+                        get_input "txt" "Insert OCP admin username (default - ocadmin): " true "ocpadmin"
                 fi
                 ocp_admin="${input_variable}"
         done
@@ -1284,9 +1295,6 @@ function msg() {
                         ;;
                 "monit")
                         printf "\e[1m>>> $1"
-                        ;;
-                "6")
-                        printf "\e[32m\e[2mINFO:\e[22m $1\n\e[0m"
                         ;;
                 "task")
                         printf "\e[34m\e[2mTASK:\e[22m $1\n\e[0m"
