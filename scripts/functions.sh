@@ -15,7 +15,7 @@ function get_bastion_info() {
         done
         save_variable GI_BASTION_IP $bastion_ip
         msg "Provide the hostname used to resolve bastion name by local DNS which will be set up" info
-        while $(check_input "txt" ${bastion_name} 1)
+        while $(check_input "txt" ${bastion_name} "alphanumeric_max64_chars")
         do
                 if [[ ! -z "$GI_BASTION_NAME" ]]
                 then
@@ -398,6 +398,27 @@ function check_input() {
                         ;;
 		"stopx")
                         [[ $2 == 'O' || $2 == 'R' || $2 == 'P' ]] && echo false || echo true
+                        ;;
+		"txt")
+                        case $3 in
+				"alphanumeric_max64_chars")
+                                        [[ $2 =~ ^[a-zA-Z][a-zA-Z0-9]{1,64}$ ]] && echo false || echo true
+                                        ;;
+                                "2")
+                                        [[ ! -z $2 ]] && echo false || echo true
+                                        ;;
+                                "3")
+                                        if [ -z "$2" ] || $(echo "$2" | egrep -q "[[:space:]]" && echo true || echo false)
+                                        then
+                                                echo true
+                                        else
+                                                [[ ${#2} -le $4 ]] && echo false || echo true
+                                        fi
+                                        ;;
+                                "*")
+                                        display_error "Error"
+                                        ;;
+                        esac
                         ;;
 		"yn")
                         [[ $2 == 'N' || $2 == 'Y' ]] && echo false || echo true
