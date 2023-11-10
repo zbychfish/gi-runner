@@ -2136,12 +2136,12 @@ function check_linux_distribution_and_release() {
 	echo $linux_distribution $fedora_release $is_supported_fedora_release
         if [ $linux_distribution != 'fedora' ]
         then
-                msg "ERROR: Only Fedora is supported" true
+                msg "Only Fedora is supported" error
                 exit 1
         fi
         if [ $is_supported_fedora_release -eq 0 ]
         then
-                msg "ERROR: Supported Fedora release are ${fedora_supp_releases[*]}" true
+                msg "Supported Fedora release are ${fedora_supp_releases[*]}" error
                 exit 1
         fi
 }
@@ -2166,7 +2166,7 @@ function msg() {
                 "info")
                         printf "\e[2mINFO:\e[22m \e[97m$1\n\e[0m"
                         ;;
-                "9")
+                "error")
                         printf "\e[31m----------------------------------------\n"
                         if [ "$1" ]
                         then
@@ -2181,5 +2181,11 @@ function msg() {
                         display_error "msg with incorrect parameter - $2"
                         ;;
         esac
+}
+
+function display_error() {
+        msg "$1" error
+        trap - EXIT
+        kill -s TERM $MPID
 }
 
