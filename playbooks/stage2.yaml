@@ -11,8 +11,6 @@
   ansible.builtin.shell:
     cmd: "ssh -l core {{ boot_name }}.{{ domain }} -i {{ ssh_key }} sudo shutdown -h +1"
   remote_user: core
-  args:
-    warn: false
   when: boot_availability.rc != 2 and boot_availability.rc != 1
 
 - name: Wait for boostrap shutdown
