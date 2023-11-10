@@ -2133,6 +2133,7 @@ function check_linux_distribution_and_release() {
         linux_distribution=`cat /etc/os-release | grep ^ID | awk -F'=' '{print $2}'`
         fedora_release=`cat /etc/os-release | grep VERSION_ID | awk -F'=' '{print $2}'`
         is_supported_fedora_release=`case "${fedora_supp_releases[@]}" in  *"${fedora_release}"*) echo 1 ;; *) echo 0 ;; esac`
+	echo $linux_distribution $fedora_release $is_supported_fedora_release
         if [ $linux_distribution != 'fedora' ]
         then
                 msg "ERROR: Only Fedora is supported" true
