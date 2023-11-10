@@ -1,3 +1,31 @@
+function get_worker_nodes() {
+        local worker_number=3
+        local inserted_worker_number
+        if [[ $is_master_only == 'N' ]]
+        then
+                msg "Collecting workers data" task
+                [[ $storage_type == 'P' ]] && max_workers_number=5 || max_workers_number=50
+                if [[ $storage_type == 'O' && $ocs_tainted == 'Y' ]]
+                then
+                        msg "Collecting ODF dedicated nodes data because ODF tainting has been chosen (IP and MAC addresses, node names), values inserted as comma separated list without spaces" task
+                        get_nodes_info 3 "ocs"
+                fi
+                if [[ "$db2_tainted" == 'Y' ]]
+                then
+                        [[ $gi_size == "values-small" ]] && worker_number=$(($worker_number+2)) || worker_number=$(($worker_number+1))
+                fi
+                msg "Your cluster architecture decisions require to have minimum $worker_number additional workers" info
+                [[ $storage_type == 'P' ]] && msg "Because Portworx Essential will be installed you can specify maximum 5 workers" info
+                while $(check_input "int" $inserted_worker_number $worker_number $max_workers_number)
+                do
+                        get_input "int" "How many additional workers would you like to add to cluster?: " false
+                        inserted_worker_number=${input_variable}
+                done
+                msg "Collecting workers nodes data (IP and MAC addresses, node names), values inserted as comma separated list without spaces" task
+                get_nodes_info $inserted_worker_number "wrk"
+        fi
+}
+
 function get_nodes_info() {
         local temp_ip
         local temp_mac
@@ -32,7 +60,7 @@ function get_nodes_info() {
                         local global_var_name=$GI_WORKER_NAME
                         ;;
                 "*")
-                        exit 1
+                        display_error "Incorrect parameters get_nodes_info function"
         esac
 	msg "Insert $1 ${pl_names[2]} ${pl_names[0]} of $node_type, should be located in subnet with gateway - $subnet_gateway" info
         while $(check_input "ips" ${temp_ip} $1)
@@ -423,6 +451,9 @@ function get_input() {
 		"es")
                         read input_variable
                         $3 && input_variable=${input_variable:-S} || input_variable=${input_variable:-E}
+                        ;;
+		"int")
+                        read input_variable
                         ;;
 		"list")
                         msg "" newline
