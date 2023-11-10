@@ -44,6 +44,7 @@ function get_bastion_info() {
 }
 
 function get_subnets {
+	local test=""
 	# empty for test
 }
 
