@@ -11,11 +11,12 @@ export MPID=$$
 . ./scripts/functions.sh
 #MAIN PART
 echo "#gi-runner configuration file" > $file
-msg "This script must be executed from gi-runner home directory" 8
-msg "Checking OS release" 7
+msg "This script must be executed from gi-runner home directory" info
+msg "Checking OS release" task
 save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
 check_linux_distribution_and_release
-msg "Deployment decisions with/without Internet Access" 7
+msg "Deployment decisions with/without Internet Access" task
+exit 0
 get_network_installation_type
 msg "Deployment deicisons about the software and its releases to install" 7
 get_software_selection
