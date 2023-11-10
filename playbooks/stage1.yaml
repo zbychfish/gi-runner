@@ -274,8 +274,8 @@
 - name: Unzip matchbox
   ansible.builtin.command:
     cmd: "tar zxf {{ temp_dir }}/coreos/matchbox-{{ matchbox_version }}-linux-amd64.tar.gz -C {{ temp_dir }}"
-  args:
-    warn: false
+      #args:
+      #warn: false
 
 - name: Copy matchbox to bin
   ansible.builtin.copy:
