@@ -1,3 +1,78 @@
+function get_inter_cluster_info() {
+        msg "CNI plug-in selection" task
+        while $(check_input "sk" ${ocp_cni})
+        do
+                get_input "sk" "Would you like use default CNI plug-in OpenShift[S]DN or OVN[K]ubernetes(\e[4mS\e[0m)/K): " true
+                ocp_cni=${input_variable^^}
+        done
+        save_variable GI_OCP_CNI $ocp_cni
+        msg "Inter-node cluster pod communication" task
+        msg "Pods in cluster communicate with one another using private network, use non-default values only if your physical network use IP address space 10.128.0.0/16" info
+        while $(check_input "cidr" "${ocp_cidr}")
+        do
+                if [ ! -z "$GI_OCP_CIDR" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCP_CIDR] or insert cluster interconnect CIDR (IP/MASK): " true "$GI_OCP_CIDR"
+                else
+                        get_input "txt" "Insert cluster interconnect CIDR (default - 10.128.0.0/16): " true "10.128.0.0/16"
+                fi
+                ocp_cidr="${input_variable}"
+        done
+        save_variable GI_OCP_CIDR "$ocp_cidr"
+        cidr_subnet=$(echo "$ocp_cidr"|awk -F'/' '{print $2}')
+        msg "Each pod will reserve IP address range from subnet $ocp_cidr, provide this range using subnet mask (must be higher than $cidr_subnet)" info
+        while $(check_input "int" "${ocp_cidr_mask}" $cidr_subnet 27)
+        do
+                if [ ! -z "$GI_OCP_CIDR_MASK" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCP_CIDR_MASK] or insert pod IP address range (MASK): " true "$GI_OCP_CIDR_MASK"
+                else
+                        get_input "txt" "Insert pod IP address range (default - 23): " true 23
+                fi
+                ocp_cidr_mask="${input_variable}"
+        done
+        save_variable GI_OCP_CIDR_MASK "$ocp_cidr_mask"
+}
+
+function get_px_options() {
+	local test=""
+}
+
+function get_cluster_storage_info() {
+        msg "Cluster storage information" task
+        msg "There is assumption that all storage cluster node use this same device specification for storage disk" info
+        msg "In most cases the second boot disk will have specification \"sdb\" or \"nvmne1\"" info
+        msg "The inserted value refers to root path located in /dev" info
+        msg "It means that value sdb refers to /dev/sdb" info
+        while $(check_input "txt" "${storage_device}" "non_empty")
+        do
+                if [ ! -z "$GI_STORAGE_DEVICE" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_STORAGE_DEVICE] or insert cluster storage disk device specification: " true "$GI_STORAGE_DEVICE"
+                else
+                        get_input "txt" "Insert cluster storage disk device specification: " false
+                fi
+                storage_device="${input_variable}"
+        done
+        save_variable GI_STORAGE_DEVICE "$storage_device"
+        msg "Cluster storage devices ($storage_device)  must be this same size on all storage nodes!" info
+        msg "The minimum size of each disk is 100 GB" info
+        while $(check_input "int" "${storage_device_size}" 100 10000000)
+        do
+                if [ ! -z "$GI_STORAGE_DEVICE_SIZE" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_STORAGE_DEVICE_SIZE] or insert cluster storage disk device size (in GB): " true "$GI_STORAGE_DEVICE_SIZE"
+                        storage_device_size="$GI_STORAGE_DEVICE_SIZE"
+                else
+                        get_input "txt" "Insert cluster storage disk device size (in GB): " false
+                fi
+                storage_device_size="${input_variable}"
+        done
+        save_variable GI_STORAGE_DEVICE_SIZE "$storage_device_size"
+        #echo $storage_type
+        [[ "$storage_type" == 'P' ]] && get_px_options
+}
+
 function get_service_assignment() {
         msg "Architecture decisions about service location on cluster nodes" task
         local selected_arr
@@ -753,6 +828,10 @@ function get_input() {
                         read input_variable
                         input_variable=${input_variable:-${#list[@]}}
                         ;;
+		"sk")
+                        read input_variable
+                        $3 && input_variable=${input_variable:-S} || input_variable=${input_variable:-K}
+                        ;;
 		"stopx")
                         read input_variable
                         input_variable=${input_variable^^}
@@ -777,6 +856,35 @@ function get_input() {
 
 function check_input() {
         case $1 in
+		"cidr")
+                        if [[ "$2" =~  ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]{1,2}$ ]]
+                        then
+                                ( ! $(check_input "ip" `echo "$2"|awk -F'/' '{print $1}'`) && ! $(check_input "int" `echo "$2"|awk -F'/' '{print $2}'` 8 22) ) && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
+                 "cidr_list")
+                        local cidr_arr
+                        local cidr
+                        if $3 && [ -z "$2" ]
+                        then
+                                echo false
+                        else
+                                if [ -z "$2" ] || $(echo "$2" | egrep -q "[[:space:]]" && echo true || echo false)
+                                then
+                                        echo true
+                                else
+                                        local result=false
+                                        IFS=',' read -r -a cidr_arr <<< "$2"
+                                        for cidr in "${cidr_arr[@]}"
+                                        do
+                                                check_input "cidr" "$cidr" && result=true
+                                        done
+                                        echo $result
+                                fi
+                        fi
+                        ;;
 		"domain")
                         [[ $2 =~  ^([a-zA-Z0-9](([a-zA-Z0-9-]){0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]] && echo false || echo true
                         ;;
@@ -872,6 +980,9 @@ function check_input() {
                                 echo true
                         fi
                         ;;
+		"sk")
+                        [[ $2 == 'S' || $2 == 'K' ]] && echo false || echo true
+                        ;;
 		"stopx")
                         [[ $2 == 'O' || $2 == 'R' || $2 == 'P' ]] && echo false || echo true
                         ;;
@@ -884,7 +995,7 @@ function check_input() {
 				"alphanumeric_max64_chars")
                                         [[ $2 =~ ^[a-zA-Z][a-zA-Z0-9]{1,64}$ ]] && echo false || echo true
                                         ;;
-                                "2")
+                                "non_empty")
                                         [[ ! -z $2 ]] && echo false || echo true
                                         ;;
                                 "3")
