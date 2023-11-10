@@ -285,23 +285,6 @@ function check_input() {
         esac
 }
 
-function check_linux_distribution_and_release() {
-        msg "Check OS distribution and release" 7
-        linux_distribution=`cat /etc/os-release | grep ^ID | awk -F'=' '{print $2}'`
-        fedora_release=`cat /etc/os-release | grep VERSION_ID | awk -F'=' '{print $2}'`
-        is_supported_fedora_release=`case "${fedora_supp_releases[@]}" in  *"${fedora_release}"*) echo 1 ;; *) echo 0 ;; esac`
-        if [ $linux_distribution != 'fedora' ]
-        then
-                msg "ERROR: Only Fedora is supported" true
-                exit 1
-        fi
-        if [ $is_supported_fedora_release -eq 0 ]
-        then
-                msg "ERROR: Supported Fedora release are ${fedora_supp_releases[*]}" true
-                exit 1
-        fi
-}
-
 function configure_os_for_proxy() {
         msg "Configuring proxy settings" 7
         msg "To support installation over Proxy some additional information must be gathered and bastion network services reconfiguration" 8
@@ -1620,42 +1603,6 @@ function get_worker_nodes() {
         fi
 }
 
-function msg() {
-        case "$2" in
-                "0")
-                        printf "$1"
-                        ;;
-                "1")
-                        printf "$1\n"
-                        ;;
-                "2")
-                        printf "\e[1m>>> $1"
-                        ;;
-                "6")
-                        printf "\e[32m\e[2mINFO:\e[22m $1\n\e[0m"
-                        ;;
-                "7")
-                        printf "\e[34m\e[2mTASK:\e[22m $1\n\e[0m"
-                        ;;
-                "8")
-                        printf "\e[2mINFO:\e[22m \e[97m$1\n\e[0m"
-                        ;;
-                "9")
-                        printf "\e[31m----------------------------------------\n"
-                        if [ "$1" ]
-                        then
-                                printf "Error: $1\n"
-                        else
-                                printf "Error in subfunction\n"
-                        fi
-                        printf -- "----------------------------------------\n"
-                        printf "\e[0m"
-                        ;;
-                *)
-                        display_error "msg with incorrect parameter - $2"
-                        ;;
-        esac
-}
 
 function prepare_offline_bastion() {
         local curr_password=""
@@ -2179,3 +2126,59 @@ function validate_certs() {
                         ;;
         esac
 }
+
+
+function check_linux_distribution_and_release() {
+        msg "Check OS distribution and release" task
+        linux_distribution=`cat /etc/os-release | grep ^ID | awk -F'=' '{print $2}'`
+        fedora_release=`cat /etc/os-release | grep VERSION_ID | awk -F'=' '{print $2}'`
+        is_supported_fedora_release=`case "${fedora_supp_releases[@]}" in  *"${fedora_release}"*) echo 1 ;; *) echo 0 ;; esac`
+        if [ $linux_distribution != 'fedora' ]
+        then
+                msg "ERROR: Only Fedora is supported" true
+                exit 1
+        fi
+        if [ $is_supported_fedora_release -eq 0 ]
+        then
+                msg "ERROR: Supported Fedora release are ${fedora_supp_releases[*]}" true
+                exit 1
+        fi
+}
+
+function msg() {
+        case "$2" in
+                "0")
+                        printf "$1"
+                        ;;
+                "1")
+                        printf "$1\n"
+                        ;;
+                "2")
+                        printf "\e[1m>>> $1"
+                        ;;
+                "6")
+                        printf "\e[32m\e[2mINFO:\e[22m $1\n\e[0m"
+                        ;;
+                "task")
+                        printf "\e[34m\e[2mTASK:\e[22m $1\n\e[0m"
+                        ;;
+                "8")
+                        printf "\e[2mINFO:\e[22m \e[97m$1\n\e[0m"
+                        ;;
+                "9")
+                        printf "\e[31m----------------------------------------\n"
+                        if [ "$1" ]
+                        then
+                                printf "Error: $1\n"
+                        else
+                                printf "Error in subfunction\n"
+                        fi
+                        printf -- "----------------------------------------\n"
+                        printf "\e[0m"
+                        ;;
+                *)
+                        display_error "msg with incorrect parameter - $2"
+                        ;;
+        esac
+}
+
