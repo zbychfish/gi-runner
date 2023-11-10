@@ -368,32 +368,6 @@ function create_cluster_ssh_key() {
         msg "Save SSH keys names: ${cluster_id} and ${cluster_id}.pub, each init.sh execution create new key with random name" 8
 }
 
-function display_default_ics() {
-        local gi_version
-        local i=0
-        for gi_version in "${gi_versions[@]}"
-        do
-                msg "ICS - ${ics_versions[${bundled_in_gi_ics_versions[$i]}]} for GI $gi_version" 8
-                i=$((i+1))
-        done
-	save_variable GI_ICS_VERSION "${ics_versions[${bundled_in_gi_ics_versions[$i]}]}"
-}
-
-function display_list () {
-        local list=("$@")
-        local i=1
-        for element in "${list[@]}"
-        do
-                if [[ $i -eq ${#list[@]} ]]
-                then
-                        msg "    \e[4m$i\e[24m - $element" 1
-                else
-                        msg "    $i - $element" 1
-                fi
-                i=$((i+1))
-        done
-}
-
 function get_bastion_info() {
         msg "Collecting data about bastion" 7
         msg "Provide IP address of network interface on bastion which is connected to this same subnet,vlan where the OCP nodes are located" 8
@@ -1479,38 +1453,6 @@ function get_software_architecture() {
         fi
 }
 
-function get_software_selection() {
-        while $(check_input "yn" ${gi_install})
-        do
-                get_input "yn" "Would you like to install Guardium Insights (GI)? " false
-                gi_install=${input_variable^^}
-        done
-        save_variable GI_INSTALL_GI $gi_install
-        if [[ $gi_install == 'N' && $use_air_gap == 'N' ]]
-        then
-                msg "gi-runner offers installation of Cloud Pak for Security (CP4s) - latest version from channel $cp4s_channel" 8
-                while $(check_input "yn" ${cp4s_install})
-                do
-                        get_input "yn" "Would you like to install CP4S? " false
-                        cp4s_install=${input_variable^^}
-                done
-                [ $cp4s_install == 'Y' ] && ics_install='N'
-        else
-                cp4s_install='N'
-        fi
-        save_variable GI_CP4S $cp4s_install
-        [[ $gi_install == 'Y' ]] && select_gi_version
-        [[ $cp4s_install == 'N' && $gi_install == 'N' ]] && select_ics_version
-        save_variable GI_ICS $ics_install
-        select_ocp_version
-        while $(check_input "yn" ${install_ldap})
-        do
-                get_input "yn" "Would you like to install OpenLDAP? " false
-                install_ldap=${input_variable^^}
-        done
-        save_variable GI_INSTALL_LDAP $install_ldap
-}
-
 function get_subnets {
         local i
         local gtws=()
@@ -1778,112 +1720,6 @@ function pvc_sizes() {
         save_variable $global_var $curr_value
 }
 
-function select_gi_version() {
-        local nd_ics_install
-        while $(check_input "list" ${gi_version_selected} ${#gi_versions[@]})
-        do
-                get_input "list" "Select GI version: " "${gi_versions[@]}"
-                gi_version_selected="$input_variable"
-        done
-        msg "Guardium Insights installation choice assumes installation of bundled version of ICS" 8
-        gi_version_selected=$(($gi_version_selected-1))
-        save_variable GI_VERSION $gi_version_selected
-        ics_version_selected=${bundled_in_gi_ics_versions[$gi_version_selected]}
-        ics_install='Y'
-        if [[ $use_air_gap == 'N' ]]
-        then
-                msg "You can overwrite selection of default ICS ${ics_versions[$ics_version_selected]} version" 8
-                msg "In this case you must select supported ICS version by GI ${gi_versions[$gi_version_selected]}" 8
-                msg "Check documentation before to avoid GI installation problems" 8
-                while $(check_input "yn" ${nd_ics_install})
-                do
-                        get_input "yn" "Would you like to install non-default Cloud Pak Foundational Services for GI? " true
-                        nd_ics_install="${input_variable^^}"
-                done
-                [[ "$nd_ics_install" == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
-        else
-                display_default_ics
-                msg "In case of air-gapped installation you must install the bundled ICS version" 8
-        fi
-}
-
-function select_ics_version() {
-        ics_version_selected=""
-        while $(check_input "yn" ${ics_install})
-        do
-                get_input "yn" "Would you like to install Cloud Pak Foundational Services (IBM Common Services)? " false
-                ics_install=${input_variable^^}
-        done
-        if [[ $ics_install == 'Y' ]]
-        then
-                ics_version_selected=${ics_version_selected:-0}
-                while $(check_input "list" ${ics_version_selected} ${#ics_versions[@]})
-                do
-                        get_input "list" "Select ICS version: " "${ics_versions[@]}"
-                        ics_version_selected="$input_variable"
-                done
-                ics_version_selected=$(($ics_version_selected-1))
-                save_variable GI_ICS_VERSION $ics_version_selected
-        fi
-}
-
-function select_ocp_version() {
-        local i
-        if [[ $gi_install == 'Y' ]]
-        then
-                IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
-        elif [[ $cp4s_install == 'Y' ]]
-        then
-                IFS=':' read -r -a ocp_versions <<< $ocp_supported_by_cp4s
-        elif [[ $ics_install == 'Y' ]]
-        then
-                IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_ics[$ics_version_selected]}
-        fi
-        local new_major_versions=()
-        local i=1
-        for ocp_version in "${ocp_versions[@]}"
-        do
-                new_major_versions+=("${ocp_major_versions[$ocp_version]}")
-                i=$((i+1))
-        done
-        ocp_major_version=${ocp_major_version:-0}
-        while $(check_input "list" ${ocp_major_version} ${#ocp_versions[@]})
-        do
-                get_input "list" "Select OCP major version: " "${new_major_versions[@]}"
-                ocp_major_version="$input_variable"
-        done
-        for i in "${!ocp_major_versions[@]}"; do
-                [[ "${ocp_major_versions[$i]}" == "${new_major_versions[$(($ocp_major_version-1))]}" ]] && break
-        done
-        ocp_major_version=$i
-        if [[ $use_air_gap == 'N' ]]
-        then
-                ocp_release_decision=${ocp_release_decision:-Z}
-                while $(check_input "es" ${ocp_release_decision})
-                do
-                        get_input "es" "Would you provide exact version OC to install (E) or use the latest stable [S]? (E)xact/(\e[4mS\e[0m)table: " true
-                        ocp_release_decision=${input_variable^^}
-                done
-        else
-                ocp_release_decision='E'
-        fi
-        if [[ $ocp_release_decision == 'E' ]]
-        then
-                msg "Insert minor version of OpenShift ${ocp_major_versions[${ocp_major_version}]}.x" 8
-                msg "It must be existing version - you can check list of available version using this URL: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_versions[${ocp_major_version}]}/latest/" 8
-                ocp_release_minor=${ocp_release_minor:-Z}
-                while $(check_input "int" ${ocp_release_minor} 0 1000)
-                do
-                        get_input "txt" "Insert minor version of OCP ${ocp_major_versions[${ocp_major_version}]} to install (must be existing one): " false
-                        ocp_release_minor=${input_variable}
-                done
-                ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
-        else
-                ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
-        fi
-        save_variable GI_OCP_RELEASE $ocp_release
-}
-
 function set_bastion_ntpd_client() {
         msg "Set NTPD configuration" 7
         sed -i "s/^pool .*/pool $1 iburst/g" /etc/chrony.conf
@@ -2095,13 +1931,154 @@ function validate_certs() {
 
 
 
+function display_default_ics() {
+        local gi_version
+        local i=0
+        for gi_version in "${gi_versions[@]}"
+        do
+                msg "ICS - ${ics_versions[${bundled_in_gi_ics_versions[$i]}]} for GI $gi_version" info
+                i=$((i+1))
+        done
+        save_variable GI_ICS_VERSION "${ics_versions[${bundled_in_gi_ics_versions[$i]}]}"
+}
 
+function select_gi_version() {
+        local nd_ics_install
+        while $(check_input "list" ${gi_version_selected} ${#gi_versions[@]})
+        do
+                get_input "list" "Select GI version: " "${gi_versions[@]}"
+                gi_version_selected="$input_variable"
+        done
+        msg "Guardium Insights installation choice assumes installation of bundled version of ICS" info
+        gi_version_selected=$(($gi_version_selected-1))
+        save_variable GI_VERSION $gi_version_selected
+        ics_version_selected=${bundled_in_gi_ics_versions[$gi_version_selected]}
+        ics_install='Y'
+        if [[ $use_air_gap == 'N' ]]
+        then
+                msg "You can overwrite selection of default ICS ${ics_versions[$ics_version_selected]} version" info
+                msg "In this case you must select supported ICS version by GI ${gi_versions[$gi_version_selected]}" info
+                msg "Check documentation before to avoid GI installation problems" info
+                while $(check_input "yn" ${nd_ics_install})
+                do
+                        get_input "yn" "Would you like to install non-default Cloud Pak Foundational Services for GI? " true
+                        nd_ics_install="${input_variable^^}"
+                done
+                [[ "$nd_ics_install" == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
+        else
+                display_default_ics
+                msg "In case of air-gapped installation you must install the bundled ICS version" 8
+        fi
+}
 
+function select_ics_version() {
+        ics_version_selected=""
+        while $(check_input "yn" ${ics_install})
+        do
+                get_input "yn" "Would you like to install Cloud Pak Foundational Services (IBM Common Services)? " false
+                ics_install=${input_variable^^}
+        done
+        if [[ $ics_install == 'Y' ]]
+        then
+                ics_version_selected=${ics_version_selected:-0}
+                while $(check_input "list" ${ics_version_selected} ${#ics_versions[@]})
+                do
+                        get_input "list" "Select ICS version: " "${ics_versions[@]}"
+                        ics_version_selected="$input_variable"
+                done
+                ics_version_selected=$(($ics_version_selected-1))
+                save_variable GI_ICS_VERSION $ics_version_selected
+        fi
+}
 
+function select_ocp_version() {
+        local i
+        if [[ $gi_install == 'Y' ]]
+        then
+                IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
+        elif [[ $cp4s_install == 'Y' ]]
+        then
+                IFS=':' read -r -a ocp_versions <<< $ocp_supported_by_cp4s
+        elif [[ $ics_install == 'Y' ]]
+        then
+                IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_ics[$ics_version_selected]}
+        fi
+        local new_major_versions=()
+        local i=1
+        for ocp_version in "${ocp_versions[@]}"
+        do
+                new_major_versions+=("${ocp_major_versions[$ocp_version]}")
+                i=$((i+1))
+        done
+        ocp_major_version=${ocp_major_version:-0}
+        while $(check_input "list" ${ocp_major_version} ${#ocp_versions[@]})
+        do
+                get_input "list" "Select OCP major version: " "${new_major_versions[@]}"
+                ocp_major_version="$input_variable"
+        done
+        for i in "${!ocp_major_versions[@]}"; do
+                [[ "${ocp_major_versions[$i]}" == "${new_major_versions[$(($ocp_major_version-1))]}" ]] && break
+        done
+        ocp_major_version=$i
+        if [[ $use_air_gap == 'N' ]]
+        then
+                ocp_release_decision=${ocp_release_decision:-Z}
+                while $(check_input "es" ${ocp_release_decision})
+                do
+                        get_input "es" "Would you provide exact version OC to install (E) or use the latest stable [S]? (E)xact/(\e[4mS\e[0m)table: " true
+                        ocp_release_decision=${input_variable^^}
+                done
+        else
+                ocp_release_decision='E'
+        fi
+        if [[ $ocp_release_decision == 'E' ]]
+        then
+                msg "Insert minor version of OpenShift ${ocp_major_versions[${ocp_major_version}]}.x" info
+                msg "It must be existing version - you can check list of available version using this URL: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_versions[${ocp_major_version}]}/latest/" info
+                ocp_release_minor=${ocp_release_minor:-Z}
+                while $(check_input "int" ${ocp_release_minor} 0 1000)
+                do
+                        get_input "txt" "Insert minor version of OCP ${ocp_major_versions[${ocp_major_version}]} to install (must be existing one): " false
+                        ocp_release_minor=${input_variable}
+                done
+                ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
+        else
+                ocp_release="${ocp_major_versions[${ocp_major_version}]}.latest"
+        fi
+        save_variable GI_OCP_RELEASE $ocp_release
+}
 
-
-
-
+function get_software_selection() {
+        while $(check_input "yn" ${gi_install})
+        do
+                get_input "yn" "Would you like to install Guardium Insights (GI)? " false
+                gi_install=${input_variable^^}
+        done
+        save_variable GI_INSTALL_GI $gi_install
+        if [[ $gi_install == 'N' && $use_air_gap == 'N' ]]
+        then
+                msg "gi-runner offers installation of Cloud Pak for Security (CP4s) - latest version from channel $cp4s_channel" info
+                while $(check_input "yn" ${cp4s_install})
+                do
+                        get_input "yn" "Would you like to install CP4S? " false
+                        cp4s_install=${input_variable^^}
+                done
+                [ $cp4s_install == 'Y' ] && ics_install='N'
+        else
+                cp4s_install='N'
+        fi
+        save_variable GI_CP4S $cp4s_install
+        [[ $gi_install == 'Y' ]] && select_gi_version
+        [[ $cp4s_install == 'N' && $gi_install == 'N' ]] && select_ics_version
+        save_variable GI_ICS $ics_install
+        select_ocp_version
+        while $(check_input "yn" ${install_ldap})
+        do
+                get_input "yn" "Would you like to install OpenLDAP? " false
+                install_ldap=${input_variable^^}
+        done
+        save_variable GI_INSTALL_LDAP $install_ldap
+}
 
 # Switch off the dnf sync for offline installation
 function switch_dnf_sync_off() {
@@ -2113,6 +2090,21 @@ function switch_dnf_sync_off() {
         fi
 }
 
+function display_list () {
+        local list=("$@")
+        local i=1
+        for element in "${list[@]}"
+        do
+                if [[ $i -eq ${#list[@]} ]]
+                then
+                        msg "    \e[4m$i\e[24m - $element" continue
+                else
+                        msg "    $i - $element" continue
+                fi
+                i=$((i+1))
+        done
+}
+
 function get_input() {
         unset input_variable
         msg "$2" monit
@@ -2120,6 +2112,27 @@ function get_input() {
 		"dp")
                         read input_variable
                         $3 && input_variable=${input_variable:-D} || input_variable=${input_variable:-P}
+                        ;;
+		"es")
+                        read input_variable
+                        $3 && input_variable=${input_variable:-S} || input_variable=${input_variable:-E}
+                        ;;
+		"list")
+                        msg "" continue
+                        shift
+                        shift
+                        local list=("$@")
+                        display_list $@
+                        msg "Your choice: " 0
+                        read input_variable
+                        input_variable=${input_variable:-${#list[@]}}
+                        ;;
+		"txt")
+                        read input_variable
+                        if $3
+                        then
+                                [ -z ${input_variable} ] && input_variable="$4"
+                        fi
                         ;;
 		"yn")
                         $3 && msg "(\e[4mN\e[24m)o/(Y)es: " continue || msg "(N)o/(\e[4mY\e[24m)es: " continue
@@ -2136,6 +2149,25 @@ function check_input() {
         case $1 in
 		"dp")
                         [[ $2 == 'D' || $2 == 'P' ]] && echo false || echo true
+                        ;;
+		"es")
+                        [[ $2 == 'E' || $2 == 'S' ]] && echo false || echo true
+                        ;;
+		"int")
+                        if [[ $2 == +([[:digit:]]) ]]
+                        then
+                                [[ $2 -ge $3 && $2 -le $4 ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
+		"list")
+                        if [[ $2 == +([[:digit:]]) ]]
+                        then
+                                [[ $2 -gt 0 && $2 -le $3 ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
                         ;;
 		"yn")
                         [[ $2 == 'N' || $2 == 'Y' ]] && echo false || echo true
