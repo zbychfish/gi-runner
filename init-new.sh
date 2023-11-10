@@ -19,8 +19,8 @@ msg "Deployment decisions with/without Internet Access" task
 get_network_installation_type
 msg "Deployment decisions about the software and its releases" task
 get_software_selection
-exit 0
 get_software_architecture
+exit 0
 mkdir -p $GI_TEMP
 [[ "$use_air_gap" == 'Y' ]] && prepare_offline_bastion
 msg "Installing tools for init.sh" 7

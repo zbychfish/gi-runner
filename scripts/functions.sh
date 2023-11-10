@@ -9,6 +9,62 @@
 
 
 
+function get_software_architecture() {
+        msg "Some important architecture decisions and planned software deployment must be made now" task
+        msg "3 nodes only instalation consideration decisions" info
+        msg "This kind of architecture has some limitations:" info
+        msg "- You cannot isolate storage on separate nodes" info
+        msg "- You cannot isolate GI and CPFS" info
+        while $(check_input "yn" ${is_master_only})
+        do
+                get_input "yn" "Is your installation the 3 nodes only? " true
+                is_master_only=${input_variable^^}
+        done
+        save_variable GI_MASTER_ONLY $is_master_only
+                msg "Decide what kind of cluster storage option will be implemented:" info
+                msg "- OpenShift Data Fountation (OpenShift Container Storage for OCP 4.6-4.8) - commercial rook-ceph branch from RedHat" info
+                msg "- Rook-Ceph - opensource cluster storage option" info
+                msg "- Portworx Essentials - free version of Portworx Enterprise cluster storage option, it has limitation to 5 workers and 5 TB of storage" info
+                while $(check_input "stopx" ${storage_type})
+                do
+                        get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook/(P)ortworx: " true
+                        [[ ${input_variable} == '' ]] && input_variable='R'
+                        storage_type=${input_variable^^}
+                done
+        save_variable GI_STORAGE_TYPE $storage_type
+        if [[ $storage_type == "O" && $is_master_only == 'N' ]]
+        then
+                msg "OCS tainting will require minimum 3 additional workers in your cluster to manage cluster storage" info
+                while $(check_input "yn" ${ocs_tainted})
+                do
+                        get_input "yn" "Should be OCS tainted? " true
+                        ocs_tainted=${input_variable^^}
+                done
+                save_variable GI_OCS_TAINTED $ocs_tainted
+        else
+                save_variable GI_OCS_TAINTED "N"
+        fi
+        if [[ $gi_install == "Y" ]]
+        then
+                while $(check_input "list" ${gi_size_selected} ${#gi_sizes[@]})
+                do
+                        get_input "list" "Select Guardium Insights deployment template: " "${gi_sizes[@]}"
+                        gi_size_selected=$input_variable
+                done
+                gi_size="${gi_sizes[$((${gi_size_selected} - 1))]}"
+                save_variable GI_SIZE_GI $gi_size
+        fi
+        if [[ $gi_install == "Y" && $is_master_only == 'N' ]]
+        then
+                msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend" 8
+                while $(check_input "yn" ${db2_tainted})
+                do
+                        get_input "yn" "Should be DB2 tainted? " true
+                        db2_tainted=${input_variable^^}
+                done
+                save_variable GI_DB2_TAINTED $db2_tainted
+        fi
+}
 
 function display_default_ics() {
         local gi_version
@@ -206,6 +262,10 @@ function get_input() {
                         read input_variable
                         input_variable=${input_variable:-${#list[@]}}
                         ;;
+		"stopx")
+                        read input_variable
+                        input_variable=${input_variable^^}
+                        ;;
 		"txt")
                         read input_variable
                         if $3
@@ -247,6 +307,9 @@ function check_input() {
                         else
                                 echo true
                         fi
+                        ;;
+		"stopx")
+                        [[ $2 == 'O' || $2 == 'R' || $2 == 'P' ]] && echo false || echo true
                         ;;
 		"yn")
                         [[ $2 == 'N' || $2 == 'Y' ]] && echo false || echo true
