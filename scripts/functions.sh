@@ -254,7 +254,7 @@ function get_hardware_info() {
         msg "In most cases the first boot disk will have specification \"sda\" or \"nvmne0\"" info
         msg "The inserted value refers to root path located in /dev" info
         msg "It means that value sda refers to /dev/sda" info
-        while $(check_input "txt" "${machine_disk}" "non-empty")
+        while $(check_input "txt" "${machine_disk}" "non_empty")
         do
                 if [ ! -z "$GI_BOOT_DEVICE" ]
                 then
