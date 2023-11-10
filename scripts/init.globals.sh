@@ -1,17 +1,17 @@
 #Global variables
-declare -a gi_versions=(3.1.8 3.1.9 3.1.10 3.2.0)
+declare -a gi_versions=(3.2.10)
 gi_32_threshold=3
 declare -a ics_versions=(3.14.2 3.18.0 3.19.4 3.20.1)
 declare -a ics_cases=(ibm-cp-common-services-1.10.2.tgz ibm-cp-common-services-1.14.0.tgz ibm-cp-common-services-1.15.4.tgz ibm-cp-common-services-1.16.1.tgz)
-declare -a gi_cases=(ibm-guardium-insights-2.1.8.tgz ibm-guardium-insights-2.1.9.tgz ibm-guardium-insights-2.1.10.tgz ibm-guardium-insights-2.2.0.tgz)
-declare -a bundled_in_gi_ics_versions=(0 0 0 2)
-declare -a ocp_versions=(0 1 2 3 4)
-declare -a ocp_major_versions=(4.6 4.7 4.8 4.9 4.10)
-declare -a ocp_supported_by_gi=(0:1:2 0:1:2 0:1:2 2:4)
-declare -a ocp_supported_by_ics=(0:1:2 0:1:2:3:4 0:1:2:3:4 0:1:2:3:4 0:1:2:3:4)
-declare -a ocp_supported_by_cp4s="0:1:2:4"
+declare -a gi_cases=(ibm-guardium-insights-2.2.10.tgz)
+declare -a bundled_in_gi_ics_versions=(2)
+declare -a ocp_versions=(0 1)
+declare -a ocp_major_versions=(4.10 4.12)
+declare -a ocp_supported_by_gi=(0:1)
+declare -a ocp_supported_by_ics=(0:1 0:1 0:1 0:1 0:1)
+declare -a ocp_supported_by_cp4s="0:1"
 declare -a gi_sizes=(values-dev values-small)
-declare -a fedora_supp_releases=(35 36)
+declare -a fedora_supp_releases=(38)
 registry_version=2.8.1
 rook_version="v1.9.9"
 rook_sc=("rook-cephfs" "rook-ceph-block")
