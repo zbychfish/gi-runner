@@ -1,3 +1,197 @@
+function get_service_assignment() {
+        msg "Architecture decisions about service location on cluster nodes" task
+        local selected_arr
+        local node_arr
+        local element
+        local rook_on_list
+        if [[ $gi_install == 'Y' ]]
+        then
+                [[ $gi_size == 'values-small' ]] && db2_nodes_size=2 || db2_nodes_size=1
+                if [[ $db2_tainted == 'Y' ]]
+                then
+                        msg "You decided that DB2 will be installed on dedicated node/nodes" info
+                        msg "Node/nodes should not be used as storage cluster nodes" info
+                else
+                        msg "Insert node/nodes name where DB2 should be installed" info
+                fi
+                msg "DB2 node/nodes should have enough resources (CPU, RAM) to get this role, check GI documentation" info
+                msg "Available worker nodes: $worker_name" info
+                while $(check_input "nodes" $db2_nodes $worker_name $db2_nodes_size "def")
+                do
+                        if [ ! -z "$GI_DB2_NODES" ]
+                        then
+                                get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DB2_NODES] or specify $db2_nodes_size node/nodes (comma separated, without spaces)?: " true "$GI_DB2_NODES"
+                        else
+                                get_input "txt" "Specify $db2_nodes_size node/nodes (comma separated, without spaces)?: " false
+                        fi
+                        db2_nodes=${input_variable}
+                done
+                save_variable GI_DB2_NODES "$db2_nodes"
+                IFS=',' read -r -a selected_arr <<< "$db2_nodes"
+                IFS=',' read -r -a node_arr <<< "$worker_name"
+                if [[ "$db2_tainted" == 'N' ]]
+                then
+                        worker_wo_db2_name=$worker_name
+                else
+                        for element in ${selected_arr[@]};do node_arr=("${node_arr[@]/$element}");done
+                        worker_wo_db2_name=`echo ${node_arr[*]}|tr ' ' ','`
+                        workers_for_gi_selection=$worker_wo_db2_name
+                fi
+        else
+                IFS=',' read -r -a node_arr <<< "$worker_name"
+                worker_wo_db2_name="${worker_name[@]}"
+        fi
+        if [[ $storage_type == "R" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
+        then
+                msg "You specified Rook-Ceph as cluster storage" info
+                msg "You can force to deploy it on strictly defined node list" info
+                msg "Only disks from specified nodes will be configured as cluster storage" info
+                while $(check_input "yn" $rook_on_list false)
+                do
+                        get_input "yn" "Would you like to install Rook-Ceph on strictly specified nodes?: " true
+                        rook_on_list=${input_variable^^}
+                done
+                if [ "$rook_on_list" == 'Y' ]
+                then
+                        msg "Available worker nodes: $worker_wo_db2_name" info
+                        while $(check_input "nodes" $rook_nodes $worker_wo_db2_name 3 "def")
+                        do
+                                if [ ! -z "$GI_ROOK_NODES" ]
+                                then
+                                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ROOK_NODES] or specify 3 nodes (comma separated, without spaces)?: " true "$GI_ROOK_NODES"
+                                else
+                                        get_input "txt" "Specify 3 nodes (comma separated, without spaces)?: " false
+                                fi
+                                rook_nodes=${input_variable}
+                        done
+                fi
+        fi
+        save_variable GI_ROOK_NODES "$rook_nodes"
+        if [[ $storage_type == "O" && $ocs_tainted == 'N' && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
+        then
+                msg "You must specify cluster nodes for OCS deployment" info
+                msg "These nodes must have additional disk attached for this purpose" info
+                msg "Available worker nodes: $worker_wo_db2_name" info
+                while $(check_input "nodes" $ocs_nodes $worker_wo_db2_name 3 "def")
+                do
+                        if [ ! -z "$GI_OCS_NODES" ]
+                        then
+                                get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCS_NODES] or specify 3 nodes (comma separated, without spaces)?: " true "$GI_OCS_NODES"
+                        else
+                                get_input "txt" "Specify 3 nodes (comma separated, without spaces)?: " false
+                        fi
+                        ocs_nodes=${input_variable}
+                done
+                save_variable GI_OCS_NODES "$ocs_nodes"
+        else
+                save_variable GI_OCS_NODES "$worker_name"
+        fi
+        if [[ $ics_install == "Y" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
+        then
+                msg "You can force to deploy ICS on strictly defined node list" info
+                while $(check_input "yn" $ics_on_list false)
+                do
+                        get_input "yn" "Would you like to install ICS on strictly specified nodes?: " true
+                        ics_on_list=${input_variable^^}
+                done
+                if [ "$ics_on_list" == 'Y' ]
+                then
+                        msg "Available worker nodes: $worker_wo_db2_name" info
+                        while $(check_input "nodes" $ics_nodes $worker_wo_db2_name 3 "def")
+                        do
+                                if [ ! -z "$GI_ICS_NODES" ]
+                                then
+                                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ICS_NODES] or specify 3 nodes (comma separated, without spaces)?: " true "$GI_ICS_NODES"
+                                else
+                                        get_input "txt" "Specify 3 nodes (comma separated, without spaces)?: " false
+                                fi
+                                ics_nodes=${input_variable}
+                        done
+                fi
+                save_variable GI_ICS_NODES "$ics_nodes"
+        fi
+        if [ "$gi_install" == 'Y' ]
+        then
+                IFS=',' read -r -a worker_arr <<< "$worker_name"
+                if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) ]] || [[ ( $db2_tainted == 'N' && "$gi_size" == "values-small" && ${#worker_arr[@]} -gt 5 ) ]] || [[ ( $db2_tainted == 'N' && "$gi_size" == "values-dev" && ${#worker_arr[@]} -gt 4 ) ]]
+                then
+                        msg "You can force to deploy GI on strictly defined node list" 8
+                        while $(check_input "yn" $gi_on_list false)
+                        do
+                                get_input "yn" "Would you like to install GI on strictly specified nodes?: " true
+                                gi_on_list=${input_variable^^}
+                        done
+                fi
+                if [[ $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ]]
+                then
+                        no_nodes_2_select=3
+                else
+                        [ "$gi_size" == "values-small" ] && no_nodes_2_select=1 || no_nodes_2_select=2
+                fi
+                if [ "$gi_on_list" == 'Y' ]
+                then
+                        if [ ! -z "$GI_GI_NODES" ]
+                        then
+                                local previous_node_ar
+                                local current_selection
+                                IFS=',' read -r -a previous_node_arr <<< "$GI_GI_NODES"
+                                IFS=',' read -r -a db2_node_arr <<< "$db2_nodes"
+                                for element in ${db2_node_arr[@]};do previous_node_arr=("${previous_node_arr[@]/$element}");done
+                                current_selection=`echo ${previous_node_arr[*]}|tr ' ' ','`
+                        fi
+                        msg "DB2 node/nodes: $db2_nodes are already on the list included, additionally you must select minimum $no_nodes_2_select node/nodes from the list below:" info
+                        msg "Available worker nodes: $workers_for_gi_selection" info
+                        while $(check_input "nodes" $gi_nodes $workers_for_gi_selection $no_nodes_2_select "max")
+                        do
+                                if [ ! -z "$GI_GI_NODES" ]
+                                then
+                                        get_input "txt" "Push <ENTER> to accept the previous choice [$current_selection] or specify minimum $no_nodes_2_select node/nodes (comma separated, without spaces)?: " true "$current_selection"
+                                else
+                                        get_input "txt" "Specify minimum $no_nodes_2_select node/nodes (comma separated, without spaces)?: " false
+                                fi
+                                gi_nodes=${input_variable}
+                        done
+                        save_variable GI_GI_NODES "${db2_nodes},$gi_nodes"
+                else
+                        save_variable GI_GI_NODES ""
+                fi
+        fi
+}
+
+function get_hardware_info() {
+        msg "Collecting hardware information" task
+        msg "Automatic CoreOS and storage deployment requires information about NIC and HDD devices" info
+        msg "There is assumption that all cluster nodes including bootstrap machine use this isame HW specification" info
+        msg "The Network Interface Card (NIC) device specification must provide the one of interfaces attached to each cluster node and connected to cluster subnet" info
+        msg "In most cases the first NIC attached to machine will have on Fedora and RedHat the name \"ens192\"" info
+        while $(check_input "txt" "${machine_nic}" 2)
+        do
+                if [ ! -z "$GI_NETWORK_INTERFACE" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_NETWORK_INTERFACE] or insert NIC specification: " true "$GI_NETWORK_INTERFACE"
+                else
+                        get_input "txt" "Insert NIC specification: " false
+                fi
+                machine_nic="${input_variable}"
+        done
+        save_variable GI_NETWORK_INTERFACE "$machine_nic"
+        msg "There is assumption that all cluster machines use this device specification for boot disk" info
+        msg "In most cases the first boot disk will have specification \"sda\" or \"nvmne0\"" info
+        msg "The inserted value refers to root path located in /dev" info
+        msg "It means that value sda refers to /dev/sda" info
+        while $(check_input "txt" "${machine_disk}" 2)
+        do
+                if [ ! -z "$GI_BOOT_DEVICE" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_BOOT_DEVICE] or insert boot disk specification: " true "$GI_BOOT_DEVICE"
+                else
+                        get_input "txt" "Insert boot disk specification: " false
+                fi
+                machine_disk="${input_variable}"
+        done
+        save_variable GI_BOOT_DEVICE "$machine_disk"
+}
+
 function set_bastion_ntpd_client() {
         msg "Set NTPD configuration" task
         sed -i "s/^pool .*/pool $1 iburst/g" /etc/chrony.conf
@@ -648,6 +842,32 @@ function check_input() {
                                         $(check_input "mac" $mac_value) && is_wrong=true
                                 done
                                 echo $is_wrong
+                        else
+                                echo true
+                        fi
+                        ;;
+		"nodes")
+                        local element1
+                        local element2
+                        local i=0
+                        local node_arr
+                        local selected_arr
+                        IFS=',' read -r -a selected_arr <<< "$2"
+                        IFS=',' read -r -a node_arr <<< "$3"
+                        if [[ $(printf '%s\n' "${selected_arr[@]}"|sort|uniq -d|wc -l) -eq 0 ]]
+                        then
+                                for element1 in ${selected_arr[@]}; do for element2 in ${node_arr[@]}; do [[ "$element1" == "$element2" ]] && i=$(($i+1));done; done
+                                case $5 in
+                                        "max")
+                                                [ $i -ge $4 ] && echo false || echo true
+                                                ;;
+                                        "def")
+                                                [ $4 -eq $i ] && echo false || echo true
+                                                ;;
+                                        "*")
+                                                display_error "Incorrect nodes size specification"
+                                                ;;
+                                esac
                         else
                                 echo true
                         fi

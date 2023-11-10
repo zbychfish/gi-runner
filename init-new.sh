@@ -34,9 +34,9 @@ msg "Collecting Control Plane nodes data (IP and MAC addres, name), values must 
 get_nodes_info 3 "mst"
 get_worker_nodes
 get_set_services
-exit 0
 get_hardware_info
 get_service_assignment
+exit 0
 get_cluster_storage_info
 get_inter_cluster_info
 get_credentials
