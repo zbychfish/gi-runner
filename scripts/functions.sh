@@ -249,7 +249,7 @@ function get_set_services() {
         if [[ $install_ntpd == 'Y' ]]
         then
                 save_variable GI_NTP_SRV $bastion_ip
-                msg "Ensure that date and time are set correctly" 7
+                msg "Ensure that date and time are set correctly" task
                 while $(check_input "yn" $is_td_ok false)
                 do
                         get_input "yn" "Current local time is `date`, is it correct one?: " false
