@@ -2,7 +2,7 @@ temp_dir: "../gi-temp"
 skip_phase: 0
 registry_version: "2.8.1"
 matchbox_version: "v0.10.0"
-rook_operator_version: "v1.9.9"
+rook_operator_version: "v1.9.13"
 rook_ceph_version: "v16.2.10"
 cp4s_channel: "1.10"
 ics_versions: [ "3.14.2", "3.18.0", "3.19.4", "3.20.1"]
