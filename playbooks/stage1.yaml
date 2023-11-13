@@ -603,7 +603,10 @@
 - name: Add DNS forwarder to dnsmasq.conf
   ansible.builtin.lineinfile:
     path: /etc/dnsmasq.conf
-    line: "server={{ dns_forwarder }}"
+    line: "{{ item }}"
+  with_items:
+    - "server=/tld/{{ dns_forwarder }}"
+    - "address=/tld/::"
 
 - name: Get bastion interface name
   ansible.builtin.shell:
