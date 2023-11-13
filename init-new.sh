@@ -40,6 +40,7 @@ get_cluster_storage_info
 get_inter_cluster_info
 get_credentials
 #get_certificates
+save_variable GI_ICS_IN "N"
 save_variable GI_OCP_IN "N"
 #[[ "$gi_install" == 'Y' ]] && get_gi_options
 [[ "$ics_install" == 'Y' || "$gi_install" == 'Y' ]] && get_ics_options
