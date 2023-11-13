@@ -606,8 +606,7 @@
     path: /etc/dnsmasq.conf
     line: "{{ item }}"
   with_items:
-    - "server=/tld/{{ dns_forwarder }}"
-    - "address=/tld/::"
+    - "server={{ dns_forwarder }}"
 
 - name: Get bastion interface name
   ansible.builtin.shell:
