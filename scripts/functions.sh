@@ -204,7 +204,7 @@ function get_inter_cluster_info() {
         msg "CNI plug-in selection" task
         while $(check_input "sk" ${ocp_cni})
         do
-                get_input "sk" "Would you like use default CNI plug-in OpenShift[S]DN or OVN[K]ubernetes(\e[4mS\e[0m)/K): " true
+                get_input "sk" "Would you like use default CNI plug-in from OCP 4.12 - OVN[K]ubernetes or OpenShift[S]DN (\e[4mK\e[0m)/S): " true
                 ocp_cni=${input_variable^^}
         done
         save_variable GI_OCP_CNI $ocp_cni
