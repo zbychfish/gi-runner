@@ -521,7 +521,6 @@
     line: "{{ item }}"
   with_items:
     - "#Gateway"
-    - "address=/.{{ domain }}/"
     - "dhcp-option=2,7200"
     - "dhcp-option=42,{{ ntp_server }}"
     - "dhcp-option=66,{{ bas_ip }}"
@@ -607,6 +606,7 @@
     line: "{{ item }}"
   with_items:
     - "server={{ dns_forwarder }}"
+    - "address=/.{{ domain }}/"
 
 - name: Get bastion interface name
   ansible.builtin.shell:
