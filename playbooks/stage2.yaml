@@ -110,9 +110,9 @@
     cmd: "oc patch OperatorHub cluster --type json -p '[{\"op\": \"add\", \"path\": \"/spec/disableAllDefaultSources\", \"value\": true}]'"
   when: internet_type == 'A'
 
-- name: Wait 1 minute before adding admin
+- name: Wait 5 minutes to initiate changes related to added admin
   ansible.builtin.pause:
-    minutes: 1
+    minutes: 5
   when: is_htpasswd_secret.stdout|int == 0
 
 - name: Identify image registry name in the import
