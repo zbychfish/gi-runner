@@ -22,8 +22,8 @@
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
     cluster_network: "{{ lookup('env','GI_OCP_CIDR') }}"
     cluster_network_subnet:  "{{ lookup('env','GI_OCP_CIDR_MASK') }}"
-    ocadmin: "{{ lookup('env','GI_OCADMIN') }}"
-    ocadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
+    ocpadmin: "{{ lookup('env','GI_OCADMIN') }}"
+    ocpadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
     storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
     storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
     storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
@@ -65,8 +65,8 @@
         - { name: "GI_OCP_CIDR", value: "{{ cluster_network }}" }
         - { name: "GI_OCP_CIDR_MASK", value: "{{ cluster_network_subnet }}" }
         - { name: "GI_OCP_CNI", value: "{{ ocp_cni }}" }
-        - { name: "GI_OCADMIN", value: "{{ ocadmin }}" }
-        - { name: "GI_OCADMIN_PWD", value: "{{ ocadmin_password }}" }
+        - { name: "GI_OCADMIN", value: "{{ ocpadmin }}" }
+        - { name: "GI_OCADMIN_PWD", value: "{{ ocpadmin_password }}" }
         - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
         - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
         - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
@@ -477,7 +477,7 @@
           - "Openshift {{ ocp_release }} has been installed and configured"
           - "Add to hosts on your web browser workstation this line to login to OCP:"
           - "{{ bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }}"
-          - "Login to OCP console as {{ ocadmin }} user - https://console-openshift-console.apps.{{ domain }}"
+          - "Login to OCP console as {{ ocpadmin }} user - https://console-openshift-console.apps.{{ domain }}"
 
     - name: ICS info
       ansible.builtin.debug:

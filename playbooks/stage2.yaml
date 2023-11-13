@@ -90,18 +90,18 @@
 
 - name: Create htpasswd file
   community.general.htpasswd:
-    path: "{{ temp_dir }}/ocadmin.htpasswd"
-    name: "{{ ocadmin }}"
-    password: "{{ ocadmin_password }}"
+    path: "{{ temp_dir }}/ocpadmin.htpasswd"
+    name: "{{ ocpadmin }}"
+    password: "{{ ocpadmin_password }}"
   when: is_htpasswd_secret.stdout|int == 0
 
 - name: Register htpasswd file in OCP
   ansible.builtin.shell:
     cmd: "{{ item.cmd }}"
   with_items:
-    - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocadmin.htpasswd -n openshift-config" }
+    - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocpadmin.htpasswd -n openshift-config" }
     - { cmd: "oc apply -f ../scripts/oauth_provider.yaml" }
-    - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocadmin }}" }
+    - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocpadmin }}" }
   ignore_errors: no #if htpasswd has been imported before
   when: is_htpasswd_secret.stdout|int == 0
 
