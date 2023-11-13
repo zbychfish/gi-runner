@@ -439,7 +439,7 @@
 
     - name: Install rook-ceph
       ansible.builtin.include_tasks: rook_install.yaml
-      when: skip_phase|int < 4 and storage_type == 'R'
+      when: skip_phase|int < 3 and storage_type == 'R'
 
     - name: Install ODF
       ansible.builtin.include_tasks: ocs_install.yaml

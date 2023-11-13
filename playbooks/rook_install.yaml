@@ -94,5 +94,3 @@
     - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml" }
     - { cmd: "oc patch storageclass rook-ceph-block -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
 
-- meta: end_play
-
