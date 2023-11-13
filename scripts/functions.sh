@@ -1101,7 +1101,7 @@ function get_input() {
                         ;;
 		"sk")
                         read input_variable
-                        $3 && input_variable=${input_variable:-S} || input_variable=${input_variable:-K}
+                        $3 && input_variable=${input_variable:-K} || input_variable=${input_variable:-S}
                         ;;
 		"stopx")
                         read input_variable
