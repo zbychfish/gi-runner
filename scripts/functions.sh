@@ -1,3 +1,43 @@
+function get_ldap_options() {
+        msg "Collecting OpenLDAP deployment parameters" task
+        while $(check_input "cs" "$ldap_depl")
+        do
+                get_input "cs" "Decide where LDAP instance should be deployed as Container on OpenShift (default) or as Standalone installation on bastion:? (\e[4mC\e[0m)ontainer/Ba(s)tion " true
+
+                ldap_depl=${input_variable^^}
+        done
+        save_variable GI_LDAP_DEPLOYMENT $ldap_depl
+        msg "Define LDAP domain distinguished name, only DC components are allowed" info
+        while $(check_input "ldap_domain" "${ldap_domain}")
+        do
+                if [ ! -z "$GI_LDAP_DOMAIN" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_LDAP_DOMAIN] or insert LDAP organization domain DN: " true "$GI_LDAP_DOMAIN"
+                else
+                        get_input "txt" "Insert LDAP organization domain DN (for example: DC=io,DC=priv): " false
+                fi
+                        ldap_domain="${input_variable}"
+        done
+        save_variable GI_LDAP_DOMAIN "'$ldap_domain'"
+        msg "Provide list of users which will be created in OpenLDAP instance" info
+        while $(check_input "users_list" "${ldap_users}" )
+        do
+                if [ ! -z "$GI_LDAP_USERS" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_LDAP_USERS] or insert comma separated list of LDAP users (without spaces): " true "$GI_LDAP_USERS"
+                else
+                        get_input "txt" "Insert comma separated list of LDAP users (without spaces): " false
+                fi
+                        ldap_users="${input_variable}"
+        done
+        if [[ $cp4s_install == 'Y' ]]
+        then
+                IFS="," read -r -a curr_ldap_users <<< $ldap_users
+                [[ ${curr_ldap_users[*]} =~ (^|[[:space:]])"${cp4s_admin}"($|[[:space:]]) ]] || ldap_users="${ldap_users},${cp4s_admin}"
+        fi
+        save_variable GI_LDAP_USERS "'$ldap_users'"
+}
+
 function get_ics_options() {
         msg "Collecting Common Services parameters" task
         local operand
@@ -1009,6 +1049,10 @@ function get_input() {
         unset input_variable
         msg "$2" monit
         case $1 in
+		"cs")
+                        read input_variable
+                        $3 && input_variable=${input_variable:-C} || input_variable=${input_variable:-S}
+                        ;;
 		"dp")
                         read input_variable
                         $3 && input_variable=${input_variable:-D} || input_variable=${input_variable:-P}
@@ -1113,6 +1157,9 @@ function check_input() {
                                 fi
                         fi
                         ;;
+		"cs")
+                        [[ $2 == 'C' || $2 == 'S' ]] && echo false || echo true
+                        ;;
 		"domain")
                         [[ $2 =~  ^([a-zA-Z0-9](([a-zA-Z0-9-]){0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]] && echo false || echo true
                         ;;
@@ -1161,6 +1208,14 @@ function check_input() {
                         then
                                 { sed 's/\./\n/g' <<< $(cut -d. -f1,2 <<< "$2")|{ base64 --decode 2>/dev/null ;}|jq . ;} 1>/dev/null
                                 [[ $? -eq 0 ]] && echo false || echo true
+                        else
+                                echo true
+                        fi
+                        ;;
+		"ldap_domain")
+                        if [ "$2" ]
+                        then
+                                [[ "$2" =~ ^([dD][cC]=[a-zA-Z-]{2,64},){1,}[dD][cC]=[a-zA-Z-]{2,64}$ ]] && echo false || echo true
                         else
                                 echo true
                         fi
@@ -1271,6 +1326,21 @@ function check_input() {
                                 [[ $? -eq 0 ]] && echo false || echo true
                         else
                                 echo true
+                        fi
+                        ;;
+		"users_list")
+                        local ulist
+                        if [ -z "$2" ] || $(echo "$2" | egrep -q "[[:space:]]" && echo true || echo false)
+                        then
+                                echo true
+                        else
+                                local result=false
+                                IFS=',' read -r -a ulist <<< "$2"
+                                for user in ${ulist[@]}
+                                do
+                                        [[ "$user" =~ ^[a-zA-Z][a-zA-Z0-9_-]{0,}[a-zA-Z0-9]$ ]] || result=true
+                                done
+                                echo $result
                         fi
                         ;;
 		"yn")
