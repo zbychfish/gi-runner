@@ -40,6 +40,8 @@
   vars:
     multiple_per_node: "true"
 
+- meta: end_play
+
 - name: Configure rook-ceph-rbd-sc file
   ansible.builtin.template:
     src: "rook-storage_class_rbd.j2"
