@@ -3,10 +3,10 @@ function get_ics_options() {
         local operand
         local curr_op
         msg "ICS provides possibility to define which services will be deployed, some of them are required by CP4S and GI and will installed as default, the others are optional." info
-        msg "These operands will be installed as default:" 
+        msg "These operands will be installed as default:" info
         msg "- Certificate Manager" info
         msg "- Healthcheck" info
-        msg "- IBM IAM" 8
+        msg "- IBM IAM" info
         msg "- Management ingress" info
         msg "- Licensing" info
         msg "- ICS Common UI" info
