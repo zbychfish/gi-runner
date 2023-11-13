@@ -680,18 +680,24 @@
   with_items: "{{ rhcos_tools.results }}"
   when: item.stat.exists == False and internet_type != 'A'
 
+- name: Download oc ibm-pak
+  ansible.builtin.get_url:
+    url: "https://github.com/IBM/ibm-pak/releases/download/v{{ ibm_pak_version }}/oc-ibm_pak-linux-amd64.tar.gz"
+    dest: "{{ temp_dir }}/coreos"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  when: internet_type != 'A'
+
 - name: Unpack OCP tools
   ansible.builtin.shell:
     cmd: "tar xf {{ temp_dir }}/coreos/{{ item.src }} -C /usr/local/bin"
   with_items:
     - { src: "openshift-client-linux.tar.gz" }
     - { src: "openshift-install-linux.tar.gz" }
+    - { src: "oc-ibm_pak-linux-amd64.tar.gz" }
 
-- name: Download oc ibm-pak
-  ansible.builtin.get_url:
-    url: "https://github.com/IBM/ibm-pak/releases/download/v{{ ibm_pak_version }}/oc-ibm_pak-linux-amd64.tar.gz"
-    dest: "{{ temp_dir }}/coreos"
-    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+- name: Rename oc ibm-pak file
+  ansible.builtin.shell:
+    cmd: "mv /usr/local/bin/oc-ibm_pak-linux-amd64 /usr/local/bin/oc-ibm_pak"
   when: internet_type != 'A'
 
 - name: Define base and ocp domain
