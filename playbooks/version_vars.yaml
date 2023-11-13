@@ -20,3 +20,4 @@ cp4s_cases: [ "ibm-cp-security-1.0.28.tgz" ]
 cp4s_case_inventory_setup: "ibmSecurityOperatorSetup"
 px_channel: "stable"
 px_version: 2.11.2
+ibm_pak_version: 1.11.0

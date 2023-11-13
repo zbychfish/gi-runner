@@ -687,6 +687,13 @@
     - { src: "openshift-client-linux.tar.gz" }
     - { src: "openshift-install-linux.tar.gz" }
 
+- name: Download oc ibm-pak
+  ansible.builtin.get_url:
+    url: "https://github.com/IBM/ibm-pak/releases/download/v{{ ibm_pak_version }}/oc-ibm_pak-linux-amd64.tar.gz"
+    dest: "{{ temp_dir }}/coreos"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  when: internet_type != 'A'
+
 - name: Define base and ocp domain
   ansible.builtin.set_fact:
     base_domain: "{{ domain.split('.')[1:] | join('.') }}"
