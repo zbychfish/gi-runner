@@ -3,7 +3,6 @@ function get_ldap_options() {
         while $(check_input "cs" "$ldap_depl")
         do
                 get_input "cs" "Decide where LDAP instance should be deployed as Container on OpenShift (default) or as Standalone installation on bastion:? (\e[4mC\e[0m)ontainer/Ba(s)tion " true
-
                 ldap_depl=${input_variable^^}
         done
         save_variable GI_LDAP_DEPLOYMENT $ldap_depl
