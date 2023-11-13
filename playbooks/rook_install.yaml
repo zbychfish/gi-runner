@@ -61,7 +61,7 @@
   ansible.builtin.shell:
     cmd: "{{ item }}"
   loop:
-    - "oc apply -f {{ temp_dir }}/rook/rook-latest-operator.yaml"
+    - "oc apply -f ../scripts/rook-latest-operator.yaml"
     - "oc apply -f ../scripts/rook-latest-filesystem.yaml"
 
 - name: Wait for Rook operator
