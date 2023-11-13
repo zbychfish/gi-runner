@@ -33,19 +33,19 @@
   ansible.builtin.shell:
     cmd: "oc apply -f ../scripts/rook-latest-common.yaml"
 
-- name: Configure rook-ceph cluster file
+- name: Setup rook-ceph cluster file
   ansible.builtin.template:
     src: "rook-latest-cluster.j2"
     dest: "{{ temp_dir }}/rook/rook-cluster.yaml"
   vars:
     multiple_per_node: "true"
 
-- name: Configure rook toolbox
+- name: Setup rook toolbox file
   ansible.builtin.template:
     src: "{{ 'rook-toolbox.j2' if internet_type != 'A' else 'rook-toolbox-offline.j2' }}"
     dest: "{{ temp_dir }}/rook/rook-toolbox.yaml"
 
-- name: Configure rook-ceph-rbd-sc file
+- name: Setup rook-ceph-rbd-sc file
   ansible.builtin.template:
     src: "rook-storage_class_rbd.j2"
     dest: "{{ temp_dir }}/rook/rook-storage_class_rbd.yaml"
@@ -53,13 +53,11 @@
     replica_size: "2"
     requires_replica: "true"
 
-- meta: end_play
-
 - name: Deploy rook toolbox
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/rook/rook-toolbox.yaml"
 
-- name: Configure rook operator
+- name: Deploy rook operator
   ansible.builtin.shell:
     cmd: "{{ item }}"
   loop:
@@ -73,6 +71,8 @@
   until: "rook_operator_status.stdout == \"0\""
   retries: 30
   delay: 10
+
+- meta: end_play
 
 - name: Deploy rook-ceph cluster
   ansible.builtin.shell:

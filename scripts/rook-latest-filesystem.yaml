@@ -13,7 +13,7 @@ spec:
   # The metadata pool spec. Must use replication.
   metadataPool:
     replicated:
-      size: 3
+      size: 2
       requireSafeReplicaSize: true
     parameters:
       # Inline compression mode for the data pool
@@ -25,7 +25,8 @@ spec:
       #target_size_ratio: ".5"
   # The list of data pool specs. Can use replication or erasure coding.
   dataPools:
-    - failureDomain: host
+    - name: replicated
+      failureDomain: host
       replicated:
         size: 2
         # Disallow setting pool with replica 1, this could lead to data loss without recovery.
@@ -87,12 +88,12 @@ spec:
               # Use <topologyKey: topology.kubernetes.io/zone>  in k8s cluster is v1.17 or upper
               topologyKey: topology.kubernetes.io/zone
     # A key/value list of annotations
-    annotations:
+    # annotations:
     #  key: value
     # A key/value list of labels
-    labels:
+    # labels:
     #  key: value
-    resources:
+    # resources:
     # The requests and limits set here, allow the filesystem MDS Pod(s) to use half of one CPU core and 1 gigabyte of memory
     #  limits:
     #    cpu: "500m"
@@ -100,12 +101,17 @@ spec:
     #  requests:
     #    cpu: "500m"
     #    memory: "1024Mi"
-    # priorityClassName: my-priority-class
+    priorityClassName: system-cluster-critical
+    livenessProbe:
+      disabled: false
+    startupProbe:
+      disabled: false
   # Filesystem mirroring settings
   # mirroring:
     # enabled: true
     # list of Kubernetes Secrets containing the peer token
     # for more details see: https://docs.ceph.com/en/latest/dev/cephfs-mirroring/#bootstrap-peers
+    # Add the secret name if it already exists else specify the empty list here.
     # peers:
       #secretNames:
         #- secondary-cluster-peer
@@ -114,7 +120,10 @@ spec:
     # snapshotSchedules:
     #   - path: /
     #     interval: 24h # daily snapshots
-    #     startTime: 11:55
+        # The startTime should be mentioned in the format YYYY-MM-DDTHH:MM:SS
+        # If startTime is not specified, then by default the start time is considered as midnight UTC.
+        # see usage here https://docs.ceph.com/en/latest/cephfs/snap-schedule/#usage
+        # startTime: 2022-07-15T11:55:00
     # manage retention policies
     # see syntax duration here https://docs.ceph.com/en/latest/cephfs/snap-schedule/#add-and-remove-retention-policies
     # snapshotRetention:
