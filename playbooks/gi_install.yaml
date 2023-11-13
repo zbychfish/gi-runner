@@ -18,7 +18,7 @@
     - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"gi_role=yes\"}}}'"
   when: gi_dedicated_nodes|length > 2
 
-- name: Create GI operator namespace
+- name: Create GI namespace
   shell:
     cmd: "oc create namespace {{ gi_namespace }}||true"
 

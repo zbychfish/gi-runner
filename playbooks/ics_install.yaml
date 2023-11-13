@@ -41,7 +41,6 @@
 - name: Unpack cloudctl tools
   ansible.builtin.shell:
     cmd: "tar xf {{ temp_dir }}/{{ offline_inventory }}/{{ item.src }} -C /usr/local/bin"
-    warn: no
   with_items:
     - { src: "cloudctl-linux-amd64.tar.gz" }
 
