@@ -437,6 +437,8 @@
       ansible.builtin.include_tasks: stage2.yaml
       when: skip_phase|int < 2
 
+    - meta: end_play
+
     - name: Install rook-ceph
       ansible.builtin.include_tasks: rook_install.yaml
       when: skip_phase|int < 3 and storage_type == 'R'
