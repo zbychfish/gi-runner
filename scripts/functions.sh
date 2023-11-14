@@ -1083,6 +1083,8 @@ function get_software_architecture() {
                         db2_tainted=${input_variable^^}
                 done
                 save_variable GI_DB2_TAINTED $db2_tainted
+	else
+		save_variable GI_DB2_TAINTED "N"
         fi
 }
 
