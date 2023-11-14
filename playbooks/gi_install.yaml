@@ -69,7 +69,7 @@
     use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
   with_items:
     - "https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-cp-common-services/{{ ics_cases[ics_version_hint|int] }}/ibm-cp-common-services-{{ ics_cases[ics_version_hint|int] }}.tgz"
-  when: internet_type != 'A' and gi_version_index|int >= gi_31_32_index
+  when: false and internet_type != 'A' and gi_version_index|int >= gi_31_32_index
 
 - name: Copy DB2 case file to cases directory
   ansible.builtin.copy:
@@ -77,7 +77,7 @@
     dest: "{{ temp_dir }}/gi_arch/cases"
   with_fileglob:
     - "{{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-db2uoperator-*.tgz"
-  when: gi_version_index|int >= gi_31_32_index
+  when: false and gi_version_index|int >= gi_31_32_index
 
 - name: Install GI catalog in air-gapped
   shell:
@@ -86,13 +86,8 @@
 
 - name: Install GI catalog online before 3.2
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1"
-  when: internet_type != 'A' and gi_version_index|int < gi_31_32_index
-
-- name: Install GI catalog online 3.2+
-  shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir {{ temp_dir }}/{{ offline_inventory }}/cases\""
-  when: internet_type != 'A' and gi_version_index|int >= gi_31_32_index
+    cmd: "oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installCatalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir /root/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
+  when: internet_type != 'A'
 
 - name: Wait for GI catalog (part1)
   shell:
