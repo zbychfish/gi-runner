@@ -537,6 +537,7 @@ function get_service_assignment() {
         then
                 [[ $gi_size == 'values-small' ]] && db2_nodes_size=2 || db2_nodes_size=1
 		[[ $is_master_only == 'Y' ]] && available_nodes=$master_node || available_nodes=$worker_node 
+		msg "$master_node, $available_nodes" info
                 if [[ $db2_tainted == 'Y' ]]
                 then
                         msg "You decided that DB2 will be installed on dedicated node/nodes" info
