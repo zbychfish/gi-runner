@@ -17,7 +17,7 @@
 
 - name: Deploy NFS client
   ansible.builtin.shell:
-    cmd: "oc create -f {{ temp_dir }}/gi_arch/nfs-client-deployment.yaml"
+    cmd: "oc apply -f {{ temp_dir }}/gi_arch/nfs-client-deployment.yaml"
 
 - name: Confirm successful deployment of NFS client
   ansible.builtin.shell:
