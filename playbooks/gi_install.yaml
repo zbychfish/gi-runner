@@ -58,7 +58,7 @@
 
 - name: GI preinstall task
   shell:
-    cmd: "oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action preInstall --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
+    cmd: "IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action preInstall --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
 
 - meta: end_play
 
