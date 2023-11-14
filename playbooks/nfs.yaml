@@ -1,0 +1,13 @@
+- name: Create namespace for NFS client
+  ansible.builtin.shell:
+      cmd: oc create namespace nfs-provisioner
+
+- name: Set RBAC for NFS client
+  ansible.builtin.shell:
+    cmd: oc create -f ../scripts/nfs-client-rbac.yaml
+
+- name: Set security context for NFS client
+  ansible.builtin.shell:
+    cmd: oc adm policy add-scc-to-user hostmount-anyuid system:serviceaccount:nfs-provisioner:nfs-client-provisioner
+
+
