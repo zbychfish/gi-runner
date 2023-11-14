@@ -1,6 +1,6 @@
 - name: Create namespace for NFS client
   ansible.builtin.shell:
-      cmd: oc create namespace nfs-provisioner
+      cmd: oc create namespace nfs-provisioner || echo "Namespace exists"
 
 - name: Set RBAC for NFS client
   ansible.builtin.shell:
