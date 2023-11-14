@@ -19,13 +19,17 @@
   ansible.builtin.shell:
     cmd: "oc create -f {{ temp_dir }}/gi_arch/nfs-client-deployment.yaml"
 
-- meta: end_play
-
 - name: Confirm successful deployment of NFS client
   ansible.builtin.shell:
-    cmd: "echo $(oc exec `oc get pods -l name=portworx -n kube-system -o jsonpath='{.items[0].metadata.name}'` -c portworx -n kube-system -- /opt/pwx/bin/pxctl cluster list -j )|jq .cluster.Status"
-  register: nfs_status
-  until: "px_status.stdout|int == 2"
+    cmd: "oc get pods -n nfs-provisioner | grep -e Running -e 1/1 | wc -l"
+  register: nfs_client_status
+  until: "nfs_client_status.stdout|int == 1"
   retries: 50
   delay: 5
+
+- name: Add NFS client storage class
+  ansible.builtin.shell:
+    cmd: oc apply -f ../scripts/nfs-client-sc.yaml
+
+- meta: end_play
 
