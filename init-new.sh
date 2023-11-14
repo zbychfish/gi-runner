@@ -42,7 +42,7 @@ get_credentials
 #get_certificates
 save_variable GI_ICS_IN "N"
 save_variable GI_OCP_IN "N"
-#[[ "$gi_install" == 'Y' ]] && get_gi_options
+[[ "$gi_install" == 'Y' ]] && get_gi_options
 [[ "$ics_install" == 'Y' || "$gi_install" == 'Y' ]] && get_ics_options
 #[[ "$cp4s_install" == 'Y' ]] && get_cp4s_options
 [[ "$install_ldap" == 'Y' ]] && get_ldap_options
