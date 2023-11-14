@@ -24,7 +24,7 @@
 
 - name: GI download case file
   shell:
-    cmd: "oc ibm-pak get ibm-guardium-insights --version {{ case_version }}"
+    cmd: "oc ibm-pak get ibm-guardium-insights --version {{ gi_case_version }}"
   when: internet_type != 'A'
 
 - meta: end_play
