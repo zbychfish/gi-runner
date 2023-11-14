@@ -196,6 +196,8 @@
         gi_zookeeper_size:  "{{ lookup('env','GI_ZOOKEEPER_STORAGE_SIZE') }}"
         gi_ssh_host: "{{ lookup('env','GI_SSH_HOST') }}"
         gi_ssh_port: "{{ lookup('env','GI_SSH_PORT') }}"
+        gi_nfs_server: "{{ lookup('env','GI_NFS_SERVER') }}"
+        gi_nfs_path: "{{ lookup('env','GI_NFS_PATH') }}"
       when: install_gi == 'Y'
 
     - name: Check GI variables
@@ -221,6 +223,8 @@
         - { name: "GI_ZOOKEEPER_STORAGE_SIZE", value: "{{ gi_zookeeper_size }}" }
         - { name: "GI_SSH_HOST", value: "{{ gi_ssh_host }}" }
         - { name: "GI_SSH_PORT", value: "{{ gi_ssh_port }}" }
+        - { name: "GI_NFS_SERVER", value: "{{ gi_nfs_server }}" }
+        - { name: "GI_NFS_PATH", value: "{{ gi_nfs_path }}" }
       when: install_gi == 'Y' and item.value == ""
 
     - name: Set CP4S installation variables from env
