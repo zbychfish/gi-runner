@@ -69,7 +69,7 @@ function pvc_sizes() {
         esac
         while $(check_input "int" "${curr_value}" $size_min $size_max)
         do
-                msg "$m_desc" 8
+                msg "$m_desc" info
                 if [ ! -z "$global_var_val" ]
                 then
                         get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_val] or insert size of $m_ask: " true "$global_var_val"
