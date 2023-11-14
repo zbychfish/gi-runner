@@ -60,8 +60,6 @@
   shell:
     cmd: "IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action preInstall --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
 
-- meta: end_play
-
 - name: Prepare case files for ICS
   ansible.builtin.get_url:
     url: "{{ item }}"
@@ -88,6 +86,8 @@
   shell:
     cmd: "oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installCatalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir /root/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
   when: internet_type != 'A'
+
+- meta: end_play
 
 - name: Wait for GI catalog (part1)
   shell:
