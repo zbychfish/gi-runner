@@ -1309,7 +1309,7 @@ function get_input() {
                                                 curr_password=$password
                                                 input_variable=false
                                         else
-                                                msg "Please try again" 7
+                                                msg "Please try again" newline
                                                 input_variable=true
                                         fi
                                 fi
