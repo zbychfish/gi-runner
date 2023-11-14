@@ -126,12 +126,12 @@
     - { operator_pattern: "mongodb-kubernetes-operator" }
     - { operator_pattern: "guardiuminsights-controller-manager" }
 
-- meta: end_play
-
 - name: Generate GI deployment file
   template:
     src: "gi.j2"
     dest: "{{ temp_dir }}/gi_arch/gi.yaml"
+
+- meta: end_play
 
 - name: Deploy GI
   shell:

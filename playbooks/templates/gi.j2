@@ -14,39 +14,30 @@ spec:
     GUARDIUM_AGENT_SCP_TARGET_PORT: {{ gi_ssh_port }}
 {% endif %}
   version: {{ gi_version }}
-{% if stap_supp == 'Y' and gi_version_index|int < 3 %}
-  connections:
-    insightsEnv:
-      FEATURE_STAP_STREAMING: "true"
-{% endif %}
   license:
     accept: true
     licenseType: "{{ gi_license }}"
   guardiumInsightsGlobal:
-{% if storage_type == 'P' %}
     deploySettings:
       ensureDb2InstallPlacement: true
-{% endif %}
     dev: "false"
     licenseAccept: true
-    # Guardium Insights template size can be defined as below using the size parameter
     size: {{ gi_deployment_size }}
-    #image:
-      #insightsPullSecret needs to be set to the following developer/QA workflow
-      #insightsPullSecret: ibm-artifactory-key
-      #repository needs to be set to the following developer/QA workflow
-      #repository: sec-guardium-next-gen-docker-local.artifactory.swg-devops.com
     insights:
       ingress:
-        #hostName: Change this, ex: staging.apps.gi-devops-ocp46-41.cp.fyre.ibm.com
         hostName: insights.apps.{{ domain }}
-        #domainName:  Change this
         domainName: apps.{{ domain }}
       ics:
         namespace: ibm-common-services
         registry: common-service
-    #storageClassName: Change this to a ReadWriteMany StorageClass!!!
     storageClassName: "{{ storage_class_rw_many }}"
+{% if gi_nfs_backup == 'Y' %}
+    backupsupport:
+      enabled: "true"
+      name: "backup_nfs_pvc"  
+      size: 400Gi
+      storageClassName: nfs-client
+{% endif %}
   dependency-kafka:
     kafka:
       storage:

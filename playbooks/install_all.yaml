@@ -196,8 +196,7 @@
         gi_zookeeper_size:  "{{ lookup('env','GI_ZOOKEEPER_STORAGE_SIZE') }}"
         gi_ssh_host: "{{ lookup('env','GI_SSH_HOST') }}"
         gi_ssh_port: "{{ lookup('env','GI_SSH_PORT') }}"
-        gi_nfs_server: "{{ lookup('env','GI_NFS_SERVER') }}"
-        gi_nfs_path: "{{ lookup('env','GI_NFS_PATH') }}"
+        gi_nfs_backup: "{{ lookup('env','GI_NFS_BACKUP') }}"
       when: install_gi == 'Y'
 
     - name: Check GI variables
@@ -223,9 +222,21 @@
         - { name: "GI_ZOOKEEPER_STORAGE_SIZE", value: "{{ gi_zookeeper_size }}" }
         - { name: "GI_SSH_HOST", value: "{{ gi_ssh_host }}" }
         - { name: "GI_SSH_PORT", value: "{{ gi_ssh_port }}" }
+        - { name: "GI_NFS_BACKUP", value: "{{ gi_nfs_backup }}" }
+      when: install_gi == 'Y' and item.value == ""
+
+    - name: Set GI NFS variables
+      ansible.builtin.set_fact:
+        gi_nfs_server: "{{ lookup('env','GI_NFS_SERVER') }}"
+        gi_nfs_path: "{{ lookup('env','GI_NFS_PATH') }}"
+      when: install_gi == 'Y' and gi_nfs_backup == 'Y'
+
+    - name: Check GI NFS variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
         - { name: "GI_NFS_SERVER", value: "{{ gi_nfs_server }}" }
         - { name: "GI_NFS_PATH", value: "{{ gi_nfs_path }}" }
-      when: install_gi == 'Y' and item.value == ""
+      when: install_gi == 'Y' and gi_nfs_backup == 'Y' and item.value == ""
 
     - name: Set CP4S installation variables from env
       ansible.builtin.set_fact:
