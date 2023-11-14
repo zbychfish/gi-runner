@@ -13,11 +13,11 @@
 - name: Setup deployment file
   template:
     src: "nfs-client-deployment.j2"
-    dest: "{{ temp_dir }}/gi-arch/nfs-client-deployment.yaml"
+    dest: "{{ temp_dir }}/gi_arch/nfs-client-deployment.yaml"
 
 - name: Deploy NFS client
   ansible.builtin.shell:
-    cmd: "oc create -f {{ temp_dir }}/gi-arch/nfs-client-deployment.yaml"
+    cmd: "oc create -f {{ temp_dir }}/gi_arch/nfs-client-deployment.yaml"
 
 - meta: end_play
 
