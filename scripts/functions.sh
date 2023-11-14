@@ -536,6 +536,7 @@ function get_service_assignment() {
         if [[ $gi_install == 'Y' ]]
         then
                 [[ $gi_size == 'values-small' ]] && db2_nodes_size=2 || db2_nodes_size=1
+		[[ $is_master_only == 'Y' ]] && available_nodes=master_node || available_nodes=worker_node 
                 if [[ $db2_tainted == 'Y' ]]
                 then
                         msg "You decided that DB2 will be installed on dedicated node/nodes" info
@@ -544,8 +545,8 @@ function get_service_assignment() {
                         msg "Insert node/nodes name where DB2 should be installed" info
                 fi
                 msg "DB2 node/nodes should have enough resources (CPU, RAM) to get this role, check GI documentation" info
-                msg "Available worker nodes: $worker_name" info
-                while $(check_input "nodes" $db2_nodes $worker_name $db2_nodes_size "def")
+                msg "Available worker nodes: $available_nodes" info
+                while $(check_input "nodes" $db2_nodes $available_nodes $db2_nodes_size "def")
                 do
                         if [ ! -z "$GI_DB2_NODES" ]
                         then
@@ -927,6 +928,7 @@ function get_nodes_info() {
                         ;;
                 "mst")
                         master_ip=$temp_ip
+			master_name=$temp_name
                         save_variable GI_MASTER_IP $temp_ip
                         save_variable GI_MASTER_MAC_ADDRESS $temp_mac
                         save_variable GI_MASTER_NAME $temp_name
