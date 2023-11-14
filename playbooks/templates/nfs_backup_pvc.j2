@@ -8,6 +8,6 @@ spec:
     - ReadWriteMany
   resources:
     requests:
-      storage: {{ gi_nfs_backup_size }}
+      storage: {{ gi_ds_size * 1.2 }}Gi
   storageClassName: nfs-client
 

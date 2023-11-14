@@ -35,7 +35,7 @@ spec:
     backupsupport:
       enabled: "true"
       name: "backup_nfs_pvc"  
-      size: 400Gi
+      size: {{ gi_ds_size * 1.2 }}Gi
       storageClassName: nfs-client
 {% endif %}
   dependency-kafka:
