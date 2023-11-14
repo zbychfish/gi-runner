@@ -197,7 +197,7 @@ function get_gi_options() {
                         nfs_server=${input_variable}
                 done
 		save_variable GI_NFS_SERVER $nfs_server
-		while $(check_input "" $nfs_path)
+		while $(check_input "txt" $nfs_path "non_empty")
                 do
 			if [ ! -z "$GI_NFS_PATH" ]
 			then
