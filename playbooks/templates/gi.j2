@@ -34,8 +34,8 @@ spec:
 {% if gi_nfs_backup == 'Y' %}
     backupsupport:
       enabled: "true"
-      name: "backup_nfs_pvc"  
-      size: {{ gi_ds_size * 1.2 }}Gi
+      name: "backup-nfs-pvc"  
+      size: {{ gi_ds_size|float * 1.2 }}Gi
       storageClassName: nfs-client
 {% endif %}
   dependency-kafka:
