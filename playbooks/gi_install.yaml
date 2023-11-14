@@ -27,28 +27,29 @@
     cmd: "oc ibm-pak get ibm-guardium-insights --version {{ gi_case_version }}"
   when: internet_type != 'A'
 
-- meta: end_play
-
 - name: Get OpenSSL version on bastion
   shell:
     cmd: openssl version
   register: openssl_version
+  when: false
 
 - name: gunzip case file
   shell:
     cmd: "cd {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }};gunzip {{ gi_case }}"
   ignore_errors: yes
+  when: false
 
 - name: Unpack case file
   shell:
     cmd: "tar xf {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case|splitext|first }}.tar -C {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}"
+  when: false
 
 - name: Modify prereqs for OpenSSL
   lineinfile:
     path: "{{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/prereqs.yaml"
     regexp: '.*OpenSSL 1.1.1.*'
     line: '        versionRegex: "OpenSSL 1.1.1*|OpenSSL 3.*"'
-  when: openssl_version.stdout|regex_search("^OpenSSL 3.*$") and gi_version_index|int < gi_31_32_index
+  when: false and openssl_version.stdout|regex_search("^OpenSSL 3.*$") and gi_version_index|int < gi_31_32_index
 
 - name: Save portable repo credentials
   shell:
@@ -57,7 +58,9 @@
 
 - name: GI preinstall task
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
+    cmd: "oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action preInstall --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
+
+- meta: end_play
 
 - name: Prepare case files for ICS
   ansible.builtin.get_url:
