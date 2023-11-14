@@ -82,12 +82,10 @@
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
   when: internet_type == 'A'
 
-- name: Install GI catalog online before 3.2
+- name: Install GI catalog online
   shell:
     cmd: "oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installCatalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir /root/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
   when: internet_type != 'A'
-
-- meta: end_play
 
 - name: Wait for GI catalog (part1)
   shell:
@@ -108,11 +106,11 @@
 - name: Install GI operators in air-gapped env
   shell:
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key\""
-  when: internet_type == 'A'
+  when: false and internet_type == 'A'
 
 - name: Install GI operators online
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
+    cmd: "oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key --inputDir /root/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
   when: internet_type != 'A'
 
 - name: Wait for GI operators
@@ -123,9 +121,12 @@
   retries: 30
   delay: 10
   with_items:
+    - { operator_pattern: "db2u-operator-manager" }
     - { operator_pattern: "ibm-cloud-databases-redis-operator" }
     - { operator_pattern: "mongodb-kubernetes-operator" }
     - { operator_pattern: "guardiuminsights-controller-manager" }
+
+- meta: end_play
 
 - name: Generate GI deployment file
   template:
