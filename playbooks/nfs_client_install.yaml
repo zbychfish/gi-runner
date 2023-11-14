@@ -40,5 +40,3 @@
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/gi_arch/nfs_backup_pvc.yaml"
 
-- meta: end_play
-
