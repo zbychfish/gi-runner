@@ -474,7 +474,7 @@
 
     - name: Install NFS client
       ansible.builtin.include_tasks: nfs_client_install.yaml
-      when: skip_phase|int < 5 and install_gi == 'Y' and nfs_backup == 'Y'
+      when: skip_phase|int < 5 and install_gi == 'Y' and gi_nfs_backup == 'Y'
 
     - name: Install GI
       ansible.builtin.include_tasks: gi_install.yaml
