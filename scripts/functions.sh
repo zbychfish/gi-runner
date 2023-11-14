@@ -203,7 +203,7 @@ function get_gi_options() {
 			then
 	                        get_input "txt" "Push <ENTER> to accept NFS share path for backup - [$GI_NFS_PATH] or insert another NFS server path: " true "$GI_NFS_PATH"
 			else
-				get_input "txt" "Insert IP address of NFS server: " false
+				get_input "txt" "Insert NFS server path: " false
 			fi
                         nfs_path=${input_variable}
                 done
