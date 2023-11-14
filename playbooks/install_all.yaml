@@ -399,7 +399,7 @@
         gi_case_version: "{{ gi_cases[gi_version_index|int] }}"
         db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
         db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
-        gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int < 3 else 'L-GBLK-CDVHGZ' }}"
+        gi_license: "{{ '' if gi_version_index|int < 0 else 'L-GBLK-CDVHGZ' }}"
         add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
         add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
         db2_class_fs: "{{ 'portworx-db2-rwx-sc' if storage_type == 'P' else storage_class_rw_many }}"
