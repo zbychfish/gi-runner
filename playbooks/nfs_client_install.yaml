@@ -4,7 +4,7 @@
 
 - name: Set RBAC for NFS client
   ansible.builtin.shell:
-    cmd: oc create -f ../scripts/nfs-client-rbac.yaml
+    cmd: oc apply -f ../scripts/nfs-client-rbac.yaml
 
 - name: Set security context for NFS client
   ansible.builtin.shell:
