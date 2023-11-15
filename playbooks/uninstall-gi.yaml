@@ -28,7 +28,7 @@
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
 
-  - name: Delete GI operator instance
+  - name: Delete GI instance
     shell:
       cmd: "oc delete guardiuminsights {{ gi_namespace }} -n {{ gi_namespace }}||true "
 
@@ -51,6 +51,8 @@
   - name: Delete GI pvc's
     shell:
       cmd: "oc delete $(oc get pvc -n {{ gi_namespace }} -oname) -n {{ gi_namespace }}||true "
+
+  - meta: end_play
 
   - name: Uninstall GI operator
     shell:
