@@ -137,7 +137,7 @@
 
 - name: Wait for DB2 deployment
   shell:
-    cmd: "oc get pods -n {{gi_namespace }} | grep db2-ready | grep Completed | wc -l"
+    cmd: "oc get job -n {{ gi_namespace }} | grep db2-ready | grep Completed | wc -l"
   register: db2_deployment_status
   until: db2_deployment_status.stdout == 1
   retries: 50
