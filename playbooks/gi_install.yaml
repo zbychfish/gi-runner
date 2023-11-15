@@ -27,30 +27,6 @@
     cmd: "oc ibm-pak get ibm-guardium-insights --version {{ gi_case_version }}"
   when: internet_type != 'A'
 
-- name: Get OpenSSL version on bastion
-  shell:
-    cmd: openssl version
-  register: openssl_version
-  when: false
-
-- name: gunzip case file
-  shell:
-    cmd: "cd {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }};gunzip {{ gi_case }}"
-  ignore_errors: yes
-  when: false
-
-- name: Unpack case file
-  shell:
-    cmd: "tar xf {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case|splitext|first }}.tar -C {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}"
-  when: false
-
-- name: Modify prereqs for OpenSSL
-  lineinfile:
-    path: "{{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/prereqs.yaml"
-    regexp: '.*OpenSSL 1.1.1.*'
-    line: '        versionRegex: "OpenSSL 1.1.1*|OpenSSL 3.*"'
-  when: false and openssl_version.stdout|regex_search("^OpenSSL 3.*$") and gi_version_index|int < gi_31_32_index
-
 - name: Save portable repo credentials
   shell:
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action configure-creds-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }}\""
@@ -59,23 +35,6 @@
 - name: GI preinstall task
   shell:
     cmd: "IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action preInstall --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
-
-- name: Prepare case files for ICS
-  ansible.builtin.get_url:
-    url: "{{ item }}"
-    dest: "{{ temp_dir }}/gi_arch/cases"
-    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
-  with_items:
-    - "https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-cp-common-services/{{ ics_cases[ics_version_hint|int] }}/ibm-cp-common-services-{{ ics_cases[ics_version_hint|int] }}.tgz"
-  when: false and internet_type != 'A' and gi_version_index|int >= gi_31_32_index
-
-- name: Copy DB2 case file to cases directory
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "{{ temp_dir }}/gi_arch/cases"
-  with_fileglob:
-    - "{{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-db2uoperator-*.tgz"
-  when: false and gi_version_index|int >= gi_31_32_index
 
 - name: Install GI catalog in air-gapped
   shell:
@@ -128,7 +87,7 @@
 
 - name: Generate GI deployment file
   template:
-    src: "gi.j2"
+    src: "{{ 'gi.j2' if gi_version_index|int > 0 else 'gi-3210.j2' }}"
     dest: "{{ temp_dir }}/gi_arch/gi.yaml"
 
 - name: Deploy GI
