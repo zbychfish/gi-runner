@@ -155,8 +155,6 @@
   retries: 100
   delay: 60
 
-- meta: end_play
-
 - name: Enable STAP streaming and Outliers features for 3.2+
   block:
   - name: Generate basic token
@@ -285,3 +283,6 @@
 - name: Setup DB2 parameters for parallelism
   shell:
     cmd: bash ../scripts/db2_parallelism.sh
+
+- meta: end_play
+
