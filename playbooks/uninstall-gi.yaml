@@ -17,6 +17,7 @@
     set_fact:
       gi_case_archive: "{{ gi_cases[gi_version_index|int] }}"
       gi_version: "{{ gi_versions[gi_version_index|int] }}"
+      gi_case_version: "{{ gi_cases[gi_version_index|int] }}"
 
   - name: Check other configuration parameters
     fail: msg="Variable {{ item.name }} is not set"
@@ -27,6 +28,7 @@
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
+      - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
 
   - name: Delete GI instance
     shell:
