@@ -138,10 +138,10 @@
 - name: Wait for DB2 deployment
   shell:
     cmd: "oc get pods -n {{gi_namespace }} | grep db2-ready | grep Completed | wc -l"
-    register: db2_deployment_status
-    until: db2_deployment_status.stdout == 1
-    retries: 50
-    delay: 60
+  register: db2_deployment_status
+  until: db2_deployment_status.stdout == 1
+  retries: 50
+  delay: 60
 
 - name: Patch deployment (BUG in 3.2.10)
   shell:
@@ -178,7 +178,6 @@
     - STAP_STREAMING
     - OUTLIERS_ENGINE
     - GDP_OUTLIER_SUMMARIZED
-  when: gi_version_index|int >= gi_31_32_index and stap_supp == 'Y'
 
 - name: Set Outliers detection in Demo mode
   block:
