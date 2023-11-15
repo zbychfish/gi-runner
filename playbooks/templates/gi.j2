@@ -138,7 +138,7 @@ spec:
           - ReadWriteOnce
           resources:
             requests:
-              storage: {{ (gi_ds_size / 10)|int }}Gi
+              storage: {{ gi_ds_size // 10 }}Gi
       partitionConfig:
         total: {{ (db2_nodes_array|length) * 2 }}
       instance:
