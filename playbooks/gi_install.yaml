@@ -284,5 +284,3 @@
   shell:
     cmd: bash ../scripts/db2_parallelism.sh
 
-- meta: end_play
-

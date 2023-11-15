@@ -478,15 +478,15 @@
 
     - name: Install GI
       ansible.builtin.include_tasks: gi_install.yaml
-      when: skip_phase|int < 5 and install_gi == 'Y'
+      when: skip_phase|int < 6 and install_gi == 'Y'
 
     - name: Install CP4S
       ansible.builtin.include_tasks: cp4s_install.yaml
-      when: skip_phase|int < 5 and install_cp4s == 'Y'
+      when: skip_phase|int < 6 and install_cp4s == 'Y'
 
     - name: Install openldap
       ansible.builtin.include_tasks: openldap_install.yaml
-      when: skip_phase|int < 6 and install_ldap == 'Y'
+      when: skip_phase|int < 7 and install_ldap == 'Y'
 
     - name: OCP info
       ansible.builtin.debug:
