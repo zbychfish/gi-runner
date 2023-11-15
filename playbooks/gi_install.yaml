@@ -139,7 +139,7 @@
   shell:
     cmd: "oc get db2ucluster -n {{ gi_namespace }} | grep Ready | wc -l"
   register: db2_deployment_status
-  until: db2_deployment_status.stdout == 1
+  until: db2_deployment_status.stdout|int == 1
   retries: 50
   delay: 60
 
@@ -230,7 +230,7 @@
       use_proxy: no
     vars:
       j_query: "Configs[?Name=='Outliers']._id"
-  when: gi_version_index|int >= gi_31_32_index and outliers_demo == 'Y'
+  when: outliers_demo == 'Y'
 
 - name: Get ssh service node port
   shell:
