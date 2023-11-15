@@ -128,15 +128,12 @@ function get_gi_options() {
                 stap_supp=${input_variable^^}
         done
         save_variable GI_STAP_STREAMING $stap_supp
-        if [[ $gi_version_selected -ge $gi_32_threshold && $stap_supp == 'Y' ]]
-        then
-                while $(check_input "yn" "$outliers_demo" false)
+        while $(check_input "yn" "$outliers_demo" false)
         do
-                get_input "yn" "Should the Outliers engine work in demo mode?: " false
+        	get_input "yn" "Should the Outliers engine work in demo mode?: " false
                 outliers_demo=${input_variable^^}
         done
-                save_variable GI_OUTLIERS_DEMO $outliers_demo
-        fi
+        save_variable GI_OUTLIERS_DEMO $outliers_demo
         get_gi_pvc_size
         msg "GDP integration" task
         msg "One of the method to send events to Guardium is integration with Guardium Data Protection" info

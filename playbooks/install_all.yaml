@@ -414,13 +414,13 @@
     - name: Set GI installation variables
       ansible.builtin.set_fact:
         outliers_demo: "{{ lookup('env', 'GI_OUTLIERS_DEMO') }}"
-      when: install_gi == 'Y' and stap_supp == 'Y'
+      when: install_gi == 'Y'
 
     - name: Check GI installation variables
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_OUTLIERS_DEMO", value: "{{ outliers_demo }}" }
-      when: install_gi == 'Y' and stap_supp == 'Y' and item.value == ""
+      when: install_gi == 'Y' and item.value == ""
 
     - name: Set parameters for air-gapped installation
       ansible.builtin.set_fact:
