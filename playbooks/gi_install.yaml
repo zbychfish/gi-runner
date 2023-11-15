@@ -131,12 +131,22 @@
     src: "gi.j2"
     dest: "{{ temp_dir }}/gi_arch/gi.yaml"
 
-- meta: end_play
-
 - name: Deploy GI
   shell:
     cmd: "oc apply -f {{ temp_dir }}/gi_arch/gi.yaml"
 
+- name: Wait for DB2 deployment
+  shell:
+    cmd: "oc get pods -n {{gi_namespace }} | grep db2-ready | grep Completed | wc -l"
+    register: db2_deployment_status
+    until: db2_deployment_status.stdout == 1
+    retries: 50
+    delay: 60
+
+- name: Patch deployment (BUG in 3.2.10)
+  shell:
+    cmd: "oc patch guardiuminsights gi --type json -p '[{\"op\": \"replace\", \"path\": \"/spec/guardiumInsightsGlobal/deploySettings/ensureDb2InstallPlacement\", \"value\": false}]'"
+    
 - name: Wait for successful GI deployment (takes 20-60 minutes)
   shell:
     cmd: "oc get guardiuminsights -n {{ gi_namespace }} -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
@@ -144,6 +154,8 @@
   until: gi_deployment_status.stdout == gi_version
   retries: 100
   delay: 60
+
+- meta: end_play
 
 - name: Enable STAP streaming and Outliers features for 3.2+
   block:
