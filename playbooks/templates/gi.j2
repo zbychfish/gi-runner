@@ -108,7 +108,7 @@ spec:
           storageClassName: "{{ db2_class_fs }}"
           resources:
             requests:
-              storage: "{{ gi_logs_size }}Gi"
+              storage: {{ gi_logs_size }}Gi
 {% endif %}
       - name: meta
         type: create
@@ -128,19 +128,19 @@ spec:
           - ReadWriteOnce
           resources:
             requests:
-              storage: "{{ gi_ds_size }}Gi"
+              storage: {{ gi_ds_size }}Gi
           storageClassName: "{{ db2_class_block }}"
       - name: tempts
         type: template
         spec:
-          storageClassName: "db2_class_block"
+          storageClassName: "{{ db2_class_block }}"
           accessModes:
           - ReadWriteOnce
           resources:
             requests:
-              storage: 100Gi
+              storage: {{ (gi_ds_size / 10)|int }}Gi
       partitionConfig:
-        total: "{{ (db2_nodes_array|length) * 2 }}"
+        total: {{ (db2_nodes_array|length) * 2 }}
       instance:
         registry:
           DB2_4K_DEVICE_SUPPORT: "ON"
