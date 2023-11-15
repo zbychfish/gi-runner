@@ -46,21 +46,19 @@
     register: gi_pods
     until: "gi_pods.stdout == \"0\""
     retries: 20
-    delay: 20
+    delay: 60
 
   - name: Delete GI pvc's
     shell:
       cmd: "oc delete $(oc get pvc -n {{ gi_namespace }} -oname) -n {{ gi_namespace }}||true "
 
-  - meta: end_play
-
-  - name: Uninstall GI operator
+  - name: Uninstall GI operators
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/gi_arch/{{ offline_inventory }}/ibm-guardium-insights/ --namespace {{ gi_namespace }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --tolerance 1"
+      cmd: "IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--inputDir /root/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
 
-  - name: Uninstall GI catalog #generates error til 3.0.2 should be corrected in 3.1
+  - name: Uninstall GI catalogs
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/gi_arch/{{ offline_inventory }}/ibm-guardium-insights --namespace openshift-marketplace --inventory {{ gi_case_inventory_setup }} --action uninstallCatalog --tolerance 1"
+      cmd: "IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallCatalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir /root/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
 
   - name: Delete GI namespace
     shell:
