@@ -82,68 +82,68 @@ spec:
   dependency-db2:
     db2instance:
       installAsDefault: true
-    dbConfig:
-      LOGARCHMETH1: "DISK:/mnt/logs/archive"
-    nodes: "{{ db2_nodes_array|length }}"
-    resources:
-      requests:
-        cpu: "6"
-        memory: "48Gi"
-      limits:
-        cpu: "6"
-        memory: "48Gi"
-    dbSettings:
+      dbConfig:
+        LOGARCHMETH1: "DISK:/mnt/logs/archive"
+      nodes: {{ db2_nodes_array|length }}
+      resources:
+        requests:
+          cpu: "6"
+          memory: "48Gi"
+        limits:
+          cpu: "6"
+          memory: "48Gi"
+      dbSettings:
 {% if db2_enc %}
-      encrypt: "YES"
+        encrypt: "YES"
 {% else %}
-      encrypt: "NO"
+        encrypt: "NO"
 {% endif %}
-    storage:
+      storage:
 {% if gi_logs_size|int != 0 %}
-    - name: archivelogs
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        storageClassName: "{{ db2_class_fs }}"
-        resources:
-          requests:
-            storage: "{{ gi_logs_size }}Gi"
-      type: create
+      - name: archivelogs
+        type: create
+        spec:
+          accessModes:
+          - ReadWriteOnce
+          storageClassName: "{{ db2_class_fs }}"
+          resources:
+            requests:
+              storage: "{{ gi_logs_size }}Gi"
 {% endif %}
-    - name: meta
-      spec:
-        accessModes:
-        - ReadWriteMany
+      - name: meta
+        type: create
+        spec:
+          accessModes:
+          - ReadWriteMany
 {% if gi_meta_size|int != 0 %}
-        resources:
-          requests:
-            storage: {{ gi_meta_size }}Gi
+          resources:
+            requests:
+              storage: {{ gi_meta_size }}Gi
 {% endif %}
-        storageClassName: "{{ db2_class_fs }}"
-      type: create
-    - name: data
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: "{{ gi_ds_size }}Gi"
-        storageClassName: "{{ db2_class_block }}"
-      type: template
-    - name: tempts
-      spec:
-        storageClassName: "db2_class_block"
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 100Gi
-      type: template
-    partitionConfig:
-      total: "{{ (db2_nodes_array|length) * 2 }}"
-    instance:
-      registry:
-        DB2_4K_DEVICE_SUPPORT: "ON"
+          storageClassName: "{{ db2_class_fs }}"
+      - name: data
+        type: template
+        spec:
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: "{{ gi_ds_size }}Gi"
+          storageClassName: "{{ db2_class_block }}"
+      - name: tempts
+        type: template
+        spec:
+          storageClassName: "db2_class_block"
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Gi
+      partitionConfig:
+        total: "{{ (db2_nodes_array|length) * 2 }}"
+      instance:
+        registry:
+          DB2_4K_DEVICE_SUPPORT: "ON"
   mini-snif:
     persistentVolumesClaims:
       mini-snif-shared:
