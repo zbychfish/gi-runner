@@ -140,7 +140,8 @@ spec:
             requests:
               storage: {{ gi_ds_size|int // 10 }}Gi
       partitionConfig:
-        total: {{ (db2_nodes_array|length) * 2 }}
+#        total: {{ (db2_nodes_array|length) * 2 }}
+        total: {{ db2_nodes_array|length }}
       instance:
         registry:
           DB2_4K_DEVICE_SUPPORT: "ON"
