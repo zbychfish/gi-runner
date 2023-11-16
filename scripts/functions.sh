@@ -1065,7 +1065,7 @@ function get_software_architecture() {
                         storage_type=${input_variable^^}
                 done
         save_variable GI_STORAGE_TYPE $storage_type
-        if [[ $storage_type == "O" && $is_master_only == 'N' ]]
+        if [[ $storage_type == "O" && $is_master_only == 'N' && false ]] # check tainting
         then
                 msg "OCS tainting will require minimum 3 additional workers in your cluster to manage cluster storage" info
                 while $(check_input "yn" ${ocs_tainted})
