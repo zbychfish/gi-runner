@@ -46,6 +46,8 @@
     retries: 30
     delay: 10
 
+  - meta: end_play
+
   - name: Configure local storage deployment file with workers
     ansible.builtin.template:
       src: "local-storage-vol.j2"
