@@ -100,6 +100,7 @@ function pvc_sizes() {
 function get_gi_pvc_size() {
         local custom_pvc
         msg "The cluster storage contains 3 disks - ${storage_device_size} GB each" info
+	echo $storage_type
         [[ "storage_type" == 'O' ]] && msg "OCS creates 3 copies of data chunks so you have ${storage_device_size} of GB effective space for PVC's" info || msg "Rook-Ceph creates 2 copies of data chunks so you have $((2*${storage_device_size})) GB effective space for PVC's" info
         while $(check_input "yn" "$custom_pvc")
         do
@@ -1055,7 +1056,7 @@ function get_software_architecture() {
         done
         save_variable GI_MASTER_ONLY $is_master_only
                 msg "Decide what kind of cluster storage option will be implemented:" info
-                msg "- OpenShift Data Fountation (OpenShift Container Storage for OCP 4.6-4.8) - commercial rook-ceph branch from RedHat" info
+                msg "- OpenShift Data Fountation - commercial rook-ceph branch from RedHat" info
                 msg "- Rook-Ceph - opensource cluster storage option" info
                 msg "- Portworx Essentials - free version of Portworx Enterprise cluster storage option, it has limitation to 5 workers and 5 TB of storage" info
                 while $(check_input "stopx" ${storage_type})
