@@ -103,9 +103,9 @@ spec:
       - name: archivelogs
         type: create
         spec:
+          storageClassName: "{{ db2_class_fs }}"
           accessModes:
           - ReadWriteOnce
-          storageClassName: "{{ db2_class_fs }}"
           resources:
             requests:
               storage: {{ gi_logs_size }}Gi
@@ -113,6 +113,7 @@ spec:
       - name: meta
         type: create
         spec:
+          storageClassName: "{{ db2_class_fs }}"
           accessModes:
           - ReadWriteMany
 {% if gi_meta_size|int != 0 %}
@@ -120,16 +121,15 @@ spec:
             requests:
               storage: {{ gi_meta_size }}Gi
 {% endif %}
-          storageClassName: "{{ db2_class_fs }}"
       - name: data
         type: template
         spec:
+          storageClassName: "{{ db2_class_block }}"
           accessModes:
           - ReadWriteOnce
           resources:
             requests:
               storage: {{ gi_ds_size }}Gi
-          storageClassName: "{{ db2_class_block }}"
       - name: tempts
         type: template
         spec:
