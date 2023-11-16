@@ -51,9 +51,16 @@ spec:
 {% if gi_zookeeper_size|int != 0 %}
         size: {{ gi_zookeeper_size }}Gi
 {% endif %}
+  dependency-postgres:
+    postgres:
+      storage:
+        size: {{ gi_pgsql_size }}Gi
+        storageClassName: "{{ storage_class_rw_one }}"
   dependency-redis:
     size: 3
     persistence:
+      enabled: true
+      size: {{ gi_redis_size }}Gi
       storageClass: "{{ storage_class_rw_one }}"
   dependency-mongodb:
     storage:
