@@ -112,7 +112,7 @@ spec:
         spec:
           storageClassName: "{{ db2_class_fs }}"
           accessModes:
-          - ReadWriteOnce
+          - ReadWriteMany
           resources:
             requests:
               storage: {{ gi_logs_size }}Gi
