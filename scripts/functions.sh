@@ -108,8 +108,7 @@ function pvc_sizes() {
 function get_gi_pvc_size() {
         local custom_pvc
         msg "The cluster storage contains 3 disks - ${storage_device_size} GB each" info
-	echo $storage_type
-        [[ "storage_type" == 'O' ]] && msg "OCS creates 3 copies of data chunks so you have ${storage_device_size} of GB effective space for PVC's" info || msg "Rook-Ceph creates 2 copies of data chunks so you have $((2*${storage_device_size})) GB effective space for PVC's" info
+        [[ "$storage_type" == 'O' ]] && msg "OCS creates 3 copies of data chunks so you have ${storage_device_size} of GB effective space for PVC's" info || msg "Rook-Ceph creates 2 copies of data chunks so you have $((2*${storage_device_size})) GB effective space for PVC's" info
         while $(check_input "yn" "$custom_pvc")
         do
                 get_input "yn" "Would you like customize Guardium Insights PVC sizes (default) or use default settings?: " false
@@ -117,7 +116,7 @@ function get_gi_pvc_size() {
         done
         if [ $custom_pvc == 'Y' ]
         then
-                pvc_arr=("db2-data" "db2-meta" "db2-logs" "db2-temp" "mongo-data" "mongo-logs" "kafka" "zookeeper", "redis", "pgsql")
+                pvc_arr=("db2-data" "db2-meta" "db2-logs" "db2-temp" "mongo-data" "mongo-logs" "kafka" "zookeeper" "redis" "pgsql")
                 for pvc in ${pvc_arr[@]};do pvc_sizes $pvc;done
         else
                 local pvc_variables=("GI_DATA_STORAGE_SIZE" "GI_METADATA_STORAGE_SIZE" "GI_ARCHIVELOGS_STORAGE_SIZE" "GI_TEMPTS_STORAGE_SIZE" "GI_MONGO_DATA_STORAGE_SIZE" "GI_MONGO_METADATA_STORAGE_SIZE" "GI_KAFKA_STORAGE_SIZE" "GI_ZOOKEEPER_STORAGE_SIZE" "GI_REDIS_STORAGE_SIZE" "GI_POSTGRES_STORAGE_SIZE")
