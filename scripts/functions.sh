@@ -17,7 +17,7 @@ function pvc_sizes() {
                         global_var_val="$GI_DATA_STORAGE_SIZE"
                         ;;
                 "db2-meta")
-                        size_min=150
+                        size_min=30
                         m_desc="DB2 METADATA pvc - stores DB2 shared, temporary, tool files, installation proces will create 1 PVC"
                         m_ask="DB2 METADATA pvc, minimum size $size_min GB"
                         global_var="GI_METADATA_STORAGE_SIZE"
@@ -26,10 +26,10 @@ function pvc_sizes() {
                 "db2-logs")
                         size_min=150
                         [[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
-                        m_desc="DB2 ACTIVELOG pvc - stores DB2 transactional logs, installation process will create $v_aux1 PVC/PVC's, each instance contains different data"
-                        m_ask="DB2 ACTIVELOG pvc, minium size $size_min GB"
-                        global_var="GI_ACTIVELOGS_STORAGE_SIZE"
-                        global_var_val="$GI_ACTIVELOGS_STORAGE_SIZE"
+                        m_desc="DB2 ARCHIVELOG pvc - stores DB2 archive logs, installation process will create $v_aux1 PVC/PVC's, each instance contains different data"
+                        m_ask="DB2 ARCHIVELOG pvc, minium size $size_min GB"
+                        global_var="GI_ARCHIVELOGS_STORAGE_SIZE"
+                        global_var_val="$GI_ARCHIVELOGS_STORAGE_SIZE"
                         ;;
                 "mongo-data")
                         size_min=50
@@ -56,12 +56,28 @@ function pvc_sizes() {
                         global_var_val="$GI_KAFKA_STORAGE_SIZE"
                         ;;
                 "zookeeper")
-                        size_min=5
+                        size_min=2
                         [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
                         m_desc="ZOOKEEPER pvc - stores Kafka configuration and health data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
                         m_ask="ZOOKEEPER pvc, minium size $size_min GB"
                         global_var="GI_ZOOKEEPER_STORAGE_SIZE"
                         global_var_val="$GI_ZOOKEEPER_STORAGE_SIZE"
+                        ;;
+		"redis")
+                        size_min=5
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="REDIS pvc - stores Redis configuration and cached session data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_ask="REDIS pvc, minium size $size_min GB"
+                        global_var="GI_REDIS_STORAGE_SIZE"
+                        global_var_val="$GI_REDIS_STORAGE_SIZE"
+                        ;;
+		"pgsql")
+                        size_min=5
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="POSTGRES pvc - stores anomalies and analytics data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_ask="POSTGRES pvc, minium size $size_min GB"
+                        global_var="GI_POSTGRES_STORAGE_SIZE"
+                        global_var_val="$GI_POSTGRES_STORAGE_SIZE"
                         ;;
                 "*")
                         display_error "Wrong PVC type name"
@@ -92,10 +108,10 @@ function get_gi_pvc_size() {
         done
         if [ $custom_pvc == 'Y' ]
         then
-                pvc_arr=("db2-data" "db2-meta" "db2-logs" "mongo-data" "mongo-logs" "kafka" "zookeeper")
+                pvc_arr=("db2-data" "db2-meta" "db2-logs" "mongo-data" "mongo-logs" "kafka" "zookeeper", "redis", "pgsql")
                 for pvc in ${pvc_arr[@]};do pvc_sizes $pvc;done
         else
-                local pvc_variables=("GI_DATA_STORAGE_SIZE" "GI_METADATA_STORAGE_SIZE" "GI_ACTIVELOGS_STORAGE_SIZE" "GI_MONGO_DATA_STORAGE_SIZE" "GI_MONGO_METADATA_STORAGE_SIZE" "GI_KAFKA_STORAGE_SIZE" "GI_ZOOKEEPER_STORAGE_SIZE")
+                local pvc_variables=("GI_DATA_STORAGE_SIZE" "GI_METADATA_STORAGE_SIZE" "GI_ACTIVELOGS_STORAGE_SIZE" "GI_MONGO_DATA_STORAGE_SIZE" "GI_MONGO_METADATA_STORAGE_SIZE" "GI_KAFKA_STORAGE_SIZE" "GI_ZOOKEEPER_STORAGE_SIZE" "GI_REDIS_STORAGE_SIZE" "GI_POSTGRES_STORAGE_SIZE")
                 for pvc in ${pvc_variables[@]};do save_variable $pvc 0;done
         fi
 }
