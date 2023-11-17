@@ -472,8 +472,6 @@
       ansible.builtin.include_tasks: image_registry_setup.yaml
       when: skip_phase|int < 3
 
-    - meta: end_play
-
     - name: Install ICS
       ansible.builtin.include_tasks: ics_install.yaml
       when: skip_phase|int < 4 and install_ics == 'Y'
@@ -481,6 +479,8 @@
     - name: Install NFS client
       ansible.builtin.include_tasks: nfs_client_install.yaml
       when: skip_phase|int < 5 and install_gi == 'Y' and gi_nfs_backup == 'Y'
+
+    - meta: end_play
 
     - name: Install GI
       ansible.builtin.include_tasks: gi_install.yaml
