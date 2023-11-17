@@ -84,7 +84,7 @@
     when: storage_type == "O"
   when: true
 
-  - meta: end_play
+- meta: end_play
 
 - name: OCS deployment for OCP 4.8
   block:
