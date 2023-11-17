@@ -189,7 +189,7 @@
         stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
         gi_ds_size: "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
         gi_meta_size: "{{ lookup('env','GI_METADATA_STORAGE_SIZE') }}"
-        gi_logs_size: "{{ lookup('env','GI_ACTIVELOGS_STORAGE_SIZE') }}"
+        gi_logs_size: "{{ lookup('env','GI_ARCHIVELOGS_STORAGE_SIZE') }}"
         gi_mongo_size: "{{ lookup('env','GI_MONGO_DATA_STORAGE_SIZE') }}"
         gi_mongo_meta_size:  "{{ lookup('env','GI_MONGO_METADATA_STORAGE_SIZE') }}"
         gi_kafka_size: "{{ lookup('env','GI_KAFKA_STORAGE_SIZE') }}"
@@ -217,7 +217,7 @@
         - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
         - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
         - { name: "GI_METADATA_STORAGE_SIZE", value: "{{ gi_meta_size }}" }
-        - { name: "GI_ACTIVELOGS_STORAGE_SIZE", value: "{{ gi_logs_size }}" }
+        - { name: "GI_ARCHIVELOGS_STORAGE_SIZE", value: "{{ gi_logs_size }}" }
         - { name: "GI_MONGO_DATA_STORAGE_SIZE", value: "{{ gi_mongo_size }}" }
         - { name: "GI_MONGO_METADATA_STORAGE_SIZE", value: "{{ gi_mongo_meta_size }}" }
         - { name: "GI_KAFKA_STORAGE_SIZE", value: "{{ gi_kafka_size }}" }
