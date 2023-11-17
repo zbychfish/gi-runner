@@ -31,12 +31,14 @@ spec:
         namespace: ibm-common-services
         registry: common-service
     storageClassName: "{{ storage_class_rw_many }}"
-{% if gi_nfs_backup == 'Y' %}
     backupsupport:
+{% if gi_nfs_backup == 'Y' %}
       enabled: "true"
       name: "backup-nfs-pvc"  
       size: {{ (gi_ds_size|float * 1.2)|int }}Gi
       storageClassName: nfs-client
+{% else %}
+      enabled: "false"
 {% endif %}
   dependency-kafka:
     kafka:
