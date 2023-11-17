@@ -84,8 +84,6 @@
     when: storage_type == "O"
   when: true
 
-- meta: end_play
-
 - name: OCS deployment for OCP 4.8
   block:
   - name: Taint OCS nodes
@@ -101,7 +99,7 @@
       dest: "{{ temp_dir }}/olm/ocs-op.yaml"
     vars:
       operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
-      ocs_stable: "{{ '4.8' if ocp_major_release == '4.9' else ocp_major_release }}"
+      ocs_stable: "{{ ocp_major_release }}"
 
   - name: Deploy OCS operator
     ansible.builtin.shell:
@@ -119,6 +117,8 @@
     template:
       src: "ocs-cluster.j2"
       dest: "{{ temp_dir }}/olm/ocs-cluster.yaml"
+
+  - meta: end_play
 
   - name: Deploy OCS cluster
     ansible.builtin.shell:
