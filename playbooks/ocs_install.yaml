@@ -84,8 +84,6 @@
     when: storage_type == "O"
   when: true
 
-- meta: end_play
-
 - name: ODF deployment
   block:
   - name: Configure ODF operator file
@@ -143,7 +141,6 @@
   - name: Deploy Ceph toolbox
     ansible.builtin.shell:
      cmd: "oc patch OCSInitialization ocsinit -n openshift-storage --type json --patch  '[{ \"op\": \"replace\", \"path\": \"/spec/enableCephTools\", \"value\": true }]'"
-  when: ocp_release.split('.')[1]|int > 8 
 
 - name: Configure OCS default storage class
   ansible.builtin.shell:
