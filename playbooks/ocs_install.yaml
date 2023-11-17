@@ -84,60 +84,9 @@
     when: storage_type == "O"
   when: true
 
-- name: OCS deployment for OCP 4.8
-  block:
-  - name: Taint OCS nodes
-    ansible.builtin.shell:
-      cmd: "oc adm taint node {{ item }}.{{ domain }} node.ocs.openshift.io/storage=\"true\":NoSchedule"
-    with_items: "{{ ocs_name|list }}"
-    when: is_master_only == 'N' and is_ocs_tainted == 'Y'
-    ignore_errors: yes
+- meta: end_play
 
-  - name: Configure OCS operator file
-    template:
-      src: "ocs-op.j2"
-      dest: "{{ temp_dir }}/olm/ocs-op.yaml"
-    vars:
-      operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
-      ocs_stable: "{{ ocp_major_release }}"
-
-  - name: Deploy OCS operator
-    ansible.builtin.shell:
-      cmd: "oc apply -f {{ temp_dir }}/olm/ocs-op.yaml"
-
-  - name: Wait for OCS operator
-    ansible.builtin.shell:
-      cmd: "oc get csv -n openshift-storage --no-headers -o custom-columns=STATUS:.status.phase"
-    register: ocs_operator_status
-    until: "ocs_operator_status.stdout == \"Succeeded\""
-    retries: 30
-    delay: 10
-
-  - name: Configure OCS cluster deployment file
-    template:
-      src: "ocs-cluster.j2"
-      dest: "{{ temp_dir }}/olm/ocs-cluster.yaml"
-
-  - meta: end_play
-
-  - name: Deploy OCS cluster
-    ansible.builtin.shell:
-      cmd: "oc apply -f {{ temp_dir }}/olm/ocs-cluster.yaml"
-
-  - name: Wait for OCS cluster deployment
-    ansible.builtin.shell:
-      cmd: "oc get pvc -n openshift-storage --no-headers | grep localblock-sc | grep Bound | wc -l"
-    register: ocs_status
-    until: "ocs_status.stdout|int >= 3"
-    retries: 100
-    delay: 15
-
-  - name: Wait - OCS installation finalization
-    ansible.builtin.pause:
-      minutes: 5
-  when: ocp_release.split('.')[1]|int == 8
-
-- name: ODF deploymenbt for OCP 4.9+
+- name: ODF deployment
   block:
   - name: Configure ODF operator file
     template:
