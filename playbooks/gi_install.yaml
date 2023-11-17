@@ -89,7 +89,8 @@
   template:
     src: "{{ 'gi.j2' if gi_version_index|int > 0 else 'gi-3210.j2' }}"
     dest: "{{ temp_dir }}/gi_arch/gi.yaml"
-  when: false
+
+- meta: end_ play
 
 - name: Deploy GI
   shell:
