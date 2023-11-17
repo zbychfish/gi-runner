@@ -70,8 +70,6 @@
       temp_nodes: "{{ master_name|list }}"
     when: is_master_only == 'Y'
 
-  - meta: end_play
-
   - name: Deploy local storage
     ansible.builtin.shell:
       cmd: "oc apply -f {{ temp_dir }}/olm/local-storage-vol.yaml"
@@ -85,6 +83,8 @@
     delay: 10
     when: storage_type == "O"
   when: true
+
+  - meta: end_play
 
 - name: OCS deployment for OCP 4.8
   block:
