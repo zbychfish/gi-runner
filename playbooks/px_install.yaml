@@ -48,5 +48,3 @@
       - px_sc_db2_fs.yaml
       - px_sc_db2_block.yaml
 
-  - meta: end_play
-
