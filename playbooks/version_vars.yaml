@@ -5,8 +5,8 @@ matchbox_version: "v0.10.0"
 rook_operator_version: "v1.9.13"
 rook_ceph_version: "v16.2.10"
 cp4s_channel: "1.10"
-ics_versions: [ "3.19.17" ]
-ics_cases: [ "1.15.17" ]
+ics_versions: [ "3.19.18" ]
+ics_cases: [ "1.15.18" ]
 ics_operator_namespace: "common-service"
 ics_case_name: "ibm-cp-common-services"
 ics_case_inventory_setup: "ibmCommonServiceOperatorSetup"
