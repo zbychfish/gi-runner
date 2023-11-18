@@ -93,7 +93,6 @@
 - name: Deploy GI
   shell:
     cmd: "oc apply -f {{ temp_dir }}/gi_arch/gi.yaml"
-  when: false
 
 - name: Wait for DB2 deployment
   shell:
