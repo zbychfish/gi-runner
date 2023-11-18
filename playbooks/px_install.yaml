@@ -44,7 +44,7 @@
       - { cmd: "oc patch storageclass px-csi-replicated -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
 
   - name: Add storage classes for DB2
-    ansible.builtin.shell
+    ansible.builtin.shell:
       cmd: "oc apply -f ../scripts/{{ item }}"
     with_items:
       - px_sc_db2_fs.yaml
