@@ -3,6 +3,8 @@
       src: "px-op.j2"
       dest: "{{ temp_dir }}/olm/px-op.yaml"
 
+  - meta: end_play
+
   - name: Deploy PX operator
     ansible.builtin.shell:
       cmd: "oc apply -f {{ temp_dir }}/olm/px-op.yaml"
