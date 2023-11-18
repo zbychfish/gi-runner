@@ -1,8 +1,7 @@
 #Global variables
 declare -a gi_versions=(3.2.10 3.2.11)
-gi_32_threshold=3
-declare -a ics_versions=(3.19.17)
-declare -a ics_cases=(ibm-cp-common-services-1.15.17.tgz)
+declare -a ics_versions=(3.19.18)
+declare -a ics_cases=(ibm-cp-common-services-1.15.18.tgz)
 declare -a gi_cases=(ibm-guardium-insights-2.2.10.tgz ibm-guardium-insights-2.2.11.tgz)
 declare -a bundled_in_gi_ics_versions=(0 0)
 declare -a ocp_versions=(0 1)
