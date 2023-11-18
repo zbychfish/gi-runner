@@ -1,3 +1,20 @@
+function get_px_options() {
+        msg "Gather Portworx Essential Parameters" task
+        msg "Portworx will use all disks available on nodes specified by path /dev/${storage_device}" info
+        msg "Please insert your Essential Entitlement ID, it must be unlinked to be usable for deploying new Portwork Storage Server instance (https://central.portworx.com/profile)" info
+        while $(check_input "uuid" ${px_id})
+        do
+                if [[ ! -z "$GI_PX_ID" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_PX_ID] or insert Portworx Essential Entitlement ID: " true "$GI_PX_ID"
+                else
+                        get_input "txt" "Insert Portworx Essential Entitlement ID: " false
+                fi
+                px_id=${input_variable}
+        done
+        save_variable GI_PX_ID $px_id
+}
+
 function pvc_sizes() {
         local global_var
         local global_var_val
@@ -1580,6 +1597,9 @@ function check_input() {
                                 done
                                 echo $result
                         fi
+                        ;;
+		"uuid")
+                        [[ "$2" =~ ^\{?[A-Z0-9a-z]{8}-[A-Z0-9a-z]{4}-[A-Z0-9a-z]{4}-[A-Z0-9a-z]{4}-[A-Z0-9a-z]{12}\}?$ ]] && echo false || echo true
                         ;;
 		"yn")
                         [[ $2 == 'N' || $2 == 'Y' ]] && echo false || echo true
