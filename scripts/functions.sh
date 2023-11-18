@@ -424,7 +424,7 @@ function get_credentials() {
                 then
                         get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCADMIN] or insert OCP admin username: " true "$GI_OCADMIN"
                 else
-                        get_input "txt" "Insert OCP admin username (default - ocadmin): " true "ocpadmin"
+                        get_input "txt" "Insert OCP admin username (default - ocpadmin): " true "ocpadmin"
                 fi
                 ocp_admin="${input_variable}"
         done
