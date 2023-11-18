@@ -23,8 +23,6 @@
     ansible.builtin.shell:
       cmd: "kubectl -n kube-system create secret generic px-essential --from-literal=px-essen-user-id={{ px_id }} --from-literal=px-osb-endpoint='https://pxessentials.portworx.com/osb/billing/v1/register' || true"
 
-  - meta: end_play
-
   - name: Deploy PX cluster
     ansible.builtin.shell:
       cmd: "oc apply -f {{ temp_dir }}/olm/px-cluster.yaml"
@@ -49,3 +47,6 @@
     with_items:
       - px_sc_db2_fs.yaml
       - px_sc_db2_block.yaml
+
+  - meta: end_play
+
