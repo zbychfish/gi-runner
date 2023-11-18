@@ -35,7 +35,7 @@
     retries: 100
     delay: 15
 
-  - name: Configure OCS default storage class
+  - name: Configure PX default storage class
     ansible.builtin.shell:
       cmd: "{{ item.cmd }}"
     with_items:
