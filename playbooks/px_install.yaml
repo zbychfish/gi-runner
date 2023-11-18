@@ -3,8 +3,6 @@
       src: "px-op.j2"
       dest: "{{ temp_dir }}/olm/px-op.yaml"
 
-  - meta: end_play
-
   - name: Deploy PX operator
     ansible.builtin.shell:
       cmd: "oc apply -f {{ temp_dir }}/olm/px-op.yaml"
@@ -24,6 +22,8 @@
   - name: PX user credential
     ansible.builtin.shell:
       cmd: "kubectl -n kube-system create secret generic px-essential --from-literal=px-essen-user-id={{ px_id }} --from-literal=px-osb-endpoint='https://pxessentials.portworx.com/osb/billing/v1/register' || true"
+
+  - meta: end_play
 
   - name: Deploy PX cluster
     ansible.builtin.shell:
