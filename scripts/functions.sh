@@ -526,10 +526,6 @@ function get_inter_cluster_info() {
         save_variable GI_OCP_CIDR_MASK "$ocp_cidr_mask"
 }
 
-function get_px_options() {
-	local test=""
-}
-
 function get_cluster_storage_info() {
         msg "Cluster storage information" task
         msg "There is assumption that all storage cluster node use this same device specification for storage disk" info
