@@ -390,7 +390,7 @@
   with_items:
     - { src: "/usr/share/ipxe/undionly.kpxe", dest: "/var/lib/tftp" }
     - { src: "/usr/share/ipxe/ipxe-i386.efi", dest: "/var/lib/tftp" }
-    - { src: "/usr/share/ipxe/ipxe-x86_64.efi", dest: "/var/lib/tftp" }
+    - { src: "/usr/share/ipxe/ipxe-x86_64.efi", dest: "/var/lib/tftp/ipxe.efi" }
 
 - name: Matchbox bootstrap group json
   ansible.builtin.template:
