@@ -1606,6 +1606,7 @@ function check_input() {
 }
 
 function get_network_installation_type() {
+	use_air_gap='N'
         #while $(check_input "yn" ${use_air_gap})
         #do
         #        get_input "yn" "Is your environment air-gapped? - " true
