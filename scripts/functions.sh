@@ -680,7 +680,7 @@ function get_service_assignment() {
                 IFS=',' read -r -a worker_arr <<< "$worker_name"
                 if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) ]] || [[ ( $db2_tainted == 'N' && "$gi_size" == "values-small" && ${#worker_arr[@]} -gt 5 ) ]] || [[ ( $db2_tainted == 'N' && "$gi_size" == "values-dev" && ${#worker_arr[@]} -gt 4 ) ]]
                 then
-                        msg "You can force to deploy GI on strictly defined node list" 8
+                        msg "You can force to deploy GI on strictly defined node list" info
                         while $(check_input "yn" $gi_on_list false)
                         do
                                 get_input "yn" "Would you like to install GI on strictly specified nodes?: " true
@@ -1110,7 +1110,7 @@ function get_software_architecture() {
         fi
         if [[ $gi_install == "Y" && $is_master_only == 'N' ]]
         then
-                msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend" 8
+                msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend" info
                 while $(check_input "yn" ${db2_tainted})
                 do
                         get_input "yn" "Should be DB2 tainted? " true
@@ -1158,7 +1158,7 @@ function select_gi_version() {
                 [[ "$nd_ics_install" == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
         else
                 display_default_ics
-                msg "In case of air-gapped installation you must install the bundled ICS version" 8
+                msg "In case of air-gapped installation you must install the bundled ICS version" info
         fi
 }
 
