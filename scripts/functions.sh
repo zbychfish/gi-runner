@@ -1,3 +1,19 @@
+function get_pull_secret() {
+        msg "You must provide the RedHat account pullSecret to get access to image registries" info
+        local is_ok=true
+        while $is_ok
+        do
+                msg "Push <ENTER> to accept the previous choice" info
+                get_input "txt" "Insert RedHat pull secret: " false
+                if [ "${input_variable}" ]
+                then
+                        echo ${input_variable}|{ jq .auths 2>/dev/null 1>/dev/null ;}
+                        [[ $? -eq 0 ]] && is_ok=false
+                        rhn_secret="${input_variable}"
+                fi
+        done
+}
+
 function get_ocp_version_prescript() {
         while $(check_input "list" ${ocp_major_version} ${#ocp_major_versions[@]})
         do
