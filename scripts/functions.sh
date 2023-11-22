@@ -1,5 +1,5 @@
 function get_ocp_version_prescript() {
-        while $(check_input ${ocp_major_version} "list" ${#ocp_major_versions[@]})
+        while $(check_input "list" ${ocp_major_version} ${#ocp_major_versions[@]})
         do
                 get_input "list" "Select OCP major version: " "${ocp_major_versions[@]}"
                 ocp_major_version=$input_variable
