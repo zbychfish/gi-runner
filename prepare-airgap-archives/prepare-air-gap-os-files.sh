@@ -22,7 +22,7 @@ dnf -qy localinstall * --allowerasing
 test $(check_exit_code $?) || (msg "Cannot update system" info; exit 1)
 cd ..
 msg "Downloading additional OS packages ..." task
-for package in $linux_soft
+for package in ${linux_soft[@]}
 do
         dnf download -qy --downloaddir os-packages $package --resolve
 	test $(check_exit_code $?) || (msg "Cannot download $package package" info; exit 1)
@@ -32,14 +32,14 @@ msg "Installing missing packages ..." task
 dnf -qy install python3 podman wget python3-pip
 test $(check_exit_code $?) || (msg "Cannot install support tools" info; exit 1)
 msg "Downloading python packages for Ansible extensions ..." task
-for package in $python_soft
+for package in ${python_soft[@]}
 do
         python3 -m pip download --only-binary=:all: $package -d ansible > /dev/null 2>&1
 	test $(check_exit_code $?) || (msg "Cannot download Python module - $package" info; exit 1)
 	msg "Downloaded: $package" info
 done
 msg "Downloading Ansible Galaxy extensions ..." task
-for galaxy_package in $galaxy_soft
+for galaxy_package in ${galaxy_soft[@]}
 do
 	wget -P galaxy https://galaxy.ansible.com/download/${galaxy_package}.tar.gz
 	test $(check_exit_code $?) || (msg "Cannot download Ansible galaxy package ${galaxy_package}" info; exit 1)
