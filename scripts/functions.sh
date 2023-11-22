@@ -337,15 +337,13 @@ function software_installation_on_online() {
         msg "Installing OS updates, takes a few minutes" task
         dnf -qy update
         msg "Installing OS packages" task
-        local soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bootimgs" "chrony" "dnsmasq" "unzip" "wget" "httpd-tools" "policycoreutils-python-utils" "python3-ldap" "openldap-servers" "openldap-clients" "pip" "skopeo" "nfs-utils" "openssl")
-        for package in "${soft[@]}"
+        for package in "${linux_soft[@]}"
         do
                 msg "- installing $package ..." info
                 dnf -qy install $package &>/dev/null
                 [[ $? -ne 0 ]] && display_error "Cannot install $package"
         done
         msg "Installing Python packages" task
-        local python_soft=("passlib" "dnspython" "beautifulsoup4" "argparse" "jmespath")
         for package in "${python_soft[@]}"
         do
                 msg "- installing $package ..." info
@@ -356,8 +354,7 @@ function software_installation_on_online() {
         mkdir -p /etc/ansible
         [[ $use_proxy == 'P' ]] && echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts || echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
         msg "Installing Ansible galaxy packages" task
-        local ansible_galaxy=("community-general-${galaxy_community_general}" "ansible-utils-${galaxy_ansible_utils}" "community-crypto-${galaxy_community_crypto}" "containers-podman-${galaxy_containers_podman}" )
-        for package in "${ansible_galaxy[@]}"
+        for package in "${galaxy_soft[@]}"
         do
                 msg "- installing $package ..." info
                 wget https://galaxy.ansible.com/download/${package}.tar.gz

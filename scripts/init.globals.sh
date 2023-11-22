@@ -26,4 +26,6 @@ declare -a cp4s_cases=(ibm-cp-security-1.0.28.tgz)
 GI_HOME=`pwd`
 GI_TEMP=$GI_HOME/gi-temp
 file=$GI_HOME/variables.sh
-
+linux_soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bootimgs" "chrony" "dnsmasq" "unzip" "wget" "httpd-tools" "policycoreutils-python-utils" "python3-ldap" "openldap-servers" "openldap-clients" "pip" "skopeo" "nfs-utils" "openssl")
+python_soft=("passlib" "dnspython" "beautifulsoup4" "argparse" "jmespath")
+galaxy_soft=("community-general-${galaxy_community_general}" "ansible-utils-${galaxy_ansible_utils}" "community-crypto-${galaxy_community_crypto}" "containers-podman-${galaxy_containers_podman}" )
