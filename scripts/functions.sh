@@ -4,6 +4,7 @@ function get_mail() {
         do
                 get_input "txt" "$1: " false
                 curr_value="$input_variable"
+		echo ${curr_value}
         done
 }
 
