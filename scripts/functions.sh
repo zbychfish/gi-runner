@@ -1,7 +1,7 @@
 function setup_local_registry() {
         msg "*** Setup Image Registry ***" task
-        msg "Installing podman, httpd-tools jq openssl ..." task
-        dnf -qy install podman httpd-tools openssl jq
+        msg "Installing podman, httpd-tools jq openssl policycoreutils-python-utils ..." task
+        dnf -qy install podman httpd-tools openssl jq policycoreutils-python-utils
         test $(check_exit_code $?) || (msg "Cannot install httpd-tools" info; exit 1)
         msg "Setup mirror image registry ..." task
         podman stop bastion-registry -i
