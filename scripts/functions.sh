@@ -1573,6 +1573,7 @@ function check_input() {
                         fi
                         ;;
 		"mail")
+			echo "here1"
                         if [[ "$1" && "$1" =~ ^.*@.*$ ]]
                         then
 				echo "here"
