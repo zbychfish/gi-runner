@@ -1,7 +1,7 @@
 function setup_local_registry() {
         msg "*** Setup Image Registry ***" task
-        msg "Installing podman, httpd-tools jq ..." task
-        dnf -qy install podman httpd-tools
+        msg "Installing podman, httpd-tools jq openssl ..." task
+        dnf -qy install podman httpd-tools openssl jq
         test $(check_exit_code $?) || (msg "Cannot install httpd-tools" info; exit 1)
         msg "Setup mirror image registry ..." task
         podman stop bastion-registry -i
@@ -42,9 +42,7 @@ function get_pull_secret() {
                 get_input "txt" "Insert RedHat pull secret: " false
                 if [ "${input_variable}" ]
                 then
-                        #echo ${input_variable}|{ jq .auths 2>/dev/null 1>/dev/null ;}
                         jq .auths <<< ${input_variable} && is_ok=false || is_ok=true
-                        #[[ $? -eq 0 ]] && is_ok=false
                         rhn_secret="${input_variable}"
                 fi
         done
