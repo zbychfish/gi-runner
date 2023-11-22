@@ -1,3 +1,23 @@
+function get_pre_scripts_variables() {
+        air_dir=$GI_HOME/air-gap
+        host_fqdn=$( hostname --long )
+}
+
+function pre_scripts_init() {
+        mkdir -p $air_dir
+        rm -rf $GI_TEMP
+        rm -rf /opt/registry/data
+        mkdir -p $GI_TEMP
+        dnf -qy install jq
+}
+
+function pre_scripts_init_no_jq() {
+        mkdir -p $air_dir
+        rm -rf $GI_TEMP
+        rm -rf /opt/registry/data
+        mkdir -p $GI_TEMP
+}
+
 function get_px_options() {
         msg "Gather Portworx Essential Parameters" task
         msg "Portworx will use all disks available on nodes specified by path /dev/${storage_device}" info
