@@ -43,8 +43,8 @@ function get_pull_secret() {
                 if [ "${input_variable}" ]
                 then
                         #echo ${input_variable}|{ jq .auths 2>/dev/null 1>/dev/null ;}
-                        jq .auths <<< ${input_variable}
-                        [[ $? -eq 0 ]] && is_ok=false
+                        jq .auths <<< ${input_variable} && is_ok=false || is_ok=true
+                        #[[ $? -eq 0 ]] && is_ok=false
                         rhn_secret="${input_variable}"
                 fi
         done
