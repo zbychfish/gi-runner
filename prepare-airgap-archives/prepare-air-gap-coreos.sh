@@ -9,6 +9,10 @@ get_pre_scripts_variables
 pre_scripts_init
 declare -a redhat-registries=("cloud.openshift.com" "quay.io" "registry.connect.redhat.com" "registry.redhat.io")
 jq -n '{auths: {}}' > $GI_TEMP/auth.json
+for registry in ${redhat-registries[@]}
+do
+	cat $GI_TEMP/auth.json | jq '.auths += {"$registry": {"auth": 0, "mail": 1}}'
+done
 exit 1
 msg "You must provide the exact version of OpenShift for its images mirror process" info
 get_ocp_version_prescript
