@@ -18,7 +18,7 @@ dnf update -qy --downloadonly --downloaddir os-updates
 test $(check_exit_code $?) || (msg "Cannot download update packages" info; exit 1)
 msg "Update system ..." task
 cd os-updates
-dnf -qy localinstall * --allowerasing
+dnf -qy localinstall * --allowerasing || msg "System is up to date" info
 test $(check_exit_code $?) || (msg "Cannot update system" info; exit 1)
 cd ..
 msg "Downloading additional OS packages ..." task
