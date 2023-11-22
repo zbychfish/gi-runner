@@ -1573,7 +1573,7 @@ function check_input() {
                         fi
                         ;;
 		"mail")
-                        if [[ "$2" && "$2" =~ ^.*@.*$ ]]
+                        if [[ "$2" =~ ^.*@.*$ ]]
                         then
                                 local m_account=$(echo "$1"|awk -F '@' '{print $1}')
                                 local m_domain=$(echo "$1"|awk -F '@' '{print $2}')
