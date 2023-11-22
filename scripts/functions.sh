@@ -4,7 +4,6 @@ function get_mail() {
         do
                 get_input "txt" "$1: " false
                 curr_value="$input_variable"
-		echo ${curr_value}
         done
 }
 
@@ -1574,9 +1573,8 @@ function check_input() {
                         fi
                         ;;
 		"mail")
-                        if [[ "$1" =~ ^.*@.*$ ]]
+                        if [[ "$2" && "$2" =~ ^.*@.*$ ]]
                         then
-				echo "here"
                                 local m_account=$(echo "$1"|awk -F '@' '{print $1}')
                                 local m_domain=$(echo "$1"|awk -F '@' '{print $2}')
                                 ! $(check_input "txt" "$m_account" "alphanumeric_max64_chars") && ! $(check_input "domain" "$m_domain") && echo false || echo true
