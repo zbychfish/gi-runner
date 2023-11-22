@@ -1573,8 +1573,7 @@ function check_input() {
                         fi
                         ;;
 		"mail")
-			echo "here1"
-                        if [[ "$1" && "$1" =~ ^.*@.*$ ]]
+                        if [[ "$1" =~ ^.*@.*$ ]]
                         then
 				echo "here"
                                 local m_account=$(echo "$1"|awk -F '@' '{print $1}')
