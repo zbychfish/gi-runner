@@ -1,3 +1,14 @@
+function check_exit_code() {
+        if [[ $1 -ne 0 ]]
+        then
+                msg $2 info
+                msg "Please check the reason of problem and restart script" info
+                echo false
+        else
+                echo true
+        fi
+}
+
 function get_pre_scripts_variables() {
         air_dir=$GI_HOME/air-gap
         host_fqdn=$( hostname --long )
