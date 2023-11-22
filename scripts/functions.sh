@@ -1575,6 +1575,7 @@ function check_input() {
 		"mail")
                         if [[ "$1" && "$1" =~ ^.*@.*$ ]]
                         then
+				echo "here"
                                 local m_account=$(echo "$1"|awk -F '@' '{print $1}')
                                 local m_domain=$(echo "$1"|awk -F '@' '{print $2}')
                                 ! $(check_input "txt" "$m_account" "alphanumeric_max64_chars") && ! $(check_input "domain" "$m_domain") && echo false || echo true
