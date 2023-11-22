@@ -11,7 +11,7 @@ function get_ocp_version_prescript() {
                 msg "Insert minor version of OpenShift ${ocp_major_versions[${ocp_major_version}]}.x" info
                 msg "It must be existing version - you can check the latest stable version using this URL: https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-${ocp_major_versions[${ocp_major_version}]}" info
                 ocp_release_minor=${ocp_release_minor:-Z}
-                while $(check_input ${ocp_release_minor} "int" 0 1000)
+                while $(check_input "int" ${ocp_release_minor} 0 1000)
                 do
                         get_input "int" "Insert minor version of OCP ${ocp_major_versions[${ocp_major_version}]} to install (must be existing one): " false
                         ocp_release_minor=${input_variable}
