@@ -39,11 +39,11 @@ function get_pull_secret() {
         local is_ok=true
         while $is_ok
         do
-                msg "Push <ENTER> to accept the previous choice" info
                 get_input "txt" "Insert RedHat pull secret: " false
                 if [ "${input_variable}" ]
                 then
-                        echo ${input_variable}|{ jq .auths 2>/dev/null 1>/dev/null ;}
+                        #echo ${input_variable}|{ jq .auths 2>/dev/null 1>/dev/null ;}
+                        echo ${input_variable}|{ jq .auths ;}
                         [[ $? -eq 0 ]] && is_ok=false
                         rhn_secret="${input_variable}"
                 fi
