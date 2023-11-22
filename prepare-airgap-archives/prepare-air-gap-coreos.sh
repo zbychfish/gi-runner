@@ -18,7 +18,8 @@ echo '{"auths": {}}' | jq '.' > $GI_TEMP/auth.json
 for registry in ${redhat_registries[@]}
 do
 	msg "Adding registry $registry to authentication file" info
-	cat $GI_TEMP/auth.json | jq --arg jq_mail $mail --arg jq_registry $registry '.auths += {($jq_registry): {"auth": 0, "mail": ($jq_mail)}}' > $GI_TEMP/auth.json
+	cat $GI_TEMP/auth.json | jq --arg jq_mail $mail --arg jq_registry $registry '.auths += {($jq_registry): {"auth": 0, "mail": ($jq_mail)}}' > $GI_TEMP/auth.json.temp
+	mv -f $GI_TEMP/auth.json.temp $GI_TEMP/auth.json
 done
 exit 1
 msg "Setup mirror image registry ..." task
