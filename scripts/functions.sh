@@ -2,6 +2,7 @@ function install_ocp_tools() {
         msg "Installing OCP tools ..." task
         tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
         tar xf $GI_TEMP/oc-mirror.tar.gz -C /usr/local/bin &>/dev/null
+	chmod +x /usr/local/bin/oc-mirror
 }
 
 function download_file() {
