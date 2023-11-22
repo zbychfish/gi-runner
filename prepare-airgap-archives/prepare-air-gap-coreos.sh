@@ -7,19 +7,20 @@ source scripts/functions.sh
 
 get_pre_scripts_variables
 pre_scripts_init
-declare -a redhat-registries=("cloud.openshift.com" "quay.io" "registry.connect.redhat.com" "registry.redhat.io")
-jq -n '{auths: {}}' > $GI_TEMP/auth.json
-for registry in ${redhat-registries[@]}
-do
-	cat $GI_TEMP/auth.json | jq '.auths += {"$registry": {"auth": 0, "mail": 1}}'
-done
-exit 1
 msg "You must provide the exact version of OpenShift for its images mirror process" info
 get_ocp_version_prescript
 get_pull_secret
 echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
 get_mail "Provide e-mail address associated with just inserted RH pullSecret"
 mail=$curr_value
+declare -a redhat_registries=("cloud.openshift.com" "quay.io" "registry.connect.redhat.com" "registry.redhat.io")
+echo '{"auths": {}}' | jq '.' > $GI_TEMP/auth.json
+for registry in ${redhat_registries[@]}
+do
+	msg "Adding registry $registry to authentication file" info
+        cat $GI_TEMP/auth.json | jq --arg jq_mail $mail --arg jq_registry $registry '.auths += {($jq_registry): {"auth": 0, "mail": $mail}}'
+done
+exit 1
 msg "Setup mirror image registry ..." task
 setup_local_registry
 msg "Save image registry image ..." task
