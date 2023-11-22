@@ -1,3 +1,12 @@
+function get_mail() {
+        curr_value=""
+        while $(check_input "mail" "${curr_value}")
+        do
+                get_input "txt" "$1: " false
+                curr_value="$input_variable"
+        done
+}
+
 function get_pull_secret() {
         msg "You must provide the RedHat account pullSecret to get access to image registries" info
         local is_ok=true
@@ -1559,6 +1568,16 @@ function check_input() {
                                         $(check_input "mac" $mac_value) && is_wrong=true
                                 done
                                 echo $is_wrong
+                        else
+                                echo true
+                        fi
+                        ;;
+		"mail")
+                        if [[ "$1" && "$1" =~ ^.*@.*$ ]]
+                        then
+                                local m_account=$(echo "$1"|awk -F '@' '{print $1}')
+                                local m_domain=$(echo "$1"|awk -F '@' '{print $2}')
+                                ! $(check_input "txt" "$m_account" "alphanumeric_max64_chars") && ! $(check_input "domain" "$m_domain") && echo false || echo true
                         else
                                 echo true
                         fi
