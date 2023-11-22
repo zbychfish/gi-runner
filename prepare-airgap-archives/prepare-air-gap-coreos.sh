@@ -3,21 +3,21 @@ set -e
 trap "exit 1" ERR
 
 source scripts/init.globals.sh
-source scripts/shared_functions.sh
+source scripts/functions.sh
 
 get_pre_scripts_variables
 pre_scripts_init
-msg "You must provide the exact version of OpenShift for its images mirror process" true
+msg "You must provide the exact version of OpenShift for its images mirror process" info
 get_ocp_version_prescript
 get_pull_secret
 echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
-get_mail "Provide e-mail address associated with just inserted RH pulSecret"
+get_mail "Provide e-mail address associated with just inserted RH pullSecret"
 mail=$curr_value
-msg "Setup mirror image registry ..." true
+msg "Setup mirror image registry ..." task
 setup_local_registry
-msg "Save image registry image ..." true
+msg "Save image registry image ..." task
 podman save -o $GI_TEMP/oc-registry.tar docker.io/library/registry:${registry_version} &>/dev/null
-msg "Download OCP, support tools and CoreOS images ..." true
+msg "Download OCP, support tools and CoreOS images ..." task
 cd $GI_TEMP
 declare -a ocp_files=("https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-client-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-install-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-initramfs.x86_64.img" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-kernel-x86_64" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-rootfs.x86_64.img" "https://github.com/poseidon/matchbox/releases/download/v${matchbox_version}/matchbox-v${matchbox_version}-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/opm-linux.tar.gz")
 for file in ${ocp_files[@]}
@@ -25,7 +25,7 @@ do
 	download_file $file
 done
 install_ocp_tools
-msg "Mirroring OCP ${ocp_release} images ..."
+msg "Mirroring OCP ${ocp_release} images ..." task
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
 jq ".auths += $AUTHSTRING" < $GI_TEMP/pull-secret.txt > $GI_TEMP/pull-secret-update.txt
