@@ -1,3 +1,15 @@
+function install_ocp_tools() {
+        msg "Installing OCP tools ..." task
+        tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
+        tar xf $GI_TEMP/oc-mirror.tar.gz -C /usr/local/bin &>/dev/null
+}
+
+function download_file() {
+        msg "Downloading $1 ..." info
+        wget "$1" &>/dev/null
+        test $(check_exit_code $?) || (msg "Cannot download $file" true; exit 1)
+}
+
 function setup_local_registry() {
         msg "*** Setup Image Registry ***" task
         msg "Installing podman, httpd-tools jq openssl policycoreutils-python-utils ..." task
