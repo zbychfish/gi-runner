@@ -15,7 +15,6 @@ echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
 #get_mail "Provide e-mail address associated with just inserted RH pullSecret"
 #mail=$curr_value
 #msg "Setup mirror image registry ..." task
-#setup_local_registry
 #msg "Save image registry image ..." task
 #podman save -o $GI_TEMP/oc-registry.tar docker.io/library/registry:${registry_version} &>/dev/null
 msg "Download OCP, support tools and CoreOS images ..." task
@@ -44,17 +43,15 @@ sed -i "s#.gitemp.#${GI_TEMP}#" $GI_TEMP/ocp-images.yaml
 sed -i "s/minVersion/minVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s/maxVersion/maxVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml file://$GI_TEMP/images
-exit 1
-oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_release}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_release}-${ARCHITECTURE}
-test $(check_exit_code $?) || msg "Cannot mirror OCP images" true
-podman stop bastion-registry
-cd /opt/registry
-tar cf $air_dir/coreos-registry-${ocp_release}.tar data
+test $(check_exit_code $?) && msg "OCP images mirrored to files" info || msg "Cannot mirror OCP images" info
+mkdir -p ${air_dir}/${ocp_release}
+mv $GI_TEMP/images/mirror_seq1* ${air_dir}/${ocp_release}
 cd $GI_TEMP
-tar -rf $air_dir/coreos-registry-${ocp_release}.tar oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz "matchbox-v${matchbox_version}-linux-amd64.tar.gz"
+tar -rf ${air_dir}/ocp-tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz
+exit 1
 rm -rf $GI_TEMP
-podman rm bastion-registry &>/dev/null
-podman rmi --all &>/dev/null
-rm -rf /opt/registry/data
-rm -f $GI_TEMP/pull-secret.txt
-msg "CoreOS images prepared - copy file ${air_dir}/coreos-registry-${ocp_release}.tar to air-gapped bastion machine" true
+#podman rm bastion-registry &>/dev/null
+#podman rmi --all &>/dev/null
+#rm -rf /opt/registry/data
+#rm -f $GI_TEMP/pull-secret.txt
+msg "Openshift images, installation files and tools prepared - copy directory ${air_dir}/${ocp_release} to air-gapped bastion machine to download one" info
