@@ -368,7 +368,7 @@
   with_items: "{{ rhcos_images.results }}"
   when: item.stat.exists == False and internet_type != 'A'
 
-- name: Copy RHCOS images to matchbox assets
+- name: Copy RHCOS images to matchbox assets for online
   ansible.builtin.file:
     src: "{{ temp_dir }}/coreos/{{ item.name }}"
     dest: "/var/lib/matchbox/assets/{{ item.name }}"
@@ -379,6 +379,19 @@
     - { name: "rhcos-live-initramfs.x86_64.img" }
     - { name: "rhcos-live-kernel-x86_64" }
     - { name: "rhcos-live-rootfs.x86_64.img" }
+  when: internet_type != 'A'
+
+- name: Copy RHCOS images to matchbox assets for offline
+  ansible.builtin.copy:
+    src: "{{ temp_dir }}/coreos/{{ item.name }}"
+    dest: "/var/lib/matchbox/assets/{{ item.name }}"
+    owner: matchbox
+    group: matchbox
+  with_items:
+    - { name: "rhcos-live-initramfs.x86_64.img" }
+    - { name: "rhcos-live-kernel-x86_64" }
+    - { name: "rhcos-live-rootfs.x86_64.img" }
+  when: internet_type == 'A'
 
 - name: prepare TFTP for iPXE
   ansible.builtin.copy:
@@ -693,12 +706,33 @@
   with_items:
     - { src: "openshift-client-linux.tar.gz" }
     - { src: "openshift-install-linux.tar.gz" }
+
+- name: Unpack OCP tools for offline
+  ansible.builtin.shell:
+    cmd: "tar xf {{ temp_dir }}/coreos/{{ item.src }} -C /usr/local/bin"
+  with_items:
+    - { src: "oc-mirror.tar.gz" }
+  when: internet_type == 'A'
+
+- name: Correct file settings for oc-mirror
+  ansible.builtin.file:
+    path: /usr/local/bin/oc-mirror
+    mode: 0755
+    owner: root
+    group: root
+  when: internet_type == 'A'
+
+- name: Unpack OCP tools for Guardium Insights
+  ansible.builtin.shell:
+    cmd: "tar xf {{ temp_dir }}/coreos/{{ item.src }} -C /usr/local/bin"
+  with_items:
     - { src: "oc-ibm_pak-linux-amd64.tar.gz" }
+  when: install_gi == 'Y'
 
 - name: Rename oc ibm-pak file
   ansible.builtin.shell:
     cmd: "mv /usr/local/bin/oc-ibm_pak-linux-amd64 /usr/local/bin/oc-ibm_pak"
-  when: internet_type != 'A'
+  when: install_gi == 'Y'
 
 - name: Define base and ocp domain
   ansible.builtin.set_fact:
@@ -825,3 +859,4 @@
     state: restarted
     enabled: yes
 
+      #- name: Import images to local registry
