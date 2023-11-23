@@ -27,24 +27,19 @@ do
 done
 install_ocp_tools
 #msg "Mirroring OCP ${ocp_release} images ..." task
-b64auth=$( echo -n 'admin:guardium' | openssl base64 )
-AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
-jq ".auths += $AUTHSTRING" < $GI_TEMP/pull-secret.txt > $GI_TEMP/pull-secret-update.txt
+#b64auth=$( echo -n 'admin:guardium' | openssl base64 )
+#AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
+#jq ".auths += $AUTHSTRING" < $GI_TEMP/pull-secret.txt > $GI_TEMP/pull-secret-update.txt
+cat gi-temp/pull-secret.txt | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
 #LOCAL_REGISTRY="$host_fqdn:5000"
 #LOCAL_REPOSITORY=ocp4/openshift4
 #PRODUCT_REPO='openshift-release-dev'
 #RELEASE_NAME="ocp-release"
 #LOCAL_SECRET_JSON=$GI_TEMP/pull-secret-update.txt
 #ARCHITECTURE=x86_64
+cp scripts/ocp-images.yaml $GI_TEMP
+echo ${ocp_release}.${ocp_release_minor}
 exit 1
-declare -a redhat_registries=("cloud.openshift.com" "quay.io" "registry.connect.redhat.com" "registry.redhat.io")
-echo '{"auths": {}}' | jq '.' > $GI_TEMP/auth.json
-for registry in ${redhat_registries[@]}
-do
-	msg "Adding registry $registry to authentication file" info
-	cat $GI_TEMP/auth.json | jq --arg jq_mail $mail --arg jq_registry $registry '.auths += {($jq_registry): {"auth": 0, "mail": ($jq_mail)}}' > $GI_TEMP/auth.json.temp
-	mv -f $GI_TEMP/auth.json.temp $GI_TEMP/auth.json
-done
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_release}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_release}-${ARCHITECTURE}
 test $(check_exit_code $?) || msg "Cannot mirror OCP images" true
 podman stop bastion-registry
