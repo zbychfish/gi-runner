@@ -3,7 +3,7 @@ kind: ImageSetConfiguration
 archiveSize: 4
 storageConfig:
   local:
-    path: gi_temp/images
+    path: .gitemp./images
 mirror:
   platform:
     channels:
