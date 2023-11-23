@@ -4,11 +4,11 @@ set -e
 trap "exit 1" ERR
 
 source scripts/init.globals.sh
-source scripts/shared_functions.sh
+source scripts/functions.sh
 
 get_pre_scripts_variables
 pre_scripts_init
-msg "Gathering Rook-Ceph version details ..." true
+msg "Gathering Rook-Ceph version details ..." task
 ceph_path="deploy/examples"
 images="docker.io/rook/ceph:${rook_version}"
 cd $GI_TEMP
@@ -30,14 +30,14 @@ do
 done
 cd $GI_HOME
 setup_local_registry
-msg "Mirroring open source rook-ceph ${rook_version} ..."
+msg "Mirroring open source rook-ceph ${rook_version} ..." info
 for image in $images
 do
 	msg "$image" true
         podman pull $image
 	check_exit_code $? "Cannot pull image $image"
         tag=`echo "$image" | awk -F '/' '{print $NF}'`
-        msg "TAG: $tag" true
+        msg "TAG: $tag" info
 	podman push --creds admin:guardium $image `hostname --long`:5000/rook/$tag
 	podman rmi $image
 done
