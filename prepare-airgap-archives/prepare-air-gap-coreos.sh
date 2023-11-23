@@ -43,15 +43,14 @@ sed -i "s#.gitemp.#${GI_TEMP}#" $GI_TEMP/ocp-images.yaml
 sed -i "s/minVersion/minVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s/maxVersion/maxVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml file://$GI_TEMP/images
-test $(check_exit_code $?) && msg "OCP images mirrored to files" info || msg "Cannot mirror OCP images" info
+test $(check_exit_code $?) && msg "OCP images mirrored" info || msg "Cannot mirror OCP images" info
 mkdir -p ${air_dir}/${ocp_release}
 mv $GI_TEMP/images/mirror_seq1* ${air_dir}/${ocp_release}
 cd $GI_TEMP
-tar -rf ${air_dir}/ocp-tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz
-exit 1
-rm -rf $GI_TEMP
+tar -rf ${air_dir}/${ocp_release}/ocp-tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz
 #podman rm bastion-registry &>/dev/null
 #podman rmi --all &>/dev/null
 #rm -rf /opt/registry/data
 #rm -f $GI_TEMP/pull-secret.txt
 msg "Openshift images, installation files and tools prepared - copy directory ${air_dir}/${ocp_release} to air-gapped bastion machine to download one" info
+rm -rf $GI_TEMP/images
