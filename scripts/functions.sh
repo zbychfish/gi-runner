@@ -1,3 +1,118 @@
+function software_installation_on_offline() {
+        local is_updated
+        msg "Update and installation of software packaged" task
+        if [[ `uname -r` != `cat $GI_TEMP/os/kernel.txt` ]]
+        then
+                msg "Kernel of air-gap bastion differs from air-gap file generator!" info
+                msg "In most cases the independent kernel update will lead to problems with system libraries" info
+                while $(check_input "yn" ${is_updated})
+                do
+                        get_input "yn" "Have you updated system before, would you like to continue? " true
+                        is_updated=${input_variable^^}
+                done
+                if [ $is_updated != 'N' ]
+                then
+                        display_error "Upload air-gap files corresponding to bastion kernel or generate files for bastion environmenti first"
+                fi
+        fi
+        msg "Installing OS updates" info
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os/os-updates/*rpm --allowerasing
+        msg "Installing OS packages" info
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os/os-packages/*rpm --allowerasing
+        msg "Installing Ansible and python modules" info
+        cd ${GI_TEMP}/os/ansible
+        pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install beautifulsoup4-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install argparse-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install jmespath-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install soupsieve-* --no-index --find-links '.' > /dev/null 2>&1
+        cd $GI_TEMP/os/galaxy
+        ansible-galaxy collection install community-general-${galaxy_community_general}.tar.gz
+        ansible-galaxy collection install ansible-utils-${galaxy_ansible_utils}.tar.gz
+        ansible-galaxy collection install community-crypto-${galaxy_community_crypto}.tar.gz
+        ansible-galaxy collection install containers-podman-${galaxy_containers_podman}.tar.gz
+        cd $GI_HOME
+        mkdir -p /etc/ansible
+        echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
+        msg "OS software update and installation successfully finished" info
+}
+
+function process_offline_archives() {
+        msg "Extracting archives - this process can take several minutes and even hours, be patient ..." task
+        local archive
+        local archives=("os-Fedora_release_*" "${ocp_release}/ocp-tools.tar")
+        local descs=('Fedora files' "Openshift ${ocp_release} files" "OLM images for CoreOS ${major_ocp_release}" "Additional software images")
+        [ $storage_type == 'R' ] && { archives+=("rook-registry-${rook_version}.tar");descs+=("Rook-Ceph ${rook_version} images");}
+        [ $gi_install == 'Y' ] && { archives+=("gi_registry-${gi_versions[$gi_version_selected]}.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
+        [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
+        local i=0
+        for archive in ${archives[@]}
+        do
+                if [ -e ${gi_archives}/${archive} ] && [ $(ls ${gi_archives}/${archive}|wc -l) -eq 1 ]
+                then
+                        case $i in
+                                0)
+                                        msg "Extracting Fedora software packages" info
+                                        mkdir -p $GI_TEMP/os
+                                        tar -C $GI_TEMP/os -xf ${gi_archives}/$archive kernel.txt ansible/* galaxy/* os-packages/* os-updates/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract content of operating system packages"
+                                        ;;
+                                1)
+                                        msg "Extracting CoreOS images, OCP container images and tools" info
+                                        mkdir -p $GI_TEMP/coreos
+                                        #mkdir -p /opt/registry $GI_TEMP/coreos
+                                        tar -C $GI_TEMP/coreos -xf $gi_archives/$archive oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz
+                                        [ $? -ne 0 ] && display_error "Cannot extract content from Openshift archive"
+                                        #tar -C /opt/registry -xf $gi_archives/coreos-registry-${ocp_release}.tar data/*
+                                        #[ $? -ne 0 ] && display_error "Cannot extract content of CoreOS archive"
+					[ $(ls ${gi_archives}/${ocp_release}/mirror*tar|wc -l) -lt 1 ] && display_error "Cannot find files with OCP and OLM images (mirror_seq tar files)"
+                                        ;;
+                                #2)
+                                #        msg "Extracting additional container images, for instance openldap" 8
+                                #        mkdir -p $GI_TEMP/adds
+                                #        tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
+                                #        tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                #        [ $? -ne 0 ] && display_error "Cannot extract content of archive with additional images"
+                                #        ;;
+                                2|3|4|5|6)
+                                        if [ "$archive" == rook-registry-${rook_version}.tar ]
+                                        then
+                                                msg "Extracting Rook-Ceph container images" info
+                                                mkdir -p $GI_TEMP/rook /opt/registry
+                                                tar -C $GI_TEMP/rook -xf $gi_archives/$archive rook_images_sha
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
+                                        elif [ "$archive" == gi_registry-${gi_versions[$gi_version_selected]}.tar ]
+                                        then
+                                                msg "Extracting Guardium Insights container images" 8
+                                                mkdir -p $GI_TEMP/gi_arch
+                                                tar -C $GI_TEMP/gi_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz gi_offline/*
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Guardium Insights archive"
+                                        elif [ "$archive" == ics_registry-${ics_versions[$ics_version_selected]}.tar ]
+                                        then
+                                                msg "Extracting Common Services container images" 8
+                                                mkdir -p $GI_TEMP/ics_arch
+                                                tar -C $GI_TEMP/ics_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz ics_offline/*
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Common Services archive"
+                                        else
+                                                display_error "Problem with extraction of archives, unknown archive type"
+                                        fi
+                                        ;;
+                                *)
+                                        display_error "Problem with extraction of archives, check their consitency"
+                                        ;;
+                        esac
+
+                else
+                        display_error "Cannot find the ${descs[$i]} archive, please copy to archive to ${gi_archives} directory and restart init.sh"
+                fi
+                i=$(($i+1))
+        done
+}
+
 function prepare_offline_bastion() {
         local curr_password=""
         msg "Bastion preparation to managed installation offline (air-gapped)" task
@@ -37,8 +152,8 @@ function prepare_offline_bastion() {
                         gi_archives="${input_variable}"
         done
         save_variable GI_ARCHIVES_DIR "'$gi_archives'"
-        #process_offline_archives
-        #software_installation_on_offline
+        process_offline_archives
+        software_installation_on_offline
 }
 
 function install_ocp_tools() {
