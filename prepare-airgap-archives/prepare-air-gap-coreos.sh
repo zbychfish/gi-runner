@@ -43,7 +43,7 @@ sed -i "s/stable-./fast-${ocp_major_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s#.gitemp.#${GI_TEMP}#" $GI_TEMP/ocp-images.yaml
 sed -i "s/minVersion/minVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s/maxVersion/maxVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
-TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml
+TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml file://$GI_TEMP/images
 exit 1
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_release}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_release}-${ARCHITECTURE}
 test $(check_exit_code $?) || msg "Cannot mirror OCP images" true
