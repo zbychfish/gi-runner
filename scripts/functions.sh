@@ -110,7 +110,7 @@ function pre_scripts_init() {
 
 function pre_scripts_init_no_jq() {
         mkdir -p $air_dir
-        rm -rf $GI_TEMP
+        rm -rf $GI_TEMP || "msg "$GI_TEMP cannot be removed" info
         rm -rf /opt/registry/data
         mkdir -p $GI_TEMP
 }
