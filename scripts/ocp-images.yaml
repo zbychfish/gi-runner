@@ -8,6 +8,6 @@ mirror:
   platform:
     channels:
     - name: stable-.
-      minVersion: .
-      maxVersion: .
+      minVersion
+      maxVersion
       type: ocp

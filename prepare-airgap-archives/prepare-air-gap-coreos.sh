@@ -37,9 +37,10 @@ cat $GI_TEMP/pull-secret.txt | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
 #RELEASE_NAME="ocp-release"
 #LOCAL_SECRET_JSON=$GI_TEMP/pull-secret-update.txt
 #ARCHITECTURE=x86_64
-msg `pwd` info
 cp $GI_HOME/scripts/ocp-images.yaml $GI_TEMP
-echo ${ocp_release}.${ocp_release_minor}
+sed -i 's/stable-./fast-${ocp_major_release}/' $GI_TEMP/ocp-images.yaml
+sed -i 's/minVersion/minVersion: ${ocp_release}/' $GI_TEMP/ocp-images.yaml
+sed -i 's/maxVersion/maxVersion: ${ocp_release}/' $GI_TEMP/ocp-images.yaml
 exit 1
 oc adm release mirror -a ${LOCAL_SECRET_JSON} --from=quay.io/${PRODUCT_REPO}/${RELEASE_NAME}:${ocp_release}-${ARCHITECTURE} --to=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY} --to-release-image=${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}:${ocp_release}-${ARCHITECTURE}
 test $(check_exit_code $?) || msg "Cannot mirror OCP images" true
