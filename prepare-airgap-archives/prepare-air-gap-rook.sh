@@ -33,7 +33,7 @@ setup_local_registry
 msg "Mirroring open source rook-ceph ${rook_version} ..." info
 for image in $images
 do
-	msg "$image" true
+	msg "$image" info
         podman pull $image
 	check_exit_code $? "Cannot pull image $image"
         tag=`echo "$image" | awk -F '/' '{print $NF}'`
