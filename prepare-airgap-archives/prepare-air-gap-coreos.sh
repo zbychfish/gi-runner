@@ -8,6 +8,7 @@ source scripts/functions.sh
 get_pre_scripts_variables
 pre_scripts_init
 msg "You must provide the exact version of OpenShift for its images mirror process" info
+msg "It is suggested to install a release from stable repository" info
 get_ocp_version_prescript
 get_pull_secret
 echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
