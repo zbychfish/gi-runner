@@ -3,7 +3,7 @@ kind: ImageSetConfiguration
 archiveSize: 4
 storageConfig:
   local:
-    path: .
+    path
 mirror:
   platform:
     channels:
