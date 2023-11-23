@@ -6,9 +6,9 @@ function prepare_offline_bastion() {
         do
                 if [[ ! -z "$GI_REPO_USER" ]]
                 then
-                        get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_REPO_USER] or insert local registry username: " true "$GI_REPO_USER"
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_REPO_USER] or insert local registry username: " true "$GI_REPO_USER"
                 else
-                        get_input "pwd" "Insert local registry username (default - repoadmin): " true "repoadmin"
+                        get_input "txt" "Insert local registry username (default - repoadmin): " true "repoadmin"
                 fi
                         repo_admin="${input_variable}"
         done
@@ -1562,6 +1562,9 @@ function check_input() {
                         ;;
 		"cs")
                         [[ $2 == 'C' || $2 == 'S' ]] && echo false || echo true
+                        ;;
+		"dir")
+                        [ -d "$2" ] && echo false || echo true
                         ;;
 		"domain")
                         [[ $2 =~  ^([a-zA-Z0-9](([a-zA-Z0-9-]){0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]] && echo false || echo true
