@@ -1730,24 +1730,23 @@ function check_input() {
 }
 
 function get_network_installation_type() {
-	use_air_gap='N'
-        #while $(check_input "yn" ${use_air_gap})
-        #do
-        #        get_input "yn" "Is your environment air-gapped? - " true
-        #        use_air_gap=${input_variable^^}
-        #done
-        #if [ $use_air_gap == 'Y' ]
-        #then
-        #        switch_dnf_sync_off
-        #        save_variable GI_INTERNET_ACCESS "A"
-        #else
+        while $(check_input "yn" ${use_air_gap})
+        do
+                get_input "yn" "Is your environment air-gapped? - " true
+                use_air_gap=${input_variable^^}
+        done
+        if [ $use_air_gap == 'Y' ]
+        then
+                switch_dnf_sync_off
+                save_variable GI_INTERNET_ACCESS "A"
+        else
                 while $(check_input "dp" ${use_proxy})
                 do
                         get_input "dp" "Has your environment direct access to the internet or use HTTP proxy? (\e[4mD\e[0m)irect/(P)roxy: " true
                         use_proxy=${input_variable^^}
                 done
                 save_variable GI_INTERNET_ACCESS $use_proxy
-        #fi
+        fi
 }
 
 function check_linux_distribution_and_release() {
