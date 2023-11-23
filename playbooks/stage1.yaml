@@ -160,9 +160,14 @@
       - /opt/registry/certs:/certs:z
   when: internet_type == 'A'
 
+- name: Login to local image registry
+  ansible.builtin.shell:
+    cmd: "podman login -u {{ repo_user }} -p {{ repo_user_password }}"
+
 - name: Set SELINUX permissive access for NetworkManager
   ansible.builtin.shell:
     cmd: semanage permissive -a NetworkManager_t
+  when: internet_type == 'A'
 
 - name: Cleanup configuration files
   ansible.builtin.file:
@@ -859,4 +864,8 @@
     state: restarted
     enabled: yes
 
-      #- name: Import images to local registry
+- name: Import images to local registry
+  ansible.builtin.command:
+    chdir: "../download"
+    cmd: "oc-mirror --from . docker://registry.{{domain}}"
+  when: internet_type == 'A'
