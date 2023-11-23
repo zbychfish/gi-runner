@@ -30,13 +30,14 @@ install_ocp_tools
 #b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 #AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
 #jq ".auths += $AUTHSTRING" < $GI_TEMP/pull-secret.txt > $GI_TEMP/pull-secret-update.txt
-cat gi-temp/pull-secret.txt | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
+cat $GI_TEMP/pull-secret.txt | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
 #LOCAL_REGISTRY="$host_fqdn:5000"
 #LOCAL_REPOSITORY=ocp4/openshift4
 #PRODUCT_REPO='openshift-release-dev'
 #RELEASE_NAME="ocp-release"
 #LOCAL_SECRET_JSON=$GI_TEMP/pull-secret-update.txt
 #ARCHITECTURE=x86_64
+msg pwd info
 cp scripts/ocp-images.yaml $GI_TEMP
 echo ${ocp_release}.${ocp_release_minor}
 exit 1
