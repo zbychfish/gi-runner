@@ -38,10 +38,11 @@ cat $GI_TEMP/pull-secret.txt | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
 #ARCHITECTURE=x86_64
 mkdir -p $GI_TEMP/images
 cp $GI_HOME/scripts/ocp-images.yaml $GI_TEMP
-sed -i "s/stable-./fast-${ocp_major_release}/" $GI_TEMP/ocp-images.yaml
+sed -i "s/.ocp_version./${ocp_major_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s#.gitemp.#${GI_TEMP}#" $GI_TEMP/ocp-images.yaml
 sed -i "s/minVersion/minVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s/maxVersion/maxVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
+exit 1
 TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml file://$GI_TEMP/images
 test $(check_exit_code $?) && msg "OCP images mirrored" info || msg "Cannot mirror OCP images" info
 mkdir -p ${air_dir}/${ocp_release}
