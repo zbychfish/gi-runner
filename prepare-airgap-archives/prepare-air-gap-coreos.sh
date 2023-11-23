@@ -12,8 +12,8 @@ msg "It is suggested to install a release from stable repository" info
 get_ocp_version_prescript
 get_pull_secret
 echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
-get_mail "Provide e-mail address associated with just inserted RH pullSecret"
-mail=$curr_value
+#get_mail "Provide e-mail address associated with just inserted RH pullSecret"
+#mail=$curr_value
 #msg "Setup mirror image registry ..." task
 #setup_local_registry
 #msg "Save image registry image ..." task
@@ -40,7 +40,7 @@ cat $GI_TEMP/pull-secret.txt | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
 mkdir -p $GI_TEMP/images
 cp $GI_HOME/scripts/ocp-images.yaml $GI_TEMP
 sed -i "s/stable-./fast-${ocp_major_release}/" $GI_TEMP/ocp-images.yaml
-sed -i "s/path/path: ${$GI_TEMP}/images/" $GI_TEMP/ocp-images.yaml
+sed -i "s/path/path: ${GI_TEMP}/images/" $GI_TEMP/ocp-images.yaml
 sed -i "s/minVersion/minVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s/maxVersion/maxVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml
