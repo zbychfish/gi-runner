@@ -3,6 +3,6 @@
     cmd: "podman login -u {{ repo_user }} -p {{ repo_user_password }} registry.{{domain}}:5000"
 
 - name: Import images to local registry
-  ansible.builtin.command:
+  ansible.builtin.shell:
     chdir: "../download"
-    cmd: "oc-mirror --from `pwd` docker://registry.{{domain}}:5000"
+    cmd: "oc-mirror --from {{temp_dir}}/download/{{ocp_release}} docker://registry.{{domain}}:5000"
