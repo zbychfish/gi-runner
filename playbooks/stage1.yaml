@@ -869,4 +869,4 @@
   ansible.builtin.command:
     chdir: "../download"
     cmd: "oc-mirror --from . docker://registry.{{domain}}"
-  when: internet_type == 'A' and false
+  when: internet_type == 'A'
