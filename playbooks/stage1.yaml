@@ -864,9 +864,3 @@
     name: haproxy
     state: restarted
     enabled: yes
-
-- name: Import images to local registry
-  ansible.builtin.command:
-    chdir: "../download"
-    cmd: "oc-mirror --from . docker://registry.{{domain}}"
-  when: internet_type == 'A'
