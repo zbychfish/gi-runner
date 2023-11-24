@@ -161,10 +161,6 @@
       - /opt/registry/certs:/certs:z
   when: internet_type == 'A'
 
-- name: Login to local image registry
-  ansible.builtin.shell:
-    cmd: "podman login -u {{ repo_user }} -p {{ repo_user_password }}"
-
 - name: Set SELINUX permissive access for NetworkManager
   ansible.builtin.shell:
     cmd: semanage permissive -a NetworkManager_t
