@@ -1,4 +1,4 @@
 - name: Import images to local registry
   ansible.builtin.command:
     chdir: "../download"
-    cmd: "oc-mirror --from-dir=`pwd` docker://registry.{{domain}}"
+    cmd: "oc-mirror --from `pwd` docker://registry.{{domain}}"
