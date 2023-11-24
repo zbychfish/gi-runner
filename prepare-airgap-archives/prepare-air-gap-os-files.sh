@@ -12,6 +12,9 @@ check_linux_distribution_and_release
 msg "Gathering OS release and kernel version" task
 echo `cat /etc/system-release|sed -e "s/ /_/g"` > $GI_TEMP/os_release.txt
 echo `uname -r` > $GI_TEMP/kernel.txt
+echo `uname -r` > $GI_TEMP/kernel.txt
+msg "Downloading unzip package" task
+dnf download -qy --downloaddir $air_dir unzip --resolve
 msg "Downloading OS updates ..." task
 cd $GI_TEMP
 dnf update -qy --downloadonly --downloaddir os-updates
