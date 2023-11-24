@@ -18,6 +18,7 @@
     path: "{{ item.path }}"
     state: directory
   with_items:
+    - { path: "/opt/registry/data" }
     - { path: "/opt/registry/auth" }
     - { path: "/opt/registry/certs" }
   when: internet_type == 'A'

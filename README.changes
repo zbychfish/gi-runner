@@ -11,4 +11,4 @@ New features and changes:
   - Portworx essentials
 - supported bastion OS
   - Fedora 38
-
+Offline installation has modified script to gather software for bastion and now produces the unzip rpm stored separately. The reason is to install it on Fedora bastion where unzip tool is not preinstalled - to allow unzip gi-runner archive. Use command 'dnf -qy --disablerepo=* localinstall download/unzip*.rpm'
