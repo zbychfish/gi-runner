@@ -124,10 +124,12 @@
 - name: Set RH operators catalog
   ansible.builtin.command:
     cmd: "oc apply -f {{manifest_dir.stdout}}/catalogSource-redhat-operator-index.yaml"
-  register: manifest_dir
   when: internet_type == 'A'
 
-- meta: end_play
+- name: Set image content source policy
+  ansible.builtin.command:
+    cmd: "oc apply -f {{manifest_dir.stdout}}/imageContentSourcePolicy.yaml"
+  when: internet_type == 'A'
 
 - name: Identify image registry name in the import
   ansible.builtin.shell:
