@@ -51,8 +51,10 @@ sed -i "s/.ocp_version./${ocp_major_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s#.gitemp.#${GI_TEMP}#" $GI_TEMP/ocp-images.yaml
 sed -i "s/minVersion/minVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s/maxVersion/maxVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
+msg "Starting image mirroring ..." task
 TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml file://$GI_TEMP/images
 test $(check_exit_code $?) && msg "OCP images mirrored" info || msg "Cannot mirror OCP images" info
+msg "Mirroring finished succesfully" info
 mkdir -p ${air_dir}/${ocp_release}
 mv $GI_TEMP/images/mirror_* ${air_dir}/${ocp_release}
 cd $GI_TEMP
