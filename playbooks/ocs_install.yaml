@@ -122,7 +122,7 @@
       src: "odf-ss.j2"
       dest: "{{ temp_dir }}/olm/odf-ss.yaml"
 
-  - name: Deploy ODF operator
+  - name: Deploy ODF cluster
     ansible.builtin.shell:
       cmd: "oc apply -f {{ temp_dir }}/olm/odf-ss.yaml"
 
