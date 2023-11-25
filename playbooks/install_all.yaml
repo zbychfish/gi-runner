@@ -472,8 +472,6 @@
       ansible.builtin.include_tasks: px_install.yaml
       when: skip_phase|int < 4 and storage_type == 'P'
 
-    - meta: end_play
-
     - name: Setup image registry
       ansible.builtin.include_tasks: image_registry_setup.yaml
       when: skip_phase|int < 4
