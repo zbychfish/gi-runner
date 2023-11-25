@@ -25,6 +25,7 @@ podman rmi --all &>/dev/null
 #mail=$curr_value
 #msg "Setup mirror image registry ..." task
 msg "Download OCP, support tools and CoreOS images ..." task
+dnf -y install wget
 cd $GI_TEMP
 declare -a ocp_files=("https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-client-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-install-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-initramfs.x86_64.img" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-kernel-x86_64" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-rootfs.x86_64.img" "https://github.com/poseidon/matchbox/releases/download/v${matchbox_version}/matchbox-v${matchbox_version}-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/oc-mirror.tar.gz")
 for file in ${ocp_files[@]}
@@ -36,6 +37,7 @@ install_ocp_tools
 #b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 #AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
 #jq ".auths += $AUTHSTRING" < $GI_TEMP/pull-secret.txt > $GI_TEMP/pull-secret-update.txt
+mkdir -p /run/user/0/containers #if podman was not initiated yet
 cat $GI_TEMP/pull-secret.txt | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
 #LOCAL_REGISTRY="$host_fqdn:5000"
 #LOCAL_REPOSITORY=ocp4/openshift4
