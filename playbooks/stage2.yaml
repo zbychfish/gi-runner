@@ -115,17 +115,31 @@
     minutes: 5
   when: is_htpasswd_secret.stdout|int == 0
 
+- name: Get manifests location
+  ansible.builtin.command:
+    cmd: "ls -ltd ../download/oc-mirror-workspace/result*|head -n 1|awk '{print $NF}'"
+  register: manifest_dir
+  when: internet_type == 'A'
+
+- name: Set RH operators catalog
+  ansible.builtin.command:
+    cmd: "oc apply -f {{manifest_dir.stdout}}/catalogSource-redhat-operator-index.yaml"
+  register: manifest_dir
+  when: internet_type == 'A'
+
+- meta: end_play
+
 - name: Identify image registry name in the import
   ansible.builtin.shell:
     cmd: "cd {{ temp_dir }}/olm/manifests-redhat-operator-index;cat catalogSource.yaml | grep image | awk '{print $2}'| awk -F':' '{print $1}'"
   register: old_registry_name
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
 
 - name: Copy OLM conf file for modification
   ansible.builtin.copy:
     src: "{{ temp_dir }}/olm/"
     dest: "{{ temp_dir }}/olm_copy/"
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
 
 - name: Set correct image registry mirror name in catalogSources
   ansible.builtin.shell:
@@ -137,7 +151,7 @@
     - manifests-certified-operator-index
     - manifests-redhat-marketplace-index
     - manifests-community-operator-index
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
   ignore_errors: yes
 
 - name: Set correct image registry mirror name in imageContentSourcePolicy
@@ -150,7 +164,7 @@
     - manifests-certified-operator-index
     - manifests-redhat-marketplace-index
     - manifests-community-operator-index
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
   ignore_errors: yes
 
 - name: Configure mirrored catalogSources
@@ -163,7 +177,7 @@
     - manifests-certified-operator-index
     - manifests-redhat-marketplace-index
     - manifests-community-operator-index
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
   ignore_errors: yes
 
 - name: Configure mirrored imageContentSourcePolicy.yaml
@@ -176,7 +190,7 @@
     - manifests-certified-operator-index
     - manifests-redhat-marketplace-index
     - manifests-community-operator-index
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
   ignore_errors: yes
 
 - name: Clean manifests in temp directory
@@ -184,7 +198,7 @@
     cmd: "rm -rf {{ temp_dir }}/olm_copy"
   args:
     warn: false
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
 
 - name: Configure rook-ceph imagecontentsourcepolicy files
   ansible.builtin.template:
