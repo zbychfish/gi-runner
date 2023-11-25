@@ -458,45 +458,45 @@
 
     - name: Wait for OCP boot phase ready
       ansible.builtin.include_tasks: stage2.yaml
-      when: skip_phase|int < 2
+      when: skip_phase|int < 3
 
     - meta: end_play
 
     - name: Install rook-ceph
       ansible.builtin.include_tasks: rook_install.yaml
-      when: skip_phase|int < 3 and storage_type == 'R'
+      when: skip_phase|int < 4 and storage_type == 'R'
 
     - name: Install ODF
       ansible.builtin.include_tasks: ocs_install.yaml
-      when: skip_phase|int < 3 and storage_type == 'O'
+      when: skip_phase|int < 4 and storage_type == 'O'
 
     - name: Install Portworx
       ansible.builtin.include_tasks: px_install.yaml
-      when: skip_phase|int < 3 and storage_type == 'P'
+      when: skip_phase|int < 4 and storage_type == 'P'
 
     - name: Setup image registry
       ansible.builtin.include_tasks: image_registry_setup.yaml
-      when: skip_phase|int < 3
+      when: skip_phase|int < 4
 
     - name: Install ICS
       ansible.builtin.include_tasks: ics_install.yaml
-      when: skip_phase|int < 4 and install_ics == 'Y'
+      when: skip_phase|int < 5 and install_ics == 'Y'
 
     - name: Install NFS client
       ansible.builtin.include_tasks: nfs_client_install.yaml
-      when: skip_phase|int < 5 and install_gi == 'Y' and gi_nfs_backup == 'Y'
+      when: skip_phase|int < 6 and install_gi == 'Y' and gi_nfs_backup == 'Y'
 
     - name: Install GI
       ansible.builtin.include_tasks: gi_install.yaml
-      when: skip_phase|int < 6 and install_gi == 'Y'
+      when: skip_phase|int < 7 and install_gi == 'Y'
 
     - name: Install CP4S
       ansible.builtin.include_tasks: cp4s_install.yaml
-      when: skip_phase|int < 6 and install_cp4s == 'Y'
+      when: skip_phase|int < 7 and install_cp4s == 'Y'
 
     - name: Install openldap
       ansible.builtin.include_tasks: openldap_install.yaml
-      when: skip_phase|int < 7 and install_ldap == 'Y'
+      when: skip_phase|int < 8 and install_ldap == 'Y'
 
     - name: OCP info
       ansible.builtin.debug:
