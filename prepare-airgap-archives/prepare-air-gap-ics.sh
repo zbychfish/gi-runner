@@ -51,7 +51,6 @@ do
 	check_exit_code $? "Cannot configure credentials for site $site"
 done
 cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry `hostname --long`:5000 --user admin --pass guardium"
-exit 1
 cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/ics_offline"
 check_exit_code $? "Cannot mirror ICS images"
 podman stop bastion-registry
