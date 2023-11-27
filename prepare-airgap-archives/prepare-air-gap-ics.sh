@@ -58,11 +58,11 @@ do
         cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry $site --user $rh_account --pass $rh_account_pwd"
 	check_exit_code $? "Cannot configure credentials for site $site"
 done
-cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry cp.icr.io --user cp --pass ibm_account_pwd"
+cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry cp.icr.io --user cp --pass $ibm_account_pwd"
 check_exit_code $? "Cannot configure credentials for site cp.icr.io"
 cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry `hostname --long`:5000 --user admin --pass guardium"
 check_exit_code $? "Cannot configure credentials for local registry"
-msg "Starting images copying process, it can takes more than hour" task
+msg "Starting images copying process, it can takes more than one hour" task
 cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/ics_offline"
 check_exit_code $? "Cannot mirror ICS images"
 msg "Preparing images archive" task
