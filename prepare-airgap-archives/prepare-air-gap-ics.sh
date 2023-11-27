@@ -39,7 +39,7 @@ do
 done
 files_type="ICS"
 install_app_tools
-rm -f openshift-client-linux.tar.gz cloudctl-linux-amd64.tar.gz
+rm -f openshift-client-linux.tar.gz
 msg "Mirroring ICS ${ics_versions[${ics_version}]}" task
 dnf -qy install skopeo
 check_exit_code $? "Cannot install skopeo package"
