@@ -1,3 +1,14 @@
+function install_app_tools() {
+        if [[ $files_type == "ICS" ]]
+        then
+                tar xf $GI_TEMP/cloudctl-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
+                mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
+                tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
+        else
+                display_error "Unknown operation type in install_app_tools function"
+        fi
+}
+
 function get_account() {
         curr_value=""
         while $(check_input "txt" "${curr_value}" "non_empty" )
