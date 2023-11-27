@@ -1,3 +1,12 @@
+function get_account() {
+        curr_value=""
+        while $(check_input "${curr_value}" "txt" 4)
+        do
+                get_input "txt" "$1: " false
+                curr_value="$input_variable"
+        done
+}
+
 function get_ics_version_prescript() {
         while $(check_input ${ics_version} "list" ${#ics_versions[@]})
         do
