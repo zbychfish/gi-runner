@@ -21,7 +21,6 @@ do
 done
 rh_account_pwd=$curr_value
 msg "Setup mirror image registry ..." task
-exit 1
 setup_local_registry
 msg "Download support tools ..." task
 cd $GI_TEMP
@@ -32,10 +31,11 @@ do
 done
 files_type="ICS"
 install_app_tools
-rm -f openshift-client-linux.tar.gz
+rm -f openshift-client-linux.tar.gz cloudctl-linux-amd64.tar.gz
 msg "Mirroring ICS ${ics_versions[${ics_version}]}" task
 dnf -qy install skopeo
 check_exit_code $? "Cannot install skopeo package"
+exit 1
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
 CASE_ARCHIVE=${ics_cases[${ics_version}]}
