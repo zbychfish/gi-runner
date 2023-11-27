@@ -14,13 +14,14 @@ get_account "Insert RedHat account name"
 rh_account=$curr_value
 echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
 curr_value=""
-while $(check_input "${curr_value}" "txt" 2)
+while $(check_input "txt" "${curr_value}" "non_empty")
 do
-        get_input "txt" "Insert password for RedHat account $rh_account: " false
+        get_input "pwd" "Insert password for RedHat account $rh_account: " false
         curr_value="$input_variable"
 done
 rh_account_pwd=$curr_value
 msg "Setup mirror image registry ..." task
+exit 1
 setup_local_registry
 msg "Download support tools ..." task
 cd $GI_TEMP
