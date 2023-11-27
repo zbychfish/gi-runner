@@ -10,7 +10,7 @@ pre_scripts_init
 
 setup_local_registry
 msg "Mirroring openldap, nfs client provisione containers" task
-images="docker.io/bitnami/openldap:v4.0.2 registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v${nfs_provisioner_version}"
+images="docker.io/bitnami/openldap:latest registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v${nfs_provisioner_version}"
 
 for image in $images
 do
