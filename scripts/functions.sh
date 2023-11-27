@@ -1,6 +1,6 @@
 function get_account() {
         curr_value=""
-        while $(check_input "${curr_value}" "txt" 4)
+        while $(check_input "txt" "${curr_value}" "non_empty" )
         do
                 get_input "txt" "$1: " false
                 curr_value="$input_variable"
