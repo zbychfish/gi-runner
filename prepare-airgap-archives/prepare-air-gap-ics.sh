@@ -3,13 +3,13 @@ set -e
 trap "exit 1" ERR
 
 source scripts/init.globals.sh
-source scripts/shared_functions.sh
+source scripts/functions.sh
 
 get_pre_scripts_variables
 pre_scripts_init
 get_ics_version_prescript
 ics_version=$(($ics_version-1))
-msg "Access to ICS packages requires RedHat account authentication for some container images" true
+msg "Access to ICS packages requires RedHat account authentication for some container images" info
 get_account "Insert RedHat account name"
 rh_account=$curr_value
 echo "$rhn_secret" > $GI_TEMP/pull-secret.txt
@@ -20,9 +20,9 @@ do
         curr_value="$input_variable"
 done
 rh_account_pwd=$curr_value
-msg "Setup mirror image registry ..." true
+msg "Setup mirror image registry ..." task
 setup_local_registry
-msg "Download support tools ..." true
+msg "Download support tools ..." task
 cd $GI_TEMP
 declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
 for file in ${ocp_files[@]}
@@ -32,7 +32,7 @@ done
 files_type="ICS"
 install_app_tools
 rm -f openshift-client-linux.tar.gz
-msg "Mirroring ICS ${ics_versions[${ics_version}]}" true
+msg "Mirroring ICS ${ics_versions[${ics_version}]}" task
 dnf -qy install skopeo
 check_exit_code $? "Cannot install skopeo package"
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
@@ -54,6 +54,7 @@ cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${C
 cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/ics_offline"
 check_exit_code $? "Cannot mirror ICS images"
 podman stop bastion-registry
+exit 1
 cd /opt/registry
 tar cf ${air_dir}/ics_registry-${ics_versions[${ics_version}]}.tar data
 cd $GI_TEMP
