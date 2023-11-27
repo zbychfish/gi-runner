@@ -24,6 +24,7 @@ function get_ics_version_prescript() {
                 get_input "list" "Select ICS version: " "${ics_versions[@]}"
                 ics_version=$input_variable
         done
+	echo $ics_version
 }
 
 function software_installation_on_offline() {
