@@ -35,7 +35,6 @@ rm -f openshift-client-linux.tar.gz cloudctl-linux-amd64.tar.gz
 msg "Mirroring ICS ${ics_versions[${ics_version}]}" task
 dnf -qy install skopeo
 check_exit_code $? "Cannot install skopeo package"
-exit 1
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
 CASE_ARCHIVE=${ics_cases[${ics_version}]}
@@ -52,10 +51,10 @@ do
 	check_exit_code $? "Cannot configure credentials for site $site"
 done
 cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry `hostname --long`:5000 --user admin --pass guardium"
+exit 1
 cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/ics_offline"
 check_exit_code $? "Cannot mirror ICS images"
 podman stop bastion-registry
-exit 1
 cd /opt/registry
 tar cf ${air_dir}/ics_registry-${ics_versions[${ics_version}]}.tar data
 cd $GI_TEMP
