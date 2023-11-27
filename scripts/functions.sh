@@ -19,12 +19,11 @@ function get_account() {
 }
 
 function get_ics_version_prescript() {
-        while $(check_input ${ics_version} "list" ${#ics_versions[@]})
+        while $(check_input "list" ${ics_version} ${#ics_versions[@]})
         do
                 get_input "list" "Select ICS version: " "${ics_versions[@]}"
                 ics_version=$input_variable
         done
-	echo $ics_version
 }
 
 function software_installation_on_offline() {

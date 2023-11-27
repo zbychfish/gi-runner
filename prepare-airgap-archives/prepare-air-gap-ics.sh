@@ -8,7 +8,6 @@ source scripts/functions.sh
 get_pre_scripts_variables
 pre_scripts_init
 get_ics_version_prescript
-exit 1
 ics_version=$(($ics_version-1))
 msg "Access to ICS packages requires RedHat account authentication for some container images" info
 get_account "Insert RedHat account name"
