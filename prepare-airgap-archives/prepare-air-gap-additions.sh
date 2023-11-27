@@ -10,7 +10,7 @@ pre_scripts_init
 
 setup_local_registry
 msg "Mirroring openldap, nfs client provisione containers" task
-images="docker.io/bitnami/openldap:latest registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:latest"
+images="docker.io/bitnami/openldap:v4.0.2 registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v${nfs_provisioner_version}"
 
 for image in $images
 do
@@ -25,9 +25,8 @@ do
 done
 msg "Extracting image digests ..." task
 echo "openldap:latest,"`cat /opt/registry/data/docker/registry/v2/repositories/adds/openldap/_manifests/tags/latest/current/link` > ${air_dir}/digests.txt
-echo "nfs-subdir-external-provisioner:latest,"`cat /opt/registry/data/docker/registry/v2/repositories/adds/nfs-subdir-external-provisioner/_manifests/tags/v4.0.2/current/link` >> ${air_dir}/digests.txt
-echo "Archiving mirrored registry ..."
-exit 1
+echo "nfs-subdir-external-provisioner:v${nfs_provisioner_version}"`cat /opt/registry/data/docker/registry/v2/repositories/adds/nfs-subdir-external-provisioner/_manifests/tags/v${nfs_provisioner_version}/current/link` >> ${air_dir}/digests.txt
+msg "Archiving mirrored registry ..." info
 podman stop bastion-registry
 cd /opt/registry
 tar cf ${air_dir}/additions-registry-`date +%Y-%m-%d`.tar data

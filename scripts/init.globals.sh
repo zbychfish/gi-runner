@@ -20,6 +20,7 @@ galaxy_ansible_utils="2.10.3"
 galaxy_community_crypto="2.15.1"
 galaxy_containers_podman="1.10.4"
 matchbox_version="0.10.0"
+nfs_provisioner_version=4.0.2
 cp4s_channel="1.10"
 declare -a cp4s_versions=(1.10.3)
 declare -a cp4s_cases=(ibm-cp-security-1.0.28.tgz)
