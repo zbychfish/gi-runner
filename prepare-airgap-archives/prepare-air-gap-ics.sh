@@ -64,4 +64,4 @@ podman rm bastion-registry
 podman rmi --all
 rm -rf /opt/registry/data
 rm -rf $GI_TEMP
-msg "ICS ${ics_versions[${ics_version}]} files prepared - copy $air_dir/ics_registry-${ics_versions[${ics_version}]}.tar to air-gapped bastion machine" true
+msg "ICS ${ics_versions[${ics_version}]} files prepared - copy $air_dir/ics_registry-${ics_versions[${ics_version}]}.tar to air-gapped bastion machine" info
