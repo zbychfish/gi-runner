@@ -22,3 +22,4 @@ cp4s_case_inventory_setup: "ibmSecurityOperatorSetup"
 px_channel: "stable"
 px_version: 2.13.8
 ibm_pak_version: 1.11.0
+nfs_provisioner_version: 4.0.2
