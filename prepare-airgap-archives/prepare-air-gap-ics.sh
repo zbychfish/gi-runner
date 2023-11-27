@@ -51,7 +51,7 @@ CASE_RELEASE=${CASE_RELEASE%".tgz"}
 CASE_INVENTORY_SETUP=ibmCommonServiceOperatorSetup
 cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-cp-common-services/${CASE_RELEASE}/${CASE_ARCHIVE} --outputdir $GI_TEMP/ics_offline
 check_exit_code $? "Cannot download ICS case file"
-sites="cp.icr.io registry.redhat.io registry.access.redhat.com"
+sites="registry.redhat.io registry.access.redhat.com"
 for site in $sites
 do
 	echo $site
@@ -59,9 +59,13 @@ do
 	check_exit_code $? "Cannot configure credentials for site $site"
 done
 cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry cp.icr.io --user cp --pass ibm_account_pwd"
+check_exit_code $? "Cannot configure credentials for site cp.icr.io"
 cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action configure-creds-airgap --args "--registry `hostname --long`:5000 --user admin --pass guardium"
+check_exit_code $? "Cannot configure credentials for local registry"
+msg "Starting images copying process, it can takes more than hour" task
 cloudctl case launch --case $GI_TEMP/ics_offline/${CASE_ARCHIVE} --inventory ${CASE_INVENTORY_SETUP} --action mirror-images --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/ics_offline"
 check_exit_code $? "Cannot mirror ICS images"
+msg "Preparing images archive" task
 podman stop bastion-registry
 cd /opt/registry
 tar cf ${air_dir}/ics_registry-${ics_versions[${ics_version}]}.tar data
