@@ -22,7 +22,7 @@ do
 	podman push --creds admin:guardium $image ${host_fqdn}:5000/adds/$tag
 	podman rmi $image
 done
-msg "Extracting image digests ..." true
+msg "Extracting image digests ..." task
 echo "openldap:latest,"`cat /opt/registry/data/docker/registry/v2/repositories/adds/openldap/_manifests/tags/latest/current/link` > ${air_dir}/digests.txt
 echo "nfs-subdir-external-provisioner:v4.0.2,"`cat /opt/registry/data/docker/registry/v2/repositories/adds/nfs-subdir-external-provisioner/_manifests/tags/v4.0.2/current/link` >> ${air_dir}/digests.txt
 echo "Archiving mirrored registry ..."
