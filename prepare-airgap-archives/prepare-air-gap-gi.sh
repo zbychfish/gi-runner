@@ -2,15 +2,15 @@
 set -e
 trap "exit 1" ERR
 
+source scripts/init.globals.sh
+source scripts/functions.sh
+get_pre_scripts_variables
 msg "Setting environment" info
 if [[ $# -ne 0 && $1 != "repeat" ]]
 then
 	msg "To restart mirroring process use paramater 'repeat'" info
 	exit 1
 fi
-source scripts/init.globals.sh
-source scripts/functions.sh
-get_pre_scripts_variables
 if [ $# -eq 0 ]
 then
 	pre_scripts_init
