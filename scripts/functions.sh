@@ -1,3 +1,13 @@
+function get_latest_gi_images () {
+	local input_file
+	input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt
+	while read -r line
+	do
+		echo "$line"
+	done < "$input_file"
+	#cat ${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt | awk -F '@' '{print $1}'|awk -F '/' '{print $(NF-1)}'
+}
+
 function get_gi_version_prescript() {
         while $(check_input "list" ${gi_version} ${#gi_versions[@]})
         do

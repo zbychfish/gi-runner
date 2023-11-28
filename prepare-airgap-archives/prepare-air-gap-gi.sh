@@ -5,6 +5,10 @@ trap "exit 1" ERR
 source scripts/init.globals.sh
 source scripts/functions.sh
 get_pre_scripts_variables
+CASE_NAME="ibm-guardium-insights"
+CASE_VERSION=${gi_cases[${gi_version}]}
+get_latest_gi_images
+exit 1
 msg "Setting environment" info
 if [[ $# -ne 0 && $1 != "repeat" ]]
 then
@@ -60,20 +64,12 @@ then
 	msg "Mirroring manifests" task
 	IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $CASE_NAME $LOCAL_REGISTRY --version $CASE_VERSION
 	msg "Authenticate in cp.icr.io" info
-	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm_pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd
+	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd
+	msg "Authenticate in local repo" info
+	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login `hostname --long`:5000 -u admin -p guardium
 fi
-exit 1
-	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-guardium-insights/${CASE_RELEASE}/${CASE_ARCHIVE} --outputdir $GI_TEMP/gi_offline
-	check_exit_code $? "Cannot download GI case file"
-	sites="cp.icr.io"
-	for site in $sites
-	do
-		echo $site
-	        cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry $site --user cp --pass $ibm_account_key"
-		check_exit_code $? "Cannot configure credentials for site $site"
-	done
-	cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium"
-cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/gi_offline"
+msg "Starting mirroring images, can takes hours" info
+oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt -a ${GI_TEMP}/.ibm_pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
 mirror_status=$?
 msg "Mirroring status: $mirror_status" true
 if [ $mirror_status -ne 0 ]
@@ -81,6 +77,7 @@ then
 	echo "Mirroring process failed, restart script with parameter repeat to finish"
 	exit 1
 fi
+exit 1
 podman stop bastion-registry
 cd $GI_TEMP
 tar cf ${air_dir}/gi_registry-${gi_versions[${gi_version}]}.tar gi_offline cloudctl-linux-amd64.tar.gz
