@@ -2,7 +2,7 @@
 set -e
 trap "exit 1" ERR
 
-echo "Setting environment"
+msg "Setting environment" info
 if [[ $# -ne 0 && $1 != "repeat" ]]
 then
 	msg "To restart mirroring process use paramater 'repeat'" info
@@ -34,9 +34,9 @@ done
 ibm_account_pwd=$curr_value
 if [ $# -eq 0 ]
 then
-	msg "Setup mirror image registry ..." true
+	msg "Setup mirror image registry ..." task
 	setup_local_registry
-	msg "Download support tools ..." true
+	msg "Download support tools ..." task
 	cd $GI_TEMP
 	declare -a ocp_files=("https://github.com/IBM/ibm-pak/releases/download/v{ibm_ocp_pak_version}/oc-ibm_pak-linux-amd64.tar.gz -O install_files/oc-ibm_pak-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
 	for file in ${ocp_files[@]}
