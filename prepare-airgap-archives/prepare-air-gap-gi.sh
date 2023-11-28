@@ -54,8 +54,8 @@ msg "Mirroring GI ${gi_versions[${gi_version}]}" task
 msg "Download case file" info
 CASE_NAME="ibm-guardium-insights"
 CASE_VERSION=${gi_cases[${gi_version}]}
-LOCAL_CASE_DIR=${GI_TEMP}/ibm-pak/cases/${CASE_VERSION}
-${LOCAL_CASE_DIR} oc ibm-pak get $CASE_NAME --version $CASE_VERSION --skip-verify
+IBMPAK_HOME=${GI_TEMP}/ibm_pak
+IBMPAK_HOME=${IBMPAK_HOME} oc ibm-pak get $CASE_NAME --version $CASE_VERSION --skip-verify
 exit 1
 if [ $# -eq 0 ]
 then
