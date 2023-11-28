@@ -57,6 +57,8 @@ CASE_VERSION=${gi_cases[${gi_version}]}
 msg $CASE_VERSION info
 IBMPAK_HOME=${GI_TEMP}/ibm_pak
 IBMPAK_HOME=${IBMPAK_HOME} oc ibm-pak get $CASE_NAME --version $CASE_VERSION --skip-verify
+msg "Mirroring manifests" task
+IBMPAK_HOME=${IBMPAK_HOME} oc ibm-pak generate mirror-manifests $CASE_NAME $LOCAL_REGISTRY --version $CASE_VERSION
 exit 1
 if [ $# -eq 0 ]
 then
