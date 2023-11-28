@@ -1,9 +1,21 @@
+function get_gi_version_prescript() {
+        while $(check_input "list" ${gi_version} ${#gi_versions[@]})
+        do
+                get_input "list" "Select GI version: " "${gi_versions[@]}"
+                gi_version=$input_variable
+        done
+}
+
 function install_app_tools() {
         if [[ $files_type == "ICS" ]]
         then
                 tar xf $GI_TEMP/cloudctl-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
                 mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
                 tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
+	elif [[ $files_type == "GI" ]]
+	then
+		tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
+
         else
                 display_error "Unknown operation type in install_app_tools function"
         fi

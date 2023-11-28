@@ -10,10 +10,9 @@ ics_cases: [ "1.15.18" ]
 ics_operator_namespace: "common-service"
 ics_case_name: "ibm-cp-common-services"
 ics_case_inventory_setup: "ibmCommonServiceOperatorSetup"
-gi_versions: [ "3.2.10", "3.2.11"]
-ics_default: [ 0, 0 ]
-gi_31_32_index: 3 #array index where 3.2.x starts
-gi_cases: [ '2.2.10', '2.2.11' ]
+gi_versions: [ "3.2.10", "3.2.11", "3.2.12" ]
+gi_cases: [ '2.2.10', '2.2.11' '2.2.12' ]
+ics_default: [ 0, 0, 0 ]
 gi_case_inventory_setup: "install"
 offline_inventory: "gi_offline"
 cp4s_versions: [ "1.10.3" ]
@@ -21,5 +20,5 @@ cp4s_cases: [ "ibm-cp-security-1.0.28.tgz" ]
 cp4s_case_inventory_setup: "ibmSecurityOperatorSetup"
 px_channel: "stable"
 px_version: 2.13.8
-ibm_pak_version: 1.11.0
+ibm_pak_version: 1.11.2
 nfs_provisioner_version: 4.0.2

@@ -5,13 +5,11 @@ trap "exit 1" ERR
 echo "Setting environment"
 if [[ $# -ne 0 && $1 != "repeat" ]]
 then
-	echo "To restart mirroring process use paramater 'repeat'"
+	msg "To restart mirroring process use paramater 'repeat'" info
 	exit 1
 fi
-
 source scripts/init.globals.sh
-source scripts/shared_functions.sh
-
+source scripts/functions.sh
 get_pre_scripts_variables
 if [ $# -eq 0 ]
 then
@@ -19,28 +17,35 @@ then
 fi
 get_gi_version_prescript
 gi_version=$(($gi_version-1))
-
 if [ $# -eq 0 ]
 then
-	echo "Cleanup temp directory $temp_dir"
-	rm -rf $GI_TEMP
+	msg "Cleanup temp directory $temp_dir" info
+	rm -rf $GI_TEMP/*
 	mkdir -p $GI_TEMP
 	mkdir -p $air_dir
 fi
-read -sp "Insert your IBM Cloud Key: " ibm_account_key
+msg "Access to GI packages requires IBM Cloud account authentication for some container images" info
+curr_value=""
+while $(check_input "txt" "${curr_value}" "non_empty")
+do
+        get_input "txt" "Insert your IBM Cloud Key: " false
+        curr_value="$input_variable"
+done
+ibm_account_pwd=$curr_value
 if [ $# -eq 0 ]
 then
 	msg "Setup mirror image registry ..." true
 	setup_local_registry
 	msg "Download support tools ..." true
 	cd $GI_TEMP
-	declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
+	declare -a ocp_files=("https://github.com/IBM/ibm-pak/releases/download/v{ibm_ocp_pak_version}/oc-ibm_pak-linux-amd64.tar.gz -O install_files/oc-ibm_pak-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
 	for file in ${ocp_files[@]}
 	do
         	download_file $file
 	done
-	files_type="ICS"
+	files_type="GI"
 	install_app_tools
+	exit 1
 	dnf -qy install skopeo
 	check_exit_code $? "Cannot install skopeo package"
 fi
