@@ -54,14 +54,15 @@ msg "Mirroring GI ${gi_versions[${gi_version}]}" task
 msg "Download case file" info
 CASE_NAME="ibm-guardium-insights"
 CASE_VERSION=${gi_cases[${gi_version}]}
-msg $CASE_VERSION info
-IBMPAK_HOME=${GI_TEMP}/ibm_pak
-IBMPAK_HOME=${IBMPAK_HOME} oc ibm-pak get $CASE_NAME --version $CASE_VERSION --skip-verify
-msg "Mirroring manifests" task
-IBMPAK_HOME=${IBMPAK_HOME} oc ibm-pak generate mirror-manifests $CASE_NAME $LOCAL_REGISTRY --version $CASE_VERSION
-exit 1
 if [ $# -eq 0 ]
 then
+	IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $CASE_NAME --version $CASE_VERSION --skip-verify
+	msg "Mirroring manifests" task
+	IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $CASE_NAME $LOCAL_REGISTRY --version $CASE_VERSION
+	msg "Authenticate in cp.icr.io" info
+	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm_pak/auth.json podman login cp.icr.io --user cp --pass $ibm_account_pwd
+fi
+exit 1
 	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-guardium-insights/${CASE_RELEASE}/${CASE_ARCHIVE} --outputdir $GI_TEMP/gi_offline
 	check_exit_code $? "Cannot download GI case file"
 	sites="cp.icr.io"
@@ -72,7 +73,6 @@ then
 		check_exit_code $? "Cannot configure credentials for site $site"
 	done
 	cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium"
-fi
 cloudctl case launch --case $GI_TEMP/gi_offline/${CASE_ARCHIVE} --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/gi_offline"
 mirror_status=$?
 msg "Mirroring status: $mirror_status" true
