@@ -6,7 +6,7 @@ function get_latest_gi_images () {
 	do
 		if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF-1)}') == 'ibm-guardium-insights' ]
 		then
-			echo "$line"
+			echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'
 		fi
 	done < "$input_file"
 	#cat ${GI_TEMP}/.ibaak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt | awk -F '@' '{print $1}'|awk -F '/' '{print $(NF-1)}'
