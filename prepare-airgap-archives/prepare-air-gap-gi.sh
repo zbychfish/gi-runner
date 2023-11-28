@@ -6,7 +6,7 @@ source scripts/init.globals.sh
 source scripts/functions.sh
 get_pre_scripts_variables
 CASE_NAME="ibm-guardium-insights"
-CASE_VERSION=${gi_cases[${gi_version}]}
+CASE_VERSION="2.2.12"
 get_latest_gi_images
 exit 1
 msg "Setting environment" info
