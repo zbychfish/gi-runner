@@ -1,11 +1,12 @@
 function get_latest_gi_images () {
 	local input_file
+	declare -a image_types
 	input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt
 	while read -r line
 	do
-		echo "$line"
+		echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF-1)}'
 	done < "$input_file"
-	#cat ${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt | awk -F '@' '{print $1}'|awk -F '/' '{print $(NF-1)}'
+	#cat ${GI_TEMP}/.ibaak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt | awk -F '@' '{print $1}'|awk -F '/' '{print $(NF-1)}'
 }
 
 function get_gi_version_prescript() {
