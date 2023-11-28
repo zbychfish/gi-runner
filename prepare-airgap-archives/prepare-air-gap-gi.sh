@@ -38,7 +38,7 @@ then
 	setup_local_registry
 	msg "Download support tools ..." task
 	cd $GI_TEMP
-	declare -a ocp_files=("https://github.com/IBM/ibm-pak/releases/download/v{$ibm_ocp_pak_version}/oc-ibm_pak-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
+	declare -a ocp_files=("https://github.com/IBM/ibm-pak/releases/download/v${ibm_ocp_pak_version}/oc-ibm_pak-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
 	for file in ${ocp_files[@]}
 	do
         	download_file $file
