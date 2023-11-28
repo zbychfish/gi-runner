@@ -15,6 +15,8 @@ function install_app_tools() {
 	elif [[ $files_type == "GI" ]]
 	then
 		tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
+		tar xf $GI_TEMP/oc-ibm_pak-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
+		mv /usr/local/bin/oc-ibm_pak-linux-amd64 /usr/local/bin/oc-ibm_pak
 
         else
                 display_error "Unknown operation type in install_app_tools function"

@@ -45,17 +45,18 @@ then
 	done
 	files_type="GI"
 	install_app_tools
-	exit 1
 	dnf -qy install skopeo
 	check_exit_code $? "Cannot install skopeo package"
 fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
-msg "Mirroring GI ${gi_versions[${gi_version}]}" true
-CASE_ARCHIVE=${gi_cases[${gi_version}]}
-CASE_RELEASE=${CASE_ARCHIVE#"ibm-guardium-insights-"}
-CASE_RELEASE=${CASE_RELEASE%".tgz"}
-CASE_INVENTORY_SETUP=install
+msg "Mirroring GI ${gi_versions[${gi_version}]}" task
+msg "Download case file" info
+CASE_NAME="ibm-guardium-insights"
+CASE_VERSION=${gi_cases[${gi_version}]}
+LOCAL_CASE_DIR=${GI_TEMP}/ibm-pak/cases/${CASE_VERSION}
+${LOCAL_CASE_DIR} oc ibm-pak get $CASE_NAME --version $CASE_VERSION --skip-verify
+exit 1
 if [ $# -eq 0 ]
 then
 	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-guardium-insights/${CASE_RELEASE}/${CASE_ARCHIVE} --outputdir $GI_TEMP/gi_offline
