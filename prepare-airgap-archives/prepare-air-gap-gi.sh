@@ -54,6 +54,7 @@ msg "Mirroring GI ${gi_versions[${gi_version}]}" task
 msg "Download case file" info
 CASE_NAME="ibm-guardium-insights"
 CASE_VERSION=${gi_cases[${gi_version}]}
+msg $CASE_VERSION info
 IBMPAK_HOME=${GI_TEMP}/ibm_pak
 IBMPAK_HOME=${IBMPAK_HOME} oc ibm-pak get $CASE_NAME --version $CASE_VERSION --skip-verify
 exit 1
