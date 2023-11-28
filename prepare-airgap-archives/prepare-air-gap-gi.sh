@@ -60,7 +60,7 @@ then
 	msg "Mirroring manifests" task
 	IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $CASE_NAME $LOCAL_REGISTRY --version $CASE_VERSION
 	msg "Authenticate in cp.icr.io" info
-	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm_pak/auth.json podman login cp.icr.io --user cp --pass $ibm_account_pwd
+	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm_pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd
 fi
 exit 1
 	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-guardium-insights/${CASE_RELEASE}/${CASE_ARCHIVE} --outputdir $GI_TEMP/gi_offline
