@@ -13,11 +13,19 @@ function get_latest_gi_images () {
 		then
 			image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'`
 			image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'` 
+			cmaj=`echo ${image_release:1} | cut -d "." -f 2`
+			cmin=`echo ${image_release:1} | cut -d "." -f 3`
 			if [ `grep "${image_name}:release" $output_file | wc -l` -eq 0 ]
 			then
 				echo "$line" >> $output_file
 			else
-				grep "${image_name}:release" $output_file
+				saved_image_release=grep "${image_name}:release" $output_file | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'
+				smaj=`echo ${saved_image_release:1} | cut -d "." -f 2`
+	                        smin=`echo ${saved_image_release:1} | cut -d "." -f 3`
+				if [ $cmin -lt $smin ]
+				then
+					echo ${image_release:1}
+				fi
 			fi
 			#echo ${image_release:1}
 			#echo "$line"
