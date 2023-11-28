@@ -1,15 +1,26 @@
 function get_latest_gi_images () {
 	local input_file
+	local output_file
+	majorv=3
+	minorv=2
 	declare -a image_types
 	input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt
+	output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mappingi-latest.txt
+	echo "#list of images to mirror" > $output_file
 	while read -r line
 	do
 		if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF-1)}') == 'ibm-guardium-insights' ]
 		then
 			image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'`
 			image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'` 
+			if [ `grep $image_name $output_file | wc -l` -eq 0 ]
+			then
+				echo "$line" >> $output_file
+			fi
 			echo ${image_release:1}
 			echo "$line"
+		else
+			echo "$line" >> $output_file
 		fi
 	done < "$input_file"
 	#cat ${GI_TEMP}/.ibaak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt | awk -F '@' '{print $1}'|awk -F '/' '{print $(NF-1)}'
