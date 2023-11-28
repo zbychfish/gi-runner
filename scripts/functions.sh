@@ -7,8 +7,8 @@ function get_latest_gi_images () {
 		if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF-1)}') == 'ibm-guardium-insights' ]
 		then
 			image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'`
-			image_release=`echo "$line" | awk -F "${image_name}:release" '{print $NF}' | awk -F '-' '{print $1}'` 
-			echo $image_release
+			image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'` 
+			echo ${image_release:1}
 			echo "$line"
 		fi
 	done < "$input_file"
