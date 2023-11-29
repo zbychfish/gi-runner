@@ -5,10 +5,6 @@ trap "exit 1" ERR
 source scripts/init.globals.sh
 source scripts/functions.sh
 get_pre_scripts_variables
-CASE_NAME="ibm-guardium-insights"
-CASE_VERSION="2.2.12"
-get_latest_gi_images
-exit 1
 msg "Setting environment" info
 if [[ $# -ne 0 && $1 != "repeat" ]]
 then
@@ -67,6 +63,7 @@ then
 	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd
 	msg "Authenticate in local repo" info
 	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login `hostname --long`:5000 -u admin -p guardium
+	get_latest_gi_images
 fi
 msg "Starting mirroring images, can takes hours" info
 exit 1
