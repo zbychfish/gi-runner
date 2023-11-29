@@ -30,7 +30,9 @@ function get_latest_gi_images () {
 				if [ $newest_image != ${saved_image_release:1} ]
 				then
 					echo "Change"
-					sed -i "/.*${image_name}:release-${saved_image_release}.*/${line}/" $output_file
+					#sed -i "/.*${image_name}:release-${saved_image_release}.*/${line}/" $output_file
+					sed -i "/.*${image_name}:release-${saved_image_release}.*/d" $output_file
+					echo "$line" >> $output_file
 				else
 					echo "no change"
 				fi
