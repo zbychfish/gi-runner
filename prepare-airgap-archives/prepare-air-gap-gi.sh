@@ -66,6 +66,7 @@ then
 	get_latest_gi_images
 fi
 msg "Starting mirroring images, can takes hours" info
+exit 1
 #oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
 #mirror_status=$?
 #msg "Mirroring status: $mirror_status" info
