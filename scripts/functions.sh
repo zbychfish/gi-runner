@@ -2,8 +2,6 @@ function get_latest_gi_images () {
 	local input_file
 	local output_file
 	local temp_list
-	majorv=3
-	minorv=2
 	declare -a image_types
 	input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt
 	output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping-latest.txt
@@ -23,8 +21,6 @@ function get_latest_gi_images () {
 			else
 				saved_image_release=`grep "${image_name}:release" $output_file | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'`
 				temp_list+=(${saved_image_release:1})
-				echo $image_name
-				echo ${temp_list[@]}
 				newest_image=`printf '%s\n' "${temp_list[@]}" | sort -V | tail -n 1`
 				unset temp_list
 				if [ $newest_image != ${saved_image_release:1} ]
@@ -35,13 +31,12 @@ function get_latest_gi_images () {
 				fi
 			fi
 		else
-			if [ `grep -v -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]
+			if [ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]
 			then
 				echo "$line" >> $output_file
 			fi
 		fi
 	done < "$input_file"
-	#cat ${GI_TEMP}/.ibaak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt | awk -F '@' '{print $1}'|awk -F '/' '{print $(NF-1)}'
 }
 
 function get_gi_version_prescript() {
