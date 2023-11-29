@@ -1,6 +1,7 @@
 function get_latest_gi_images () {
 	local input_file
 	local output_file
+	local temp_list
 	majorv=3
 	minorv=2
 	declare -a image_types
@@ -12,30 +13,23 @@ function get_latest_gi_images () {
 	do
 		if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF-1)}') == 'ibm-guardium-insights' ]
 		then
+			declare -a temp_list
 			image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'`
 			image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'` 
-			echo ${image_release:1}
-			#cmaj=`echo ${image_release:1} | cut -d "." -f 2`
-			#echo $cmaj
-			cmaj=$(expr  `echo ${image_release:1} | cut -d "." -f 2` + 0)
-			echo "$line"
-			#cmin=`echo ${image_release:1} | cut -d "." -f 3`
-			#cmin=`expr $cmin + 0`
-			#if [ `grep "${image_name}:release" $output_file | wc -l` -eq 0 ]
-			#then
-			#	echo "$line" >> $output_file
-			#else
-		#		saved_image_release=grep "${image_name}:release" $output_file | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'
-		#		smaj=`echo ${saved_image_release:1} | cut -d "." -f 2`
-		#		smaj=`expr $smaj + 0`
-	        #               smin=`echo ${saved_image_release:1} | cut -d "." -f 3`
-		#		smin=`expr $smin + 0`
-		#		echo $cmin
+			temp_list+=${image_release:1}
+			if [ `grep "${image_name}:release" $output_file | wc -l` -eq 0 ]
+			then
+				echo "$line" >> $output_file
+			else
+				saved_image_release=grep "${image_name}:release" $output_file | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'
+	                        temp_list+=${saved_image_release:1}
 		#		if [ $cmin -eq $smin ]
 		#		then
 		#			echo ${image_release:1}
 		#		fi
-		#	fi
+			fi
+			printf '%s\n' "${temp_list[@]}" | sort -V
+			unset temp_list
 			#echo ${image_release:1}
 			#echo "$line"
 		else
