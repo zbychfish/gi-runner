@@ -16,6 +16,7 @@ function get_latest_gi_images () {
 			image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'` 
 			cmaj=`echo ${image_release:1} | cut -d "." -f 2`
 			cmaj=`expr $cmaj + 0`
+			echo "$line"
 			echo $cmaj
 			#cmin=`echo ${image_release:1} | cut -d "." -f 3`
 			#cmin=`expr $cmin + 0`
