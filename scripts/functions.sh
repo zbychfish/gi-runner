@@ -29,8 +29,9 @@ function get_latest_gi_images () {
 		#		fi
 			fi
 			echo $image_name
-			echo ${temp_list[@]}
-			#printf '%s\n' "${temp_list[@]}" | sort -V
+			#echo ${temp_list[@]}
+			printf '%s\n' "${temp_list[@]}" | sort -V
+			
 			unset temp_list
 			#echo ${image_release:1}
 			#echo "$line"
