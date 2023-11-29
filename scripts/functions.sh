@@ -16,13 +16,13 @@ function get_latest_gi_images () {
 			declare -a temp_list
 			image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'`
 			image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'` 
-			temp_list+=${image_release:1}
+			temp_list+=(${image_release:1})
 			if [ `grep "${image_name}:release" $output_file | wc -l` -eq 0 ]
 			then
 				echo "$line" >> $output_file
 			else
 				saved_image_release=`grep "${image_name}:release" $output_file | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'`
-	                        temp_list+=${saved_image_release:1}
+				temp_list+=(${saved_image_release:1})
 		#		if [ $cmin -eq $smin ]
 		#		then
 		#			echo ${image_release:1}
@@ -31,7 +31,6 @@ function get_latest_gi_images () {
 			echo $image_name
 			#echo ${temp_list[@]}
 			printf '%s\n' "${temp_list[@]}" | sort -V
-			
 			unset temp_list
 			#echo ${image_release:1}
 			#echo "$line"
