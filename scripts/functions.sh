@@ -29,12 +29,14 @@ function get_latest_gi_images () {
 		#		fi
 			fi
 			echo $image_name
-			#echo ${temp_list[@]}
+			echo ${temp_list[@]}
 			newest_image=`printf '%s\n' "${temp_list[@]}" | sort -V | tail -n 1`
 			unset temp_list
 			if [ $newest_image != $saved_image_release ]
 			then
 				echo "Change"
+			else
+				echo "no change"
 			fi
 			#echo ${image_release:1}
 			#echo "$line"
