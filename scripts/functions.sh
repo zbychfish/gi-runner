@@ -14,7 +14,8 @@ function get_latest_gi_images () {
 		then
 			image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'`
 			image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'` 
-			#cmaj=`echo ${image_release:1} | cut -d "." -f 2`
+			cmaj=`echo ${image_release:1} | cut -d "." -f 2`
+			echo $cmaj
 			#cmaj=`expr $cmaj + 0`
 			#cmin=`echo ${image_release:1} | cut -d "." -f 3`
 			#cmin=`expr $cmin + 0`
