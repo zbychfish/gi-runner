@@ -51,11 +51,11 @@ fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
 msg "Mirroring GI ${gi_versions[${gi_version}]}" task
-msg "Download case file" info
 CASE_NAME="ibm-guardium-insights"
 CASE_VERSION=${gi_cases[${gi_version}]}
 if [ $# -eq 0 ]
 then
+	msg "Downloading case file" info
 	IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $CASE_NAME --version $CASE_VERSION --skip-verify
 	msg "Mirroring manifests" task
 	IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $CASE_NAME $LOCAL_REGISTRY --version $CASE_VERSION
@@ -66,24 +66,27 @@ then
 	get_latest_gi_images
 fi
 msg "Starting mirroring images, can takes hours" info
-exit 1
-oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm_pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
-mirror_status=$?
-msg "Mirroring status: $mirror_status" true
-if [ $mirror_status -ne 0 ]
-then
-	echo "Mirroring process failed, restart script with parameter repeat to finish"
-	exit 1
-fi
-exit 1
+#oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
+#mirror_status=$?
+#msg "Mirroring status: $mirror_status" info
+#if [ $mirror_status -ne 0 ]
+#then
+#	echo "Mirroring process failed, restart script with parameter repeat to finish"
+#	exit 1
+#fi
 podman stop bastion-registry
+msg "Creating archive with GI images" task
+mkdir -p ${air_dir}/GI-${gi_versions[${gi_version}]}
+cd $GI_TEMP/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}
+tar cf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar catalog-sources.yaml image-content-source-policy.yaml
 cd $GI_TEMP
-tar cf ${air_dir}/gi_registry-${gi_versions[${gi_version}]}.tar gi_offline cloudctl-linux-amd64.tar.gz
+tar -rf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar oc-ibm_pak-linux-amd64.tar.gz
 cd /opt/registry
-tar -rf ${air_dir}/gi_registry-${gi_versions[${gi_version}]}.tar data
+tar -cf ${air_dir}/GI-${gi_versions[${gi_version}]}/registry.tar data
+exit 1
 cd $GI_TEMP
 rm -rf /opt/registry/data
+rm -rf $GI_TEMP/* $GI_TEMP/.*
 podman rm bastion-registry
 podman rmi --all
-rm -rf $GI_TEMP
-msg "GI ${gi_versions[${gi_version}]} files prepared - copy $air_dir/gi_registry-${gi_versions[${gi_version}]}.tar to air-gapped bastion machine" true
+msg "GI ${gi_versions[${gi_version}]} files prepared - copy $air_dir/GI-${gi_versions[${gi_version}]} directory to air-gapped bastion machine" info
