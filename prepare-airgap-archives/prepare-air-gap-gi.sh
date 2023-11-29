@@ -69,7 +69,8 @@ then
 	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login `hostname --long`:5000 -u admin -p guardium
 fi
 msg "Starting mirroring images, can takes hours" info
-oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt -a ${GI_TEMP}/.ibm_pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
+exit 1
+oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm_pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
 mirror_status=$?
 msg "Mirroring status: $mirror_status" true
 if [ $mirror_status -ne 0 ]
