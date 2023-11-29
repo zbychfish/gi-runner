@@ -17,7 +17,7 @@ function get_latest_gi_images () {
 			echo ${image_release:1}
 			cmaj=`echo ${image_release:1} | cut -d "." -f 2`
 			echo $cmaj
-			cmaj=`expr ${cmaj} + 0`
+			cmaj=$(expr ${cmaj} + 0)
 			echo "$line"
 			#cmin=`echo ${image_release:1} | cut -d "." -f 3`
 			#cmin=`expr $cmin + 0`
