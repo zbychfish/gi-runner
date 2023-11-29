@@ -6,6 +6,7 @@ function get_latest_gi_images () {
 	declare -a image_types
 	input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt
 	output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mappingi-latest.txt
+	msg "Set list of images for download" task
 	echo "#list of images to mirror" > $output_file
 	while read -r line
 	do
@@ -17,6 +18,7 @@ function get_latest_gi_images () {
 			cmaj=`expr $cmaj + 0`
 			cmin=`echo ${image_release:1} | cut -d "." -f 3`
 			cmin=`expr $cmin + 0`
+			echo $cmin
 			if [ `grep "${image_name}:release" $output_file | wc -l` -eq 0 ]
 			then
 				echo "$line" >> $output_file
