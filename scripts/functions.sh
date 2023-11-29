@@ -26,7 +26,8 @@ function get_latest_gi_images () {
 				smaj=`expr $smaj + 0`
 	                        smin=`echo ${saved_image_release:1} | cut -d "." -f 3`
 				smin=`expr $smin + 0`
-				if [ $cmin -lt $smin ]
+				echo $cmin
+				if [ $cmin -eq $smin ]
 				then
 					echo ${image_release:1}
 				fi
