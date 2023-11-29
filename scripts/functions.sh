@@ -6,7 +6,7 @@ function get_latest_gi_images () {
 	minorv=2
 	declare -a image_types
 	input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt
-	output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mappingi-latest.txt
+	output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping-latest.txt
 	msg "Set list of images for download" task
 	echo "#list of images to mirror" > $output_file
 	while read -r line
@@ -30,17 +30,15 @@ function get_latest_gi_images () {
 				if [ $newest_image != ${saved_image_release:1} ]
 				then
 					echo "Change"
-					#sed -i "/.*${image_name}:release-${saved_image_release}.*/${line}/" $output_file
 					sed -i "/.*${image_name}:release-${saved_image_release}.*/d" $output_file
 					echo "$line" >> $output_file
-				else
-					echo "no change"
 				fi
 			fi
-			#echo ${image_release:1}
-			#echo "$line"
 		else
-			echo "$line" >> $output_file
+			if [ `grep -v -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]
+			then
+				echo "$line" >> $output_file
+			fi
 		fi
 	done < "$input_file"
 	#cat ${GI_TEMP}/.ibaak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt | awk -F '@' '{print $1}'|awk -F '/' '{print $(NF-1)}'
