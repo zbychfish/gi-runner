@@ -32,7 +32,7 @@ function get_latest_gi_images () {
 			#echo ${temp_list[@]}
 			newest_image=`printf '%s\n' "${temp_list[@]}" | sort -V | tail -n 1`
 			unset temp_list
-			if [$newest_image != $saved_image_release ]
+			if [ $newest_image != $saved_image_release ]
 			then
 				echo "Change"
 			fi
