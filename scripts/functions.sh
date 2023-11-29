@@ -21,7 +21,7 @@ function get_latest_gi_images () {
 			then
 				echo "$line" >> $output_file
 			else
-				saved_image_release=grep "${image_name}:release" $output_file | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'
+				saved_image_release=`grep "${image_name}:release" $output_file | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'`
 	                        temp_list+=${saved_image_release:1}
 		#		if [ $cmin -eq $smin ]
 		#		then
