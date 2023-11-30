@@ -863,7 +863,7 @@
 
 - name: Login to local repo
   ansible.builtin.command:
-    cmd: "podman login registry.{{ domain }}:5000 -u {{ repo_admin }} -p {{ repo_admin_password }}"
+    cmd: "podman login registry.{{ domain }}:5000 -u {{ repo_user }} -p {{ repo_user_password }}"
   when: internet_type == 'A'
 
 - name: Import OCP and OLM images to local registry, it can takes time
