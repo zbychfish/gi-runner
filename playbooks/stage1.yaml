@@ -861,7 +861,12 @@
     state: restarted
     enabled: yes
 
-- name: Import OCP images to local registry
+- name: Login to local repo
   ansible.builtin.command:
-    cmd: "oc mirror --from={{ archives_dir }}/{{ocp_release}}i/. docker://registry.{{ domain }}:5000"
+    cmd: "podman login registry.{{ domain }}:5000 -u {{ repo_admin }} -p {{ repo_admin_password }}"
+  when: internet_type == 'A'
+
+- name: Import OCP and OLM images to local registry, it can takes time
+  ansible.builtin.command:
+    cmd: "oc mirror --from={{ archives_dir }}/{{ocp_release}}/. docker://registry.{{ domain }}:5000"
   when: internet_type == 'A'
