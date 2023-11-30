@@ -144,7 +144,6 @@ function process_offline_archives() {
                                 1)
                                         msg "Extracting CoreOS images, OCP container images and tools" info
                                         mkdir -p $GI_TEMP/coreos
-                                        #mkdir -p /opt/registry $GI_TEMP/coreos
                                         tar -C $GI_TEMP/coreos -xf $gi_archives/$archive oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz
                                         [ $? -ne 0 ] && display_error "Cannot extract content from Openshift archive"
                                         #tar -C /opt/registry -xf $gi_archives/coreos-registry-${ocp_release}.tar data/*

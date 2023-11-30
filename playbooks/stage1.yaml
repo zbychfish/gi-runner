@@ -726,7 +726,7 @@
 
 - name: Unpack OCP tools for Guardium Insights
   ansible.builtin.shell:
-    cmd: "tar xf {{ temp_dir }}/coreos/{{ item.src }} -C /usr/local/bin"
+    cmd: "tar xf {{ temp_dir }}/gi_arch/{{ item.src }} -C /usr/local/bin"
   with_items:
     - { src: "oc-ibm_pak-linux-amd64.tar.gz" }
   when: install_gi == 'Y'
@@ -860,3 +860,8 @@
     name: haproxy
     state: restarted
     enabled: yes
+
+- name: Import OCP images to local registry
+  ansible.builtin.command:
+    cmd: "oc mirror --from={{ archives_dir }}/{{ocp_release}}i/. docker://registry.{{ domain }}:5000"
+  when: internet_type == 'A'
