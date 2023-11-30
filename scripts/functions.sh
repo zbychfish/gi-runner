@@ -126,7 +126,7 @@ function process_offline_archives() {
         local archives=("os-Fedora_release_*" "${ocp_release}/ocp-tools.tar")
         local descs=('Fedora files' "Openshift ${ocp_release} files" "OLM images for CoreOS ${major_ocp_release}" "Additional software images")
         [ $storage_type == 'R' ] && { archives+=("rook-registry-${rook_version}.tar");descs+=("Rook-Ceph ${rook_version} images");}
-        [ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/data.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
+        [ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/registry.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
         [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
         local i=0
         for archive in ${archives[@]}
