@@ -66,7 +66,7 @@ then
 	get_latest_gi_images
 fi
 msg "Starting mirroring images, can takes hours" info
-oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
+#oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
 mirror_status=$?
 msg "Mirroring status: $mirror_status" info
 if [ $mirror_status -ne 0 ]
@@ -81,9 +81,8 @@ cd $GI_TEMP
 tar cf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar .ibm-pak/*
 tar -rf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar oc-ibm_pak-linux-amd64.tar.gz
 cd /opt/registry
-# tar -cf ${air_dir}/GI-${gi_versions[${gi_version}]}/registry.tar data
-exit 1
-rm -rf /opt/registry
-rm -rf $GI_TEMP/* $GI_TEMP/.*
-podman rm bastion-registry
+tar -cf ${air_dir}/GI-${gi_versions[${gi_version}]}/registry.tar data
+#rm -rf /opt/registry
+#rm -rf $GI_TEMP/* $GI_TEMP/.*
+#podman rm bastion-registry
 msg "GI ${gi_versions[${gi_version}]} files prepared - copy $air_dir/GI-${gi_versions[${gi_version}]} directory to air-gapped bastion machine" info
