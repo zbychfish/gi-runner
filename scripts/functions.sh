@@ -124,7 +124,7 @@ function process_offline_archives() {
         msg "Extracting archives - this process can take several minutes and even hours, be patient ..." task
         local archive
         local archives=("os-Fedora_release_*" "${ocp_release}/ocp-tools.tar")
-        local descs=('Fedora files' "Openshift ${ocp_release} files" "OLM images for CoreOS ${major_ocp_release}" "Additional software images")
+        local descs=('Fedora files' "Openshift ${ocp_release} files")
         [ $storage_type == 'R' ] && { archives+=("rook-registry-${rook_version}.tar");descs+=("Rook-Ceph ${rook_version} images");}
         [ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/registry.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
         [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
@@ -166,7 +166,7 @@ function process_offline_archives() {
                                                 tar -C $GI_TEMP/rook -xf $gi_archives/$archive rook_images_sha
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
-                                        elif [ "$archive" == GI-${gi_versions[$gi_version_selected]}/data.tar ]
+                                        elif [ "$archive" == GI-${gi_versions[$gi_version_selected]}/registry.tar ]
                                         then
                                                 msg "Extracting Guardium Insights container images" info
                                                 tar -C /opt/registry -xf $gi_archives/$archive
