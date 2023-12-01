@@ -117,7 +117,7 @@
 
 - name: Get manifests location
   ansible.builtin.shell:
-    cmd: "ls -ltd ../download/oc-mirror-workspace/result*|head -n 1|awk '{print $NF}'"
+    cmd: "ls -ltd oc-mirror-workspace/result*|head -n 1|awk '{print $NF}'"
   register: manifest_dir
   when: internet_type == 'A'
 
