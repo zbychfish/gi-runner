@@ -56,6 +56,11 @@
   with_items:
     - { file: "cloudctl" }
 
+- name: Set catalog reference for CPFS builtin GI (offline)
+  ansible.builtin.shell:
+    cmd: "sed -i \"s/image:.*:5000/image: registry.{{ domain }}:5000/\" {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ ocp_release }}/catalog-sources.yaml"
+  when: internet_type == 'A' and install_gi == 'Y'
+
 - meta: end_play
 
 - name: Switch ICS inventory to portable registry
