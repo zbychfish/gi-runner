@@ -53,15 +53,20 @@
     replica_size: "2"
     requires_replica: "true"
 
+- name: Configure rook operator file
+  ansible.builtin.template:
+    src: "{{ 'rook-latest-operator.j2' if internet_type != 'A' else 'rook-latest-operator-offline.j2' }}"
+    dest: "{{ temp_dir }}/rook/rook-latest-operator.yaml"
+
 - name: Deploy rook toolbox
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/rook/rook-toolbox.yaml"
 
-- name: Deploy rook operator
+- name: Configure rook operator
   ansible.builtin.shell:
     cmd: "{{ item }}"
   loop:
-    - "oc apply -f ../scripts/rook-latest-operator.yaml"
+    - "oc apply -f {{ temp_dir }}/rook/rook-latest-operator.yaml"
     - "oc apply -f ../scripts/rook-latest-filesystem.yaml"
 
 - name: Wait for Rook operator
