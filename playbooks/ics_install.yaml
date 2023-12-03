@@ -149,8 +149,6 @@
   retries: 30
   delay: 10
 
-- meta: end_play
-
 - name: Set ICS deployment size
   ansible.builtin.shell:
     cmd: "oc patch commonservice common-service -n ibm-common-services --type=\"json\" -p='[{\"op\": \"replace\", \"path\": \"/spec/size\", \"value\": \"{{ ics_size }}\"}]'"
@@ -245,4 +243,6 @@
   retries: 50
   delay: 20
   when: ics_ext_ingress == 'Y'
+
+- meta: end_play
 
