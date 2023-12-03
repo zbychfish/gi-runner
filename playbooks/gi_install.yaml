@@ -42,11 +42,9 @@
     cmd: "IBMPAK_HOME={{ temp_dir }}/gi_arch IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action preInstall --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
   when: internet_type == 'A'
 
-- meta: end_play
-
 - name: Install GI catalog in air-gapped
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
+    cmd: "IBMPAK_HOME={{ temp_dir }}/gi_arch IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installCatalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir {{ temp_dir }}/gi_arch/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
   when: internet_type == 'A'
 
 - name: Install GI catalog online
@@ -69,6 +67,8 @@
   until: "redis_catalog_status.stdout == \"1\""
   retries: 30
   delay: 10
+
+- meta: end_play
 
 - name: Install GI operators in air-gapped env
   shell:
