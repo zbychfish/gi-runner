@@ -72,8 +72,8 @@
 
 - name: Install GI operators in air-gapped env
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key\""
-  when: false and internet_type == 'A'
+    cmd: "IBMPAK_HOME={{ temp_dir }}/gi_arch IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }} --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key --inputDir {{ temp_dir }}/gi_arch/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
+  when: internet_type == 'A'
 
 - name: Install GI operators online
   shell:
