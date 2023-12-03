@@ -61,6 +61,11 @@
     cmd: "sed -i \"s/image:.*:5000/image: registry.{{ domain }}:5000/\" {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/catalog-sources.yaml"
   when: internet_type == 'A' and install_gi == 'Y'
 
+- name: Set imagecontentsourcepolicy reference for CPFS and GI (offline)
+  ansible.builtin.shell:
+    cmd: "sed -i \"s/- registry:.*:5000/- registry: registry.{{ domain }}:5000/\" {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/imageContentSourcePolicy.yaml"
+  when: internet_type == 'A' and install_gi == 'Y'
+
 - name: Install catalogs for CPFS and GI (offline)
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/catalog-sources.yaml"
@@ -104,7 +109,7 @@
   ansible.builtin.template:
     src: ics_catalog.j2
     dest: "{{ temp_dir }}/ics_arch/ics_catalog.yaml"
-  when: internet_type != 'A'
+  when: internet_type != 'A' and false
 
 - name: Publish ICS catalog
   ansible.builtin.shell:
@@ -114,7 +119,7 @@
 - name: Publish ICS catalog in air-gap
   ansible.builtin.shell:
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-cp-common-services-{{ ics_case }}.tgz  --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
 
 - name: Wait for ICS catalog
   ansible.builtin.shell:
