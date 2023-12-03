@@ -96,8 +96,6 @@
     src: "{{ 'gi.j2' if gi_version_index|int > 0 else 'gi-3210.j2' }}"
     dest: "{{ temp_dir }}/gi_arch/gi.yaml"
 
-- meta: end_play
-
 - name: Deploy GI
   shell:
     cmd: "oc apply -f {{ temp_dir }}/gi_arch/gi.yaml"
