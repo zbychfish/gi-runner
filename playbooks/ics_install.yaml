@@ -244,5 +244,3 @@
   delay: 20
   when: ics_ext_ingress == 'Y'
 
-- meta: end_play
-
