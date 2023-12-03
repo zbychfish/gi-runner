@@ -63,7 +63,7 @@
 
 - name: Set imagecontentsourcepolicy reference for CPFS and GI (offline)
   ansible.builtin.shell:
-    cmd: "sed -i \"s/- registry:.*:5000/- registry: registry.{{ domain }}:5000/\" {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/imageContentSourcePolicy.yaml"
+    cmd: "sed -i \"s/- .*:5000/- registry.{{ domain }}:5000/\" {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/image-content-source-policy.yaml"
   when: internet_type == 'A' and install_gi == 'Y'
 
 - name: Install catalogs for CPFS and GI (offline)
