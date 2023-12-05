@@ -103,6 +103,12 @@
   delay: 30
   when: internet_type == 'A' and ocp_release|int < 2
 
+- name: Create ICS catalog file
+  ansible.builtin.template:
+    src: ics_catalog.j2
+    dest: "{{ temp_dir }}/ics_arch/ics_catalog.yaml"
+  when: internet_type != 'A'
+
 - name: Publish ICS catalog
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/ics_arch/ics_catalog.yaml"
