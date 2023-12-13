@@ -20,10 +20,7 @@ podman pull docker.io/library/registry:${registry_version} &>/dev/null
 test $(check_exit_code $?) || (msg "Cannot download image registry" true; exit 1)
 msg "Save image registry image ..." task
 podman save -o $GI_TEMP/oc-registry.tar docker.io/library/registry:${registry_version} &>/dev/null
-podman rmi --all &>/dev/null
-#get_mail "Provide e-mail address associated with just inserted RH pullSecret"
-#mail=$curr_value
-#msg "Setup mirror image registry ..." task
+podman rmi --all --force &>/dev/null
 msg "Download OCP, support tools and CoreOS images ..." task
 dnf -qy install wget
 cd $GI_TEMP
@@ -33,36 +30,36 @@ do
 	download_file $file
 done
 install_ocp_tools
-#msg "Mirroring OCP ${ocp_release} images ..." task
-#b64auth=$( echo -n 'admin:guardium' | openssl base64 )
-#AUTHSTRING="{\"$host_fqdn:5000\": {\"auth\": \"$b64auth\",\"email\": \"$mail\"}}"
-#jq ".auths += $AUTHSTRING" < $GI_TEMP/pull-secret.txt > $GI_TEMP/pull-secret-update.txt
 mkdir -p /run/user/0/containers #if podman was not initiated yet
 cat $GI_TEMP/pull-secret.txt | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
-#LOCAL_REGISTRY="$host_fqdn:5000"
-#LOCAL_REPOSITORY=ocp4/openshift4
-#PRODUCT_REPO='openshift-release-dev'
-#RELEASE_NAME="ocp-release"
-#LOCAL_SECRET_JSON=$GI_TEMP/pull-secret-update.txt
-#ARCHITECTURE=x86_64
-mkdir -p $GI_TEMP/images
+setup_local_registry
+LOCAL_REGISTRY="$host_fqdn:5000"
+msg "Login to local registry ${LOCAL_REGISTRY}" info
+podman login -u admin -p guardium ${LOCAL_REGISTRY}
+msg "Prepare imageset file" info
 cp $GI_HOME/scripts/ocp-images.yaml $GI_TEMP
+sed -i "s#imageURL:#imageURL: ${LOCAL_REGISTRY}/mirror/metadata#" $GI_TEMP/ocp-images.yaml
 sed -i "s/.ocp_version./${ocp_major_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s#.gitemp.#${GI_TEMP}#" $GI_TEMP/ocp-images.yaml
 sed -i "s/minVersion/minVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s/maxVersion/maxVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 msg "Starting image mirroring ..." task
-TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml file://$GI_TEMP/images
+mkdir -p $GI_TEMP/images
+TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml docker://${LOCAL_REGISTRY} --dest-skip-tls
 test $(check_exit_code $?) && msg "OCP images mirrored" info || msg "Cannot mirror OCP images" info
 msg "Mirroring finished succesfully" info
+podman stop bastion-registry &>/dev/null
 mkdir -p ${air_dir}/${ocp_release}
-mv $GI_TEMP/images/mirror_* ${air_dir}/${ocp_release}
+cd /opt/registry
+tar cf ${air_dir}/${ocp_release}/ocp-images-data.tar data
+cd $GI_TEMP/oc-mirror-workspace/results-*
+tar cf ${air_dir}/${ocp_release}/ocp-images-yamls.tar catalogSource-redhat-operator-index.yaml imageContentSourcePolicy.yaml
 cd $GI_TEMP
 tar -rf ${air_dir}/${ocp_release}/ocp-tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz oc-registry.tar
-#podman rm bastion-registry &>/dev/null
-#rm -rf /opt/registry/data
-#rm -f $GI_TEMP/pull-secret.txt
-msg "Openshift images, installation files and tools prepared - copy directory ${air_dir}/${ocp_release} to air-gapped bastion machine to download one" info
+podman rm bastion-registry &>/dev/null
+podman rmi --all &>/dev/null
+rm -rf /opt/registry/data
+msg "Openshift images, installation files and tools prepared - copy directory ${air_dir}/${ocp_release} to air-gapped bastion machine to download directory in gi-runner home one" info
 msg "Limited number OLM operators have been downloaded: local-storage-operator, odf-operator, ocs-operator, mcg-operator, odf-csi-addons-operator, serverless-operator, web-terminal" info
-msg "You can add more operators by modification of file scripts/ocp-images.yaml" info
+msg "You can add more operators by modification of file scripts/ocp-images.yaml or copy them later with oc mirror command" info
 rm -rf $GI_TEMP/*

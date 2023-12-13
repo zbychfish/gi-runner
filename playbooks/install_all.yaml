@@ -441,10 +441,6 @@
       ansible.builtin.include_tasks: stage1.yaml
       when: skip_phase|int < 1
 
-    - name: Import images to repository
-      ansible.builtin.include_tasks: images_import.yaml
-      when: skip_phase|int < 2 and internet_type == 'A'
-
     - ansible.builtin.debug:
         msg:
           - "Bastion prepared for OpenShift boot"

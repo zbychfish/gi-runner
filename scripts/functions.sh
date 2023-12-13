@@ -295,8 +295,8 @@ function process_offline_archives() {
                                         tar -C $GI_TEMP/coreos -xf $gi_archives/${ocp_release}/ocp-images-yamls.tar
                                         [ $? -ne 0 ] && display_error "Cannot extract content from Openshift images yaml files"
 					mkdir -p /opt/registry/data
-                                        #tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
-                                        #[ $? -ne 0 ] && display_error "Cannot extract OCP images"
+                                        tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         ;;
 				2)
 					msg "Extracting OpenLDAP and NFS container images" info
@@ -327,8 +327,8 @@ function process_offline_archives() {
                                                 msg "Extracting Common Services container images" info
                                                 mkdir -p $GI_TEMP/ics_arch
                                                 tar -C $GI_TEMP/ics_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz ics_offline/*
-                                                #tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                                #[ $? -ne 0 ] && display_error "Cannot extract content of Common Services archive"
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Common Services archive"
                                         else
                                                 display_error "Problem with extraction of archives, unknown archive type"
                                         fi
@@ -1886,7 +1886,7 @@ function check_input() {
                                                 openssl x509 -in "$2" -text -noout &>/dev/null
                                                 [[ $? -eq 0 ]] && echo false || echo true
                                                 ;;
-                                        "app")
+                                        "app")  
                                                 openssl verify -CAfile "$4" "$2" &>/dev/null
                                                 [[ $? -eq 0 ]] && echo false || echo true
                                                 ;;
