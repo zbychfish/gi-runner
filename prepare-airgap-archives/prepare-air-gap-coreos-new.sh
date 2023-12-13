@@ -38,16 +38,16 @@ msg "Login to local registry ${LOCAL_REGISTRY}" info
 podman login -u admin -p guardium ${LOCAL_REGISTRY}
 msg "Prepare imageset file" info
 cp $GI_HOME/scripts/ocp-images.yaml $GI_TEMP
-sed -i "s#registry:#registry: ${LOCAL_REGISTRY}/mirror/metadata#" $GI_TEMP/ocp-images.yaml
+sed -i "s#imageURL:#imageURL: ${LOCAL_REGISTRY}/mirror/metadata#" $GI_TEMP/ocp-images.yaml
 sed -i "s/.ocp_version./${ocp_major_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s#.gitemp.#${GI_TEMP}#" $GI_TEMP/ocp-images.yaml
 sed -i "s/minVersion/minVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 sed -i "s/maxVersion/maxVersion: ${ocp_release}/" $GI_TEMP/ocp-images.yaml
 msg "Starting image mirroring ..." task
-exit 1
 TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml docker://${LOCAL_REGISTRY} --dest-skip-tls
 test $(check_exit_code $?) && msg "OCP images mirrored" info || msg "Cannot mirror OCP images" info
 msg "Mirroring finished succesfully" info
+exit 1
 mkdir -p ${air_dir}/${ocp_release}
 mv $GI_TEMP/images/mirror_* ${air_dir}/${ocp_release}
 cd $GI_TEMP
