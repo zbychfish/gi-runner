@@ -39,7 +39,7 @@ get_service_assignment
 get_cluster_storage_info
 get_inter_cluster_info
 get_credentials
-#get_certificates
+get_certificates
 save_variable GI_ICS_IN "N"
 save_variable GI_OCP_IN "N"
 save_variable GI_IN "N"
