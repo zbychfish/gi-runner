@@ -1,3 +1,149 @@
+function validate_certs() {
+        local pre_value_ca
+        local pre_value_app
+        local pre_value_key
+        local ca_cert
+        local app_cert
+        local app_key
+        local label
+        local cert_info
+        case $1 in
+                "ocp")
+                        label="OCP"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"*.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_OCP_IN_CA"
+                        pre_value_app="$GI_OCP_IN_CERT"
+                        pre_value_key="$GI_OCP_IN_KEY"
+                        ;;
+                "ics")
+                        label="ICS"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"cp-console.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_ICS_IN_CA"
+                        pre_value_app="$GI_ICS_IN_CERT"
+                        pre_value_key="$GI_ICS_IN_KEY"
+                        ;;
+                "gi")
+                        label="GI"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"insights.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_IN_CA"
+                        pre_value_app="$GI_IN_CERT"
+                        pre_value_key="$GI_IN_KEY"
+                        ;;
+                "cp4s")
+                        label="CP4S"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"*.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_CP4S_CA"
+                        pre_value_app="$GI_CP4S_CERT"
+                        pre_value_key="$GI_CP4S_KEY"
+                        ;;
+
+                "*")
+                        display_error "Unknown cert information"
+                        ;;
+        esac
+        while $(check_input "cert" "${ca_cert}" "ca")
+        do
+                if [ ! -z "$pre_value_ca" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_ca] or insert the full path to root CA of $label certificate: " true "$pre_value_ca"
+                else
+                        get_input "txt" "Insert the full path to root CA of $label certificate: " false
+                fi
+                ca_cert="${input_variable}"
+        done
+        msg "$cert_info" 8
+        while $(check_input "cert" "${app_cert}" "app" "$ca_cert")
+        do
+                if [ ! -z "$pre_value_app" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_app] or insert the full path to $label certificate: " true "$pre_value_app"
+                else
+                        get_input "txt" "Insert the full path to $label certificate: " false
+                fi
+                app_cert="${input_variable}"
+        done
+        while $(check_input "cert" "${app_key}" "key" "$app_cert")
+        do
+                if [ ! -z "$pre_value_key" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_key] or insert the full path to $label private key: " true "$pre_value_key"
+                else
+                        get_input "txt" "Insert the full path to $label private key: " false
+                fi
+                app_key="${input_variable}"
+        done
+
+        case $1 in
+                "ocp")
+                        save_variable GI_OCP_IN_CA "$ca_cert"
+                        save_variable GI_OCP_IN_CERT "$app_cert"
+                        save_variable GI_OCP_IN_KEY "$app_key"
+                        ;;
+                "ics")
+                        save_variable GI_ICS_IN_CA "$ca_cert"
+                        save_variable GI_ICS_IN_CERT "$app_cert"
+                        save_variable GI_ICS_IN_KEY "$app_key"
+                        ;;
+                "gi")
+                        save_variable GI_IN_CA "$ca_cert"
+                        save_variable GI_IN_CERT "$app_cert"
+                        save_variable GI_IN_KEY "$app_key"
+                        ;;
+                "cp4s")
+                        save_variable GI_CP4S_CA "$ca_cert"
+                        save_variable GI_CP4S_CERT "$app_cert"
+                        save_variable GI_CP4S_KEY "$app_key"
+                        ;;
+                "*")
+                        display_error "Unknown cert information"
+                        ;;
+        esac
+}
+
+function get_certificates() {
+        msg "Collecting certificates information" task
+        msg "You can replace self-signed certicates for UI's by providing your own created by trusted CA" info
+        msg "Certificates must be uploaded to bastion to provide full path to them" info
+        msg "CA cert, service cert and private key files must be stored separately in PEM format" info
+        while $(check_input "yn" "$ocp_ext_ingress" false)
+        do
+                get_input "yn" "Would you like to install own certificates for OCP?: " true
+                ocp_ext_ingress=${input_variable^^}
+        done
+        save_variable GI_OCP_IN $ocp_ext_ingress
+        [ $ocp_ext_ingress == 'Y' ] && validate_certs "ocp"
+        if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' ]]
+        then
+                while $(check_input "yn" "$ics_ext_ingress" false)
+                do
+                        get_input "yn" "Would you like to install own certificates for ICP?: " true
+                        ics_ext_ingress=${input_variable^^}
+                done
+                save_variable GI_ICS_IN $ics_ext_ingress
+                [ $ics_ext_ingress == 'Y' ] && validate_certs "ics"
+        fi
+        if [[ "$gi_install" == 'Y' ]]
+        then
+                while $(check_input "yn" "$gi_ext_ingress" false)
+                do
+                        get_input "yn" "Would you like to install own certificates for GI?: " true
+                        gi_ext_ingress=${input_variable^^}
+                done
+                save_variable GI_IN $gi_ext_ingress
+                [ $gi_ext_ingress == 'Y' ] && validate_certs "gi"
+        fi
+        if [[ "$cp4s_install" == 'Y' && "$use_air_gap" == 'N' ]]
+        then
+                while $(check_input "yn" "$cp4s_ext_ingress" false)
+                do
+                        get_input "yn" "Would you like to install own certificates for CP4S?: " true
+                        cp4s_ext_ingress=${input_variable^^}
+                done
+                save_variable GI_CP4S_IN $cp4s_ext_ingress
+                [ $cp4s_ext_ingress == 'Y' ] && validate_certs "cp4s"
+        fi
+}
+
 function get_latest_gi_images () {
 	local input_file
 	local output_file
@@ -1729,6 +1875,35 @@ function get_input() {
 
 function check_input() {
         case $1 in
+		"cert")
+                        if [ "$2" ]
+                        then
+                                case $3 in
+                                        "ca")
+                                                openssl x509 -in "$2" -text -noout &>/dev/null
+                                                [[ $? -eq 0 ]] && echo false || echo true
+                                                ;;
+                                        "app")
+                                                openssl verify -CAfile "$4" "$2" &>/dev/null
+                                                [[ $? -eq 0 ]] && echo false || echo true
+                                                ;;
+                                        "key")
+                                                openssl rsa -in "$2" -check &>/dev/null
+                                                if [[ $? -eq 0 ]]
+                                                then
+                                                        [[ "$(openssl x509 -noout -modulus -in "$4" 2>/dev/null)" == "$(openssl rsa -noout -modulus -in "$2" 2>/dev/null)" ]] && echo false || echo true
+                                                else
+                                                        echo true
+                                                fi
+                                                ;;
+                                        "*")
+                                                display_error "Incorrect certificate type"
+                                                ;;
+                                esac
+                        else
+                                echo true
+                        fi
+                        ;;
 		"cidr")
                         if [[ "$2" =~  ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\/[0-9]{1,2}$ ]]
                         then
