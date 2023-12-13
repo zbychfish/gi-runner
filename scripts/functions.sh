@@ -294,6 +294,7 @@ function process_offline_archives() {
                                         [ $? -ne 0 ] && display_error "Cannot extract content from Openshift archive"
                                         tar -C $GI_TEMP/coreos -xf $gi_archives/${ocp_release}/ocp-images-yamls.tar
                                         [ $? -ne 0 ] && display_error "Cannot extract content from Openshift images yaml files"
+					mkdir -p /opt/registry/data
                                         tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
                                         [ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         ;;
