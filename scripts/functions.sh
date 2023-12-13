@@ -295,21 +295,14 @@ function process_offline_archives() {
                                         tar -C $GI_TEMP/coreos -xf $gi_archives/${ocp_release}/ocp-images-yamls.tar
                                         [ $? -ne 0 ] && display_error "Cannot extract content from Openshift images yaml files"
 					mkdir -p /opt/registry/data
-                                        tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
-                                        [ $? -ne 0 ] && display_error "Cannot extract OCP images"
+                                        #tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
+                                        #[ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         ;;
-                                #2)
-                                #        msg "Extracting additional container images, for instance openldap" 8
-                                #        mkdir -p $GI_TEMP/adds
-                                #        tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
-                                #        tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                #        [ $? -ne 0 ] && display_error "Cannot extract content of archive with additional images"
-                                #        ;;
                                 2|3|4|5|6)
+					mkdir -p /opt/registry/data
                                         if [ "$archive" == rook-registry-${rook_version}.tar ]
                                         then
                                                 msg "Extracting Rook-Ceph container images" info
-                                                mkdir -p $GI_TEMP/rook /opt/registry
                                                 tar -C $GI_TEMP/rook -xf $gi_archives/$archive rook_images_sha
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
@@ -323,7 +316,7 @@ function process_offline_archives() {
                                                 [ $? -ne 0 ] && display_error "Cannot extract of Guardium Insights case files"
                                         elif [ "$archive" == ics_registry-${ics_versions[$ics_version_selected]}.tar ]
                                         then
-                                                msg "Extracting Common Services container images" 8
+                                                msg "Extracting Common Services container images" info
                                                 mkdir -p $GI_TEMP/ics_arch
                                                 tar -C $GI_TEMP/ics_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz ics_offline/*
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
