@@ -292,9 +292,10 @@ function process_offline_archives() {
                                         mkdir -p $GI_TEMP/coreos
                                         tar -C $GI_TEMP/coreos -xf $gi_archives/$archive oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz
                                         [ $? -ne 0 ] && display_error "Cannot extract content from Openshift archive"
-                                        #tar -C /opt/registry -xf $gi_archives/coreos-registry-${ocp_release}.tar data/*
-                                        #[ $? -ne 0 ] && display_error "Cannot extract content of CoreOS archive"
-					[ $(ls ${gi_archives}/${ocp_release}/mirror*tar|wc -l) -lt 1 ] && display_error "Cannot find files with OCP and OLM images (mirror_seq tar files)"
+                                        tar -C $GI_TEMP/coreos -xf $gi_archives/ocp-images-yamls.tar
+                                        [ $? -ne 0 ] && display_error "Cannot extract content from Openshift images yaml files"
+                                        tar -C /opt/registry -xf $gi_archives/ocp-images-data.tar data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         ;;
                                 #2)
                                 #        msg "Extracting additional container images, for instance openldap" 8
