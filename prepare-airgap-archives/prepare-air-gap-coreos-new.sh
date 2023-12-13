@@ -20,7 +20,7 @@ podman pull docker.io/library/registry:${registry_version} &>/dev/null
 test $(check_exit_code $?) || (msg "Cannot download image registry" true; exit 1)
 msg "Save image registry image ..." task
 podman save -o $GI_TEMP/oc-registry.tar docker.io/library/registry:${registry_version} &>/dev/null
-podman rmi --all &>/dev/null
+podman rmi --all --force &>/dev/null
 msg "Download OCP, support tools and CoreOS images ..." task
 dnf -qy install wget
 cd $GI_TEMP
