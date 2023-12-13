@@ -238,7 +238,7 @@ function software_installation_on_offline() {
                         get_input "yn" "Have you updated system before, would you like to continue? " true
                         is_updated=${input_variable^^}
                 done
-                if [ $is_updated != 'N' ]
+                if [ $is_updated != 'Y' ]
                 then
                         display_error "Upload air-gap files corresponding to bastion kernel or generate files for bastion environmenti first"
                 fi
