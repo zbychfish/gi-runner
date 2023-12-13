@@ -115,9 +115,15 @@
     minutes: 5
   when: is_htpasswd_secret.stdout|int == 0
 
-- name: Set registry for manifest
+- name: Set registry for manifests 1
   ansible.builtin.command:
-    cmd: "sed -i 's/-.*:5000/registry.{{ domain }}/g' {{ temp_dir }}/coreos/{{ item }}"
+    cmd: "sed -i 's/-.*:5000/- registry.{{ domain }}:5000/g' {{ temp_dir }}/coreos/{{ item }}"
+  with_items:
+    - imageContentSourcePolicy.yaml
+
+- name: Set registry for manifests 2
+  ansible.builtin.command:
+    cmd: "sed -i 's/image:.*:5000/image: registry.{{ domain }}:5000/g' {{ temp_dir }}/coreos/{{ item }}"
   with_items:
     - imageContentSourcePolicy.yaml
     - catalogSource-redhat-operator-index.yaml
