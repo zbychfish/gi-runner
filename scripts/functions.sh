@@ -51,7 +51,7 @@ function validate_certs() {
                 fi
                 ca_cert="${input_variable}"
         done
-        msg "$cert_info" 8
+        msg "$cert_info" info
         while $(check_input "cert" "${app_cert}" "app" "$ca_cert")
         do
                 if [ ! -z "$pre_value_app" ]
