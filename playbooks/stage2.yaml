@@ -115,11 +115,14 @@
     minutes: 5
   when: is_htpasswd_secret.stdout|int == 0
 
-- name: Get manifests location
-  ansible.builtin.shell:
-    cmd: "ls -ltd ../download/oc-mirror-workspace/result*|head -n 1|awk '{print $NF}'"
-  register: manifest_dir
-  when: internet_type == 'A'
+- name: Set registry for manifest
+  ansible.builtin.command:
+    cmd: "sed -i \"/-.*:5000/registry.{{ domain }}/\" ../coreos/{{ item }}"
+  with_items:
+    - imageContentSourcePolicy.yaml
+    - catalogSource-redhat-operator-index.yaml
+
+- meta: end_play
 
 - name: Set RH operators catalog
   ansible.builtin.command:
