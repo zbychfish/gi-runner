@@ -305,6 +305,7 @@ function process_offline_archives() {
 					mkdir -p $GI_TEMP/adds
 					tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
                                         [ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and OCP digests"
+					;;
                                 3|4|5|6)
 					mkdir -p /opt/registry/data
                                         if [ "$archive" == rook-registry-${rook_version}.tar ]
