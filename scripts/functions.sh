@@ -295,8 +295,8 @@ function process_offline_archives() {
                                         tar -C $GI_TEMP/coreos -xf $gi_archives/${ocp_release}/ocp-images-yamls.tar
                                         [ $? -ne 0 ] && display_error "Cannot extract content from Openshift images yaml files"
 					mkdir -p /opt/registry/data
-                                        tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
-                                        [ $? -ne 0 ] && display_error "Cannot extract OCP images"
+                                        #tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
+                                        #[ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         ;;
 				2)
 					msg "Extracting OpenLDAP and NFS container images" info
@@ -312,8 +312,8 @@ function process_offline_archives() {
                                         then
                                                 msg "Extracting Rook-Ceph container images" info
                                                 tar -C $GI_TEMP/rook -xf $gi_archives/$archive rook_images_sha
-                                                #tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                                #[ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
                                         elif [ "$archive" == GI-${gi_versions[$gi_version_selected]}/registry.tar ]
                                         then
                                                 msg "Extracting Guardium Insights container images" info
