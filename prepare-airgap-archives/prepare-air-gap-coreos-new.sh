@@ -51,10 +51,11 @@ msg "Mirroring finished succesfully" info
 podman stop bastion-registry &>/dev/null
 mkdir -p ${air_dir}/${ocp_release}
 cd /opt/registry
-tar cvf ${air_dir}/${ocp_release}/ocp-images.tar data
+tar cf ${air_dir}/${ocp_release}/ocp-images-data.tar data
+cd $GI_TEMP/oc-mirror-workspace/results-*
+tar cf ${air_dir}/${ocp_release}/ocp-images-yamls.tar catalogSource-redhat-operator-index.yaml imageContentSourcePolicy.yaml
 cd $GI_TEMP
 tar -rf ${air_dir}/${ocp_release}/ocp-tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz oc-registry.tar
-exit 1
 podman rm bastion-registry &>/dev/null
 podman rmi --all &>/dev/null
 rm -rf /opt/registry/data
