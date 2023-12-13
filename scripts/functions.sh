@@ -269,8 +269,8 @@ function software_installation_on_offline() {
 function process_offline_archives() {
         msg "Extracting archives - this process can take several minutes and even hours, be patient ..." task
         local archive
-        local archives=("os-Fedora_release_*" "${ocp_release}/ocp-tools.tar")
-        local descs=('Fedora files' "Openshift ${ocp_release} files")
+        local archives=("os-Fedora_release_*" "${ocp_release}/ocp-tools.tar" "additions-registry-*")
+        local descs=('Fedora files' "Openshift ${ocp_release} files" "OpenLDAP, NFS provisioner images")
         [ $storage_type == 'R' ] && { archives+=("rook-registry-${rook_version}.tar");descs+=("Rook-Ceph ${rook_version} images");}
         [ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/registry.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
         [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
@@ -295,17 +295,24 @@ function process_offline_archives() {
                                         tar -C $GI_TEMP/coreos -xf $gi_archives/${ocp_release}/ocp-images-yamls.tar
                                         [ $? -ne 0 ] && display_error "Cannot extract content from Openshift images yaml files"
 					mkdir -p /opt/registry/data
-                                        #tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
-                                        #[ $? -ne 0 ] && display_error "Cannot extract OCP images"
+                                        tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         ;;
-                                2|3|4|5|6)
+				2)
+					msg "Extracting OpenLDAP and NFS container images" info
+					tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and NFS images"
+					mkdir -p $GI_TEMP/adds
+					tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
+                                        [ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and OCP digests"
+                                3|4|5|6)
 					mkdir -p /opt/registry/data
                                         if [ "$archive" == rook-registry-${rook_version}.tar ]
                                         then
                                                 msg "Extracting Rook-Ceph container images" info
                                                 tar -C $GI_TEMP/rook -xf $gi_archives/$archive rook_images_sha
-                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                                [ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
+                                                #tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                #[ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
                                         elif [ "$archive" == GI-${gi_versions[$gi_version_selected]}/registry.tar ]
                                         then
                                                 msg "Extracting Guardium Insights container images" info
@@ -319,8 +326,8 @@ function process_offline_archives() {
                                                 msg "Extracting Common Services container images" info
                                                 mkdir -p $GI_TEMP/ics_arch
                                                 tar -C $GI_TEMP/ics_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz ics_offline/*
-                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                                [ $? -ne 0 ] && display_error "Cannot extract content of Common Services archive"
+                                                #tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                #[ $? -ne 0 ] && display_error "Cannot extract content of Common Services archive"
                                         else
                                                 display_error "Problem with extraction of archives, unknown archive type"
                                         fi
