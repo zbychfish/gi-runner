@@ -117,7 +117,7 @@
 
 - name: Set registry for manifest
   ansible.builtin.command:
-    cmd: "sed -i 's/-.*:5000/registry.{{ domain }}/g' ../coreos/{{ item }}"
+    cmd: "sed -i 's/-.*:5000/registry.{{ domain }}/g' {{ temp_dir }}/coreos/{{ item }}"
   with_items:
     - imageContentSourcePolicy.yaml
     - catalogSource-redhat-operator-index.yaml
