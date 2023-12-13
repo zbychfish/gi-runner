@@ -48,15 +48,17 @@ mkdir -p $GI_TEMP/images
 TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml docker://${LOCAL_REGISTRY} --dest-skip-tls
 test $(check_exit_code $?) && msg "OCP images mirrored" info || msg "Cannot mirror OCP images" info
 msg "Mirroring finished succesfully" info
-exit 1
+podman stop bastion-registry &>/dev/null
 mkdir -p ${air_dir}/${ocp_release}
-mv $GI_TEMP/images/mirror_* ${air_dir}/${ocp_release}
+cd /opt/registry
+tar cvf ${air_dir}/${ocp_release}/ocp-images.tar data
 cd $GI_TEMP
 tar -rf ${air_dir}/${ocp_release}/ocp-tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz oc-registry.tar
-#podman rm bastion-registry &>/dev/null
-#rm -rf /opt/registry/data
-#rm -f $GI_TEMP/pull-secret.txt
-msg "Openshift images, installation files and tools prepared - copy directory ${air_dir}/${ocp_release} to air-gapped bastion machine to download one" info
+exit 1
+podman rm bastion-registry &>/dev/null
+podman rmi --all &>/dev/null
+rm -rf /opt/registry/data
+msg "Openshift images, installation files and tools prepared - copy directory ${air_dir}/${ocp_release} to air-gapped bastion machine to download directory in gi-runner home one" info
 msg "Limited number OLM operators have been downloaded: local-storage-operator, odf-operator, ocs-operator, mcg-operator, odf-csi-addons-operator, serverless-operator, web-terminal" info
-msg "You can add more operators by modification of file scripts/ocp-images.yaml" info
+msg "You can add more operators by modification of file scripts/ocp-images.yaml or copy them later with oc mirror command" info
 rm -rf $GI_TEMP/*
