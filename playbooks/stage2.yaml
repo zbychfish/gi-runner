@@ -158,12 +158,27 @@
     - { src: "openldap_icsp.j2", dest: "{{ temp_dir }}/adds/openldap_icsp.yaml" }
   when: internet_type == 'A' and install_ldap == 'Y'
 
-- name: Configure imageContentSourcePolicy for openldap
+- name: Apply imageContentSourcePolicy for openldap
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/adds/{{ item }}"
   with_items:
     - openldap_icsp.yaml
   when: internet_type == 'A' and install_ldap == 'Y'
+
+- name: Configure nfs-provisioner imagecontentsourcepolicy files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "nfs_provisioner_icsp.j2", dest: "{{ temp_dir }}/adds/nfs_provisioner_icsp.yaml" }
+  when: internet_type == 'A' and gi_nfs_backup == 'Y'
+
+- name: Apply imageContentSourcePolicy for nfs-provisioner
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/adds/{{ item }}"
+  with_items:
+    - nfs_provisioner_icsp.yaml
+  when: internet_type == 'A' and gi_nfs_backup == 'Y'
 
 - name: Wait - cluster stabilization
   ansible.builtin.pause:

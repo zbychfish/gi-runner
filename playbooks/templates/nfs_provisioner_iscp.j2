@@ -1,0 +1,9 @@
+apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  name: nfs-provisioner
+spec:
+  repositoryDigestMirrors:
+  - mirrors:
+    - registry.{{ domain }}:5000/adds/nfs-subdir-external-provisioner
+    source: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner

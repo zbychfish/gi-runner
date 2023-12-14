@@ -13,6 +13,11 @@
   ansible.builtin.shell:
     cmd: oc adm policy add-scc-to-user hostmount-anyuid system:serviceaccount:nfs-provisioner:nfs-client-provisioner
 
+- name: Get nfs-provisioner digest
+  shell:
+    cmd: "cat {{ temp_dir}}/adds/digests.txt|grep nfs-subdir-external-provisioner:v{{ nfs_provisioner_version }}|awk -F ',' '{print $2}'"
+  register: nfs_digest
+
 - name: Setup deployment file
   template:
     src: "nfs-client-deployment.j2"

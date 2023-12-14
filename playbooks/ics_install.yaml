@@ -71,7 +71,7 @@
     cmd: "oc apply -f {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/catalog-sources.yaml"
   when: internet_type == 'A' and install_gi == 'Y'
 
-- name: Install catalogs for CPFS and GI (offline)
+- name: Install image content source policy for CPFS and GI (offline)
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/image-content-source-policy.yaml"
   when: internet_type == 'A' and install_gi == 'Y'
