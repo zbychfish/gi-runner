@@ -81,24 +81,10 @@
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-cp-common-services-{{ ics_case }}.tgz --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
   when: internet_type == 'A' and install_gi == 'N'
 
-- meta: end_play
-
-- name: Check cluster nodes health after Content Source Policy change
-  ansible.builtin.shell: ../scripts/check_cluster_health_operators.sh
-  register: cluster_health_operators
-  until: cluster_health_operators.stdout == "0"
-  retries: 100
-  delay: 30
-  when: internet_type == 'A'
-
-- name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
+- name: Install ICS catalog
   ansible.builtin.shell:
-    cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
-  register: co_status
-  until: "co_status.stdout == \"0\""
-  retries: 150
-  delay: 30
-  when: internet_type == 'A'
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-cp-common-services-{{ ics_case }}.tgz --inventory {{ ics_case_inventory_setup }}  --action installCatalog --namespace openshift-marketplace --args \"--registry registry.{{ domain }}:5000\""
+  when: internet_type == 'A' and install_gi == 'N'
 
 - name: Create ICS catalog file
   ansible.builtin.template:
@@ -168,6 +154,8 @@
   ansible.builtin.template:
     src: "ics_operands.j2"
     dest: "{{ temp_dir }}/ics_arch/ics_operands.yaml"
+
+- meta: end_play
 
 - name: Deploy ICS
   ansible.builtin.shell:
