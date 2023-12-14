@@ -310,6 +310,7 @@ function process_offline_archives() {
 					mkdir -p /opt/registry/data
                                         if [ "$archive" == rook-registry-${rook_version}.tar ]
                                         then
+                                                mkdir -p $GI_TEMP/rook
                                                 msg "Extracting Rook-Ceph container images" info
                                                 tar -C $GI_TEMP/rook -xf $gi_archives/$archive rook_images_sha
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*

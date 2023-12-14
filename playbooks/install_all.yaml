@@ -476,6 +476,8 @@
       ansible.builtin.include_tasks: ics_install.yaml
       when: skip_phase|int < 5 and install_ics == 'Y'
 
+    - meta: end_play
+
     - name: Install NFS client
       ansible.builtin.include_tasks: nfs_client_install.yaml
       when: skip_phase|int < 6 and install_gi == 'Y' and gi_nfs_backup == 'Y'
