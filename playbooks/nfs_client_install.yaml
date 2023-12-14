@@ -18,10 +18,16 @@
     cmd: "cat {{ temp_dir}}/adds/digests.txt|grep nfs-subdir-external-provisioner:v{{ nfs_provisioner_version }}|awk -F ',' '{print $2}'"
   register: nfs_digest
 
+- name: Set correct tag or digest
+  set_fact:
+    nfs_version: "{{ ':v'+nfs_provisioner_version if internet_type != 'A' else '@'+nfs_digest.stdout }}"
+
 - name: Setup deployment file
   template:
     src: "nfs-client-deployment.j2"
     dest: "{{ temp_dir }}/gi_arch/nfs-client-deployment.yaml"
+
+- meta: end_play
 
 - name: Deploy NFS client
   ansible.builtin.shell:
@@ -47,4 +53,3 @@
 - name: Deploy NFS backup PVC
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/gi_arch/nfs_backup_pvc.yaml"
-
