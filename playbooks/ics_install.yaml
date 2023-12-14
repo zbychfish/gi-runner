@@ -224,6 +224,11 @@
     - "oc -n ibm-common-services delete pod -l app=auth-idp"
   when: ics_ext_ingress == 'Y'
 
+- name: Wait for certificate changes
+  ansible.builtin.pause:
+    minutes: 3
+  when: ics_ext_ingress == 'Y'
+
 - name: Wait for successful cert replacement
   ansible.builtin.shell:
     cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
