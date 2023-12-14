@@ -1,13 +1,13 @@
 #Global variables
 declare -a gi_versions=(3.2.10 3.2.11 3.2.12)
 declare -a gi_cases=(2.2.10 2.2.11 2.2.12)
-declare -a ics_versions=(3.19.18)
-declare -a ics_cases=(ibm-cp-common-services-1.15.18.tgz)
+declare -a ics_versions=(3.19.18 3.19.19)
+declare -a ics_cases=(ibm-cp-common-services-1.15.18.tgz ibm-cp-common-services-1.15.19.tgz)
 declare -a bundled_in_gi_ics_versions=(0 0 0)
 declare -a ocp_versions=(0 1 2)
 declare -a ocp_major_versions=(4.10 4.12 4.14)
 declare -a ocp_supported_by_gi=(0:1 0:1 0:1)
-declare -a ocp_supported_by_ics=(0:1)
+declare -a ocp_supported_by_ics=(0:1 0:1)
 declare -a ocp_supported_by_cp4s="0:1"
 declare -a gi_sizes=(values-dev values-small)
 declare -a fedora_supp_releases=(38)
