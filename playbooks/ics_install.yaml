@@ -155,8 +155,6 @@
     src: "ics_operands.j2"
     dest: "{{ temp_dir }}/ics_arch/ics_operands.yaml"
 
-- meta: end_play
-
 - name: Deploy ICS
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/ics_arch/ics_operands.yaml"
