@@ -27,8 +27,6 @@
     src: "nfs-client-deployment.j2"
     dest: "{{ temp_dir }}/gi_arch/nfs-client-deployment.yaml"
 
-- meta: end_play
-
 - name: Deploy NFS client
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/gi_arch/nfs-client-deployment.yaml"
@@ -53,3 +51,5 @@
 - name: Deploy NFS backup PVC
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/gi_arch/nfs_backup_pvc.yaml"
+- meta: end_play
+
