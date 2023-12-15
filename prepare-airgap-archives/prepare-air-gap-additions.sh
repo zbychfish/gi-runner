@@ -25,7 +25,7 @@ do
 done
 msg "Extracting image digests ..." task
 echo "openldap:latest,"`cat /opt/registry/data/docker/registry/v2/repositories/adds/openldap/_manifests/tags/latest/current/link` > ${air_dir}/digests.txt
-echo "nfs-subdir-external-provisioner:v${nfs_provisioner_version}"`cat /opt/registry/data/docker/registry/v2/repositories/adds/nfs-subdir-external-provisioner/_manifests/tags/v${nfs_provisioner_version}/current/link` >> ${air_dir}/digests.txt
+echo "nfs-subdir-external-provisioner:v${nfs_provisioner_version},"`cat /opt/registry/data/docker/registry/v2/repositories/adds/nfs-subdir-external-provisioner/_manifests/tags/v${nfs_provisioner_version}/current/link` >> ${air_dir}/digests.txt
 msg "Archiving mirrored registry ..." info
 podman stop bastion-registry
 cd /opt/registry
