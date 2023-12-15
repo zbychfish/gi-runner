@@ -10,9 +10,9 @@ ics_cases: [ "1.15.18", "1.15.19" ]
 ics_operator_namespace: "common-service"
 ics_case_name: "ibm-cp-common-services"
 ics_case_inventory_setup: "ibmCommonServiceOperatorSetup"
-gi_versions: [ "3.2.10", "3.2.11", "3.2.12" ]
-gi_cases: [ '2.2.10', '2.2.11', '2.2.12' ]
-ics_default: [ 0, 0, 0 ]
+gi_versions: [ "3.2.11", "3.2.12", "3.2.13" ]
+gi_cases: [ '2.2.11', '2.2.12', '2.2.13' ]
+ics_default: [ 0, 0, 1 ]
 gi_case_inventory_setup: "install"
 offline_inventory: "gi_offline"
 cp4s_versions: [ "1.10.3" ]
