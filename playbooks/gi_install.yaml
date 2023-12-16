@@ -18,76 +18,39 @@
     - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"gi_role=yes\"}}}'"
   when: gi_dedicated_nodes|length > 2
 
-- name: Create GI operator namespace
+- name: Create GI namespace
   shell:
-    cmd: "oc create namespace {{ gi_namespace }}||true"
+    cmd: "oc create namespace {{ gi_namespace }}|| echo 'Namespace exists'"
 
 - name: GI download case file
   shell:
-    cmd: "cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-guardium-insights/{{ gi_case_version }}/{{ gi_case }} --outputdir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }} --tolerance 1"
+    cmd: "oc ibm-pak get ibm-guardium-insights --version {{ gi_case_version }}"
   when: internet_type != 'A'
-
-- name: Get OpenSSL version on bastion
-  shell:
-    cmd: openssl version
-  register: openssl_version
-
-- name: gunzip case file
-  shell:
-    cmd: "cd {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }};gunzip {{ gi_case }}"
-  ignore_errors: yes
-
-- name: Unpack case file
-  shell:
-    cmd: "tar xf {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case|splitext|first }}.tar -C {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}"
-
-- name: Modify prereqs for OpenSSL
-  lineinfile:
-    path: "{{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/prereqs.yaml"
-    regexp: '.*OpenSSL 1.1.1.*'
-    line: '        versionRegex: "OpenSSL 1.1.1*|OpenSSL 3.*"'
-  when: openssl_version.stdout|regex_search("^OpenSSL 3.*$") and gi_version_index|int < gi_31_32_index
 
 - name: Save portable repo credentials
   shell:
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action configure-creds-airgap --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }}\""
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
 
-- name: GI preinstall task
+- name: GI preinstall task - online
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action pre-install --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -a admin -p {{ ics_admin_password }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
+    cmd: "IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action preInstall --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
+  when: internet_type != 'A'
 
-- name: Prepare case files for ICS
-  ansible.builtin.get_url:
-    url: "{{ item }}"
-    dest: "{{ temp_dir }}/gi_arch/cases"
-    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
-  with_items:
-    - "https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-cp-common-services/{{ ics_cases[ics_version_hint|int] }}/ibm-cp-common-services-{{ ics_cases[ics_version_hint|int] }}.tgz"
-  when: internet_type != 'A' and gi_version_index|int >= gi_31_32_index
-
-- name: Copy DB2 case file to cases directory
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "{{ temp_dir }}/gi_arch/cases"
-  with_fileglob:
-    - "{{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-db2uoperator-*.tgz"
-  when: gi_version_index|int >= gi_31_32_index
+- name: GI preinstall task - offline
+  shell:
+    cmd: "IBMPAK_HOME={{ temp_dir }}/gi_arch IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action preInstall --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -h {{ db2_nodes_list }} -l true{{ add_options1 }}{{ add_options2 }}\""
+  when: internet_type == 'A'
 
 - name: Install GI catalog in air-gapped
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
+    cmd: "IBMPAK_HOME={{ temp_dir }}/gi_arch IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installCatalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir {{ temp_dir }}/gi_arch/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
   when: internet_type == 'A'
 
-- name: Install GI catalog online before 3.2
+- name: Install GI catalog online
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1"
-  when: internet_type != 'A' and gi_version_index|int < gi_31_32_index
-
-- name: Install GI catalog online 3.2+
-  shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-catalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir {{ temp_dir }}/{{ offline_inventory }}/cases\""
-  when: internet_type != 'A' and gi_version_index|int >= gi_31_32_index
+    cmd: "IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installCatalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir /root/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
+  when: internet_type != 'A'
 
 - name: Wait for GI catalog (part1)
   shell:
@@ -107,12 +70,12 @@
 
 - name: Install GI operators in air-gapped env
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key\""
+    cmd: "IBMPAK_HOME={{ temp_dir }}/gi_arch IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }} --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key --inputDir {{ temp_dir }}/gi_arch/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
   when: internet_type == 'A'
 
 - name: Install GI operators online
   shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-guardium-insights/ --inventory {{ gi_case_inventory_setup }} --action install-operator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key\""
+    cmd: "IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key --inputDir /root/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
   when: internet_type != 'A'
 
 - name: Wait for GI operators
@@ -123,19 +86,32 @@
   retries: 30
   delay: 10
   with_items:
+    - { operator_pattern: "db2u-operator-manager" }
     - { operator_pattern: "ibm-cloud-databases-redis-operator" }
     - { operator_pattern: "mongodb-kubernetes-operator" }
     - { operator_pattern: "guardiuminsights-controller-manager" }
 
 - name: Generate GI deployment file
   template:
-    src: "gi.j2"
+    src: "{{ 'gi.j2' if gi_version_index|int > 0 else 'gi-3210.j2' }}"
     dest: "{{ temp_dir }}/gi_arch/gi.yaml"
 
 - name: Deploy GI
   shell:
     cmd: "oc apply -f {{ temp_dir }}/gi_arch/gi.yaml"
 
+- name: Wait for DB2 deployment
+  shell:
+    cmd: "oc get pod -n {{ gi_namespace }} | grep db2-ready | grep Completed | wc -l"
+  register: db2_deployment_status
+  until: db2_deployment_status.stdout|int == 1
+  retries: 50
+  delay: 60
+
+- name: Patch deployment (BUG in 3.2.10)
+  shell:
+    cmd: "oc patch guardiuminsights gi --type json -p '[{\"op\": \"replace\", \"path\": \"/spec/guardiumInsightsGlobal/deploySettings/ensureDb2InstallPlacement\", \"value\": false}]'"
+    
 - name: Wait for successful GI deployment (takes 20-60 minutes)
   shell:
     cmd: "oc get guardiuminsights -n {{ gi_namespace }} -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
@@ -165,7 +141,6 @@
     - STAP_STREAMING
     - OUTLIERS_ENGINE
     - GDP_OUTLIER_SUMMARIZED
-  when: gi_version_index|int >= gi_31_32_index and stap_supp == 'Y'
 
 - name: Set Outliers detection in Demo mode
   block:
@@ -218,7 +193,7 @@
       use_proxy: no
     vars:
       j_query: "Configs[?Name=='Outliers']._id"
-  when: gi_version_index|int >= gi_31_32_index and outliers_demo == 'Y'
+  when: outliers_demo == 'Y'
 
 - name: Get ssh service node port
   shell:
@@ -273,3 +248,4 @@
 - name: Setup DB2 parameters for parallelism
   shell:
     cmd: bash ../scripts/db2_parallelism.sh
+

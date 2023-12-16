@@ -30,8 +30,8 @@ additionalTrustBundle: |
 {{ repo_cert.stdout }}
 imageContentSources:
 - mirrors:
-  - registry.{{ domain }}:5000/ocp4/openshift4
+  - registry.{{ domain }}:5000/openshift/release-images
   source: quay.io/openshift-release-dev/ocp-release
 - mirrors:
-  - registry.{{ domain }}:5000/ocp4/openshift4
+  - registry.{{ domain }}:5000/openshift/release
   source: quay.io/openshift-release-dev/ocp-v4.0-art-dev

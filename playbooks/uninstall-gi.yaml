@@ -17,6 +17,7 @@
     set_fact:
       gi_case_archive: "{{ gi_cases[gi_version_index|int] }}"
       gi_version: "{{ gi_versions[gi_version_index|int] }}"
+      gi_case_version: "{{ gi_cases[gi_version_index|int] }}"
 
   - name: Check other configuration parameters
     fail: msg="Variable {{ item.name }} is not set"
@@ -27,8 +28,9 @@
       - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
+      - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
 
-  - name: Delete GI operator instance
+  - name: Delete GI instance
     shell:
       cmd: "oc delete guardiuminsights {{ gi_namespace }} -n {{ gi_namespace }}||true "
 
@@ -46,19 +48,19 @@
     register: gi_pods
     until: "gi_pods.stdout == \"0\""
     retries: 20
-    delay: 20
+    delay: 60
 
   - name: Delete GI pvc's
     shell:
       cmd: "oc delete $(oc get pvc -n {{ gi_namespace }} -oname) -n {{ gi_namespace }}||true "
 
-  - name: Uninstall GI operator
+  - name: Uninstall GI operators
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/gi_arch/{{ offline_inventory }}/ibm-guardium-insights/ --namespace {{ gi_namespace }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --tolerance 1"
+      cmd: "IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--inputDir /root/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
 
-  - name: Uninstall GI catalog #generates error til 3.0.2 should be corrected in 3.1
+  - name: Uninstall GI catalogs
     shell:
-      cmd: "cloudctl case launch --case ../gi-temp/gi_arch/{{ offline_inventory }}/ibm-guardium-insights --namespace openshift-marketplace --inventory {{ gi_case_inventory_setup }} --action uninstallCatalog --tolerance 1"
+      cmd: "IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallCatalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir /root/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
 
   - name: Delete GI namespace
     shell:

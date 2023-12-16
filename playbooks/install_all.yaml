@@ -22,8 +22,8 @@
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
     cluster_network: "{{ lookup('env','GI_OCP_CIDR') }}"
     cluster_network_subnet:  "{{ lookup('env','GI_OCP_CIDR_MASK') }}"
-    ocadmin: "{{ lookup('env','GI_OCADMIN') }}"
-    ocadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
+    ocpadmin: "{{ lookup('env','GI_OCADMIN') }}"
+    ocpadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
     storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
     storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
     storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
@@ -65,8 +65,8 @@
         - { name: "GI_OCP_CIDR", value: "{{ cluster_network }}" }
         - { name: "GI_OCP_CIDR_MASK", value: "{{ cluster_network_subnet }}" }
         - { name: "GI_OCP_CNI", value: "{{ ocp_cni }}" }
-        - { name: "GI_OCADMIN", value: "{{ ocadmin }}" }
-        - { name: "GI_OCADMIN_PWD", value: "{{ ocadmin_password }}" }
+        - { name: "GI_OCADMIN", value: "{{ ocpadmin }}" }
+        - { name: "GI_OCADMIN_PWD", value: "{{ ocpadmin_password }}" }
         - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
         - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
         - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
@@ -189,13 +189,16 @@
         stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
         gi_ds_size: "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
         gi_meta_size: "{{ lookup('env','GI_METADATA_STORAGE_SIZE') }}"
-        gi_logs_size: "{{ lookup('env','GI_ACTIVELOGS_STORAGE_SIZE') }}"
+        gi_logs_size: "{{ lookup('env','GI_ARCHIVELOGS_STORAGE_SIZE') }}"
         gi_mongo_size: "{{ lookup('env','GI_MONGO_DATA_STORAGE_SIZE') }}"
         gi_mongo_meta_size:  "{{ lookup('env','GI_MONGO_METADATA_STORAGE_SIZE') }}"
         gi_kafka_size: "{{ lookup('env','GI_KAFKA_STORAGE_SIZE') }}"
         gi_zookeeper_size:  "{{ lookup('env','GI_ZOOKEEPER_STORAGE_SIZE') }}"
+        gi_redis_size:  "{{ lookup('env','GI_REDIS_STORAGE_SIZE') }}"
+        gi_pgsql_size:  "{{ lookup('env','GI_POSTGRES_STORAGE_SIZE') }}"
         gi_ssh_host: "{{ lookup('env','GI_SSH_HOST') }}"
         gi_ssh_port: "{{ lookup('env','GI_SSH_PORT') }}"
+        gi_nfs_backup: "{{ lookup('env','GI_NFS_BACKUP') }}"
       when: install_gi == 'Y'
 
     - name: Check GI variables
@@ -214,14 +217,30 @@
         - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
         - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
         - { name: "GI_METADATA_STORAGE_SIZE", value: "{{ gi_meta_size }}" }
-        - { name: "GI_ACTIVELOGS_STORAGE_SIZE", value: "{{ gi_logs_size }}" }
+        - { name: "GI_ARCHIVELOGS_STORAGE_SIZE", value: "{{ gi_logs_size }}" }
         - { name: "GI_MONGO_DATA_STORAGE_SIZE", value: "{{ gi_mongo_size }}" }
         - { name: "GI_MONGO_METADATA_STORAGE_SIZE", value: "{{ gi_mongo_meta_size }}" }
         - { name: "GI_KAFKA_STORAGE_SIZE", value: "{{ gi_kafka_size }}" }
         - { name: "GI_ZOOKEEPER_STORAGE_SIZE", value: "{{ gi_zookeeper_size }}" }
+        - { name: "GI_REDIS_STORAGE_SIZE", value: "{{ gi_redis_size }}" }
+        - { name: "GI_POSTGRES_STORAGE_SIZE", value: "{{ gi_pgsql_size }}" }
         - { name: "GI_SSH_HOST", value: "{{ gi_ssh_host }}" }
         - { name: "GI_SSH_PORT", value: "{{ gi_ssh_port }}" }
+        - { name: "GI_NFS_BACKUP", value: "{{ gi_nfs_backup }}" }
       when: install_gi == 'Y' and item.value == ""
+
+    - name: Set GI NFS variables
+      ansible.builtin.set_fact:
+        gi_nfs_server: "{{ lookup('env','GI_NFS_SERVER') }}"
+        gi_nfs_path: "{{ lookup('env','GI_NFS_PATH') }}"
+      when: install_gi == 'Y' and gi_nfs_backup == 'Y'
+
+    - name: Check GI NFS variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_NFS_SERVER", value: "{{ gi_nfs_server }}" }
+        - { name: "GI_NFS_PATH", value: "{{ gi_nfs_path }}" }
+      when: install_gi == 'Y' and gi_nfs_backup == 'Y' and item.value == ""
 
     - name: Set CP4S installation variables from env
       ansible.builtin.set_fact:
@@ -384,7 +403,7 @@
         gi_case_version: "{{ gi_cases[gi_version_index|int] }}"
         db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
         db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
-        gi_license: "{{ 'L-TESX-C86NC4' if gi_version_index|int < 3 else 'L-GBLK-CDVHGZ' }}"
+        gi_license: "{{ '' if gi_version_index|int < 0 else 'L-GBLK-CDVHGZ' }}"
         add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
         add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
         db2_class_fs: "{{ 'portworx-db2-rwx-sc' if storage_type == 'P' else storage_class_rw_many }}"
@@ -399,13 +418,13 @@
     - name: Set GI installation variables
       ansible.builtin.set_fact:
         outliers_demo: "{{ lookup('env', 'GI_OUTLIERS_DEMO') }}"
-      when: install_gi == 'Y' and stap_supp == 'Y' and gi_version_index|int >= gi_31_32_index|int
+      when: install_gi == 'Y'
 
     - name: Check GI installation variables
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_OUTLIERS_DEMO", value: "{{ outliers_demo }}" }
-      when: install_gi == 'Y' and stap_supp == 'Y' and gi_version_index|int >= gi_31_32_index|int and item.value == ""
+      when: install_gi == 'Y' and item.value == ""
 
     - name: Set parameters for air-gapped installation
       ansible.builtin.set_fact:
@@ -435,39 +454,43 @@
 
     - name: Wait for OCP boot phase ready
       ansible.builtin.include_tasks: stage2.yaml
-      when: skip_phase|int < 2
+      when: skip_phase|int < 3
 
     - name: Install rook-ceph
       ansible.builtin.include_tasks: rook_install.yaml
-      when: skip_phase|int < 3 and storage_type == 'R'
+      when: skip_phase|int < 4 and storage_type == 'R'
 
     - name: Install ODF
       ansible.builtin.include_tasks: ocs_install.yaml
-      when: skip_phase|int < 3 and storage_type == 'O'
+      when: skip_phase|int < 4 and storage_type == 'O'
 
     - name: Install Portworx
       ansible.builtin.include_tasks: px_install.yaml
-      when: skip_phase|int < 3 and storage_type == 'P'
+      when: skip_phase|int < 4 and storage_type == 'P'
 
     - name: Setup image registry
       ansible.builtin.include_tasks: image_registry_setup.yaml
-      when: skip_phase|int < 3
+      when: skip_phase|int < 4
 
     - name: Install ICS
       ansible.builtin.include_tasks: ics_install.yaml
-      when: skip_phase|int < 4 and install_ics == 'Y'
+      when: skip_phase|int < 5 and install_ics == 'Y'
+
+    - name: Install NFS client
+      ansible.builtin.include_tasks: nfs_client_install.yaml
+      when: skip_phase|int < 6 and install_gi == 'Y' and gi_nfs_backup == 'Y'
 
     - name: Install GI
       ansible.builtin.include_tasks: gi_install.yaml
-      when: skip_phase|int < 5 and install_gi == 'Y'
+      when: skip_phase|int < 7 and install_gi == 'Y'
 
     - name: Install CP4S
       ansible.builtin.include_tasks: cp4s_install.yaml
-      when: skip_phase|int < 5 and install_cp4s == 'Y'
+      when: skip_phase|int < 7 and install_cp4s == 'Y'
 
     - name: Install openldap
       ansible.builtin.include_tasks: openldap_install.yaml
-      when: skip_phase|int < 6 and install_ldap == 'Y'
+      when: skip_phase|int < 8 and install_ldap == 'Y'
 
     - name: OCP info
       ansible.builtin.debug:
@@ -475,7 +498,7 @@
           - "Openshift {{ ocp_release }} has been installed and configured"
           - "Add to hosts on your web browser workstation this line to login to OCP:"
           - "{{ bas_ip }} console-openshift-console.apps.{{ domain }} oauth-openshift.apps.{{ domain }}"
-          - "Login to OCP console as {{ ocadmin }} user - https://console-openshift-console.apps.{{ domain }}"
+          - "Login to OCP console as {{ ocpadmin }} user - https://console-openshift-console.apps.{{ domain }}"
 
     - name: ICS info
       ansible.builtin.debug:

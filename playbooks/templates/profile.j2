@@ -5,9 +5,10 @@
  "boot": {
   "kernel": "/assets/rhcos-live-kernel-x86_64",
   "initrd": [
-   "/assets/rhcos-live-initramfs.x86_64.img"
+   "--name main /assets/rhcos-live-initramfs.x86_64.img"
    ],
    "args": [
+    "initrd=main",
     "ip=dhcp",
     "rd.neednet=1",
     "console=tty0",

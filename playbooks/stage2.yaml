@@ -11,8 +11,6 @@
   ansible.builtin.shell:
     cmd: "ssh -l core {{ boot_name }}.{{ domain }} -i {{ ssh_key }} sudo shutdown -h +1"
   remote_user: core
-  args:
-    warn: false
   when: boot_availability.rc != 2 and boot_availability.rc != 1
 
 - name: Wait for boostrap shutdown
@@ -92,18 +90,18 @@
 
 - name: Create htpasswd file
   community.general.htpasswd:
-    path: "{{ temp_dir }}/ocadmin.htpasswd"
-    name: "{{ ocadmin }}"
-    password: "{{ ocadmin_password }}"
+    path: "{{ temp_dir }}/ocpadmin.htpasswd"
+    name: "{{ ocpadmin }}"
+    password: "{{ ocpadmin_password }}"
   when: is_htpasswd_secret.stdout|int == 0
 
 - name: Register htpasswd file in OCP
   ansible.builtin.shell:
     cmd: "{{ item.cmd }}"
   with_items:
-    - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocadmin.htpasswd -n openshift-config" }
+    - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/ocpadmin.htpasswd -n openshift-config" }
     - { cmd: "oc apply -f ../scripts/oauth_provider.yaml" }
-    - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocadmin }}" }
+    - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocpadmin }}" }
   ignore_errors: no #if htpasswd has been imported before
   when: is_htpasswd_secret.stdout|int == 0
 
@@ -112,80 +110,29 @@
     cmd: "oc patch OperatorHub cluster --type json -p '[{\"op\": \"add\", \"path\": \"/spec/disableAllDefaultSources\", \"value\": true}]'"
   when: internet_type == 'A'
 
-- name: Wait 1 minute before adding admin
+- name: Wait 5 minutes to initiate changes related to added admin
   ansible.builtin.pause:
-    minutes: 1
+    minutes: 5
   when: is_htpasswd_secret.stdout|int == 0
 
-- name: Identify image registry name in the import
-  ansible.builtin.shell:
-    cmd: "cd {{ temp_dir }}/olm/manifests-redhat-operator-index;cat catalogSource.yaml | grep image | awk '{print $2}'| awk -F':' '{print $1}'"
-  register: old_registry_name
-  when: internet_type == 'A'
-
-- name: Copy OLM conf file for modification
-  ansible.builtin.copy:
-    src: "{{ temp_dir }}/olm/"
-    dest: "{{ temp_dir }}/olm_copy/"
-  when: internet_type == 'A'
-
-- name: Set correct image registry mirror name in catalogSources
-  ansible.builtin.shell:
-    cmd: "sed -i 's/{{ old_registry_name.stdout }}/registry.{{ domain }}/g' catalogSource.yaml"
-    chdir: "{{ temp_dir }}/olm_copy/{{ item }}"
-    warn: false
+- name: Set registry for manifests 1
+  ansible.builtin.command:
+    cmd: "sed -i 's/-.*:5000/- registry.{{ domain }}:5000/g' {{ temp_dir }}/coreos/{{ item }}"
   with_items:
-    - manifests-redhat-operator-index
-    - manifests-certified-operator-index
-    - manifests-redhat-marketplace-index
-    - manifests-community-operator-index
-  when: internet_type == 'A'
-  ignore_errors: yes
+    - imageContentSourcePolicy.yaml
 
-- name: Set correct image registry mirror name in imageContentSourcePolicy
-  ansible.builtin.shell:
-    cmd: "sed -i 's/{{ old_registry_name.stdout }}/registry.{{ domain }}/g' imageContentSourcePolicy.yaml"
-    chdir: "{{ temp_dir }}/olm_copy/{{ item }}"
-    warn: false
+- name: Set registry for manifests 2
+  ansible.builtin.command:
+    cmd: "sed -i 's/image:.*:5000/image: registry.{{ domain }}:5000/g' {{ temp_dir }}/coreos/{{ item }}"
   with_items:
-    - manifests-redhat-operator-index
-    - manifests-certified-operator-index
-    - manifests-redhat-marketplace-index
-    - manifests-community-operator-index
-  when: internet_type == 'A'
-  ignore_errors: yes
+    - catalogSource-redhat-operator-index.yaml
 
-- name: Configure mirrored catalogSources
-  ansible.builtin.shell:
-    cmd: "oc apply -f catalogSource.yaml"
-    chdir: "{{ temp_dir }}/olm_copy/{{ item }}"
-    warn: false
+- name: Set RH operators catalog and OLM image content source policy"
+  ansible.builtin.command:
+    cmd: "oc apply -f {{ temp_dir }}/coreos/{{ item }}"
   with_items:
-    - manifests-redhat-operator-index
-    - manifests-certified-operator-index
-    - manifests-redhat-marketplace-index
-    - manifests-community-operator-index
-  when: internet_type == 'A'
-  ignore_errors: yes
-
-- name: Configure mirrored imageContentSourcePolicy.yaml
-  ansible.builtin.shell:
-    cmd: "oc apply -f imageContentSourcePolicy.yaml"
-    chdir: "{{ temp_dir }}/olm_copy/{{ item }}"
-    warn: false
-  with_items:
-    - manifests-redhat-operator-index
-    - manifests-certified-operator-index
-    - manifests-redhat-marketplace-index
-    - manifests-community-operator-index
-  when: internet_type == 'A'
-  ignore_errors: yes
-
-- name: Clean manifests in temp directory
-  ansible.builtin.shell:
-    cmd: "rm -rf {{ temp_dir }}/olm_copy"
-  args:
-    warn: false
+    - imageContentSourcePolicy.yaml
+    - catalogSource-redhat-operator-index.yaml
   when: internet_type == 'A'
 
 - name: Configure rook-ceph imagecontentsourcepolicy files
@@ -211,12 +158,27 @@
     - { src: "openldap_icsp.j2", dest: "{{ temp_dir }}/adds/openldap_icsp.yaml" }
   when: internet_type == 'A' and install_ldap == 'Y'
 
-- name: Configure imageContentSourcePolicy for openldap
+- name: Apply imageContentSourcePolicy for openldap
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/adds/{{ item }}"
   with_items:
     - openldap_icsp.yaml
   when: internet_type == 'A' and install_ldap == 'Y'
+
+- name: Configure nfs-provisioner imagecontentsourcepolicy files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "nfs_provisioner_icsp.j2", dest: "{{ temp_dir }}/adds/nfs_provisioner_icsp.yaml" }
+  when: internet_type == 'A' and gi_nfs_backup == 'Y'
+
+- name: Apply imageContentSourcePolicy for nfs-provisioner
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/adds/{{ item }}"
+  with_items:
+    - nfs_provisioner_icsp.yaml
+  when: internet_type == 'A' and gi_nfs_backup == 'Y'
 
 - name: Wait - cluster stabilization
   ansible.builtin.pause:

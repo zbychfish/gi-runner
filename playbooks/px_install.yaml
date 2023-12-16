@@ -35,15 +35,16 @@
     retries: 100
     delay: 15
 
-  - name: Configure OCS default storage class
+  - name: Configure PX default storage class
     ansible.builtin.shell:
       cmd: "{{ item.cmd }}"
     with_items:
       - { cmd: "oc patch storageclass px-csi-replicated -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
 
   - name: Add storage classes for DB2
-    ansible.builtin.shell
+    ansible.builtin.shell:
       cmd: "oc apply -f ../scripts/{{ item }}"
     with_items:
       - px_sc_db2_fs.yaml
       - px_sc_db2_block.yaml
+

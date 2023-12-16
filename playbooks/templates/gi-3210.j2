@@ -31,14 +31,12 @@ spec:
         namespace: ibm-common-services
         registry: common-service
     storageClassName: "{{ storage_class_rw_many }}"
-    backupsupport:
 {% if gi_nfs_backup == 'Y' %}
+    backupsupport:
       enabled: "true"
       name: "backup-nfs-pvc"  
       size: {{ (gi_ds_size|float * 1.2)|int }}Gi
       storageClassName: nfs-client
-{% else %}
-      enabled: "false"
 {% endif %}
   dependency-kafka:
     kafka:
@@ -53,16 +51,9 @@ spec:
 {% if gi_zookeeper_size|int != 0 %}
         size: {{ gi_zookeeper_size }}Gi
 {% endif %}
-  dependency-postgres:
-    postgres:
-      storage:
-        size: {{ gi_pgsql_size }}Gi
-        storageClassName: "{{ storage_class_rw_one }}"
   dependency-redis:
     size: 3
     persistence:
-      enabled: true
-      size: {{ gi_redis_size }}Gi
       storageClass: "{{ storage_class_rw_one }}"
   dependency-mongodb:
     storage:
@@ -89,18 +80,17 @@ spec:
 {% endif %}
         storageClassName: "{{ storage_class_rw_many }}"
   dependency-db2:
-    db2instance:
-      installAsDefault: true
-      dbConfig:
-        LOGARCHMETH1: "DISK:/mnt/logs/archive"
-      nodes: {{ db2_nodes_array|length }}
-      resources:
-        requests:
-          cpu: "6"
-          memory: "48Gi"
-        limits:
-          cpu: "6"
-          memory: "48Gi"
+    db2:
+      instance:
+        registry:
+          DB2_4K_DEVICE_SUPPORT: "ON"
+      size: "{{ db2_nodes_array|length }}"
+      #resources:
+        #cpu: "6"
+        #memory: "48Gi"
+      #limits:
+        #cpu: "6"
+        #memory: "48Gi"
       dbSettings:
 {% if db2_enc %}
         encrypt: "YES"
@@ -109,20 +99,17 @@ spec:
 {% endif %}
       storage:
 {% if gi_logs_size|int != 0 %}
-      - name: archivelogs
-        type: create
+      - name: activelogs
         spec:
-          storageClassName: "{{ db2_class_fs }}"
           accessModes:
-          - ReadWriteMany
+          - ReadWriteOnce
+          storageClassName: "{{ db2_class_block }}"
           resources:
             requests:
-              storage: {{ gi_logs_size }}Gi
+              storage: "{{ gi_logs_size }}Gi"
 {% endif %}
       - name: meta
-        type: create
         spec:
-          storageClassName: "{{ db2_class_fs }}"
           accessModes:
           - ReadWriteMany
 {% if gi_meta_size|int != 0 %}
@@ -130,30 +117,20 @@ spec:
             requests:
               storage: {{ gi_meta_size }}Gi
 {% endif %}
+          storageClassName: "{{ db2_class_fs }}"
+        type: create
       - name: data
-        type: template
         spec:
-          storageClassName: "{{ db2_class_block }}"
           accessModes:
           - ReadWriteOnce
           resources:
             requests:
-              storage: {{ gi_ds_size }}Gi
-      - name: tempts
-        type: template
-        spec:
+              storage: "{{ gi_ds_size }}Gi"
           storageClassName: "{{ db2_class_block }}"
-          accessModes:
-          - ReadWriteOnce
-          resources:
-            requests:
-              storage: {{ gi_ds_size|int // 10 }}Gi
-      partitionConfig:
-#        total: {{ (db2_nodes_array|length) * 2 }}
-        total: {{ db2_nodes_array|length }}
-      instance:
-        registry:
-          DB2_4K_DEVICE_SUPPORT: "ON"
+        type: template
+    mln:
+      distribution: 0:0
+      total: "{{ db2_nodes_array|length }}"
   mini-snif:
     persistentVolumesClaims:
       mini-snif-shared:

@@ -1,0 +1,38 @@
+apiVersion: mirror.openshift.io/v1alpha2
+kind: ImageSetConfiguration
+archiveSize: 4
+storageConfig:
+  registry:
+    imageURL:
+    skipTLS: false
+mirror:
+  platform:
+    channels:
+    - name: fast-.ocp_version.
+      minVersion
+      maxVersion
+      type: ocp
+  operators:
+    - catalog: registry.redhat.io/redhat/redhat-operator-index:v.ocp_version.
+      packages:
+        - name: local-storage-operator
+          channels:
+          - name: stable
+        - name: odf-operator
+          channels:
+          - name: stable-.ocp_version.
+        - name: ocs-operator
+          channels:
+          - name: stable-.ocp_version.
+        - name: mcg-operator
+          channels:
+          - name: stable-.ocp_version.
+        - name: odf-csi-addons-operator
+          channels:
+          - name: stable-.ocp_version.
+        - name: serverless-operator
+          channels:
+          - name: stable
+        - name: web-terminal
+          channels:
+          - name: fast

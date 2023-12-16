@@ -18,6 +18,7 @@
     path: "{{ item.path }}"
     state: directory
   with_items:
+    - { path: "/opt/registry/data" }
     - { path: "/opt/registry/auth" }
     - { path: "/opt/registry/certs" }
   when: internet_type == 'A'
@@ -163,6 +164,7 @@
 - name: Set SELINUX permissive access for NetworkManager
   ansible.builtin.shell:
     cmd: semanage permissive -a NetworkManager_t
+  when: internet_type == 'A'
 
 - name: Cleanup configuration files
   ansible.builtin.file:
@@ -274,8 +276,8 @@
 - name: Unzip matchbox
   ansible.builtin.command:
     cmd: "tar zxf {{ temp_dir }}/coreos/matchbox-{{ matchbox_version }}-linux-amd64.tar.gz -C {{ temp_dir }}"
-  args:
-    warn: false
+      #args:
+      #warn: false
 
 - name: Copy matchbox to bin
   ansible.builtin.copy:
@@ -368,7 +370,7 @@
   with_items: "{{ rhcos_images.results }}"
   when: item.stat.exists == False and internet_type != 'A'
 
-- name: Copy RHCOS images to matchbox assets
+- name: Copy RHCOS images to matchbox assets for online
   ansible.builtin.file:
     src: "{{ temp_dir }}/coreos/{{ item.name }}"
     dest: "/var/lib/matchbox/assets/{{ item.name }}"
@@ -379,6 +381,19 @@
     - { name: "rhcos-live-initramfs.x86_64.img" }
     - { name: "rhcos-live-kernel-x86_64" }
     - { name: "rhcos-live-rootfs.x86_64.img" }
+  when: internet_type != 'A'
+
+- name: Copy RHCOS images to matchbox assets for offline
+  ansible.builtin.copy:
+    src: "{{ temp_dir }}/coreos/{{ item.name }}"
+    dest: "/var/lib/matchbox/assets/{{ item.name }}"
+    owner: matchbox
+    group: matchbox
+  with_items:
+    - { name: "rhcos-live-initramfs.x86_64.img" }
+    - { name: "rhcos-live-kernel-x86_64" }
+    - { name: "rhcos-live-rootfs.x86_64.img" }
+  when: internet_type == 'A'
 
 - name: prepare TFTP for iPXE
   ansible.builtin.copy:
@@ -390,7 +405,7 @@
   with_items:
     - { src: "/usr/share/ipxe/undionly.kpxe", dest: "/var/lib/tftp" }
     - { src: "/usr/share/ipxe/ipxe-i386.efi", dest: "/var/lib/tftp" }
-    - { src: "/usr/share/ipxe/ipxe-x86_64.efi", dest: "/var/lib/tftp" }
+    - { src: "/usr/share/ipxe/ipxe-x86_64.efi", dest: "/var/lib/tftp/ipxe.efi" }
 
 - name: Matchbox bootstrap group json
   ansible.builtin.template:
@@ -536,7 +551,9 @@
     - "ptr-record={{ bas_ptr.stdout }},{{ bas_name }}.{{ domain }}"
     - "address=/matchbox.{{ domain }}/{{ bas_ip }}"
     - "address=/api.{{ domain }}/{{ bas_ip }}"
+    - "ptr-record={{ bas_ptr.stdout }},api.{{ domain }}"
     - "address=/api-int.{{ domain }}/{{ bas_ip }}"
+    - "ptr-record={{ bas_ptr.stdout }},api-int.{{ domain }}"
     - "address=/.apps.{{ domain }}/{{ bas_ip }}"
     - "#TFTP"
     - "enable-tftp"
@@ -601,7 +618,10 @@
 - name: Add DNS forwarder to dnsmasq.conf
   ansible.builtin.lineinfile:
     path: /etc/dnsmasq.conf
-    line: "server={{ dns_forwarder }}"
+    line: "{{ item }}"
+  with_items:
+    - "server={{ dns_forwarder }}"
+    - "address=/.{{ domain }}/"
 
 - name: Get bastion interface name
   ansible.builtin.shell:
@@ -675,13 +695,46 @@
   with_items: "{{ rhcos_tools.results }}"
   when: item.stat.exists == False and internet_type != 'A'
 
+- name: Download oc ibm-pak
+  ansible.builtin.get_url:
+    url: "https://github.com/IBM/ibm-pak/releases/download/v{{ ibm_pak_version }}/oc-ibm_pak-linux-amd64.tar.gz"
+    dest: "{{ temp_dir }}/coreos"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  when: internet_type != 'A'
+
 - name: Unpack OCP tools
   ansible.builtin.shell:
     cmd: "tar xf {{ temp_dir }}/coreos/{{ item.src }} -C /usr/local/bin"
-    warn: no
   with_items:
     - { src: "openshift-client-linux.tar.gz" }
     - { src: "openshift-install-linux.tar.gz" }
+
+- name: Unpack OCP tools for offline
+  ansible.builtin.shell:
+    cmd: "tar xf {{ temp_dir }}/coreos/{{ item.src }} -C /usr/local/bin"
+  with_items:
+    - { src: "oc-mirror.tar.gz" }
+  when: internet_type == 'A'
+
+- name: Correct file settings for oc-mirror
+  ansible.builtin.file:
+    path: /usr/local/bin/oc-mirror
+    mode: 0755
+    owner: root
+    group: root
+  when: internet_type == 'A'
+
+- name: Unpack OCP tools for Guardium Insights
+  ansible.builtin.shell:
+    cmd: "tar xf {{ temp_dir }}/gi_arch/{{ item.src }} -C /usr/local/bin"
+  with_items:
+    - { src: "oc-ibm_pak-linux-amd64.tar.gz" }
+  when: install_gi == 'Y'
+
+- name: Rename oc ibm-pak file
+  ansible.builtin.shell:
+    cmd: "mv /usr/local/bin/oc-ibm_pak-linux-amd64 /usr/local/bin/oc-ibm_pak"
+  when: install_gi == 'Y'
 
 - name: Define base and ocp domain
   ansible.builtin.set_fact:
@@ -807,4 +860,3 @@
     name: haproxy
     state: restarted
     enabled: yes
-

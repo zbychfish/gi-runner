@@ -41,7 +41,6 @@
 - name: Unpack cloudctl tools
   ansible.builtin.shell:
     cmd: "tar xf {{ temp_dir }}/{{ offline_inventory }}/{{ item.src }} -C /usr/local/bin"
-    warn: no
   with_items:
     - { src: "cloudctl-linux-amd64.tar.gz" }
 
@@ -57,37 +56,35 @@
   with_items:
     - { file: "cloudctl" }
 
+- name: Set catalog reference for CPFS and GI (offline)
+  ansible.builtin.shell:
+    cmd: "sed -i \"s/image:.*:5000/image: registry.{{ domain }}:5000/\" {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/catalog-sources.yaml"
+  when: internet_type == 'A' and install_gi == 'Y'
+
+- name: Set imagecontentsourcepolicy reference for CPFS and GI (offline)
+  ansible.builtin.shell:
+    cmd: "sed -i \"s/- .*:5000/- registry.{{ domain }}:5000/\" {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/image-content-source-policy.yaml"
+  when: internet_type == 'A' and install_gi == 'Y'
+
+- name: Install catalogs for CPFS and GI (offline)
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/catalog-sources.yaml"
+  when: internet_type == 'A' and install_gi == 'Y'
+
+- name: Install image content source policy for CPFS and GI (offline)
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/{{ offline_inventory }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/image-content-source-policy.yaml"
+  when: internet_type == 'A' and install_gi == 'Y'
+
 - name: Switch ICS inventory to portable registry
   ansible.builtin.shell:
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-cp-common-services-{{ ics_case }}.tgz --inventory {{ ics_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
   when: internet_type == 'A' and install_gi == 'N'
 
-- name: Switch GI inventory to portable registry
+- name: Install ICS catalog
   ansible.builtin.shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/{{ gi_case }} --inventory {{ gi_case_inventory_setup }} --action configure-cluster-airgap --namespace {{ ics_operator_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }}:5000 --user {{ repo_user }} --pass {{ repo_user_password }} --inputDir {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}\""
-  when: internet_type == 'A' and install_gi == 'Y'
-
-- name: Wait for cluster reconfiguration
-  ansible.builtin.pause:
-    minutes: 8
-  when: internet_type == 'A' and ocp_release|int < 2
-
-- name: Check cluster nodes health after Content Source Policy change
-  ansible.builtin.shell: ../scripts/check_cluster_health_operators.sh
-  register: cluster_health_operators
-  until: cluster_health_operators.stdout == "0"
-  retries: 100
-  delay: 30
-  when: internet_type == 'A' and ocp_release|int < 2
-
-- name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
-  ansible.builtin.shell:
-    cmd: "oc get co --config=../ocp/auth/kubeconfig --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
-  register: co_status
-  until: "co_status.stdout == \"0\""
-  retries: 150
-  delay: 30
-  when: internet_type == 'A' and ocp_release|int < 2
+    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-cp-common-services-{{ ics_case }}.tgz --inventory {{ ics_case_inventory_setup }}  --action installCatalog --namespace openshift-marketplace --args \"--registry registry.{{ domain }}:5000\""
+  when: internet_type == 'A' and install_gi == 'N'
 
 - name: Create ICS catalog file
   ansible.builtin.template:
@@ -99,11 +96,6 @@
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/ics_arch/ics_catalog.yaml"
   when: internet_type != 'A'
-
-- name: Publish ICS catalog in air-gap
-  ansible.builtin.shell:
-    cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-cp-common-services-{{ ics_case }}.tgz  --inventory {{ ics_case_inventory_setup }} --action install-catalog --namespace {{ ics_operator_namespace }}  --args \"--registry registry.{{ domain }}:5000\""
-  when: internet_type == 'A'
 
 - name: Wait for ICS catalog
   ansible.builtin.shell:
@@ -230,6 +222,11 @@
     - "oc -n ibm-common-services create secret generic route-tls-secret --from-file=ca.crt={{ ics_ca }}  --from-file=tls.crt={{ ics_cert }}  --from-file=tls.key={{ ics_key }}"
     - "oc -n ibm-common-services delete secret ibmcloud-cluster-ca-cert"
     - "oc -n ibm-common-services delete pod -l app=auth-idp"
+  when: ics_ext_ingress == 'Y'
+
+- name: Wait for certificate changes
+  ansible.builtin.pause:
+    minutes: 3
   when: ics_ext_ingress == 'Y'
 
 - name: Wait for successful cert replacement
