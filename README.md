@@ -13,7 +13,7 @@
 <HR>
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
-Release description:
+Release history:
 <P>v0.11.0
 <LI>Support new OCP, CPFS and GI releases
 <UL>New features and changes:
@@ -25,6 +25,7 @@ Release description:
 <LI>Guardium Insights - 3.2.11, 3.2.12, 3.2.13
 </UL>
 <LI>Offline installation has modified script to gather software for bastion and now produces the unzip rpm stored separately. The reason is to install it on Fedora bastion where unzip tool is not preinstalled - to allow unzip gi-runner archive. Use command 'dnf -qy --disablerepo=* localinstall download/unzip*.rpm'
+</UL>
 <P>v0.10.1
 <LI>Bugs related to problem with air-gapped installation removed
 <HR>
@@ -54,7 +55,6 @@ Files:
 <LI>scripts/login_to_ocp.sh - logs admin to OCP cluster with new token
 <LI>scripts/ics-uninstall.sh - native DEV team script to remove ICS instances
 <HR>
-Releases history:
 <P>v0.10.0
 <LI>Guardium Insights 3.2 support
 <LI>Added support for ODF in case of OCP 4.9+
