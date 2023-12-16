@@ -19,8 +19,9 @@ Release history:
 <UL>New features and changes:
 <LI>matchbox supports RHCOS booting in EFI mode in addition to BIOS
 <LI>matchbox updated to 0.10.0
-<LI><UL>supported installations:
-<LI>>Openshift - 4.10, 4.12, 4.14
+<LI>supported installations:
+<UL>
+<LI>Openshift - 4.10, 4.12, 4.14
 <LI>CPFS - 3.19.18 and 3.19.19
 <LI>Guardium Insights - 3.2.11, 3.2.12, 3.2.13
 </UL>
