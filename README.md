@@ -26,7 +26,6 @@ Air-gap preparation scripts:
 <LI>prepare-airgap-archives/prepare-air-gap-rook.sh - collects container images for rook-ceph, required only if you plan deploy rook-ceph as a storage backend
 <LI>prepare-airgap-archives/prepare-air-gap-ics.sh - collects CPFS container images, required only if you plan deploy CPFS only (no GI)
 <LI>prepare-airgap-archives/prepare-air-gap-gi.sh - collects container images for Guardium Insights, required only if you plan deploy it
-<LI>
 </UL>
 <HR>
 Release history:

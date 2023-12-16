@@ -80,9 +80,10 @@ mkdir -p ${air_dir}/GI-${gi_versions[${gi_version}]}
 cd $GI_TEMP
 tar cf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar .ibm-pak/*
 tar -rf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar oc-ibm_pak-linux-amd64.tar.gz
+tar -rf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar cloudctl-linux-amd64.tar.gz
 cd /opt/registry
 tar -cf ${air_dir}/GI-${gi_versions[${gi_version}]}/registry.tar data
-#rm -rf /opt/registry
-#rm -rf $GI_TEMP/* $GI_TEMP/.*
-#podman rm bastion-registry
+rm -rf /opt/registry
+rm -rf $GI_TEMP/* $GI_TEMP/.*
+podman rm bastion-registry
 msg "GI ${gi_versions[${gi_version}]} files prepared - copy $air_dir/GI-${gi_versions[${gi_version}]} directory to air-gapped bastion machine" info
