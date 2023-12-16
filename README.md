@@ -15,7 +15,7 @@ Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/0
 <HR>
 Release history:
 <P>v0.11.0
-<LI>Support new OCP, CPFS and GI releases
+<B>Support new OCP, CPFS and GI releases</B>
 <UL>New features and changes:
 <LI>matchbox supports RHCOS booting in EFI mode in addition to BIOS
 <LI>matchbox updated to 0.10.0
@@ -25,10 +25,21 @@ Release history:
 <LI>Guardium Insights - 3.2.11, 3.2.12, 3.2.13
 </UL>
 <LI>Offline installation has modified script to gather software for bastion and now produces the unzip rpm stored separately. The reason is to install it on Fedora bastion where unzip tool is not preinstalled - to allow unzip gi-runner archive. Use command 'dnf -qy --disablerepo=* localinstall download/unzip*.rpm'
+<LI>skip_phase flags for main ansible playbook
+<UL>
+<LI>1 - skips bastion preparation and continue from stage2
+<LI>2 - skips all steps before storage setup
+<LI>3 - skips all OCP installation steps and storage setup
+<LI>4 - skips image registry setup
+<LI>5 - skips CPFS installation
+<LI>6 - skips NFS provisioner setup for GI
+<LI>7 - skips GI deployment
+<LI>8 - skips openldap deployment
 </UL>
+</UL>
+<HR>
 <P>v0.10.1
 <LI>Bugs related to problem with air-gapped installation removed
-<HR>
 Files:
 <LI>init.sh - configures installation parameters
 <LI>playbook/install_all.yaml - Ansible playbook to manage installation flow
@@ -65,8 +76,10 @@ Files:
 <LI>Update rook-cepth to 1.9.9
 <LI>Update matchbox to 0.9.1
 <LI>Added activation STAP streaming and outliers Demo Mode in the installation process
+<HR>
 <P>v0.9.1
 <LI>Resolved bug with ICS variables when only GI and ICS is installed
+<HR>
 <P>v0.9.0
 <LI>added support of Fedora 36 as a bastion
 <LI>playbook/16-uninstall-ldap.yaml - new playbook allows safely uninstall OpenLDAP instance
@@ -84,14 +97,17 @@ Files:
 <LI>only upgrade from 3.1.x to 3.1.y supported
 <LI>possible upgrade of ICS by manual modification the variable GI_ICS_VERSION
 </UL>
+<HR>
 <P>v0.8.0
 <LI>Added installation support for GI 3.1.4 and 3.1.5, OCP 4.10.x, ICS 3.16.x and 3.17.x
 <LI>Some bugs in air-gapped installation removed (tested installation OCP 4.8.35 with ICS 3.14.2 and GI 3.1.5 
 <LI>prescripts use new function approach
+<HR>
 <P>v0.7.1
 <LI>Hardcoded ens192 NIC interface reference in stage1 playbook removed
 <LI>Rook-Ceph support for OCP 4.6 and 4.7 removed because the latest Ceph releases supports only OCP 4.8+
 <LI>Incorrect reference to subdirectory in rook-uninstall.sh corrected
+<HR>
 <P>v0.7.0
 <LI>Support GI 3.1.3 and ICS 3.15
 <LI>init.sh modified to evaluate inputs and provides more readable output
@@ -107,12 +123,15 @@ Files:
 </UL>
 <LI>Implemented installation flow to support multi-subnet location of OCP nodes. DHCP Relay must be set on routers and points the bastion.
 <LI>Possible selection different ICS version than default for GI installation (except air-gapped approach)
+<HR>
 <P>v0.6.2
 <LI>Solved bug with rook-ceph installation when nodes are not dedicated
 <LI>Identified bug with OCS installation on cluster with more that 3 workers, in this case storage must be assigned to first 3 nodes - will be solved in next release
+<HR>
 <P>v0.6.1
 <LI>Solved bug with requesting proxy parameters for non-proxy installations
 <LI>Solved incorrect message for non-tainted DB2 installations
+<HR>
 <P>v0.6.0
 <LI>added support for patches related to log4j2 vulnerabilities (support CPFS 3.14.2, GI 3.1.2)
 <LI>added playbooks to safely stop and start GI instance
@@ -125,11 +144,14 @@ Files:
 <LI>Solved problem with GPG keys during OLM images mirror
 <LI>Solved problem with reference to device name instead logical name on bastion in playbook 2
 <LI>Solved problem with an occasional appearance of error during insertion secret for htpasswd authentication in OCP
+<HR>
 <P>v0.5.2
 <LI>Bug with parsing comma separated value of db2 nodes, ldap domain and ldap user list solved
 <LI>GI deployment modified to reflect correct distribution of nodes
+<HR>
 <P>v0.5.1
 <LI>Solved problem with git branch conflict
+<HR>
 <P>v0.5
 <LI>added support for Guardium Insights 3.1
 <LI>added init.sh variable to enable STAP direct streaming (available for GI 3.1+ installations) GI_STAP_STREAMING
@@ -139,6 +161,7 @@ Files:
 <LI>added optional replacement GI endpoint certificate, 4 additional init.sh variables: GI_IN, GI_IN_CA, GI_IN_CERT, GI_IN_KEY
 <LI>modified rook-ceph deployment for air-gapped environment to use imagecontentsourcepolicy (requires rook registry archive rebuilding), update rook-ceph operator to version 1.7.8
 <LI>Tested support Fedora35 as bastion
+<HR>
 <P>v0.4
 <LI> init.sh changed to provide simpler decision model for installation flow - all archives for air-gapped installation MUST be rebuild
 <LI> added support for OCP 4.8 and 4.9
