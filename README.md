@@ -1,4 +1,4 @@
-<B>OpenShift Cluster, IBM Common Services, Guardium Insights, Cloud Pak for Security installation automation on bare metal</B>
+<B>OpenShift Cluster, Cloud Pak Foundational Services, Guardium Insights, Cloud Pak for Security installation automation tool on bare metal</B>
 <HR>
 <P>Automates OCP installation for releases: 4.10, 4.12, 4.14
 <P>Automates CPFS installation for releases: 3.19.18, 3.19.19
@@ -12,6 +12,22 @@
 <LI>Bastion setup requires Fedora 38 as a operating system
 <HR>
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
+<HR>
+This tool install everything from scratch. It does not support installation CPFS or GI on preinstalled OCP.
+<HR>
+For online installation execute init.sh script to collect installation parameteres. Then shell variables defined in variables.sh file control Ansible playbook - playbooks/install_all.yaml to deploy all desired solutions.
+<HR>
+For offline installation you need collect installation tools and container images and then deliver them to bastion located in the restricted network. Scripts must be executed on the machine with Internet access.
+Air-gap preparation scripts:
+<UL>
+<LI>prepare-airgap-archives/prepare-air-gap-os-files.sh - this scripts collects all Fedora patches, packages required by gi-runner. There is an assumption that this script is executed on this same kernel and software layer like target bastion in restricted network (for example, Fedora 38 with Minimum Software option)
+<LI>prepare-airgap-archives/prepare-air-gap-coreos.sh - collects CoreOS and OpenShift container images
+<LI>prepare-airgap-archives/prepare-air-gap-additions.sh - collects container images for openldap and nfs-provisioner
+<LI>prepare-airgap-archives/prepare-air-gap-rook.sh - collects container images for rook-ceph, required only if you plan deploy rook-ceph as a storage backend
+<LI>prepare-airgap-archives/prepare-air-gap-ics.sh - collects CPFS container images, required only if you plan deploy CPFS only (no GI)
+<LI>prepare-airgap-archives/prepare-air-gap-gi.sh - collects container images for Guardium Insights, required only if you plan deploy it
+<LI>
+</UL>
 <HR>
 Release history:
 <P>v0.11.0
