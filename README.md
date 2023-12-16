@@ -1,19 +1,30 @@
 <B>OpenShift Cluster, IBM Common Services, Guardium Insights, Cloud Pak for Security installation automation on bare metal</B>
 <HR>
-<P>Automates OCP installation for releases: 4.6, 4.7, 4.8, 4.9, 4.10
-<P>Automates ICS installation for releases: 3.7.4, 3.18.0, 3.19.4, 3.20.1
-<P>Automates GI installation for releases: 3.1.9, 3.1.10, 3.2.0
+<P>Automates OCP installation for releases: 4.10, 4.12, 4.14
+<P>Automates CPFS installation for releases: 3.19.18, 3.19.19
+<P>Automates GI installation for releases: 3.2.11, 3.2.12, 3.2.13
 <P>Automates CP4S installation for 1.10 channel (only online installation)
-<P>Supports installation with direct access to the Internet, using proxy and air-gapped (restricted) approach
+<P>Supports installation with direct access to the Internet, using proxy or air-gapped (restricted) approach
+<P>Supported storage backends: rook-ceph, ODF, Portworx Essentials (only online installation)
 <P>Implemented OCP architectures:
-<LI>3 masters and 3+n workers with OCS or rook-ceph
-<LI>3 masters only with OCS/ODF, rook-ceph, Portworx Essentials (online only)
-<LI>3 masters and 3+n workers and OCS tainted on 3 additional infra nodes
-<LI>Bastion setup requires Fedora 35 or 36 as a operating system
+<LI>3 masters and 3+n workers
+<LI>3 masters only
+<LI>Bastion setup requires Fedora 38 as a operating system
 <HR>
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
 Release description:
+<P>v0.11.0
+<LI>Support new OCP, CPFS and GI releases
+<UL>New features and changes:
+<LI>matchbox supports RHCOS booting in EFI mode in addition to BIOS
+<LI>matchbox updated to 0.10.0
+<LI><UL>supported installations:
+<LI>>Openshift - 4.10, 4.12, 4.14
+<LI>CPFS - 3.19.18 and 3.19.19
+<LI>Guardium Insights - 3.2.11, 3.2.12, 3.2.13
+</UL>
+<LI>Offline installation has modified script to gather software for bastion and now produces the unzip rpm stored separately. The reason is to install it on Fedora bastion where unzip tool is not preinstalled - to allow unzip gi-runner archive. Use command 'dnf -qy --disablerepo=* localinstall download/unzip*.rpm'
 <P>v0.10.1
 <LI>Bugs related to problem with air-gapped installation removed
 <HR>
