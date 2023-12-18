@@ -79,8 +79,7 @@ msg "Creating archive with GI images" task
 mkdir -p ${air_dir}/GI-${gi_versions[${gi_version}]}
 cd $GI_TEMP
 tar cf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar .ibm-pak/*
-tar -rf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar oc-ibm_pak-linux-amd64.tar.gz
-tar -rf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar cloudctl-linux-amd64.tar.gz
+tar -rf ${air_dir}/GI-${gi_versions[${gi_version}]}/config.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
 cd /opt/registry
 tar -cf ${air_dir}/GI-${gi_versions[${gi_version}]}/registry.tar data
 rm -rf /opt/registry
