@@ -29,6 +29,9 @@ Air-gap preparation scripts:
 </UL>
 <HR>
 Release history:
+<P>v0.11.1
+<B>Lack conditions for non-airgap flow in stage2.yaml playbook</B>
+<HR>
 <P>v0.11.0
 <B>Support new OCP, CPFS and GI releases</B>
 <UL>New features and changes:
