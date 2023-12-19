@@ -101,6 +101,7 @@ function validate_certs() {
 }
 
 function get_certificates() {
+	[[ "$use_air_gap" == 'N' ]] && dnf -y install openssl
         msg "Collecting certificates information" task
         msg "You can replace self-signed certicates for UI's by providing your own created by trusted CA" info
         msg "Certificates must be uploaded to bastion to provide full path to them" info
@@ -1884,7 +1885,6 @@ function check_input() {
                         then
                                 case $3 in
                                         "ca")
-						msg "heheh" info
                                                 openssl x509 -in "$2" -text -noout &>/dev/null
                                                 [[ $? -eq 0 ]] && echo false || echo true
                                                 ;;
