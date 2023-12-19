@@ -1884,6 +1884,7 @@ function check_input() {
                         then
                                 case $3 in
                                         "ca")
+						msg "hehe" info
                                                 openssl x509 -in "$2" -text -noout &>/dev/null
                                                 [[ $? -eq 0 ]] && echo false || echo true
                                                 ;;
