@@ -29,6 +29,9 @@ Air-gap preparation scripts:
 </UL>
 <HR>
 Release history:
+<P>v0.11.2
+<B>cloudctl tool not collected by GI prescript</B>
+<HR>
 <P>v0.11.1
 <B>Lack conditions for non-airgap flow in stage2.yaml playbook</B>
 <HR>
