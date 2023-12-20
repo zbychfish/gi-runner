@@ -3,7 +3,7 @@ baseDomain: {{ base_domain }}
 proxy:
   httpProxy: http://{{ proxy_url }} 
   httpsProxy: http://{{ proxy_url }} 
-  noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},{{ no_proxy_list }}
+  noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},{{ no_proxy_adds }}
 compute:
 - hyperthreading: Enabled
   name: worker

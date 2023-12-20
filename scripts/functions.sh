@@ -26,13 +26,13 @@ function configure_os_for_proxy() {
                         proxy_port="${input_variable}"
         done
         msg "You can exclude from proxy redirection the access to the intranet subnets" info
-        no_proxy="init_value"
-        while $(check_input "cidr_list" "${no_proxy}" true)
+        no_proxy_adds="init_value"
+        while $(check_input "cidr_list" "${no_proxy_adds}" true)
         do
                         get_input "txt" "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxied (do not need provide here cluster addresses): " false
-                        no_proxy="${input_variable}"
+                        no_proxy_adds="${input_variable}"
         done
-        no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy"
+        no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy_adds"
         msg "Your proxy settings are:" info
         msg "Proxy URL: http://$proxy_ip:$proxy_port" info
         msg "System will not use proxy for: $no_proxy" info
@@ -72,6 +72,7 @@ function configure_os_for_proxy() {
                 echo "proxy=http://$proxy_ip:$proxy_port" >> /etc/dnf/dnf.conf
         fi
         save_variable GI_NOPROXY_NET "$no_proxy"
+	save_variable GI_NOPROXY_NET_ADDS "$no_proxy_adds"
         save_variable GI_PROXY_URL "$proxy_ip:$proxy_port"
 }
 
