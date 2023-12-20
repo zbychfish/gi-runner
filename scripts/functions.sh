@@ -2000,7 +2000,7 @@ function check_input() {
                         then
                                 echo false
                         else
-                                if [ -z "$2" ] || $(echo "$2" | egrep -q "[[:space:]]" && echo true || echo false)
+                                if [ -z "$2" ] || $(echo "$2" | grep -Eq "[[:space:]]" && echo true || echo false)
                                 then
                                         echo true
                                 else
@@ -2161,7 +2161,7 @@ function check_input() {
                                         [[ ! -z $2 ]] && echo false || echo true
                                         ;;
                                 "with_limited_length")
-                                        if [ -z "$2" ] || $(echo "$2" | egrep -q "[[:space:]]" && echo true || echo false)
+                                        if [ -z "$2" ] || $(echo "$2" | grep -Eq "[[:space:]]" && echo true || echo false)
                                         then
                                                 echo true
                                         else
@@ -2200,7 +2200,7 @@ function check_input() {
                         ;;
 		"users_list")
                         local ulist
-                        if [ -z "$2" ] || $(echo "$2" | egrep -q "[[:space:]]" && echo true || echo false)
+                        if [ -z "$2" ] || $(echo "$2" | grep -Eq "[[:space:]]" && echo true || echo false)
                         then
                                 echo true
                         else
