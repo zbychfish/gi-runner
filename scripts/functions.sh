@@ -59,7 +59,7 @@ function configure_os_for_proxy() {
         fi
         if [[ `cat /etc/profile | grep "export no_proxy=" | wc -l` -ne 0 ]]
         then
-                sed -i "s/^export no_proxy=.*/export no_proxy=\"$no_proxy\"/g" /etc/profile
+                sed -i "s#^export no_proxy=.*#export no_proxy=\"$no_proxy\"#g" /etc/profile
         else
                 echo "export no_proxy=\"${no_proxy}\"" >> /etc/profile
         fi
