@@ -22,10 +22,10 @@ get_software_selection
 get_software_architecture
 mkdir -p $GI_TEMP
 [[ "$use_air_gap" == 'Y' ]] && prepare_offline_bastion
+get_ocp_domain
+[[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
 msg "Installing tools for init.sh" task
 [[ "$use_air_gap" == 'N' ]] && { dnf -qy install jq;[[ $? -ne 0 ]] && display_error "Cannot install jq"; }
-[[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
-get_ocp_domain
 get_network_architecture
 [[ $one_subnet == 'N' ]] && get_subnets
 get_bastion_info
