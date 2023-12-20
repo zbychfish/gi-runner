@@ -7,13 +7,13 @@ proxy:
 compute:
 - hyperthreading: Enabled
   name: worker
-  replicas: 0
+  replicas: {{ n_workers }}
 controlPlane:
   hyperthreading: Enabled
   name: master
-  replicas: 1
+  replicas: {{ n_masters }}
 metadata:
-  name: {{ ocp_domain.msg }}
+  name: {{ ocp_domain }}
 networking:
   clusterNetwork:
   - cidr: {{ cluster_network }}
