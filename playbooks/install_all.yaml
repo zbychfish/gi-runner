@@ -89,7 +89,7 @@
       loop:
         - { name: "GI_PROXY_URL", value: "{{ proxy_url }}" }
         - { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
-      when: internet_type == 'P' and and item.value == ""
+      when: internet_type == 'P' and item.value == ""
 
     - name: Set parameters for one subnet installation
       ansible.builtin.set_fact:
