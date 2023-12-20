@@ -38,30 +38,33 @@ function configure_os_for_proxy() {
         msg "System will not use proxy for: $no_proxy" info
         msg "Setting your HTTP proxy environment on bastion" info
         msg "- Modyfying /etc/profile" info
-        cp -f /etc/profile /etc/profile.gi_no_proxy
+        cp -f /etc/profile /etc/profile.gi_no_proxy #two execution without unset will overwrite clean file
         if [[ `cat /etc/profile | grep "export http_proxy=" | wc -l` -ne 0 ]]
         then
                 sed -i "s/^export http_proxy=.*/export http_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
         else
                 echo "export http_proxy=\"http://$proxy_ip:$proxy_port\"" >> /etc/profile
         fi
+	msg "1" info
         if [[ `cat /etc/profile | grep "export https_proxy=" | wc -l` -ne 0 ]]
         then
                 sed -i "s/^export https_proxy=.*/export https_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
         else
                 echo "export https_proxy=\"http://$proxy_ip:$proxy_port\"" >> /etc/profile
         fi
+	msg "2" info
         if [[ `cat /etc/profile | grep "export ftp_proxy=" | wc -l` -ne 0 ]]
         then
                 sed -i "s/^export ftp_proxy=.*/export ftp_proxy=\"$proxy_ip:$proxy_port\"/g" /etc/profile
         else
                 echo "export ftp_proxy=\"$proxy_ip:$proxy_port\"" >> /etc/profile
         fi
+	msg "3" info
         if [[ `cat /etc/profile | grep "export no_proxy=" | wc -l` -ne 0 ]]
         then
                 sed -i "s/^export no_proxy=.*/export no_proxy=\"$no_proxy\"/g" /etc/profile
         else
-                echo "export no_proxy=\"$no_proxy\"" >> /etc/profile
+                echo "export no_proxy=\"${no_proxy}\"" >> /etc/profile
         fi
         msg "- Add proxy settings to DNF config file" info
         cp -f /etc/dnf/dnf.conf /etc/dnf/dnf.conf.gi_no_proxy
