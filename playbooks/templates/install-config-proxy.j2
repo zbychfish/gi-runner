@@ -1,9 +1,9 @@
 apiVersion: v1
 baseDomain: {{ base_domain }}
 proxy:
-  httpProxy: http://{{ proxy }} 
-  httpsProxy: http://{{ proxy }} 
-  noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},192.168.0.0/16
+  httpProxy: http://{{ proxy_url }} 
+  httpsProxy: http://{{ proxy_url }} 
+  noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},{{ no_proxy_list }}
 compute:
 - hyperthreading: Enabled
   name: worker

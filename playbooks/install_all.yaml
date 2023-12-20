@@ -78,6 +78,19 @@
         - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
         - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
 
+    - name: Set parameters for installation with proxy
+      ansible.builtin.set_fact:
+        proxy_url: "{{ lookup('env','GI_PROXY_URL') }}"
+        no_proxy_list: "{{ lookup('env','GI_NOPROXY_NET') }}"
+      when: internet_type == 'P'
+
+    - name: Check configuration parameters for installation with proxy
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_PROXY_URL", value: "{{ proxy_url }}" }
+        - { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
+      when: internet_type == 'P' and and item.value == ""
+
     - name: Set parameters for one subnet installation
       ansible.builtin.set_fact:
         dhcp_range_start: "{{ lookup('env','GI_DHCP_RANGE_START') }}"
