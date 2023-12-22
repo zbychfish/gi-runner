@@ -944,6 +944,7 @@ function get_ldap_options() {
 	# avoid repetition accounts in LDAP
         if [[ $cp4s_install == 'Y' ]]
         then
+		ldap_users+=($cp4s_admin)
 		IFS=" " read -r -a ldap_users <<< "$(tr ' ' '\n' <<< "${ldap_users[@]}" | sort -u | tr '\n' ' ')"
         fi
         save_variable GI_LDAP_USERS "'$ldap_users'"
@@ -1020,7 +1021,7 @@ function software_installation_on_online() {
                 msg "- installing $package ..." info
                 wget https://galaxy.ansible.com/download/${package}.tar.gz
                 [[ $? -ne 0 ]] && display_error "Cannot download Ansible Galaxy package $package"
-                ansible-galaxy collection install ${package}.tar.gz
+                ansible-galaxy collection install ${package}.tar.gz > /dev/null
                 [[ $? -ne 0 ]] && display_error "Cannot install Ansible Galaxy package $package"
                 rm -f ${package}.tar.gz
         done
