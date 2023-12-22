@@ -68,15 +68,13 @@
     dest: "{{ temp_dir }}/cp4s/{{ item }}.yaml"
   vars:
     cp4s_backup_size_final: "{{ '' if cp4s_backup_size == '0' else cp4s_backup_size }}"
-    cp4s_option_drc: "{{ true if cp4s_options[0] == 'Y' else false }}"
-    cp4s_option_rm: "{{ true if cp4s_options[1] == 'Y' else false }}"
-    cp4s_option_ti: "{{ true if cp4s_options[2] == 'Y' else false }}"
+    cp4s_option_drc: "{{ 'true' if cp4s_options[0] == 'Y' else false }}"
+    cp4s_option_rm: "{{ 'true' if cp4s_options[1] == 'Y' else false }}"
+    cp4s_option_ti: "{{ 'true' if cp4s_options[2] == 'Y' else false }}"
   with_items:
     - "cp4s_og"
     - "cp4s_sub"
     - "cp4s_cr"
-
-- meta: end_play
 
 - name: Deploy CP4S operator
   shell:
@@ -92,6 +90,8 @@
   until: "serverless_knative.stdout == \"True\""
   retries: 50
   delay: 30
+
+- meta: end_play
 
 - name: Deploy CP4S
   shell:
