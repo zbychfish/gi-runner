@@ -947,7 +947,8 @@ function get_ldap_options() {
 		IFS="," read -r -a ldap_users <<< $ldap_users
 		ldap_users+=($cp4s_admin)
 		IFS=" " read -r -a ldap_users <<< "$(tr ' ' '\n' <<< "${ldap_users[@]}" | sort -u | tr '\n' ' ')"
-		ldap_users=`IFS=',' echo "${ldap_users[*]}"`
+		local IFS=,
+		ldap_users=`echo "${ldap_users[*]}"`
         fi
         save_variable GI_LDAP_USERS "'$ldap_users'"
 }
@@ -1021,9 +1022,9 @@ function software_installation_on_online() {
         for package in "${galaxy_soft[@]}"
         do
                 msg "- installing $package ..." info
-                wget https://galaxy.ansible.com/download/${package}.tar.gz
+                wget https://galaxy.ansible.com/download/${package}.tar.gz &> /dev/null
                 [[ $? -ne 0 ]] && display_error "Cannot download Ansible Galaxy package $package"
-                ansible-galaxy collection install ${package}.tar.gz > /dev/null
+                ansible-galaxy collection install ${package}.tar.gz &> /dev/null
                 [[ $? -ne 0 ]] && display_error "Cannot install Ansible Galaxy package $package"
                 rm -f ${package}.tar.gz
         done
