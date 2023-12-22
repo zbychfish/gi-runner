@@ -998,7 +998,7 @@ function get_credentials() {
                 then
                         msg "GI and CP4S require access to restricted IBM image registries" info
                         msg "You need provide the IBM Cloud containers key located at URL - https://myibm.ibm.com/products-services/containerlibrary" info
-                        msg "Your account must be entitled to install GI" info
+                        msg "Your account must be entitled to install Cloud Pak like Guardium Insights, Cloud Pak for Security, Qradar EDR" info
                         while $(check_input "jwt" "${ibm_secret}")
                         do
                                 if [ ! -z "$GI_IBM_SECRET" ]
