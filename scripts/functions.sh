@@ -941,12 +941,10 @@ function get_ldap_options() {
                 fi
                 ldap_users="${input_variable}"
         done
+	# avoid repetition accounts in LDAP
         if [[ $cp4s_install == 'Y' ]]
         then
-		msg "U1: $ldap_users" info
-                IFS="," read -r -a curr_ldap_users <<< $ldap_users
-		msg "U2: $curr_ldap_users" info
-                [[ ${curr_ldap_users[*]} =~ (^|[[:space:]])"${cp4s_admin}"($|[[:space:]]) ]] || ldap_users="${ldap_users},${cp4s_admin}"
+		IFS=" " read -r -a $ldap_users <<< "$(tr ' ' '\n' <<< "${ldap_users[@]}" | sort -u | tr '\n' ' ')"
         fi
         save_variable GI_LDAP_USERS "'$ldap_users'"
 }
