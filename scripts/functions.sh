@@ -1,7 +1,7 @@
 function get_cp4s_options() {
         msg "Collecting CP4S deployment parameters" task
         msg "Namespace define the space where most CP4S pods, objects and supporting services will be located" info
-        while $(check_input "txt" "${cp4s_namespace}" 3 10)
+        while $(check_input "txt" "${cp4s_namespace}" "with_limited_length" 10)
         do
                 if [ ! -z "$GI_CP4S_NS" ]
                 then
