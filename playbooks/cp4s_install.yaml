@@ -107,8 +107,6 @@
   retries: 150
   delay: 60
 
-- meta: end_play
-
 - name: Check presence of cloudctl tool
   stat:
     path: "{{ temp_dir }}/{{ offline_inventory }}/{{ item.file }}"
