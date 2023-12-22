@@ -1,3 +1,5 @@
+- meta: end_play
+
 - name: Create all required namespaces
   shell:
     cmd: "oc create namespace {{ item }}"
