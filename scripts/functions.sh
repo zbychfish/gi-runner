@@ -943,7 +943,9 @@ function get_ldap_options() {
         done
         if [[ $cp4s_install == 'Y' ]]
         then
+		msg "U1: $ldap_users" info
                 IFS="," read -r -a curr_ldap_users <<< $ldap_users
+		msg "U2: $curr_ldap_users" info
                 [[ ${curr_ldap_users[*]} =~ (^|[[:space:]])"${cp4s_admin}"($|[[:space:]]) ]] || ldap_users="${ldap_users},${cp4s_admin}"
         fi
         save_variable GI_LDAP_USERS "'$ldap_users'"
