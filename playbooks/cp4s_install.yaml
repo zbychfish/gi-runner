@@ -46,7 +46,7 @@
   shell:
     cmd: "{{ item }}"
   with_items:
-    - "oc create secret tls -n {{ cp4s_namespace }} isc-ingress-default-secret --from-file=ca.crt={{ cp4s_ca }} --cert {{ cp4s_cert }} --key {{ cp4s_key }}"
+    - "oc create secret generic -n {{ cp4s_namespace }} isc-ingress-default-secret --type=kubernetes.io/tls  --from-file=ca.crt={{ cp4s_ca }} --from-file=tls.crt={{ cp4s_cert }} --from-file=tls.key={{ cp4s_key }}"
   when: cp4s_ext_ingress == 'Y'
   ignore_errors: true
 
