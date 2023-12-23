@@ -2,49 +2,74 @@
 set -e
 trap "exit 1" ERR
 
-echo "Setting environment"
+source scripts/init.globals.sh
+source scripts/functions.sh
+get_pre_scripts_variables
+msg "Setting environment" info
 if [[ $# -ne 0 && $1 != "repeat" ]]
 then
-	echo "To restart mirroring process use paramater 'repeat'"
-	exit 1
+        msg "To restart mirroring process use paramater 'repeat'" info
+        exit 1
 fi
-
-source scripts/init.globals.sh
-source scripts/shared_functions.sh
-msg "Installing podman-docker ..." true
-dnf -qy install podman-docker
-get_pre_scripts_variables
 if [ $# -eq 0 ]
 then
-	pre_scripts_init
-	echo ""
+        pre_scripts_init
 fi
-mkdir $GI_TEMP/cp4s_arch
-read -sp "Insert your IBM Cloud Key: " ibm_account_key
 if [ $# -eq 0 ]
 then
-	msg "Setup mirror image registry ..." true
-	setup_local_registry
-	msg "Download support tools ..." true
-	cd $GI_TEMP
-	declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-4.10/openshift-client-linux.tar.gz")
-	#declare -a ocp_files=("https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz")
-	for file in ${ocp_files[@]}
-	do
-        	download_file $file
-	done
-	files_type="ICS"
-	install_app_tools
-	dnf -qy install skopeo
-	check_exit_code $? "Cannot install skopeo package"
+        msg "Cleanup temp directory $temp_dir" info
+        rm -rf $GI_TEMP/*
+        mkdir -p $GI_TEMP
+        mkdir -p $air_dir
+fi
+msg "Access to CP4S packages requires IBM Cloud account authentication for some container images" info
+curr_value=""
+while $(check_input "txt" "${curr_value}" "non_empty")
+do
+        get_input "txt" "Insert your IBM Cloud Key: " false
+        curr_value="$input_variable"
+done
+ibm_account_pwd=$curr_value
+mkdir -p $GI_TEMP/cp4s_arch
+if [ $# -eq 0 ]
+then
+        msg "Setup mirror image registry ..." task
+        setup_local_registry
+        msg "Download support tools ..." task
+        cd $GI_TEMP
+        declare -a ocp_files=("https://github.com/IBM/ibm-pak/releases/download/v${ibm_ocp_pak_version}/oc-ibm_pak-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz" "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz")
+        for file in ${ocp_files[@]}
+        do
+                download_file $file
+        done
+        files_type="CP4S"
+        install_app_tools
+        dnf -qy install skopeo
+        check_exit_code $? "Cannot install skopeo package"
 fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
-echo "Mirroring GI ${cp4s_versions[0]}"
-CASE_ARCHIVE=${cp4s_cases[0]}
-CASE_RELEASE=${CASE_ARCHIVE#"ibm-cp-security-"}
-CASE_RELEASE=${CASE_RELEASE%".tgz"}
-CASE_INVENTORY_SETUP=ibmSecurityOperatorSetup
+msg "Mirroring CP4S ${cp4s_versions}[0]" task
+CASE_NAME="ibm-cp-security"
+CASE_VERSION=${cp4s_cases[0]}
+if [ $# -eq 0 ]
+then
+        msg "Downloading case file" info
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $CASE_NAME --version $CASE_VERSION --skip-verify --disable-top-level-images-mode
+        msg "Mirroring manifests" task
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $CASE_NAME $LOCAL_REGISTRY --version $CASE_VERSION
+        msg "Authenticate in cp.icr.io" info
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd
+        msg "Authenticate in local repo" info
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login `hostname --long`:5000 -u admin -p guardium
+        #get_latest_gi_images
+fi
+exit 1
+msg "Starting mirroring images, can takes hours" info
+
+
+
+
 if [ $# -eq 0 ]
 then
 	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-cp-security/${CASE_RELEASE}/${CASE_ARCHIVE} --outputdir $GI_TEMP/cp4s_arch/cp4s_offline

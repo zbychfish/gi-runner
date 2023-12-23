@@ -351,7 +351,7 @@ function install_app_tools() {
                 tar xf $GI_TEMP/cloudctl-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
                 mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
                 tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
-	elif [[ $files_type == "GI" ]]
+	elif [[ $files_type == "GI" || $files_type == "CP4S" ]]
 	then
 		tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
 		tar xf $GI_TEMP/oc-ibm_pak-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
