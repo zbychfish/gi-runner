@@ -62,7 +62,7 @@ then
         REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd
         msg "Authenticate in local repo" info
         REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login `hostname --long`:5000 -u admin -p guardium
-        #get_latest_gi_images
+        get_latest_cp4s_images
 fi
 exit 1
 msg "Starting mirroring images, can takes hours" info

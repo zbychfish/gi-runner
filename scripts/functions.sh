@@ -1,3 +1,21 @@
+function get_latest_cp4s_images () {
+        local input_file
+        local output_file
+        local temp_list
+        declare -a image_types
+        input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-cp-security/${CASE_VERSION}/images-mapping.txt
+        output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-cp-security/${CASE_VERSION}/images-mapping-latest.txt
+        msg "Set list of images for download" task
+        echo "#list of images to mirror" > $output_file
+        while read -r line
+        do
+                if [ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]
+                then
+                	echo "$line" >> $output_file
+                fi
+        done < "$input_file"
+}
+
 function get_cp4s_options() {
         msg "Collecting CP4S deployment parameters" task
         msg "Namespace define the space where most CP4S pods, objects and supporting services will be located" info
