@@ -64,35 +64,17 @@ then
         REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login `hostname --long`:5000 -u admin -p guardium
         get_latest_cp4s_images
 fi
-exit 1
 msg "Starting mirroring images, can takes hours" info
-
-
-
-
-if [ $# -eq 0 ]
-then
-	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/ibm-cp-security/${CASE_RELEASE}/${CASE_ARCHIVE} --outputdir $GI_TEMP/cp4s_arch/cp4s_offline
-	check_exit_code $? "Cannot download GI case file"
-	tar xvf $GI_TEMP/cp4s_arch/cp4s_offline/${CASE_ARCHIVE} -C $GI_TEMP/cp4s_arch/cp4s_offline
-	#sed -i '/versionRegex/d' $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security/prereqs.yaml
-	sites="cp.icr.io"
-	for site in $sites
-	do
-		echo $site
-	        cloudctl case launch --case $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry $site --user cp --pass $ibm_account_key" --tolerance 1
-		check_exit_code $? "Cannot configure credentials for site $site"
-	done
-	cloudctl case launch --case $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security --action configure-creds-airgap --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --user admin --pass guardium" --tolerance 1
-fi
-cloudctl case launch --case $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security --action mirror-images --inventory $CASE_INVENTORY_SETUP --args "--registry `hostname --long`:5000 --inputDir $GI_TEMP/cp4s_arch/cp4s_offline" --tolerance 1
+oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
 mirror_status=$?
-msg "Mirroring status: $mirror_status" true
+msg "Mirroring status: $mirror_status" info
 if [ $mirror_status -ne 0 ]
 then
-	echo "Mirroring process failed, restart script with parameter repeat to finish"
-	exit 1
+        echo "Mirroring process failed, restart script with parameter repeat to finish"
+        exit 1
 fi
+exit 1
+
 podman stop bastion-registry
 rm -rf $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security
 cd $GI_TEMP
