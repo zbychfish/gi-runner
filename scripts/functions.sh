@@ -4,6 +4,7 @@ function get_latest_cp4s_images () {
         local temp_list
 	local image_name
 	local image_tag
+	local image_tag_last
         declare -a image_types
         input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-cp-security/${CASE_VERSION}/images-mapping.txt
         output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-cp-security/${CASE_VERSION}/images-mapping-latest.txt
@@ -14,10 +15,16 @@ function get_latest_cp4s_images () {
 		image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $NF}'`
 		if [[ $image_name =~ 'redis-db'.* || $image_name =~ 'redis-mgmt'.* || $image_name =~ 'redis-proxy'.* || $image_name =~ 'redis-proxylog'.* || $image_name == 'ibm-cloud-databases-redis-operator-bundle' || $image_name == 'ibm-cloud-databases-redis-operator' ]]
                 then
-			echo $line
 			echo $image_name
 			image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
+			image_tag_last=`echo "$image_tag" | awk -F '-' '{print $(NF-1)}'`
+			#if [[ ]]
+			#then
+				
+			#fi
 			echo $image_tag
+			echo $image_tag_last
+
 		elif [[ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]]
 		then
                 	echo "$line" >> $output_file
