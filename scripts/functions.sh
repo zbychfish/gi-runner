@@ -11,16 +11,16 @@ function get_latest_cp4s_images () {
         echo "#list of images to mirror" > $output_file
         while read -r line
         do
-		#echo $line
+		echo $line
 		image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $NF}'`
-		#echo $image_name
+		echo $image_name
 		if [[ $image_name =~ 'redis-db'.* || $image_name =~ 'redis-mgmt'.* || $image_name =~ 'redis-proxy'.* || $image_name =~ 'redis-proxylog'.* || $image_name == 'ibm-cloud-databases-redis-operator-bundle' || $image_name == 'ibm-cloud-databases-redis-operator' ]]
                 then
 			image_tag=`echo "$line" | awk -F '-' '{print $NF}'`
 			echo $image_tag
-		else [[ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]]
-			echo 'tutaj'
-                #	echo "$line" >> $output_file
+		elif [[ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]]
+		then
+                	echo "$line" >> $output_file
                 fi
         done < "$input_file"
 }
