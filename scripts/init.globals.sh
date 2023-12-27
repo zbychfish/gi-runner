@@ -1,6 +1,7 @@
 #Global variables
 declare -a gi_versions=(3.2.11 3.2.12 3.2.13)
 declare -a gi_cases=(2.2.11 2.2.12 2.2.13)
+declare -a gi_redis_releases=(1.6.5 1.6.5 1.6.5)
 declare -a ics_versions=(3.19.18 3.19.19)
 declare -a ics_cases=(ibm-cp-common-services-1.15.18.tgz ibm-cp-common-services-1.15.19.tgz)
 declare -a bundled_in_gi_ics_versions=(0 0 1)

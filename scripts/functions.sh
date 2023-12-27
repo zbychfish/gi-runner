@@ -362,7 +362,7 @@ function get_latest_gi_images () {
 		elif [[ $image_name_redis =~ 'redis-db'.* || $image_name_redis =~ 'redis-mgmt'.* || $image_name_redis =~ 'redis-proxy'.* || $image_name_redis =~ 'redis-proxylog'.* || $image_name_redis == 'ibm-cloud-databases-redis-operator-bundle' || $image_name_redis == 'ibm-cloud-databases-redis-operator' ]]
 		then
 			image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
-                        if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${gi_redis_release} && (`echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${gi_redis_release} || `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == "amd64") ]]
+                        if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${gi_redis_releases[${gi_version}]} && (`echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${gi_redis_releases[${gi_version}]} || `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == "amd64") ]]
                         then
                                 echo "$line" >> $output_file
                         fi
