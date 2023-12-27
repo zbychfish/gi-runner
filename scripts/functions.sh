@@ -24,6 +24,7 @@ function get_latest_cp4s_images () {
 			#fi
 			echo $image_tag
 			echo $image_tag_last
+			echo `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'`
 
 		elif [[ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]]
 		then
