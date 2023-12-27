@@ -68,12 +68,11 @@ msg "Starting mirroring images, can takes hours" info
 #oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
 #mirror_status=$?
 #msg "Mirroring status: $mirror_status" info
-if [ $mirror_status -ne 0 ]
-then
-        echo "Mirroring process failed, restart script with parameter repeat to finish"
-        exit 1
-fi
-exit 1
+#if [ $mirror_status -ne 0 ]
+#then
+#        echo "Mirroring process failed, restart script with parameter repeat to finish"
+#        exit 1
+#fi
 msg "Creating archive with GI images" task
 mkdir -p ${air_dir}/CP4S-${cp4s_versions[0]}
 cd $GI_TEMP
