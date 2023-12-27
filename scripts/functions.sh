@@ -17,7 +17,7 @@ function get_latest_cp4s_images () {
                 then
 			echo $image_name
 			image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
-			image_tag_last=`echo "$image_tag" | awk -F '-' '{print $(NF-1)}'`
+			image_tag_last=`echo "$image_tag" | awk -F '-' '{print $(NF)}'`
 			#if [[ ]]
 			#then
 				
