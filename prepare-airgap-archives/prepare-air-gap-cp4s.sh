@@ -65,24 +65,24 @@ then
         get_latest_cp4s_images
 fi
 msg "Starting mirroring images, can takes hours" info
-oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
-mirror_status=$?
-msg "Mirroring status: $mirror_status" info
+#oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
+#mirror_status=$?
+#msg "Mirroring status: $mirror_status" info
 if [ $mirror_status -ne 0 ]
 then
         echo "Mirroring process failed, restart script with parameter repeat to finish"
         exit 1
 fi
 exit 1
-podman stop bastion-registry
-rm -rf $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security
+msg "Creating archive with GI images" task
+mkdir -p ${air_dir}/CP4S-${cp4s_versions[0]}
 cd $GI_TEMP
-tar cf ${air_dir}/cp4s_registry-${cp4s_versions[0]}.tar cp4s_arch/cp4s_offline cloudctl-linux-amd64.tar.gz
+tar cf ${air_dir}/CP4S-${cp4s_versions[0]}/config.tar .ibm-pak/*
+tar -rf ${air_dir}/CP4S-${cp4s_versions[0]}/config.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
 cd /opt/registry
-tar -rf ${air_dir}/cp4s_registry-${cp4s_versions[0]}.tar data
-cd $GI_TEMP
-rm -rf /opt/registry/data
+tar -cf ${air_dir}/CP4S-${cp4s_versions[0]}/registry.tar data
+rm -rf /opt/registry
+rm -rf $GI_TEMP/* $GI_TEMP/.*
 podman rm bastion-registry
-podman rmi --all
-rm -rf $GI_TEMP
-msg "CP4S ${cp4s_versions[0]} files prepared - copy $air_dir/cp4s_registry-${cp4s_versions[0]}.tar to air-gapped bastion machine" true
+msg "CP4S ${cp4s_versions[0]} files prepared - copy $air_dir/CP4S-${cp4s_versions[0]} directory to air-gapped bastion machine" info
+
