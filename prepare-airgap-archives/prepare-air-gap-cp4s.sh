@@ -6,6 +6,8 @@ source scripts/init.globals.sh
 source scripts/functions.sh
 get_pre_scripts_variables
 msg "Setting environment" info
+CASE_NAME="ibm-cp-security"
+CASE_VERSION=${cp4s_cases[0]}
 get_latest_cp4s_images
 exit 1
 if [[ $# -ne 0 && $1 != "repeat" ]]
