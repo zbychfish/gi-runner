@@ -49,7 +49,7 @@ then
 fi
 b64auth=$( echo -n 'admin:guardium' | openssl base64 )
 LOCAL_REGISTRY="$host_fqdn:5000"
-msg "Mirroring CP4S ${cp4s_versions}[0]" task
+msg "Mirroring CP4S ${cp4s_versions[0]}" task
 CASE_NAME="ibm-cp-security"
 CASE_VERSION=${cp4s_cases[0]}
 if [ $# -eq 0 ]
