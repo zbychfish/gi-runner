@@ -18,8 +18,7 @@ function get_latest_cp4s_images () {
 			image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
 			if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${cp4s_redis_release} && (`echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${cp4s_redis_release} || `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == "amd64") ]]
 			then
-				echo $image_name
-				echo $image_tag
+				echo "$line" >> $output_file
 			fi
 		elif [[ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]]
 		then
