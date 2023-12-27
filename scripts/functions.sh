@@ -330,6 +330,7 @@ function get_latest_gi_images () {
 	local input_file
 	local output_file
 	local temp_list
+	local image_name_redis
 	declare -a image_types
 	input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt
 	output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping-latest.txt
@@ -337,6 +338,7 @@ function get_latest_gi_images () {
 	echo "#list of images to mirror" > $output_file
 	while read -r line
 	do
+		image_name_redis=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $NF}'`
 		if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF-1)}') == 'ibm-guardium-insights' ]
 		then
 			declare -a temp_list
@@ -357,6 +359,13 @@ function get_latest_gi_images () {
 					echo "$line" >> $output_file
 				fi
 			fi
+		elif [[ $image_name_redis =~ 'redis-db'.* || $image_name_redis =~ 'redis-mgmt'.* || $image_name_redis =~ 'redis-proxy'.* || $image_name_redis =~ 'redis-proxylog'.* || $image_name_redis == 'ibm-cloud-databases-redis-operator-bundle' || $image_name_redis == 'ibm-cloud-databases-redis-operator' ]]
+		then
+			image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
+                        if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${gi_redis_release} && (`echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${gi_redis_release} || `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == "amd64") ]]
+                        then
+                                echo "$line" >> $output_file
+                        fi
 		else
 			if [ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]
 			then
