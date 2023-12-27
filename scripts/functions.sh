@@ -15,17 +15,11 @@ function get_latest_cp4s_images () {
 		image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $NF}'`
 		if [[ $image_name =~ 'redis-db'.* || $image_name =~ 'redis-mgmt'.* || $image_name =~ 'redis-proxy'.* || $image_name =~ 'redis-proxylog'.* || $image_name == 'ibm-cloud-databases-redis-operator-bundle' || $image_name == 'ibm-cloud-databases-redis-operator' ]]
                 then
-			echo $image_name
 			image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
-			image_tag_last=`echo "$image_tag" | awk -F '-' '{print $(NF)}'`
-			#if [[ ]]
-			#then
-				
-			#fi
-			echo $image_tag
-			echo $image_tag_last
-			echo `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'`
-
+			if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${cp4s_redis_release} && (`echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${cp4s_redis_release} || awk -F '-' '{print $(NF)}'` == "amd64") ]]
+			then
+				echo $image_tag
+			fi
 		elif [[ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]]
 		then
                 	echo "$line" >> $output_file
