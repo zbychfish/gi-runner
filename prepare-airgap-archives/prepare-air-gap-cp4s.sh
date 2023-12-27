@@ -74,7 +74,6 @@ then
         exit 1
 fi
 exit 1
-
 podman stop bastion-registry
 rm -rf $GI_TEMP/cp4s_arch/cp4s_offline/ibm-cp-security
 cd $GI_TEMP

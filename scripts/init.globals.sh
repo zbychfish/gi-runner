@@ -23,6 +23,7 @@ matchbox_version="0.10.0"
 nfs_provisioner_version=4.0.2
 ibm_ocp_pak_version=1.11.2
 cp4s_channel="1.10"
+cp4s_redis_release="1.6.11"
 declare -a cp4s_versions=(1.10.17)
 declare -a cp4s_cases=(1.0.42)
 GI_HOME=`pwd`
