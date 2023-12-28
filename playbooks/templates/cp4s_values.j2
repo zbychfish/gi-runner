@@ -1,0 +1,76 @@
+# The user who will be given administrative privileges in the System Administration account after installation. Specify the short name or the email for the administrator user.
+adminUser="{{ cp4s_admin }}"
+
+# Set to "true" if deploying Cloud Pak for Security in an offline or disconnected environment. Set to "false" if deploying Cloud Pak for Security in an online environment.
+airgapInstall="true"
+
+# Set to "true" if deploying Cloud Pak for Security with a proxy. Must be set to "false" when installing in an offline or disconnected environment.
+clusterProxy="false"
+
+# (Optional) The Fully Qualified Domain Name (FQDN) created for Cloud Pak for Security. When the domain is not specified, it will be generated as cp4s.<cluster_ingress_subdomain>.
+domain="cp4s.apps.{{ domain }}"
+
+# (Optional) Path to the domain TLS certificate file e.g <path-to-certs>/cert.crt. Leave blank if you are installing Cloud Pak for Security without specifying a domain.
+# See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/security-pak/tls_certs.html.
+{% if  cp4s_ext_ingress == 'Y' %}
+domainCertificatePath="{{ cp4s_cert }}"
+{% else %}
+domainCertificatePath=""
+{% endif %}
+
+# (Optional) Path to the domain TLS key file e.g <path-to-certs>/cert.key. Leave blank if you are installing Cloud Pak for Security without specifying a domain.
+# See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/security-pak/tls_certs.html.
+{% if  cp4s_ext_ingress == 'Y' %}
+domainCertificateKeyPath="{{ cp4s_key }}"
+{% else %}
+domainCertificateKeyPath=""
+{% endif %}
+
+# (Optional) Path to the custom CA cert file e.g <path-to-certs>/ca.crt. Only required if using custom or self signed certificates. Leave blank if you are installing Cloud Pak for Security without specifying a domain.
+# See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/security-pak/tls_certs.html.
+{% if  cp4s_ext_ingress == 'Y' %}
+customCaFilePath="{{ cp4s_ca }}"
+{% else %}
+customCaFilePath=""
+{% else %}
+
+# (Optional) The provisioned block or file storage class to be used for creating all the PVCs required by Cloud Pak for Security. When it is not specified, the default storage class will be used.
+# See more details in the storage requirements section at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/security-pak/persistent_storage.html. The storage class cannot be modified after installation.
+storageClass="{{ cp4s_sc }}"
+
+# (Optional) Storage class used for creating the backup and restore PVC. If this value is not set, Cloud Pak for Security will use the same value set in "storageClass" parameter.
+backupStorageClass="{{ cp4s_backup_sc }}"
+
+# (Optional) Override the default backup and restore storage PVC size. Must be 500Gi or higher.
+backupStorageSize="{{ cp4s_backup_size_final }}"
+
+# (Optional) Set the pull policy for the images. When OpenShift creates containers, it uses the imagePullPolicy to determine if the image should be pulled prior to starting the container.
+# Options are "Always", "IfNotPresent", or "Never".
+imagePullPolicy="IfNotPresent"
+
+# Set the repository in which the images will be pulled from. Must be set to "cp.icr.io/cp/cp4s" if you are installing Cloud Pak for Security in an online environment.
+# If you are installing Cloud Pak for Security in an air-gapped environment, specify the URL and port for the local Docker registry with the "/cp/cp4s" namespace appended. For example, example-registry:5000/cp/cp4s.
+repository="registry.{{ domain }}:5000/cp/cp4s"
+
+# Set the username for the repository in which the images will be pulled from. Must be set to "cp" if you are installing Cloud Pak for Security in an online environment.
+# If you are installing Cloud Pak for Security in an air-gapped environment, specify a user with access to the local Docker registry.
+repositoryUsername="{{ repo_admin }}"
+
+# Set the password for the repository in which the images will be pulled from.
+# If you are installing Cloud Pak for Security in an air-gapped environment, specify the password for the user with access to the local Docker registry.
+repositoryPassword="{{ repo_admin_password }}"
+
+# Enable ROKS authentication (if deployment is on IBM Cloud Environment). See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/scp-core/roks-authentication.html.
+roksAuthentication="false"
+
+# Set to "true" to deploy Detection and Response Center (Beta). Set to "false" to skip deployment of Detection and Response Center (Beta). See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/drc/c_DRC_intro.html.
+deployDRC="{{ cp4s_option_drc }}"
+
+# Set to "true" to deploy Risk Manager. Set to "false" to skip deployment of Risk Manager. See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/datariskmanager/welcome.html.
+deployRiskManager="{{ cp4s_option_rm }}"
+
+# Set to "true" to deploy Threat Investigator. Set to "false" to skip deployment of Threat Investigator. See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/investigator/investigator_intro.html.
+deployThreatInvestigator="{{ cp4s_option_ti }}"
+
+# Namespace where Foundational Services will be installed. This should be updated to the namespace where Foundational Services is currently installed if you are doing an upgrade.
+CSNamespace="ibm-common-services"
