@@ -60,7 +60,7 @@
 
 - name: Prepare image content source policy
   shell:
-    cmd: "sed -i 's#-.*:5000/#- registry.{{ domain }}:5000/#' {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_versions[0] }}/image-content-source-policy.yaml"
+    cmd: "sed -i 's#-.*:5000/#- registry.{{ domain }}:5000/#' {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/image-content-source-policy.yaml"
   when: internet_type == 'A'
 
 - meta: end_play
