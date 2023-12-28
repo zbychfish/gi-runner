@@ -267,6 +267,7 @@
         cp4s_options: "{{ lookup('env','GI_CP4S_OPTS').split(',') }}"
         ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
         cp4s_ext_ingress: "{{ lookup('env','GI_CP4S_IN') }}"
+        gi_nfs_backup: "N"
       when: install_cp4s == 'Y'
 
     - name: Check CP4S variables
