@@ -364,14 +364,14 @@
         - { name: "GI_PX_ID", value: "{{ px_id }}" }
       when: storage_type == 'P' and item.value == ""
 
-    - name: Set endpoint cert variables
+    - name: Set GI cert variables
       ansible.builtin.set_fact:
         gi_ca: "{{ lookup('env', 'GI_IN_CA') }}"
         gi_cert: "{{ lookup('env', 'GI_IN_CERT') }}"
         gi_key: "{{ lookup('env', 'GI_IN_KEY') }}"
       when: install_gi == 'Y' and gi_ext_ingress == 'Y'
 
-    - name: Check ICS endpoint cert variables
+    - name: Check GI cert variables
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_IN_CA", value: "{{ gi_ca }}" }
@@ -379,14 +379,14 @@
         - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
       when: install_gi == 'Y' and gi_ext_ingress == 'Y' and item.value == ""
 
-    - name: Set endpoint cert variables
+    - name: Set CP4S cert variables
       ansible.builtin.set_fact:
         cp4s_ca: "{{ lookup('env', 'GI_CP4S_CA') }}"
         cp4s_cert: "{{ lookup('env', 'GI_CP4S_CERT') }}"
         cp4s_key: "{{ lookup('env', 'GI_CP4S_KEY') }}"
       when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y'
 
-    - name: Check ICS endpoint cert variables
+    - name: Check CP4S cert variables
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_CP4S_CA", value: "{{ cp4s_ca }}" }
