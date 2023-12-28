@@ -555,10 +555,10 @@ function process_offline_archives() {
 					elif [ "$archive" == CP4S-${cp4s_versions[0]}.tar ]
                                         then
 						msg "Extracting Cloud Pak for Security container images" info
-                                                tar -C /opt/registry -xf $cp4s_archives/$archive
+                                                tar -C /opt/registry -xf $gi_archives/$archive
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Cloud Pak image archive"
                                                 mkdir -p $GI_TEMP/cp4s_arch
-                                                tar -C $GI_TEMP/cp4s_arch -xf $cp4s_archives/CP4S-${cp4s_versions[0]}/config.tar
+                                                tar -C $GI_TEMP/cp4s_arch -xf $gi_archives/CP4S-${cp4s_versions[0]}/config.tar
                                                 [ $? -ne 0 ] && display_error "Cannot extract of Cloud Pak for Security case files"
                                         else
                                                 display_error "Problem with extraction of archives, unknown archive type"
