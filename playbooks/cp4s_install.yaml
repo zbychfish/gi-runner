@@ -152,7 +152,7 @@
 
 - name: Deploy CP4S offline
   shell:
-    cmd: "IBMPAK_HOME={{ temp_dir }}/cp4s_arch/ IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ cp4s_case_name }} --version {{ cp4s_cases[0] }} --inventory ibmSecurityOperatorSetup --action install --namespace cp4s --tolerance 1 --args \"--acceptLicense true\" --inputDir {{ temp_dir }}/cp4s_arch/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}"
+    cmd: "IBMPAK_HOME={{ temp_dir }}/cp4s_arch/ IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ cp4s_case_name }} --version {{ cp4s_cases[0] }} --inventory ibmSecurityOperatorSetup --action install --namespace cp4s --tolerance 1 --args \"--acceptLicense true --inputDir {{ temp_dir }}/cp4s_arch/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}\""
   when: internet_type == 'A'
 
 - name: Wait for CP4S operator
