@@ -65,21 +65,11 @@
     - "image-content-source-policy.yaml"
   when: internet_type == 'A'
 
-- name: Prepare operator catalogs
-  shell:
-    cmd: "sed -i 's#image:.*:5000/#image: registry.{{ domain }}:5000/#' {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
-  with_items:
-    - "catalog-sources.yaml"
-    - "catalog-sources-linux-amd64.yaml"
-  when: internet_type == 'A' and false
-
 - name: Install CP4S image content source policy and catalogs
   shell:
     cmd: "oc apply -f {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
   with_items:
     - "image-content-source-policy.yaml"
-      #- "catalog-sources.yaml"
-      #- "catalog-sources-linux-amd64.yaml"
   when: internet_type == 'A' 
 
 - name: Install IBM operators catalog
@@ -95,21 +85,6 @@
   retries: 50
   delay: 15
   when: internet_type != 'A'
-
-- name: Wait for IBM operators catalog
-  shell:
-    cmd: "oc get catalogsource {{ item }} -n openshift-marketplace -o json|jq -r .status.connectionState.lastObservedState"
-  register: ibm_catalog_state
-  until: "ibm_catalog_state.stdout == \"READY\""
-  retries: 50
-  delay: 15
-  with_items:
-    - ibm-cloud-databases-redis-operator-catalog
-    - ibm-cp-security-catalog
-    - ibm-elasticsearch-catalog
-    - ibm-etcd-operator-catalog
-    - opencloud-operators
-  when: internet_type == 'A' and false
 
 - name: Setup CP4S deployment files
   template:
@@ -179,8 +154,6 @@
   until: "cp4s_deployed.stdout == \"Success\""
   retries: 150
   delay: 60
-
-- meta: end_play
 
 - name: Check presence of cloudctl tool
   stat:
