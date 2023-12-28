@@ -107,8 +107,8 @@
     - ibm-cloud-databases-redis-operator-catalog
     - ibm-cp-security-catalog
     - ibm-elasticsearch-catalog
-    - ibm-elasticsearch-catalog
-    - ibm-elasticsearch-catalog
+    - ibm-etcd-operator-catalog
+    - opencloud-operators
   when: internet_type == 'A'
 
 - name: Setup CP4S deployment files
@@ -136,7 +136,7 @@
 
 - name: Unpack case
   shell:
-    cmd: "tar -xf {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/ibm-cp-security-{{ cp4s_cases[0] }}.tgz -C {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}"
+    cmd: "tar -xf {{ temp_dir }}/cp4s_arch/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/ibm-cp-security-{{ cp4s_cases[0] }}.tgz -C {{ temp_dir }}/cp4s_arch/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}"
   when: internet_type == 'A'
 
 - meta: end_play
