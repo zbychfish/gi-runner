@@ -96,7 +96,20 @@
   delay: 15
   when: internet_type != 'A'
 
-- meta: end_play
+- name: Wait for IBM operators catalog
+  shell:
+    cmd: "oc get catalogsource {{ item }} -n openshift-marketplace -o json|jq -r .status.connectionState.lastObservedState"
+  register: ibm_catalog_state
+  until: "ibm_catalog_state.stdout == \"READY\""
+  retries: 50
+  delay: 15
+  with_items:
+    - ibm-cloud-databases-redis-operator-catalog
+    - ibm-cp-security-catalog
+    - ibm-elasticsearch-catalog
+    - ibm-elasticsearch-catalog
+    - ibm-elasticsearch-catalog
+  when: internet_type == 'A'
 
 - name: Setup CP4S deployment files
   template:
@@ -120,6 +133,8 @@
     - "{{ temp_dir }}/cp4s/cp4s_og.yaml"
     - "{{ temp_dir }}/cp4s/cp4s_sub.yaml"
   when: internet_type != 'A'
+
+- meta: end_play
 
 - name: Wait for CP4S operator
   shell:
