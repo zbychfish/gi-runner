@@ -343,7 +343,7 @@ function get_certificates() {
                 save_variable GI_IN $gi_ext_ingress
                 [ $gi_ext_ingress == 'Y' ] && validate_certs "gi"
         fi
-        if [[ "$cp4s_install" == 'Y' && "$use_air_gap" == 'N' ]]
+        if [[ "$cp4s_install" == 'Y' ]]
         then
                 while $(check_input "yn" "$cp4s_ext_ingress" false)
                 do
