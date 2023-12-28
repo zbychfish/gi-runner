@@ -552,7 +552,7 @@ function process_offline_archives() {
                                                 tar -C $GI_TEMP/ics_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz ics_offline/*
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Common Services archive"
-					elif [ "$archive" == CP4S-${cp4s_versions[0]}/registrt.tar ]
+					elif [ "$archive" == CP4S-${cp4s_versions[0]}/registry.tar ]
                                         then
 						msg "Extracting Cloud Pak for Security container images" info
                                                 tar -C /opt/registry -xf $gi_archives/$archive
