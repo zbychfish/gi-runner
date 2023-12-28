@@ -20,7 +20,7 @@
     cmd: "oc apply -f {{ item }}"
   with_items:
     - "../scripts/cp4s_serverless_og.yaml"
-    - "../{{ temp_dir }}/cp4s/cp4s_serverless_sub.yaml"
+    - "{{ temp_dir }}/cp4s/cp4s_serverless_sub.yaml"
 
 - meta: end_play
 
