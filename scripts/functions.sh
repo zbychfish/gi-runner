@@ -614,7 +614,7 @@ function prepare_offline_bastion() {
                         gi_archives="${input_variable}"
         done
         save_variable GI_ARCHIVES_DIR "'$gi_archives'"
-        process_offline_archives
+        #process_offline_archives
         software_installation_on_offline
 }
 
