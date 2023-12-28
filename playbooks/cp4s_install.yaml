@@ -58,14 +58,22 @@
   when: cp4s_ext_ingress == 'Y' and internet_type != 'A'
   ignore_errors: true
 
-- name: Prepare image content source policy
+- name: Prepare image content source policy and catalogs
   shell:
-    cmd: "sed -i 's#-.*:5000/#- registry.{{ domain }}:5000/#' {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/image-content-source-policy.yaml"
+    cmd: "sed -i 's#-.*:5000/#- registry.{{ domain }}:5000/#' {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+    - "catalog-sources.yaml"
+    - "catalog-sources-linux-amd64.yaml"
   when: internet_type == 'A'
 
-- name: Install IBM operators catalog
+- name: Install CP4S image content source policy and catalogs
   shell:
-    cmd: "oc apply -f {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/image-content-source-policy.yaml"
+    cmd: "oc apply -f {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+    - "catalog-sources.yaml"
+    - "catalog-sources-linux-amd64.yaml"
   when: internet_type == 'A'
 
 - name: Install IBM operators catalog
@@ -80,6 +88,7 @@
   until: "ibm_catalog_state.stdout == \"READY\""
   retries: 50
   delay: 15
+  when: internet_type != 'A'
 
 - meta: end_play
 
