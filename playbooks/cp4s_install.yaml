@@ -8,12 +8,19 @@
     - "cp4s"
   ignore_errors: true
 
+- name: Configure yaml file serverless operator
+  ansible.builtin.template:
+    src: "cp4s_serveless_sub.j2"
+    dest: "{{ temp_dir }}/cp4s/cp4s_serverless_sub.yaml"
+  vars:
+    operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
+
 - name: Deploy serverless operator
   shell:
     cmd: "oc apply -f {{ item }}"
   with_items:
     - "../scripts/cp4s_serverless_og.yaml"
-    - "../scripts/cp4s_serverless_sub.yaml"
+    - "../{{ temp_dir }}/cp4s/cp4s_serverless_sub.yaml"
 
 - meta: end_play
 
