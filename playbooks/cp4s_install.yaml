@@ -42,26 +42,33 @@
   retries: 50
   delay: 15
 
-- meta: end_play
-
 - name: Add secrets 1
   shell:
     cmd: "{{ item }}"
   with_items:
     - "oc create secret docker-registry \"ibm-entitlement-key\" -n {{ cp4s_namespace }} \"--docker-server=cp.icr.io\" \"--docker-username=cp\" \"--docker-password={{ ibm_secret }}\""
   ignore_errors: true
+  when: internet_type != 'A'
 
 - name: Add secrets 2
   shell:
     cmd: "{{ item }}"
   with_items:
     - "oc create secret generic -n {{ cp4s_namespace }} isc-ingress-default-secret --type=kubernetes.io/tls  --from-file=ca.crt={{ cp4s_ca }} --from-file=tls.crt={{ cp4s_cert }} --from-file=tls.key={{ cp4s_key }}"
-  when: cp4s_ext_ingress == 'Y'
+  when: cp4s_ext_ingress == 'Y' and internet_type != 'A'
   ignore_errors: true
+
+- name: Prepare image content source policy
+  shell:
+    cmd: "sed -i 's#-.*:5000/#- registry.{{ ocp_domain }}:5000/#' {{ temp_dir }}/cp4s_arch/.ibm_pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_versions[0] }}/image-content-source-policy.yaml"
+  when: internet_type == 'A'
+
+- meta: end_play
 
 - name: Install IBM operators catalog
   shell:
     cmd: "oc apply -f ../scripts/ibm_catalog.yaml"
+  when: internet_type != 'A'
 
 - name: Wait for IBM operators catalog
   shell:
@@ -84,6 +91,7 @@
     - "cp4s_og"
     - "cp4s_sub"
     - "cp4s_cr"
+  when: internet_type != 'A'
 
 - name: Deploy CP4S operator
   shell:
@@ -91,6 +99,7 @@
   with_items:
     - "{{ temp_dir }}/cp4s/cp4s_og.yaml"
     - "{{ temp_dir }}/cp4s/cp4s_sub.yaml"
+  when: internet_type != 'A'
 
 - name: Wait for CP4S operator
   shell:
@@ -103,6 +112,7 @@
 - name: Deploy CP4S
   shell:
     cmd: "oc apply -f {{ temp_dir }}/cp4s/cp4s_cr.yaml"
+  when: internet_type != 'A'
 
 - name: Wait for CR deployment initiation
   pause:
@@ -115,6 +125,7 @@
   until: "cp4s_deployed.stdout == \"Success\""
   retries: 150
   delay: 60
+  when: internet_type != 'A'
 
 - name: Check presence of cloudctl tool
   stat:
