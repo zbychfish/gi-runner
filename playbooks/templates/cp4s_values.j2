@@ -42,7 +42,7 @@ storageClass="{{ cp4s_sc }}"
 backupStorageClass="{{ cp4s_backup_sc }}"
 
 # (Optional) Override the default backup and restore storage PVC size. Must be 500Gi or higher.
-backupStorageSize="{{ cp4s_backup_size_final }}"
+backupStorageSize="{{ cp4s_backup_size_final }}Gi"
 
 # (Optional) Set the pull policy for the images. When OpenShift creates containers, it uses the imagePullPolicy to determine if the image should be pulled prior to starting the container.
 # Options are "Always", "IfNotPresent", or "Never".
