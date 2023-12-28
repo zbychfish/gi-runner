@@ -71,16 +71,16 @@
   with_items:
     - "catalog-sources.yaml"
     - "catalog-sources-linux-amd64.yaml"
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
 
 - name: Install CP4S image content source policy and catalogs
   shell:
     cmd: "oc apply -f {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
   with_items:
     - "image-content-source-policy.yaml"
-    - "catalog-sources.yaml"
-    - "catalog-sources-linux-amd64.yaml"
-  when: internet_type == 'A'
+      #- "catalog-sources.yaml"
+      #- "catalog-sources-linux-amd64.yaml"
+  when: internet_type == 'A' 
 
 - name: Install IBM operators catalog
   shell:
@@ -109,7 +109,7 @@
     - ibm-elasticsearch-catalog
     - ibm-etcd-operator-catalog
     - opencloud-operators
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
 
 - name: Setup CP4S deployment files
   template:
@@ -150,13 +150,16 @@
     cp4s_option_ti: "{{ 'true' if cp4s_options[2] == 'Y' else false }}"
   when: internet_type == 'A'
 
-- meta: end_play
+- name: Deploy CP4S offline
+  shell:
+    cmd: "IBMPAK_HOME={{ temp_dir }}/cp4s_arch/ IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ cp4s_case_name }} --version {{ cp4s_cases[0] }} --inventory ibmSecurityOperatorSetup --action install --namespace cp4s --tolerance 1 --args \"--acceptLicense true\" --inputDir {{ temp_dir }}/cp4s_arch/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}"
+  when: internet_type == 'A'
 
 - name: Wait for CP4S operator
   shell:
     cmd: "oc get pod -lname=ibm-cp-security-operator -n cp4s -ojson|jq -r '.items[].status.conditions[] | select(.type==\"Ready\").status'"
-  register: serverless_knative
-  until: "serverless_knative.stdout == \"True\""
+  register: cp4s_operator
+  until: "cp4s_operator.stdout == \"True\""
   retries: 50
   delay: 30
 
@@ -176,7 +179,8 @@
   until: "cp4s_deployed.stdout == \"Success\""
   retries: 150
   delay: 60
-  when: internet_type != 'A'
+
+- meta: end_play
 
 - name: Check presence of cloudctl tool
   stat:
