@@ -496,7 +496,6 @@ function process_offline_archives() {
         [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
 	[ $cp4s_install == 'Y' ] && { archives+=("CP4S-${cp4s_versions[0]}/registry.tar");descs+=("Cloud Pak for Security (CP4S) ${cp4s_versions[0]}} images");}
         local i=0
-	echo ${archives[@]}
         for archive in ${archives[@]}
         do
 		msg "Processing archive $archive" task
@@ -506,27 +505,27 @@ function process_offline_archives() {
                                 0)
                                         msg "Extracting Fedora software packages" info
                                         mkdir -p $GI_TEMP/os
-                                        #tar -C $GI_TEMP/os -xf ${gi_archives}/$archive kernel.txt ansible/* galaxy/* os-packages/* os-updates/*
-                                        #[ $? -ne 0 ] && display_error "Cannot extract content of operating system packages"
+                                        tar -C $GI_TEMP/os -xf ${gi_archives}/$archive kernel.txt ansible/* galaxy/* os-packages/* os-updates/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract content of operating system packages"
                                         ;;
                                 1)
                                         msg "Extracting CoreOS images, OCP container images and tools" info
                                         mkdir -p $GI_TEMP/coreos
-                                        #tar -C $GI_TEMP/coreos -xf $gi_archives/$archive oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz
-                                        #[ $? -ne 0 ] && display_error "Cannot extract content from Openshift archive"
-                                        #tar -C $GI_TEMP/coreos -xf $gi_archives/${ocp_release}/ocp-images-yamls.tar
-                                        #[ $? -ne 0 ] && display_error "Cannot extract content from Openshift images yaml files"
-					#mkdir -p /opt/registry/data
-                                        #tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
-                                        #[ $? -ne 0 ] && display_error "Cannot extract OCP images"
+                                        tar -C $GI_TEMP/coreos -xf $gi_archives/$archive oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz
+                                        [ $? -ne 0 ] && display_error "Cannot extract content from Openshift archive"
+                                        tar -C $GI_TEMP/coreos -xf $gi_archives/${ocp_release}/ocp-images-yamls.tar
+                                        [ $? -ne 0 ] && display_error "Cannot extract content from Openshift images yaml files"
+					mkdir -p /opt/registry/data
+                                        tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         ;;
 				2)
 					msg "Extracting OpenLDAP and NFS container images" info
-					#tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                        #[ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and NFS images"
-					#mkdir -p $GI_TEMP/adds
-					#tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
-                                        #[ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and OCP digests"
+					tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and NFS images"
+					mkdir -p $GI_TEMP/adds
+					tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
+                                        [ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and OCP digests"
 					;;
                                 3|4|5|6)
 					mkdir -p /opt/registry/data
@@ -565,7 +564,7 @@ function process_offline_archives() {
                                         fi
                                         ;;
                                 *)
-                                        display_error "Problem with extraction of archives, check their consitency"
+                                        display_error "Problem with extraction of archives, check their consistency"
                                         ;;
                         esac
 
