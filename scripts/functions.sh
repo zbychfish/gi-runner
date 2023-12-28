@@ -494,7 +494,9 @@ function process_offline_archives() {
         [ $storage_type == 'R' ] && { archives+=("rook-registry-${rook_version}.tar");descs+=("Rook-Ceph ${rook_version} images");}
         [ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/registry.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
         [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
+	[ $cp4s_install == 'Y' ] && { archives+=("CP4S-${cp4s_versions[0]}/registry.tar");descs+=("Cloud Pak for Security (CP4S) ${cp4s_versions[0]}} images");}
         local i=0
+	echo ${archives[@]}
         for archive in ${archives[@]}
         do
 		msg "Processing archive $archive" task
@@ -504,27 +506,27 @@ function process_offline_archives() {
                                 0)
                                         msg "Extracting Fedora software packages" info
                                         mkdir -p $GI_TEMP/os
-                                        tar -C $GI_TEMP/os -xf ${gi_archives}/$archive kernel.txt ansible/* galaxy/* os-packages/* os-updates/*
-                                        [ $? -ne 0 ] && display_error "Cannot extract content of operating system packages"
+                                        #tar -C $GI_TEMP/os -xf ${gi_archives}/$archive kernel.txt ansible/* galaxy/* os-packages/* os-updates/*
+                                        #[ $? -ne 0 ] && display_error "Cannot extract content of operating system packages"
                                         ;;
                                 1)
                                         msg "Extracting CoreOS images, OCP container images and tools" info
                                         mkdir -p $GI_TEMP/coreos
-                                        tar -C $GI_TEMP/coreos -xf $gi_archives/$archive oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz
-                                        [ $? -ne 0 ] && display_error "Cannot extract content from Openshift archive"
-                                        tar -C $GI_TEMP/coreos -xf $gi_archives/${ocp_release}/ocp-images-yamls.tar
-                                        [ $? -ne 0 ] && display_error "Cannot extract content from Openshift images yaml files"
-					mkdir -p /opt/registry/data
-                                        tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
-                                        [ $? -ne 0 ] && display_error "Cannot extract OCP images"
+                                        #tar -C $GI_TEMP/coreos -xf $gi_archives/$archive oc-registry.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz
+                                        #[ $? -ne 0 ] && display_error "Cannot extract content from Openshift archive"
+                                        #tar -C $GI_TEMP/coreos -xf $gi_archives/${ocp_release}/ocp-images-yamls.tar
+                                        #[ $? -ne 0 ] && display_error "Cannot extract content from Openshift images yaml files"
+					#mkdir -p /opt/registry/data
+                                        #tar -C /opt/registry -xf $gi_archives/${ocp_release}/ocp-images-data.tar data/*
+                                        #[ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         ;;
 				2)
 					msg "Extracting OpenLDAP and NFS container images" info
-					tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                        [ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and NFS images"
-					mkdir -p $GI_TEMP/adds
-					tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
-                                        [ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and OCP digests"
+					#tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        #[ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and NFS images"
+					#mkdir -p $GI_TEMP/adds
+					#tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
+                                        #[ $? -ne 0 ] && display_error "Cannot extract OpenLDAP and OCP digests"
 					;;
                                 3|4|5|6)
 					mkdir -p /opt/registry/data
@@ -550,6 +552,14 @@ function process_offline_archives() {
                                                 tar -C $GI_TEMP/ics_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz ics_offline/*
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Common Services archive"
+					elif [ "$archive" == CP4S-${cp4s_versions[0]}.tar ]
+                                        then
+						msg "Extracting Cloud Pak for Security container images" info
+                                                tar -C /opt/registry -xf $cp4s_archives/$archive
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Cloud Pak image archive"
+                                                mkdir -p $GI_TEMP/cp4s_arch
+                                                tar -C $GI_TEMP/cp4s_arch -xf $cp4s_archives/CP4S-${cp4s_versions[0]}/config.tar
+                                                [ $? -ne 0 ] && display_error "Cannot extract of Cloud Pak for Security case files"
                                         else
                                                 display_error "Problem with extraction of archives, unknown archive type"
                                         fi
@@ -1798,13 +1808,23 @@ function get_software_architecture() {
                 msg "Decide what kind of cluster storage option will be implemented:" info
                 msg "- OpenShift Data Fountation - commercial rook-ceph branch from RedHat" info
                 msg "- Rook-Ceph - opensource cluster storage option" info
-                msg "- Portworx Essentials - free version of Portworx Enterprise cluster storage option, it has limitation to 5 workers and 5 TB of storage" info
-                while $(check_input "stopx" ${storage_type})
-                do
-                        get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook/(P)ortworx: " true
-                        [[ ${input_variable} == '' ]] && input_variable='R'
-                        storage_type=${input_variable^^}
-                done
+		if [ $use_air_gap == 'N' ]
+		then
+                	msg "- Portworx Essentials - free version of Portworx Enterprise cluster storage option, it has limitation to 5 workers and 5 TB of storage" info
+			while $(check_input "stopx" ${storage_type})
+			do
+				get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook/(P)ortworx: " true
+				[[ ${input_variable} == '' ]] && input_variable='R'
+				storage_type=${input_variable^^}
+			done
+		else
+	                while $(check_input "sto" ${storage_type})
+                	do
+                        	get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook: " true
+                        	[[ ${input_variable} == '' ]] && input_variable='R'
+                        	storage_type=${input_variable^^}
+                	done
+		fi
         save_variable GI_STORAGE_TYPE $storage_type
         if [[ $storage_type == "O" && $is_master_only == 'N' && false ]] # check tainting
         then
@@ -1993,7 +2013,7 @@ function get_software_selection() {
 	fi
         save_variable GI_EDR $edr_install
         [[ $gi_install == 'Y' ]] && select_gi_version
-        [[ $cp4s_install == 'N' && $gi_install == 'N' ]] && select_ics_version
+        [[ $edr_install == 'N' && $cp4s_install == 'N' && $gi_install == 'N' ]] && select_ics_version
         save_variable GI_ICS $ics_install
         select_ocp_version
         while $(check_input "yn" ${install_ldap})
@@ -2300,6 +2320,9 @@ function check_input() {
                         ;;
 		"sk")
                         [[ $2 == 'S' || $2 == 'K' ]] && echo false || echo true
+                        ;;
+		"sto")
+                        [[ $2 == 'O' || $2 == 'R' ]] && echo false || echo true
                         ;;
 		"stopx")
                         [[ $2 == 'O' || $2 == 'R' || $2 == 'P' ]] && echo false || echo true
