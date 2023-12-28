@@ -12,7 +12,7 @@ domain="cp4s.apps.{{ domain }}"
 
 # (Optional) Path to the domain TLS certificate file e.g <path-to-certs>/cert.crt. Leave blank if you are installing Cloud Pak for Security without specifying a domain.
 # See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/security-pak/tls_certs.html.
-{% if  cp4s_ext_ingress == 'Y' %}
+{% if cp4s_ext_ingress == 'Y' %}
 domainCertificatePath="{{ cp4s_cert }}"
 {% else %}
 domainCertificatePath=""
@@ -20,7 +20,7 @@ domainCertificatePath=""
 
 # (Optional) Path to the domain TLS key file e.g <path-to-certs>/cert.key. Leave blank if you are installing Cloud Pak for Security without specifying a domain.
 # See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/security-pak/tls_certs.html.
-{% if  cp4s_ext_ingress == 'Y' %}
+{% if cp4s_ext_ingress == 'Y' %}
 domainCertificateKeyPath="{{ cp4s_key }}"
 {% else %}
 domainCertificateKeyPath=""
@@ -28,11 +28,11 @@ domainCertificateKeyPath=""
 
 # (Optional) Path to the custom CA cert file e.g <path-to-certs>/ca.crt. Only required if using custom or self signed certificates. Leave blank if you are installing Cloud Pak for Security without specifying a domain.
 # See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/security-pak/tls_certs.html.
-{% if  cp4s_ext_ingress == 'Y' %}
+{% if cp4s_ext_ingress == 'Y' %}
 customCaFilePath="{{ cp4s_ca }}"
 {% else %}
 customCaFilePath=""
-{% else %}
+{% endif %}
 
 # (Optional) The provisioned block or file storage class to be used for creating all the PVCs required by Cloud Pak for Security. When it is not specified, the default storage class will be used.
 # See more details in the storage requirements section at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/security-pak/persistent_storage.html. The storage class cannot be modified after installation.
