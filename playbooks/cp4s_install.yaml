@@ -22,8 +22,6 @@
     - "../scripts/cp4s_serverless_og.yaml"
     - "{{ temp_dir }}/cp4s/cp4s_serverless_sub.yaml"
 
-- meta: end_play
-
 - name: Wait for serverless operator
   shell:
     cmd: "oc get `oc get pod -n openshift-serverless -oname |grep knative-operator` -n openshift-serverless -ojson|jq .status.containerStatuses[].ready"
@@ -43,6 +41,8 @@
   until: "serverless_knative.stdout == \"True\""
   retries: 50
   delay: 15
+
+- meta: end_play
 
 - name: Add secrets 1
   shell:
