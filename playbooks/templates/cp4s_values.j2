@@ -54,11 +54,11 @@ repository="registry.{{ domain }}:5000/cp/cp4s"
 
 # Set the username for the repository in which the images will be pulled from. Must be set to "cp" if you are installing Cloud Pak for Security in an online environment.
 # If you are installing Cloud Pak for Security in an air-gapped environment, specify a user with access to the local Docker registry.
-repositoryUsername="{{ repo_admin }}"
+repositoryUsername="{{ repo_user }}"
 
 # Set the password for the repository in which the images will be pulled from.
 # If you are installing Cloud Pak for Security in an air-gapped environment, specify the password for the user with access to the local Docker registry.
-repositoryPassword="{{ repo_admin_password }}"
+repositoryPassword="{{ repo_user_password }}"
 
 # Enable ROKS authentication (if deployment is on IBM Cloud Environment). See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/scp-core/roks-authentication.html.
 roksAuthentication="false"
