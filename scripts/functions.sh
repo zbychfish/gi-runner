@@ -1,3 +1,32 @@
+function get_latest_edr_images () {
+        local input_file
+        local output_file
+        local temp_list
+        local image_name
+        local image_tag
+        local image_tag_last
+        declare -a image_types
+        input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-security-edr/${CASE_VERSION}/images-mapping.txt
+        output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-security-edr/${CASE_VERSION}/images-mapping-latest.txt
+        msg "Set list of images for download" task
+        echo "#list of images to mirror" > $output_file
+        while read -r line
+        do
+                image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $NF}'`
+                if [[ $image_name =~ 'redis-db'.* || $image_name =~ 'redis-mgmt'.* || $image_name =~ 'redis-proxy'.* || $image_name =~ 'redis-proxylog'.* || $image_name == 'ibm-cloud-databases-redis-operator-bundle' || $image_name == 'ibm-cloud-databases-redis-operator' ]]
+                then
+                        image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
+                        if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${cp4s_redis_release} && (`echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${cp4s_redis_release} || `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == "amd64") ]]
+                        then
+                                echo "$line" >> $output_file
+                        fi
+                elif [[ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]]
+                then
+                        echo "$line" >> $output_file
+                fi
+        done < "$input_file"
+}
+
 function get_latest_cp4s_images () {
         local input_file
         local output_file
