@@ -1966,7 +1966,7 @@ function get_software_selection() {
                 gi_install=${input_variable^^}
         done
         save_variable GI_INSTALL_GI $gi_install
-        if [[ $gi_install == 'N' && $use_air_gap == 'N' ]]
+        if [[ $gi_install == 'N' ]]
         then
                 msg "gi-runner offers installation of Cloud Pak for Security (CP4s) - latest version from channel $cp4s_channel" info
                 while $(check_input "yn" ${cp4s_install})
@@ -1979,6 +1979,19 @@ function get_software_selection() {
                 cp4s_install='N'
         fi
         save_variable GI_CP4S $cp4s_install
+	if [[ $gi_install == 'N' && $cp4s == 'N' ]]
+	then
+		msg "gi-runner offers installation of IBM Security Qradar EDR - latest version" info
+		while $(check_input "yn" ${edr_install})
+                do
+                        get_input "yn" "Would you like to install EDR? " false
+                        edr_install=${input_variable^^}
+                done
+                [ $edr_install == 'Y' ] && ics_install='N'
+	else
+		edr_install='N'
+	fi
+        save_variable GI_EDR $edr_install
         [[ $gi_install == 'Y' ]] && select_gi_version
         [[ $cp4s_install == 'N' && $gi_install == 'N' ]] && select_ics_version
         save_variable GI_ICS $ics_install
