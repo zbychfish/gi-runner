@@ -58,6 +58,46 @@ function get_latest_cp4s_images () {
 
 function get_cp4s_options() {
         msg "Collecting CP4S deployment parameters" task
+	if [ $use_air_gap == 'Y' ]
+	then
+        	msg "CP4S requires access to some Internet sites. In case of air-gapped installation access must be provided using proxy" info
+		msg "List of sites is available at: https://www.ibm.com/docs/en/cp-security/1.10?topic=environment-creating-allowlist-air-gapped-installation"
+        	msg "HTTP Proxy server address" info
+		while $(check_input "ip" "${proxy_ip}")
+        	do
+                	if [[ ! -z "$GI_PROXY_URL" && "$GI_PROXY_URL" != "NO_PROXY" ]]
+                	then
+                        	local saved_proxy_ip=$(echo "$GI_PROXY_URL"|awk -F':' '{print $1}')
+                        	get_input "txt" "Push <ENTER> to accept the previous choice [$saved_proxy_ip] or insert IP address of Proxy server: " true "$saved_proxy_ip"
+                	else
+                        	get_input "txt" "Insert IP address of Proxy server: " false
+                	fi
+                        proxy_ip="${input_variable}"
+        	done
+        	msg "HTTP Proxy port" info
+        	while $(check_input "int" "${proxy_port}" 1024 65535)
+        	do
+                	if [[ ! -z "$GI_PROXY_URL" && "$GI_PROXY_URL" != "NO_PROXY" ]]
+                	then
+                        	local saved_proxy_port=$(echo "$GI_PROXY_URL"|awk -F':' '{print $2}')
+                        	get_input "txt" "Push <ENTER> to accept the previous choice [$saved_proxy_port] or insert Proxy server port: " true "$saved_proxy_port"
+                	else
+                        	get_input "txt" "Insert Proxy server port: " false
+                	fi
+                        proxy_port="${input_variable}"
+        	done
+        	msg "You can exclude from proxy redirection the access to the intranet subnets" info
+        	no_proxy_adds="init_value"
+        	while $(check_input "cidr_list" "${no_proxy_adds}" true)
+        	do
+                        get_input "txt" "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxied (do not need provide here cluster addresses): " false
+                        no_proxy_adds="${input_variable}"
+        	done
+        	no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy_adds"
+		save_variable GI_NOPROXY_NET "$no_proxy"
+	        save_variable GI_NOPROXY_NET_ADDS "$no_proxy_adds"
+        	save_variable GI_PROXY_URL "$proxy_ip:$proxy_port"
+	fi
         msg "Namespace define the space where most CP4S pods, objects and supporting services will be located" info
         while $(check_input "txt" "${cp4s_namespace}" "with_limited_length" 10)
         do

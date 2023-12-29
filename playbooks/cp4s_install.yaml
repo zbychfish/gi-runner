@@ -65,7 +65,7 @@
     - "image-content-source-policy.yaml"
   when: internet_type == 'A'
 
-- name: Install CP4S image content source policy and catalogs
+- name: Install CP4S image content source policy
   shell:
     cmd: "oc apply -f {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
   with_items:
