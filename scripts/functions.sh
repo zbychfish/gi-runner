@@ -654,8 +654,11 @@ function prepare_offline_bastion() {
                         gi_archives="${input_variable}"
         done
         save_variable GI_ARCHIVES_DIR "'$gi_archives'"
-        process_offline_archives
-        software_installation_on_offline
+	if [ script_argument != 'skip_archives' ]
+	then
+        	process_offline_archives
+        	software_installation_on_offline
+	fi
 }
 
 function install_ocp_tools() {

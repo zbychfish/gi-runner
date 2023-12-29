@@ -1,5 +1,7 @@
 #!/bin/bash
 
+script_argument=$1
+echo $script_argument
 trap display_error EXIT
 export MPID=$$
 
