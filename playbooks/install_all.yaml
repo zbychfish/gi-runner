@@ -89,8 +89,8 @@
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_PROXY_URL", value: "{{ proxy_url }}" }
-          #- { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
-        - { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
+        - { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
+          #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
       when: internet_type == 'P' and item.value == ""
 
     - name: Set parameters for one subnet installation
@@ -294,8 +294,8 @@
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_PROXY_URL", value: "{{ proxy_url }}" }
-          #- { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
-        - { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
+        - { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
+          #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
       when: install_cp4s == 'Y' and internet_type == 'A' and item.value == ""
 
     - name: Set LDAP installation variables from env
