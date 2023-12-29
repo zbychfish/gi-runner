@@ -1,8 +1,8 @@
 apiVersion: v1
 baseDomain: {{ base_domain }}
 proxy:
-  httpProxy: http://{{ proxy_url }} 
-  httpsProxy: http://{{ proxy_url }} 
+  httpProxy: http://{{ proxy_url }}
+  httpsProxy: http://{{ proxy_url }}
 {% if no_proxy_adds|length %}
   noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},{{ no_proxy_adds }}
 {% else %}
@@ -31,5 +31,15 @@ networking:
   - 172.30.0.0/16
 platform:
  none: {}
+pullSecret: '{"auths":{"registry.{{ domain }}:5000": {"auth": "{{ repo_cred_base64.stdout}}","email": "noemail@localhost"}}}'
 fips: false
 sshKey: {{ ssh_pub_key.stdout }}
+additionalTrustBundle: |
+{{ repo_cert.stdout }}
+imageContentSources:
+- mirrors:
+  - registry.{{ domain }}:5000/openshift/release-images
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - registry.{{ domain }}:5000/openshift/release
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
