@@ -61,7 +61,7 @@ function get_cp4s_options() {
 	if [ $use_air_gap == 'Y' ]
 	then
         	msg "CP4S requires access to some Internet sites. In case of air-gapped installation access must be provided using proxy" info
-		msg "List of sites is available at: https://www.ibm.com/docs/en/cp-security/1.10?topic=environment-creating-allowlist-air-gapped-installation"
+		msg "List of sites is available at: https://www.ibm.com/docs/en/cp-security/1.10?topic=environment-creating-allowlist-air-gapped-installation" info
         	msg "HTTP Proxy server address" info
 		while $(check_input "ip" "${proxy_ip}")
         	do
@@ -658,6 +658,8 @@ function prepare_offline_bastion() {
 	then
         	process_offline_archives
         	software_installation_on_offline
+	else
+		msg "Archives processing skipped" info
 	fi
 }
 
