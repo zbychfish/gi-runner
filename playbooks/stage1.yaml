@@ -760,7 +760,7 @@
   vars:
     n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
     n_masters: "{{ master_ip|length }}"
-  when: internet_type == 'A' and cp4s_install == 'N'
+  when: internet_type == 'A' and install_cp4s == 'N'
 
 - name: Create OCP config file in air-gapped env for CP4S
   ansible.builtin.template:
@@ -769,7 +769,7 @@
   vars:
     n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
     n_masters: "{{ master_ip|length }}"
-  when: internet_type == 'A' and cp4s_install == 'Y'
+  when: internet_type == 'A' and install_cp4s == 'Y'
 
 - name: Create OCP config for standard deployment
   ansible.builtin.template:
