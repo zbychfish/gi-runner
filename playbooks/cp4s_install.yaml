@@ -157,10 +157,8 @@
 
 - name: Check presence of cloudctl tool
   stat:
-    path: "{{ temp_dir }}/{{ offline_inventory }}/{{ item.file }}"
+    path: "{{ temp_dir }}/cp4s_arch/cloudctl-linux-amd64.tar.gz"
   register: cloudctl_tool
-  with_items:
-    - { file: "cloudctl-linux-amd64.tar.gz" }
   ignore_errors: true
   when: internet_type == 'A'
 
@@ -168,7 +166,7 @@
   fail:
     msg: "Please upload cloud tool to download directory"
   with_items: "{{ cloudctl_tool.results }}"
-  when: internet_type == 'A' and internet_type == 'A'
+  when: internet_type == 'A' and not cloudctl_tool.stat.exists
 
 - name: Download cloud tool
   get_url:
@@ -179,7 +177,7 @@
 
 - name: Unpack cloudctl tools
   shell:
-    cmd: "tar xf {{ temp_dir }}/{{ offline_inventory }}/{{ item.src }} -C /usr/local/bin"
+    cmd: "tar xf {{ temp_dir }}/cp4s_arch/{{ item.src }} -C /usr/local/bin"
   with_items:
     - { src: "cloudctl-linux-amd64.tar.gz" }
   when: internet_type == 'A'
