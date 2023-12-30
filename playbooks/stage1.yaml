@@ -376,24 +376,10 @@
     dest: "/var/lib/matchbox/assets/{{ item.name }}"
     owner: matchbox
     group: matchbox
-    state: hard
   with_items:
     - { name: "rhcos-live-initramfs.x86_64.img" }
     - { name: "rhcos-live-kernel-x86_64" }
     - { name: "rhcos-live-rootfs.x86_64.img" }
-  when: internet_type != 'A'
-
-- name: Copy RHCOS images to matchbox assets for offline
-  ansible.builtin.copy:
-    src: "{{ temp_dir }}/coreos/{{ item.name }}"
-    dest: "/var/lib/matchbox/assets/{{ item.name }}"
-    owner: matchbox
-    group: matchbox
-  with_items:
-    - { name: "rhcos-live-initramfs.x86_64.img" }
-    - { name: "rhcos-live-kernel-x86_64" }
-    - { name: "rhcos-live-rootfs.x86_64.img" }
-  when: internet_type == 'A'
 
 - name: prepare TFTP for iPXE
   ansible.builtin.copy:
