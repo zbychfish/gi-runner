@@ -111,7 +111,7 @@
 
 - name: Download case file
   shell:
-    cmd: "oc ibm-pak save --case {{ cp4s_case_name }} --version {{ cp4s_cases[0] }} --outputdir {{ temp_dir }}/cp4s_arch/"
+    cmd: "IBMPAK_HOME={{ temp_dir }}/gi_arch oc ibm-pak get {{ cp4s_case_name }} --version {{ cp4s_cases[0] }}"
   when: internet_type != 'A'
 
 - name: Unpack case
