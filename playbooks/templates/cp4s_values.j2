@@ -16,7 +16,11 @@ clusterProxy="false"
 {% endif %}
 
 # (Optional) The Fully Qualified Domain Name (FQDN) created for Cloud Pak for Security. When the domain is not specified, it will be generated as cp4s.<cluster_ingress_subdomain>.
+{% if cp4s_ext_ingress == 'Y' %}
 domain="cp4s.apps.{{ domain }}"
+{% else %}
+domain=""
+{% endif %}
 
 # (Optional) Path to the domain TLS certificate file e.g <path-to-certs>/cert.crt. Leave blank if you are installing Cloud Pak for Security without specifying a domain.
 # See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/security-pak/tls_certs.html.
