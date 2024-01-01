@@ -48,7 +48,7 @@
   with_items:
     - "oc create secret docker-registry \"ibm-entitlement-key\" -n {{ cp4s_namespace }} \"--docker-server=cp.icr.io\" \"--docker-username=cp\" \"--docker-password={{ ibm_secret }}\""
   ignore_errors: true
-  when: internet_type != 'A' and false
+  when: internet_type != 'A' 
 
 - name: Add secrets 2
   shell:
@@ -56,7 +56,7 @@
   with_items:
     - "oc create secret generic -n {{ cp4s_namespace }} isc-ingress-default-secret --type=kubernetes.io/tls  --from-file=ca.crt={{ cp4s_ca }} --from-file=tls.crt={{ cp4s_cert }} --from-file=tls.key={{ cp4s_key }}"
   when: cp4s_ext_ingress == 'Y' and internet_type != 'A'
-  ignore_errors: true and false
+  ignore_errors: true
 
 - name: Prepare image content source policy 
   shell:
@@ -75,7 +75,7 @@
 - name: Install IBM operators catalog
   shell:
     cmd: "oc apply -f ../scripts/ibm_catalog.yaml"
-  when: internet_type != 'A' and false
+  when: internet_type != 'A'
 
 - name: Wait for IBM operators catalog
   shell:
@@ -84,7 +84,7 @@
   until: "ibm_catalog_state.stdout == \"READY\""
   retries: 50
   delay: 15
-  when: internet_type != 'A' and false
+  when: internet_type != 'A'
 
 - name: Setup CP4S deployment files
   template:
@@ -99,7 +99,7 @@
     - "cp4s_og"
     - "cp4s_sub"
     - "cp4s_cr"
-  when: internet_type != 'A' and false
+  when: internet_type != 'A'
 
 - name: Deploy CP4S operator
   shell:
@@ -107,16 +107,17 @@
   with_items:
     - "{{ temp_dir }}/cp4s/cp4s_og.yaml"
     - "{{ temp_dir }}/cp4s/cp4s_sub.yaml"
-  when: internet_type != 'A' and false
+  when: internet_type != 'A'
 
 - name: Download case file
   shell:
     cmd: "IBMPAK_HOME={{ temp_dir }}/gi_arch oc ibm-pak get {{ cp4s_case_name }} --version {{ cp4s_cases[0] }}"
-  when: internet_type != 'A'
+  when: internet_type != 'A' and false
 
 - name: Unpack case
   shell:
     cmd: "tar -xf {{ temp_dir }}/cp4s_arch/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/ibm-cp-security-{{ cp4s_cases[0] }}.tgz -C {{ temp_dir }}/cp4s_arch/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}"
+  when: internet_type == 'A'
 
 - name: Configure defaults file
   ansible.builtin.template:
@@ -127,10 +128,12 @@
     cp4s_option_drc: "{{ 'true' if cp4s_options[0] == 'Y' else false }}"
     cp4s_option_rm: "{{ 'true' if cp4s_options[1] == 'Y' else false }}"
     cp4s_option_ti: "{{ 'true' if cp4s_options[2] == 'Y' else false }}"
+  when: internet_type == 'A'
 
-- name: Deploy CP4S offline
+- name: Deploy CP4S
   shell:
     cmd: "IBMPAK_HOME={{ temp_dir }}/cp4s_arch/ IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ cp4s_case_name }} --version {{ cp4s_cases[0] }} --inventory ibmSecurityOperatorSetup --action install --namespace cp4s --tolerance 1 --args \"--acceptLicense true --inputDir {{ temp_dir }}/cp4s_arch/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}\""
+  when: internet_type == 'A'
 
 - name: Wait for CP4S operator
   shell:
@@ -143,7 +146,7 @@
 - name: Deploy CP4S
   shell:
     cmd: "oc apply -f {{ temp_dir }}/cp4s/cp4s_cr.yaml"
-  when: internet_type != 'A' and false
+  when: internet_type != 'A'
 
 - name: Wait for CR deployment initiation
   pause:
