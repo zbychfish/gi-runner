@@ -213,10 +213,12 @@
 - name: Set ICS admin password
   shell:
     cmd: "cloudctl pm update-secret ibm-common-services platform-auth-idp-credentials -f -d admin_password='{{ ics_admin_password }}'"
+  when: false
 
 - name: Wait for authentication changes
   pause:
     minutes: 3
+  when: false
 
 - name: Wait for successful password change
   shell:
@@ -225,6 +227,7 @@
   until: "ics_pods_status.stdout == \"0\""
   retries: 80
   delay: 20
+  when: false
 
 - name: Get cp-serviceability pod info
   shell:
