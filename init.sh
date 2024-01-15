@@ -6,7 +6,7 @@ script_argument=$1
 #load functions
 . ./funcs/functions.sh
 #import global variables
-. ./funcs/init.globals.saah
+. ./funcs/init.globals.sh
 trap "display_error 'Unexpected error'" EXIT
 export MPID=$$ #init.sh process ID
 #MAIN PART
