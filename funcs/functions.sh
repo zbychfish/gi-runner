@@ -527,13 +527,14 @@ function get_software_architecture() {
 }
 
 function get_software_selection() {
+        msg "gi-runner offers installation of Guardium Insights (GI)" info
         while $(check_input "yn" ${gi_install})
         do
 		if [[ ! -z "$GI_INSTALL_GI" ]]
                 then
-			get_input "yn" "Confirm previous selection [$GI_INSTALL_GI] or select (Y)es/(N)o: " true $GI_INSTALL_GI
+			get_input "yn" "Use ENTER to onfirm previous selection [$GI_INSTALL_GI] or decide to install Guardium Insights " true $GI_INSTALL_GI
 		else
-                	get_input "yn" "Would you like to install Guardium Insights (GI)?: " false
+                	get_input "yn" "Would you like to install Guardium Insights? " false
 		fi
                 gi_install=${input_variable^^}
         done
@@ -545,7 +546,7 @@ function get_software_selection() {
                 do
 			if [[ ! -z "$GI_CP4S" ]]
                 	then
-				get_input "yn" "Confirm previous selection [$GI_CP4S] or select (Y)es/(N)o: " true $GI_CP4S
+				get_input "yn" "Use ENTER to confirm previous selection [$GI_CP4S] or decide to install CP4S " true $GI_CP4S
 			else
                         	get_input "yn" "Would you like to install CP4S? " false
 			fi
@@ -563,7 +564,7 @@ function get_software_selection() {
                 do
 			if [[ ! -z "$GI_EDR" ]]
                         then
-				get_input "yn" "Confirm previous selection [$GI_EDR] or select (Y)es/(N)o: " true $GI_EDR
+				get_input "yn" "Use ENTER to confirm previous selection [$GI_EDR] or decide to install EDR " true $GI_EDR
 			else
                         	get_input "yn" "Would you like to install EDR? " false
 			fi
@@ -582,7 +583,7 @@ function get_software_selection() {
         do
 		if [[ ! -z "$GI_INSTALL_LDAP" ]]
                 then
-			get_input "yn" "Confirm previous selection [$GI_INSTALL_LDAP] or select (Y)es/(N)o: " true $GI_INSTALL_LDAP
+			get_input "yn" "Use ENTER to confirm previous selection [$GI_INSTALL_LDAP] or decide to deploy OpenLDAP " true $GI_INSTALL_LDAP
 		else
                 	get_input "yn" "Would you like to install OpenLDAP? " false
 		fi
