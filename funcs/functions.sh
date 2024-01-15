@@ -470,7 +470,12 @@ function get_software_architecture() {
                 msg "ODF tainting will require minimum 3 additional workers in your cluster to manage cluster storage" info
                 while $(check_input "yn" ${ocs_tainted})
                 do
-                        get_input "yn" "Should be ODF tainted?: " true
+			if [[ ! -z "$GI_OCS_TAINTED" ]]
+			then
+				get_input "yn" "Confirm previous selection [$GI_OCS_TAINTED] or select (N)o/(Y)es: " true $GI_OCS_TAINTED
+			else
+                        	get_input "yn" "Should be ODF tainted?: " true
+			fi
                         ocs_tainted=${input_variable^^}
                 done
                 save_variable GI_OCS_TAINTED $ocs_tainted
@@ -495,7 +500,6 @@ function get_software_architecture() {
                 	else
                         	get_input "int" "How many DB2 nodes will be deployed?: "
                 	fi
-
                         db2_nodes_number=${input_variable^^}
                 done
                 save_variable GI_DB2_NODES_NUMBER $db2_nodes_number
@@ -508,7 +512,12 @@ function get_software_architecture() {
                 msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend" info
                 while $(check_input "yn" ${db2_tainted})
                 do
-                        get_input "yn" "Should be DB2 tainted?: " true
+			if [[ ! -z "$GI_DB2_TAINTED" ]]
+                        then
+                                get_input "yn" "Confirm previous selection [$GI_DB2_TAINTED] or select (N)o/(Y)es: " true $GI_DB2_TAINTED
+                        else
+                        	get_input "yn" "Should be DB2 tainted?: " true
+                        fi
                         db2_tainted=${input_variable^^}
                 done
                 save_variable GI_DB2_TAINTED $db2_tainted
@@ -520,7 +529,12 @@ function get_software_architecture() {
 function get_software_selection() {
         while $(check_input "yn" ${gi_install})
         do
-                get_input "yn" "Would you like to install Guardium Insights (GI)? " false
+		if [[ ! -z "$GI_INSTALL_GI" ]]
+                then
+			get_input "yn" "Confirm previous selection [$GI_INSTALL_GI] or select (Y)es/(N)o: " true $GI_INSTALL_GI
+		else
+                	get_input "yn" "Would you like to install Guardium Insights (GI)?: " false
+		fi
                 gi_install=${input_variable^^}
         done
         save_variable GI_INSTALL_GI $gi_install
@@ -529,7 +543,12 @@ function get_software_selection() {
                 msg "gi-runner offers installation of Cloud Pak for Security (CP4s) - latest version from channel $cp4s_channel" info
                 while $(check_input "yn" ${cp4s_install})
                 do
-                        get_input "yn" "Would you like to install CP4S? " false
+			if [[ ! -z "$GI_CP4S" ]]
+                	then
+				get_input "yn" "Confirm previous selection [$GI_CP4S] or select (Y)es/(N)o: " true $GI_CP4S
+			else
+                        	get_input "yn" "Would you like to install CP4S? " false
+			fi
                         cp4s_install=${input_variable^^}
                 done
                 [ $cp4s_install == 'Y' ] && ics_install='N'
@@ -542,7 +561,12 @@ function get_software_selection() {
                 msg "gi-runner offers installation of IBM Security Qradar EDR - latest version" info
                 while $(check_input "yn" ${edr_install})
                 do
-                        get_input "yn" "Would you like to install EDR? " false
+			if [[ ! -z "$GI_EDR" ]]
+                        then
+				get_input "yn" "Confirm previous selection [$GI_EDR] or select (Y)es/(N)o: " true $GI_EDR
+			else
+                        	get_input "yn" "Would you like to install EDR? " false
+			fi
                         edr_install=${input_variable^^}
                 done
                 [ $edr_install == 'Y' ] && ics_install='N'
@@ -556,7 +580,12 @@ function get_software_selection() {
         select_ocp_version
         while $(check_input "yn" ${install_ldap})
         do
-                get_input "yn" "Would you like to install OpenLDAP? " false
+		if [[ ! -z "$GI_INSTALL_LDAP" ]]
+                then
+			get_input "yn" "Confirm previous selection [$GI_INSTALL_LDAP] or select (Y)es/(N)o: " true $GI_INSTALL_LDAP
+		else
+                	get_input "yn" "Would you like to install OpenLDAP? " false
+		fi
                 install_ldap=${input_variable^^}
         done
         save_variable GI_INSTALL_LDAP $install_ldap

@@ -16,3 +16,5 @@ declare -a ocp_supported_by_ics=(0 0)
 declare -a ocp_supported_by_cp4s=(0)
 declare -a ocp_supported_by_edr=(0)
 declare -a gi_sizes=(small medium demo)
+cp4s_channel="1.10"
+
