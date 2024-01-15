@@ -1,18 +1,18 @@
 #!/bin/bash
 
+#author: zibi - zszmigiero@gmail.com
 script_argument=$1
+
 #load functions
 . ./funcs/functions.sh
 trap "display_error 'Unexpected error'" EXIT
-export MPID=$$
-
-#author: zibi - zszmigiero@gmail.com
-
+export MPID=$$ #init.sh process ID
 #import global variables
-. ./scripts/init.globals.sh
-#MAIN PART
+. ./funcs/init.globals.sh
 
-#echo "#gi-runner configuration file" > $file
+#MAIN PART
+echo "#gi-runner configuration file" > $variables_file
+msg "gi-runner installation tool for IBM Security Cloud Pak's on bare metal" title
 #msg "This script must be executed from gi-runner home directory" info
 #msg "Checking OS release" task
 #save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"

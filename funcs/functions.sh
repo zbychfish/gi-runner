@@ -21,6 +21,10 @@ function msg() {
                 "info")
                         printf "\e[2mINFO:\e[22m \e[97m$1\n\e[0m"
                         ;;
+		"title")
+			printf "\e[34m\e[2m$1\n\e[0m"
+			printf "\e[31m----------------------------------------\n"
+                        ;;
                 "error")
                         printf "\e[31m----------------------------------------\n"
                         if [ "$1" ]
