@@ -17,8 +17,8 @@ save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
 check_linux_distribution_and_release
 msg "Deployment decisions with/without Internet Access" task
 get_network_installation_type
-#msg "Deployment decisions about the software and its releases" task
-#get_software_selection
+msg "Deployment decisions about the software and its releases" task
+get_software_selection
 #get_software_architecture
 #mkdir -p $GI_TEMP
 #[[ "$use_air_gap" == 'Y' ]] && prepare_offline_bastion
