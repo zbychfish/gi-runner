@@ -3,7 +3,7 @@
 script_argument=$1
 #load functions
 . ./funcs/functions.sh
-trap {display_error "Unexpected error"} EXIT
+trap "display_error 'Unexpected error'" EXIT
 export MPID=$$
 
 #author: zibi - zszmigiero@gmail.com
