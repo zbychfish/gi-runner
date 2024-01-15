@@ -457,10 +457,10 @@ function get_software_architecture() {
         save_variable GI_STORAGE_TYPE $storage_type
         if [[ $storage_type == "O" && $is_master_only == 'N' && false ]] # check tainting
         then
-                msg "OCS tainting will require minimum 3 additional workers in your cluster to manage cluster storage" info
+                msg "ODF tainting will require minimum 3 additional workers in your cluster to manage cluster storage" info
                 while $(check_input "yn" ${ocs_tainted})
                 do
-                        get_input "yn" "Should be OCS tainted? " true
+                        get_input "yn" "Should be ODF tainted? " true
                         ocs_tainted=${input_variable^^}
                 done
                 save_variable GI_OCS_TAINTED $ocs_tainted
@@ -476,9 +476,6 @@ function get_software_architecture() {
                 done
                 gi_size="${gi_sizes[$((${gi_size_selected} - 1))]}"
                 save_variable GI_SIZE_GI $gi_size
-        fi
-	if [[ $gi_install == "Y" ]]
-        then
 		msg "You must decide how many DB2 nodes will be doployed (max 3). These nodes can be used for other services but requires more resources to cover datewarehouse load" info
                 while $(check_input "int" ${db2_nodes_number} 1 3)
                 do
