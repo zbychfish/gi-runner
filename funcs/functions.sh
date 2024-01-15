@@ -477,6 +477,25 @@ function get_software_architecture() {
                 gi_size="${gi_sizes[$((${gi_size_selected} - 1))]}"
                 save_variable GI_SIZE_GI $gi_size
         fi
+	if [[ $gi_install == "Y" ]]
+        then
+		msg "You must decide how many DB2 nodes will be doployed (max 3). These nodes can be used for other services but requires more resources to cover datewarehouse load" info
+                while $(check_input "int" ${db2_nodes_number} 1 3)
+                do
+			if [[ ! -z "$GI_DB2_NODES_NUMBER" && $GI_DB2_NODES_NUMBER -ne 0 ]]
+                	then
+                        	get_input "int" "Push <ENTER> to accept the previous choice [$GI_DB2_NODES_NUMBER] or insert number of DB2 nodes to deploy " true "$GI_DB2_NODES_NUMBER"
+                	else
+                        	get_input "int" "How many DB2 nodes will be deployed? "
+                	fi
+
+                        db2_nodes_number=${input_variable^^}
+                done
+                save_variable GI_DB2_NODES_NUMBER $db2_nodes_number
+        else
+                save_variable GI_DB2_NODES_NUMBER 0
+        fi
+
         if [[ $gi_install == "Y" && $is_master_only == 'N' ]]
         then
                 msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend" info
