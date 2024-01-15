@@ -402,7 +402,7 @@ function display_list () {
 }
 
 function get_network_installation_type() {
-	msg "You can deploy OCP with (direct or proxy) or without access to the internet (named as air-gapped, offline, disconnected)" info
+	msg "You can deploy OCP with (direct or proxy) or without (named as air-gapped, offline, disconnected) access to the internet" info
         while $(check_input "yn" ${use_air_gap})
         do
                 get_input "yn" "Is your environment air-gapped? - " true
@@ -419,6 +419,75 @@ function get_network_installation_type() {
                         use_proxy=${input_variable^^}
                 done
                 save_variable GI_INTERNET_ACCESS $use_proxy
+        fi
+}
+
+function get_software_architecture() {
+        msg "Some important architecture decisions about software deployment must be made now" task
+        msg "3 nodes only instalation consideration decisions" info
+        msg "This kind of architecture has some limitations:" info
+        msg "- You cannot isolate storage on separate nodes" info
+        msg "- You cannot isolate GI, EDR, CP4S and CPFS" info
+        while $(check_input "yn" ${is_master_only})
+        do
+                get_input "yn" "Is your installation the 3 nodes only? " true
+                is_master_only=${input_variable^^}
+        done
+        save_variable GI_MASTER_ONLY $is_master_only
+        msg "Decide what kind of cluster storage option will be implemented:" info
+        msg "- OpenShift Data Fountation - commercial rook-ceph branch from RedHat" info
+        msg "- Rook-Ceph - opensource cluster storage option" info
+        if [ $use_air_gap == 'N' ]
+        then
+        	msg "- Portworx Essentials - free version of Portworx Enterprise cluster storage option, it has limitation to 5 workers and 5 TB of storage" info
+                while $(check_input "stopx" ${storage_type})
+                do
+                	get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook/(P)ortworx: " true
+                        [[ ${input_variable} == '' ]] && input_variable='R'
+                        storage_type=${input_variable^^}
+                done
+        else
+                while $(check_input "sto" ${storage_type})
+                do
+                	get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook: " true
+                        [[ ${input_variable} == '' ]] && input_variable='R'
+                        storage_type=${input_variable^^}
+                done
+        fi
+        save_variable GI_STORAGE_TYPE $storage_type
+        if [[ $storage_type == "O" && $is_master_only == 'N' && false ]] # check tainting
+        then
+                msg "OCS tainting will require minimum 3 additional workers in your cluster to manage cluster storage" info
+                while $(check_input "yn" ${ocs_tainted})
+                do
+                        get_input "yn" "Should be OCS tainted? " true
+                        ocs_tainted=${input_variable^^}
+                done
+                save_variable GI_OCS_TAINTED $ocs_tainted
+        else
+                save_variable GI_OCS_TAINTED "N"
+        fi
+        if [[ $gi_install == "Y" ]]
+        then
+                while $(check_input "list" ${gi_size_selected} ${#gi_sizes[@]})
+                do
+                        get_input "list" "Select Guardium Insights deployment template: " "${gi_sizes[@]}"
+                        gi_size_selected=$input_variable
+                done
+                gi_size="${gi_sizes[$((${gi_size_selected} - 1))]}"
+                save_variable GI_SIZE_GI $gi_size
+        fi
+        if [[ $gi_install == "Y" && $is_master_only == 'N' ]]
+        then
+                msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend" info
+                while $(check_input "yn" ${db2_tainted})
+                do
+                        get_input "yn" "Should be DB2 tainted? " true
+                        db2_tainted=${input_variable^^}
+                done
+                save_variable GI_DB2_TAINTED $db2_tainted
+        else
+                save_variable GI_DB2_TAINTED "N"
         fi
 }
 

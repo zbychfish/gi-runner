@@ -10,6 +10,7 @@ script_argument=$1
 trap "display_error 'Unexpected error'" EXIT
 export MPID=$$ #init.sh process ID
 #MAIN PART
+mkdir -p $GI_TEMP
 echo "#gi-runner configuration file" > $variables_file
 msg "gi-runner installation tool for IBM Security Cloud Pak's on bare metal" title
 msg "Checking OS release" task
@@ -19,8 +20,7 @@ msg "Deployment decisions with/without Internet Access" task
 get_network_installation_type
 msg "Deployment decisions about the software and its releases" task
 get_software_selection
-#get_software_architecture
-#mkdir -p $GI_TEMP
+get_software_architecture
 #[[ "$use_air_gap" == 'Y' ]] && prepare_offline_bastion
 #get_ocp_domain
 #[[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
