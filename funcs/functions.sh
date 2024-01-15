@@ -42,3 +42,7 @@ function msg() {
         esac
 }
 
+function save_variable() {
+        echo "export $1=$2" >> $variables_file
+}
+

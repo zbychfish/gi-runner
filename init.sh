@@ -2,25 +2,18 @@
 
 #author: zibi - zszmigiero@gmail.com
 script_argument=$1
-
+! [ -f ./init.sh ] && { printf "This script must be executed from gi-runner home directoryi\n"; exit 1; }
 #load functions
 . ./funcs/functions.sh
-[ $? -ne 0 ] &&  { printf "Error: Cannot read functions, script must be execured from gi-runner home directory"; exit 1; }
-. ./funcs/init.globals.sh
-[ $? -ne 0 ] && msg "Cannot read defaults" error
+#import global variables
+. ./funcs/init.globals.saah
 trap "display_error 'Unexpected error'" EXIT
 export MPID=$$ #init.sh process ID
-#import global variables
-
 #MAIN PART
 echo "#gi-runner configuration file" > $variables_file
 msg "gi-runner installation tool for IBM Security Cloud Pak's on bare metal" title
-if ! [ -f ./init.sh ]
-then
-	msg "This script must be executed from gi-runner home directory" error
-fi
-#msg "Checking OS release" task
-#save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
+msg "Checking OS release" task
+save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
 #check_linux_distribution_and_release
 #msg "Deployment decisions with/without Internet Access" task
 #get_network_installation_type
