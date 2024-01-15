@@ -5,10 +5,12 @@ script_argument=$1
 
 #load functions
 . ./funcs/functions.sh
+if [ $? -ne 0 ] &&  { printf "Error: Cannot read functions, script must be execured from gi-runner home directory"; exit 1; }
+. ./funcs/init.globals.sh
+if [ $? -ne 0 ] && msg "Cannot read defaults" 
 trap "display_error 'Unexpected error'" EXIT
 export MPID=$$ #init.sh process ID
 #import global variables
-. ./funcs/init.globals.sh
 
 #MAIN PART
 echo "#gi-runner configuration file" > $variables_file
