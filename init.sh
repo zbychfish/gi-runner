@@ -13,7 +13,10 @@ export MPID=$$ #init.sh process ID
 #MAIN PART
 echo "#gi-runner configuration file" > $variables_file
 msg "gi-runner installation tool for IBM Security Cloud Pak's on bare metal" title
-#msg "This script must be executed from gi-runner home directory" info
+if ! [ -f ./init.sh ]
+then
+	msg "This script must be executed from gi-runner home directory" error
+fi
 #msg "Checking OS release" task
 #save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
 #check_linux_distribution_and_release
