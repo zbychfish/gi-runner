@@ -442,14 +442,24 @@ function get_software_architecture() {
         	msg "- Portworx Essentials - free version of Portworx Enterprise cluster storage option, it has limitation to 5 workers and 5 TB of storage" info
                 while $(check_input "stopx" ${storage_type})
                 do
-                	get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook/(P)ortworx: " true
-                        [[ ${input_variable} == '' ]] && input_variable='R'
-                        storage_type=${input_variable^^}
+			if [[ ! -z "$GI_STORAGE_TYPE" ]]
+                        then
+				get_input "stopx" "Push <ENTER> to accept the previous choice [$GI_STORAGE_TYPE] or select (O)DF/(R)ook/(P)ortworx: " true "$GI_STORAGE_TYPE"
+			else
+	                	get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook/(P)ortworx: " true
+			fi
+      	                [[ ${input_variable} == '' ]] && input_variable='R'
+               	        storage_type=${input_variable^^}
                 done
         else
                 while $(check_input "sto" ${storage_type})
                 do
-                	get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook: " true
+			if [[ ! -z "$GI_STORAGE_TYPE" ]]
+                        then
+                                get_input "sto" "Push <ENTER> to accept the previous choice [$GI_STORAGE_TYPE] or select (O)DF/(R)ook: " true "$GI_STORAGE_TYPE"
+                        else
+	                	get_input "sto" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook: " true
+			fi
                         [[ ${input_variable} == '' ]] && input_variable='R'
                         storage_type=${input_variable^^}
                 done
@@ -460,7 +470,7 @@ function get_software_architecture() {
                 msg "ODF tainting will require minimum 3 additional workers in your cluster to manage cluster storage" info
                 while $(check_input "yn" ${ocs_tainted})
                 do
-                        get_input "yn" "Should be ODF tainted? " true
+                        get_input "yn" "Should be ODF tainted?: " true
                         ocs_tainted=${input_variable^^}
                 done
                 save_variable GI_OCS_TAINTED $ocs_tainted
@@ -481,9 +491,9 @@ function get_software_architecture() {
                 do
 			if [[ ! -z "$GI_DB2_NODES_NUMBER" && $GI_DB2_NODES_NUMBER -ne 0 ]]
                 	then
-                        	get_input "int" "Push <ENTER> to accept the previous choice [$GI_DB2_NODES_NUMBER] or insert number of DB2 nodes to deploy " true "$GI_DB2_NODES_NUMBER"
+                        	get_input "int" "Push <ENTER> to accept the previous choice [$GI_DB2_NODES_NUMBER] or insert number of DB2 nodes to deploy: " true "$GI_DB2_NODES_NUMBER"
                 	else
-                        	get_input "int" "How many DB2 nodes will be deployed? "
+                        	get_input "int" "How many DB2 nodes will be deployed?: "
                 	fi
 
                         db2_nodes_number=${input_variable^^}
@@ -498,7 +508,7 @@ function get_software_architecture() {
                 msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend" info
                 while $(check_input "yn" ${db2_tainted})
                 do
-                        get_input "yn" "Should be DB2 tainted? " true
+                        get_input "yn" "Should be DB2 tainted?: " true
                         db2_tainted=${input_variable^^}
                 done
                 save_variable GI_DB2_TAINTED $db2_tainted
