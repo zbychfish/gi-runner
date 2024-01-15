@@ -14,7 +14,7 @@ echo "#gi-runner configuration file" > $variables_file
 msg "gi-runner installation tool for IBM Security Cloud Pak's on bare metal" title
 msg "Checking OS release" task
 save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"
-#check_linux_distribution_and_release
+check_linux_distribution_and_release
 #msg "Deployment decisions with/without Internet Access" task
 #get_network_installation_type
 #msg "Deployment decisions about the software and its releases" task

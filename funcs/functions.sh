@@ -1,3 +1,20 @@
+function check_linux_distribution_and_release() {
+        msg "Check OS distribution and release" task
+        linux_distribution=`cat /etc/os-release | grep ^ID | awk -F'=' '{print $2}'`
+        fedora_release=`cat /etc/os-release | grep VERSION_ID | awk -F'=' '{print $2}'`
+        is_supported_fedora_release=`case "${fedora_supp_releases[@]}" in  *"${fedora_release}"*) echo 1 ;; *) echo 0 ;; esac`
+        if [ $linux_distribution != 'fedora' ]
+        then
+                msg "Only Fedora is supported" error
+                exit 1
+        fi
+        if [ $is_supported_fedora_release -eq 0 ]
+        then
+                msg "Tested Fedora release are ${fedora_supp_releases[*]}" info
+		msg "It is suggested to use tested one. However tool should work without problem" info
+        fi
+}
+
 function display_error() {
         msg "$1" error
         trap - EXIT
