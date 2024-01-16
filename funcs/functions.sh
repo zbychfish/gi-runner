@@ -535,6 +535,7 @@ function get_software_architecture() {
 }
 
 function get_software_selection() {
+	ics_install='N'
         msg "gi-runner offers installation of Guardium Insights (GI)" info
         while $(check_input "yn" ${gi_install})
         do
@@ -560,7 +561,6 @@ function get_software_selection() {
 			fi
                         cp4s_install=${input_variable^^}
                 done
-                [ $cp4s_install == 'Y' ] && ics_install='N'
         else
                 cp4s_install='N'
         fi
@@ -572,13 +572,12 @@ function get_software_selection() {
                 do
 			if [[ ! -z "$GI_EDR" ]]
                         then
-				get_input "yn" "Use ENTER to confirm previous selection [$GI_EDR] or decide to install EDR " true $GI_EDR
+				get_input "yn" "Use ENTER to confirm previous selection [$GI_EDR] or decide if EDR is to be installed " true $GI_EDR
 			else
                         	get_input "yn" "Would you like to install EDR? " false
 			fi
                         edr_install=${input_variable^^}
                 done
-                [ $edr_install == 'Y' ] && ics_install='N'
         else
                 edr_install='N'
         fi
@@ -698,10 +697,13 @@ function select_ocp_version() {
                 IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
         elif [[ $cp4s_install == 'Y' ]]
         then
-                IFS=':' read -r -a ocp_versions <<< $ocp_supported_by_cp4s
+                IFS=':' read -r -a ocp_versions <<< $ocp_supported_by_cp4s[0]
         elif [[ $ics_install == 'Y' ]]
         then
                 IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_ics[$ics_version_selected]}
+	elif [[ $edr_install == 'Y' ]]
+        then
+                IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_edr[0]}
         fi
         local new_major_versions=()
         local i=1
