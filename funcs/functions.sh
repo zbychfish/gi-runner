@@ -393,7 +393,7 @@ function get_input() {
                 "yn")
 			if [[ $# -eq 4 ]]
 			then
-				[ $4 == 'Y' ] && msg "(\e[4mN\e[24m)o/(Y)es: " continue || msg "(N)o/(\e[4mY\e[24m)es: " continue
+				[ $4 == 'N' ] && msg "(\e[4mN\e[24m)o/(Y)es: " continue || msg "(N)o/(\e[4mY\e[24m)es: " continue
 				read input_variable
 				printf "\e[0m"
 				if [ $input_variable == '' ]
