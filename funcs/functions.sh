@@ -697,13 +697,13 @@ function select_ocp_version() {
                 IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_gi[$gi_version_selected]}
         elif [[ $cp4s_install == 'Y' ]]
         then
-                IFS=':' read -r -a ocp_versions <<< $ocp_supported_by_cp4s[0]
+                IFS=':' read -r -a ocp_versions <<< $ocp_supported_by_cp4s
         elif [[ $ics_install == 'Y' ]]
         then
                 IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_ics[$ics_version_selected]}
 	elif [[ $edr_install == 'Y' ]]
         then
-                IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_edr[0]}
+                IFS=':' read -r -a ocp_versions <<< ${ocp_supported_by_edr}
         fi
         local new_major_versions=()
         local i=1
