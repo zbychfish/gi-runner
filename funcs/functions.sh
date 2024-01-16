@@ -583,7 +583,7 @@ function get_software_selection() {
         fi
         save_variable GI_EDR $edr_install
         [[ $gi_install == 'Y' ]] && select_gi_version
-        [ $edr_install == 'N' -a $cp4s_install == 'N' -a $gi_install == 'N' ] && select_ics_version || printf "$edr_install $cp4s_install $gi_install"
+        [ $edr_install == 'N' -a $cp4s_install == 'N' -a $gi_install == 'N' ] && select_ics_version
         save_variable GI_ICS $ics_install
         select_ocp_version
         while $(check_input "yn" ${install_ldap})
@@ -675,7 +675,12 @@ function select_ics_version() {
         ics_version_selected=""
         while $(check_input "yn" ${ics_install})
         do
-                get_input "yn" "Would you like to install Cloud Pak Foundational Services (IBM Common Services)? " false
+		if [[ ! -z "$GI_ICS" ]]
+                then
+			get_input "yn" "Use ENTER to confirm previous selection [$GI_ICS] or decide to deploy CPFS " true $GI_ICS
+		else
+	                get_input "yn" "Would you like to install Cloud Pak Foundational Services (CPFS)? " false
+		fi
                 ics_install=${input_variable^^}
         done
         if [[ $ics_install == 'Y' ]]
@@ -738,6 +743,7 @@ function select_ocp_version() {
         then
                 msg "Insert minor version of OpenShift ${ocp_major_versions[${ocp_major_version}]}.x" info
                 msg "It must be existing version - you can check list of available version using this URL: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_versions[${ocp_major_version}]}/latest/" info
+		[[ ! -z "$GI_OCP_RELEASE" ]] && msg "Previously selected version $GI_OCP_RELEASE" info
                 ocp_release_minor=${ocp_release_minor:-Z}
                 while $(check_input "int" ${ocp_release_minor} 0 1000)
                 do
