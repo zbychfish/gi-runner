@@ -583,8 +583,7 @@ function get_software_selection() {
         fi
         save_variable GI_EDR $edr_install
         [[ $gi_install == 'Y' ]] && select_gi_version
-        [[ $edr_install == 'N' && $cp4s_install == 'N' && $gi_install == 'N' ]] && select_ics_version
-	printf "$edr_install $cp4s_install $gi_install"
+        [[ $edr_install == 'N' && $cp4s_install == 'N' && $gi_install == 'N' ]] && select_ics_version || printf "$edr_install $cp4s_install $gi_install"
         save_variable GI_ICS $ics_install
         select_ocp_version
         while $(check_input "yn" ${install_ldap})
