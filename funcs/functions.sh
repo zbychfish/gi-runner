@@ -565,7 +565,7 @@ function get_software_selection() {
                 cp4s_install='N'
         fi
         save_variable GI_CP4S $cp4s_install
-        if [[ $gi_install == 'N' && $cp4s == 'N' ]]
+        if [[ $gi_install == 'N' && $cp4s_install == 'N' ]]
         then
                 msg "gi-runner offers installation of IBM Security Qradar EDR - latest version" info
                 while $(check_input "yn" ${edr_install})
