@@ -394,7 +394,7 @@ function get_input() {
                        	$3 && msg "(\e[4mN\e[24m)o/(Y)es: " continue || msg "(N)o/(\e[4mY\e[24m)es: " continue
                        	read input_variable
                        	printf "\e[0m"
-			if [ $# -eq 4 && $input_variable == '' ]
+			if [[ $# -eq 4 && $input_variable == '' ]]
 			then
 				input_variable=$4
 			else
