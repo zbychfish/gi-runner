@@ -305,6 +305,21 @@ function display_error() {
         kill -s TERM $MPID
 }
 
+function display_list () {
+        local list=("$@")
+        local i=1
+        for element in "${list[@]}"
+        do
+                if [[ $i -eq ${#list[@]} ]]
+                then
+                        msg "    \e[4m$i\e[24m - $element" newline
+                else
+                        msg "    $i - $element" newline
+                fi
+                i=$((i+1))
+        done
+}
+
 function get_input() {
         unset input_variable
         msg "$2" monit
@@ -376,29 +391,19 @@ function get_input() {
                         fi
                         ;;
                 "yn")
-                        $3 && msg "(\e[4mN\e[24m)o/(Y)es: " continue || msg "(N)o/(\e[4mY\e[24m)es: " continue
-                        read input_variable
-                        printf "\e[0m"
-                        $3 && input_variable=${input_variable:-N} || input_variable=${input_variable:-Y}
+                       	$3 && msg "(\e[4mN\e[24m)o/(Y)es: " continue || msg "(N)o/(\e[4mY\e[24m)es: " continue
+                       	read input_variable
+                       	printf "\e[0m"
+			if [ $# -eq 4 ]
+			then
+				input_variable=$4
+			else
+                        	$3 && input_variable=${input_variable:-N} || input_variable=${input_variable:-Y}
+			fi
                         ;;
                 *)
                         display_error "Unknown get_input function type"
         esac
-}
-
-function display_list () {
-        local list=("$@")
-        local i=1
-        for element in "${list[@]}"
-        do
-                if [[ $i -eq ${#list[@]} ]]
-                then
-                        msg "    \e[4m$i\e[24m - $element" newline
-                else
-                        msg "    $i - $element" newline
-                fi
-                i=$((i+1))
-        done
 }
 
 function get_network_installation_type() {
@@ -532,7 +537,7 @@ function get_software_selection() {
         do
 		if [[ ! -z "$GI_INSTALL_GI" ]]
                 then
-			get_input "yn" "Use ENTER to confirm previous selection [$GI_INSTALL_GI] or decide if Guardium Insights is to be installed" false $GI_INSTALL_GI
+			get_input "yn" "Use ENTER to confirm previous selection [$GI_INSTALL_GI] or decide if Guardium Insights is to be installed " false $GI_INSTALL_GI
 		else
                 	get_input "yn" "Would you like to install Guardium Insights? " false
 		fi
@@ -546,7 +551,7 @@ function get_software_selection() {
                 do
 			if [[ ! -z "$GI_CP4S" ]]
                 	then
-				get_input "yn" "Use ENTER to confirm previous selection [$GI_CP4S] or decide if CP4S is to be installed" true $GI_CP4S
+				get_input "yn" "Use ENTER to confirm previous selection [$GI_CP4S] or decide if CP4S is to be installed " true $GI_CP4S
 			else
                         	get_input "yn" "Would you like to install CP4S? " false
 			fi
