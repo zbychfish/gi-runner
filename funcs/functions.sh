@@ -532,7 +532,7 @@ function get_software_selection() {
         do
 		if [[ ! -z "$GI_INSTALL_GI" ]]
                 then
-			get_input "yn" "Use ENTER to onfirm previous selection [$GI_INSTALL_GI] or decide to install Guardium Insights " true $GI_INSTALL_GI
+			get_input "yn" "Use ENTER to confirm previous selection [$GI_INSTALL_GI] or decide if Guardium Insights is to be installed" false $GI_INSTALL_GI
 		else
                 	get_input "yn" "Would you like to install Guardium Insights? " false
 		fi
@@ -546,7 +546,7 @@ function get_software_selection() {
                 do
 			if [[ ! -z "$GI_CP4S" ]]
                 	then
-				get_input "yn" "Use ENTER to confirm previous selection [$GI_CP4S] or decide to install CP4S " true $GI_CP4S
+				get_input "yn" "Use ENTER to confirm previous selection [$GI_CP4S] or decide if CP4S is to be installed" true $GI_CP4S
 			else
                         	get_input "yn" "Would you like to install CP4S? " false
 			fi
