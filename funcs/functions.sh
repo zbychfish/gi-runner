@@ -585,6 +585,7 @@ function get_software_selection() {
         [[ $gi_install == 'Y' ]] && select_gi_version
         if [ $edr_install == 'N' -a $cp4s_install == 'N' -a $gi_install == 'N' ]
 	then
+		printf 'dupa'
 		select_ics_version
 	else
 	       	printf "$edr_install $cp4s_install $gi_install"
