@@ -391,13 +391,19 @@ function get_input() {
                         fi
                         ;;
                 "yn")
-                       	$3 && msg "(\e[4mN\e[24m)o/(Y)es: " continue || msg "(N)o/(\e[4mY\e[24m)es: " continue
-                       	read input_variable
-                       	printf "\e[0m"
-			if [[ $# -eq 4 && $input_variable == '' ]]
+			if [[ $# -eq 4 ]]
 			then
-				input_variable=$4
+				[ $4 == 'Y' ] && msg "(\e[4mN\e[24m)o/(Y)es: " continue || msg "(N)o/(\e[4mY\e[24m)es: " continue
+				read input_variable
+				printf "\e[0m"
+				if [ $input_variable == '' ]
+				then
+					input_variable=$4
+				fi
 			else
+                       		$3 && msg "(\e[4mN\e[24m)o/(Y)es: " continue || msg "(N)o/(\e[4mY\e[24m)es: " continue
+                       		read input_variable
+                       		printf "\e[0m"
                         	$3 && input_variable=${input_variable:-N} || input_variable=${input_variable:-Y}
 			fi
                         ;;
