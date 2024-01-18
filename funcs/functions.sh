@@ -668,6 +668,7 @@ function select_gi_version() {
                         get_input "yn" "Would you like to install non-default Cloud Pak Foundational Services for GI? " true
                         nd_ics_install="${input_variable^^}"
                 done
+		[[ "$nd_ics_install" == 'N' ]] msg "You decided to deploy default CPFS release for GI" info
                 [[ "$nd_ics_install" == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
         else
                 display_default_ics
@@ -702,6 +703,7 @@ function select_ics_version() {
 }
 
 function select_ocp_version() {
+	msg "You will select the OpenShift release to deploy" info
         local i
         if [[ $gi_install == 'Y' ]]
         then
