@@ -438,7 +438,12 @@ function get_software_architecture() {
         msg "- You cannot isolate GI, EDR, CP4S and CPFS" info
         while $(check_input "yn" ${is_master_only})
         do
-                get_input "yn" "Is your installation the 3 nodes only? " true
+		if [[ ! -z "$GI_MASTER_ONLY" ]]
+                then
+			get_input "yn" "Is your installation the 3 nodes only (push ENTER to accept previous selection [$GI_MASTER_ONLY])? " true $GI_MASTER_ONLY
+		else
+                	get_input "yn" "Is your installation the 3 nodes only? " true
+		fi
                 is_master_only=${input_variable^^}
         done
         save_variable GI_MASTER_ONLY $is_master_only
@@ -452,9 +457,9 @@ function get_software_architecture() {
                 do
 			if [[ ! -z "$GI_STORAGE_TYPE" ]]
                         then
-				get_input "stopx" "Push <ENTER> to accept the previous choice [$GI_STORAGE_TYPE] or select (O)DF/(R)ook/(P)ortworx: " true "$GI_STORAGE_TYPE"
+				get_input "stopx" "Select storage backend (O)DF/(R)ook/(P)ortworx or press ENTER to accept the previous choice [$GI_STORAGE_TYPE] " true "$GI_STORAGE_TYPE"
 			else
-	                	get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook/(P)ortworx: " true
+	                	get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook/(P)ortworx " true
 			fi
       	                [[ ${input_variable} == '' ]] && input_variable='R'
                	        storage_type=${input_variable^^}
@@ -464,9 +469,9 @@ function get_software_architecture() {
                 do
 			if [[ ! -z "$GI_STORAGE_TYPE" ]]
                         then
-                                get_input "sto" "Push <ENTER> to accept the previous choice [$GI_STORAGE_TYPE] or select (O)DF/(R)ook: " true "$GI_STORAGE_TYPE"
+                                get_input "sto" "Select storage backend (O)DF/(R)ook or press ENTER to accept the previous choice [$GI_STORAGE_TYPE] " true "$GI_STORAGE_TYPE"
                         else
-	                	get_input "sto" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook: " true
+	                	get_input "sto" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook " true
 			fi
                         [[ ${input_variable} == '' ]] && input_variable='R'
                         storage_type=${input_variable^^}
@@ -480,9 +485,9 @@ function get_software_architecture() {
                 do
 			if [[ ! -z "$GI_OCS_TAINTED" ]]
 			then
-				get_input "yn" "Confirm previous selection [$GI_OCS_TAINTED] or select (N)o/(Y)es: " true $GI_OCS_TAINTED
+				get_input "yn" "Decide to taint ODF or push ENTER to accept selection [$GI_OCS_TAINTED] " true $GI_OCS_TAINTED
 			else
-                        	get_input "yn" "Should be ODF tainted?: " true
+                        	get_input "yn" "Should be ODF tainted? " true
 			fi
                         ocs_tainted=${input_variable^^}
                 done
@@ -522,7 +527,7 @@ function get_software_architecture() {
                 do
 			if [[ ! -z "$GI_DB2_TAINTED" ]]
                         then
-                                get_input "yn" "Confirm previous selection [$GI_DB2_TAINTED] or select (N)o/(Y)es: " true $GI_DB2_TAINTED
+                                get_input "yn" "Decide to taint DB2 nodes or confirm previous decision [$GI_DB2_TAINTED] " true $GI_DB2_TAINTED
                         else
                         	get_input "yn" "Should be DB2 tainted?: " true
                         fi
@@ -733,7 +738,7 @@ function select_ocp_version() {
                 ocp_release_decision=${ocp_release_decision:-Z}
                 while $(check_input "es" ${ocp_release_decision})
                 do
-                        get_input "es" "Would you provide exact version OC to install (E) or use the latest stable [S]? (E)xact/(\e[4mS\e[0m)table: " true
+			get_input "es" "Would you like to deploy exactly specified version OCP to install or use the latest stable? (E)xact/(\e[4mS\e[0m)table: " true
                         ocp_release_decision=${input_variable^^}
                 done
         else
