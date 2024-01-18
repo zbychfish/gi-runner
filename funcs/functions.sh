@@ -457,9 +457,9 @@ function get_software_architecture() {
                 do
 			if [[ ! -z "$GI_STORAGE_TYPE" ]]
                         then
-				get_input "stopx" "Select storage backend (O)DF/(R)ook/(P)ortworx or press ENTER to accept the previous choice [$GI_STORAGE_TYPE] " true "$GI_STORAGE_TYPE"
+				get_input "stopx" "Select storage backend (O)DF/(R)ook/(P)ortworx or press ENTER to accept the previous choice [$GI_STORAGE_TYPE]: " true "$GI_STORAGE_TYPE"
 			else
-	                	get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook/(P)ortworx " true
+	                	get_input "stopx" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook/(P)ortworx: " true
 			fi
       	                [[ ${input_variable} == '' ]] && input_variable='R'
                	        storage_type=${input_variable^^}
@@ -469,9 +469,9 @@ function get_software_architecture() {
                 do
 			if [[ ! -z "$GI_STORAGE_TYPE" ]]
                         then
-                                get_input "sto" "Select storage backend (O)DF/(R)ook or press ENTER to accept the previous choice [$GI_STORAGE_TYPE] " true "$GI_STORAGE_TYPE"
+                                get_input "sto" "Select storage backend (O)DF/(R)ook or press ENTER to accept the previous choice [$GI_STORAGE_TYPE]: " true "$GI_STORAGE_TYPE"
                         else
-	                	get_input "sto" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook " true
+	                	get_input "sto" "Choice the cluster storage type? (O)DF/(\e[4mR\e[0m)ook: " true
 			fi
                         [[ ${input_variable} == '' ]] && input_variable='R'
                         storage_type=${input_variable^^}
