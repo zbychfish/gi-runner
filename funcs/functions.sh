@@ -679,16 +679,19 @@ function select_gi_version() {
 function select_ics_version() {
 	unset ics_install
         ics_version_selected=""
-        while $(check_input "yn" ${ics_install})
-        do
-		if [[ ! -z "$GI_ICS" ]]
-                then
-			get_input "yn" "Use ENTER to confirm previous selection [$GI_ICS] or decide to deploy CPFS " true $GI_ICS
-		else
-	                get_input "yn" "Would you like to install Cloud Pak Foundational Services (CPFS)? " false
-		fi
-                ics_install=${input_variable^^}
-        done
+	if [[ ! -z $nd_ics_install && "$nd_ics_install" == 'N' ]]
+	then
+        	while $(check_input "yn" ${ics_install})
+        	do
+			if [[ ! -z "$GI_ICS" ]]
+                	then
+				get_input "yn" "Use ENTER to confirm previous selection [$GI_ICS] or decide to deploy CPFS " true $GI_ICS
+			else
+	                	get_input "yn" "Would you like to install Cloud Pak Foundational Services (CPFS)? " false
+			fi
+                	ics_install=${input_variable^^}
+        	done
+	fi
         if [[ $ics_install == 'Y' ]]
         then
                 ics_version_selected=${ics_version_selected:-0}
