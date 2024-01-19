@@ -338,6 +338,10 @@ function get_input() {
                         ;;
                 "int")
                         read input_variable
+			if [[ $# -eq 4 ]]
+			then
+				[[ $input_variable == '' ]] && input_variable=$4
+			fi
                         ;;
                 "list")
                         msg "" newline
@@ -504,7 +508,7 @@ function get_software_architecture() {
                 done
                 gi_size="${gi_sizes[$((${gi_size_selected} - 1))]}"
                 save_variable GI_SIZE_GI $gi_size
-		msg "You must decide how many DB2 nodes will be doployed (max 3). These nodes can be used for other services but requires more resources to cover datewarehouse load" info
+		msg "You must decide how many DB2 nodes will be deployed (max 3). These nodes can be used for other services but requires more resources to cover datewarehouse load" info
                 while $(check_input "int" ${db2_nodes_number} 1 3)
                 do
 			if [[ ! -z "$GI_DB2_NODES_NUMBER" && $GI_DB2_NODES_NUMBER -ne 0 ]]
