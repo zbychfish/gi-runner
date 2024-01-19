@@ -679,15 +679,13 @@ function select_gi_version() {
 function select_ics_version() {
 	unset ics_install
         ics_version_selected=""
-	echo "$nd_ics_install"
-
 	if ([ -z "$nd_ics_install" ] || [ "$nd_ics_install" == 'N' ])
 	then
         	while $(check_input "yn" ${ics_install})
         	do
 			if [[ ! -z "$GI_ICS" ]]
                 	then
-				get_input "yn" "Use ENTER to confirm previous selection [$GI_ICS] or decide to deploy CPFS " true $GI_ICS
+				get_input "yn" "Decide to deploy CPFS or press ENTER to confirm previous selection [$GI_ICS] " true $GI_ICS
 			else
 	                	get_input "yn" "Would you like to install Cloud Pak Foundational Services (CPFS)? " false
 			fi
