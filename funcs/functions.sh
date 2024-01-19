@@ -668,8 +668,8 @@ function select_gi_version() {
                         get_input "yn" "Would you like to install non-default Cloud Pak Foundational Services for GI? " true
                         nd_ics_install="${input_variable^^}"
                 done
-		[[ "$nd_ics_install" == 'N' ]] && msg "You decided to deploy default CPFS release for GI" info
-                [[ "$nd_ics_install" == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
+		[[ $nd_ics_install == 'N' ]] && msg "You decided to deploy default CPFS release for GI" info
+                [[ $nd_ics_install == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
         else
                 display_default_ics
                 msg "In case of air-gapped installation you must install the bundled ICS version" info
@@ -691,6 +691,8 @@ function select_ics_version() {
 			fi
                 	ics_install=${input_variable^^}
         	done
+	else
+		ics_install='Y'
 	fi
         if [[ $ics_install == 'Y' ]]
         then
