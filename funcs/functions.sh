@@ -546,7 +546,7 @@ function get_software_selection() {
         do
 		if [[ ! -z "$GI_INSTALL_GI" ]]
                 then
-			get_input "yn" "Use ENTER to confirm previous selection [$GI_INSTALL_GI] or decide if Guardium Insights is to be installed " false $GI_INSTALL_GI
+			get_input "yn" "Decide if Guardium Insights is to be installed or press ENTER to confirm previous selection [$GI_INSTALL_GI] " false $GI_INSTALL_GI
 		else
                 	get_input "yn" "Would you like to install Guardium Insights? " false
 		fi
@@ -560,7 +560,7 @@ function get_software_selection() {
                 do
 			if [[ ! -z "$GI_CP4S" ]]
                 	then
-				get_input "yn" "Use ENTER to confirm previous selection [$GI_CP4S] or decide if CP4S is to be installed " true $GI_CP4S
+				get_input "yn" "Decide if CP4S is to be installed or press ENTER to confirm previous selection [$GI_CP4S] " true $GI_CP4S
 			else
                         	get_input "yn" "Would you like to install CP4S? " false
 			fi
@@ -577,7 +577,7 @@ function get_software_selection() {
                 do
 			if [[ ! -z "$GI_EDR" ]]
                         then
-				get_input "yn" "Use ENTER to confirm previous selection [$GI_EDR] or decide if EDR is to be installed " true $GI_EDR
+				get_input "yn" "Decide if EDR is to be installed or press ENTER to confirm previous selection [$GI_EDR] " true $GI_EDR
 			else
                         	get_input "yn" "Would you like to install EDR? " false
 			fi
@@ -595,7 +595,7 @@ function get_software_selection() {
         do
 		if [[ ! -z "$GI_INSTALL_LDAP" ]]
                 then
-			get_input "yn" "Use ENTER to confirm previous selection [$GI_INSTALL_LDAP] or decide to deploy OpenLDAP " true $GI_INSTALL_LDAP
+			get_input "yn" "Decide to deploy OpenLDAP or press ENTER to confirm previous selection [$GI_INSTALL_LDAP] " true $GI_INSTALL_LDAP
 		else
                 	get_input "yn" "Would you like to install OpenLDAP? " false
 		fi
@@ -668,7 +668,7 @@ function select_gi_version() {
                         get_input "yn" "Would you like to install non-default Cloud Pak Foundational Services for GI? " true
                         nd_ics_install="${input_variable^^}"
                 done
-		[[ "$nd_ics_install" == 'N' ]] msg "You decided to deploy default CPFS release for GI" info
+		[[ "$nd_ics_install" == 'N' ]] && msg "You decided to deploy default CPFS release for GI" info
                 [[ "$nd_ics_install" == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
         else
                 display_default_ics
