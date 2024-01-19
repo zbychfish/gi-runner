@@ -679,7 +679,7 @@ function select_gi_version() {
 function select_ics_version() {
 	unset ics_install
         ics_version_selected=""
-	if [[ (! -z $nd_ics_install) -o "$nd_ics_install" == 'N' ]]
+	if [ (! -z $nd_ics_install) -o "$nd_ics_install" == 'N' ]
 	then
         	while $(check_input "yn" ${ics_install})
         	do
