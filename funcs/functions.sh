@@ -679,8 +679,8 @@ function select_gi_version() {
 function select_ics_version() {
 	unset ics_install
         ics_version_selected=""
-	echo 'here'
-	if ([ ! -z $nd_ics_install ] || [ "$nd_ics_install" == 'N' ])
+	echo "$nd_ics_install"
+	if ([ -z "$nd_ics_install" ] || [ "$nd_ics_install" == 'N' ])
 	then
         	while $(check_input "yn" ${ics_install})
         	do
