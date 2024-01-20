@@ -36,7 +36,7 @@ get_nodes_info 3 "mst"
 get_worker_nodes
 get_set_services
 get_hardware_info
-#get_service_assignment
+get_service_assignment
 #get_cluster_storage_info
 #get_inter_cluster_info
 #get_credentials
