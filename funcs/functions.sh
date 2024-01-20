@@ -769,6 +769,8 @@ function get_service_assignment() {
         fi
 	if [ "$gi_install" == 'Y' ]
         then
+		echo ${worker_wo_db2_name[@]}
+		echo ${worker_wo_db2_name}
                 IFS=',' read -r -a worker_arr <<< "$worker_name"
                 if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) ]] || [[ ( $db2_tainted == 'N' && ${worker_wo_db2_name[@]} -gt 3 ) ]]
                 then
