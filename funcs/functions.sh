@@ -363,6 +363,40 @@ function get_bastion_info() {
         fi
 }
 
+function get_hardware_info() {
+        msg "Collecting hardware information" task
+        msg "Automatic CoreOS and storage deployment requires information about NIC and storage devices" info
+        msg "There is assumption that all cluster nodes including bootstrap machine use this same HW specification for network and storage" info
+        msg "The Network Interface Card (NIC) device specification must provide the one of the interfaces attached to cluster subnet" info
+        msg "In most cases the first NIC attached to machine will have on Fedora and RedHat the name \"ens192\"" info
+        while $(check_input "txt" "${machine_nic}" "non_empty")
+        do
+                if [ ! -z "$GI_NETWORK_INTERFACE" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_NETWORK_INTERFACE] or insert NIC specification: " true "$GI_NETWORK_INTERFACE"
+                else
+                        get_input "txt" "Insert NIC specification: " false
+                fi
+                machine_nic="${input_variable}"
+        done
+        save_variable GI_NETWORK_INTERFACE "$machine_nic"
+        msg "There is assumption that all cluster machines use this device specification for boot disk" info
+        msg "In most cases the first boot disk will have specification \"sda\" or \"nvmne0\"" info
+	msg "The inserted value refers to device located in /dev directory (it means that value sda refers to /dev/sda)" info
+        while $(check_input "txt" "${machine_disk}" "non_empty")
+        do
+                if [ ! -z "$GI_BOOT_DEVICE" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_BOOT_DEVICE] or insert boot disk specification: " true "$GI_BOOT_DEVICE"
+                else
+                        get_input "txt" "Insert boot disk specification: " false
+                fi
+                machine_disk="${input_variable}"
+        done
+        save_variable GI_BOOT_DEVICE "$machine_disk"
+	msg "All your nodes have the NIC ${machine_nic} attached to cluster subnet/subnets. All your nodes use /dev/${machine_disk} as a boot disk." info
+}
+
 function get_input() {
         unset input_variable
         msg "$2" monit
