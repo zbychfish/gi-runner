@@ -722,9 +722,11 @@ function get_software_architecture() {
                         	db2_tainted=${input_variable^^}
                 	done
                	 	save_variable GI_DB2_TAINTED $db2_tainted
+		else
+			[[ $storage_type == 'P' && $db2_nodes_number -eq 3 ]] && msg "DB2 cannot be tainted because Portworx Essential has limitation of 5 workers only" info
+			save_variable GI_DB2_TAINTED 'N'
 		fi
         else
-		[[ $storage_type == 'P' && $db2_nodes_number -eq 3 ]] && msg "DB2 cannot be tainted because Portworx Essential has limitation of 5 workers only" info
                 save_variable GI_DB2_TAINTED "N"
         fi
 }
