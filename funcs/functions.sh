@@ -363,6 +363,40 @@ function get_bastion_info() {
         fi
 }
 
+function get_cluster_storage_info() {
+        msg "Cluster storage information" task
+        msg "There is assumption that all storage cluster node use this same device specification for storage disk" info
+        msg "In most cases the second boot disk will have specification \"sdb\" or \"nvmne1\"" info
+        msg "The inserted value refers to root path located in /dev" info
+        msg "It means that value sdb refers to /dev/sdb" info
+        while $(check_input "txt" "${storage_device}" "non_empty")
+        do
+                if [ ! -z "$GI_STORAGE_DEVICE" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_STORAGE_DEVICE] or insert cluster storage disk device specification: " true "$GI_STORAGE_DEVICE"
+                else
+                        get_input "txt" "Insert cluster storage disk device specification: " false
+                fi
+                storage_device="${input_variable}"
+        done
+        save_variable GI_STORAGE_DEVICE "$storage_device"
+        msg "Cluster storage devices ($storage_device)  must be this same size on all storage nodes!" info
+        msg "The minimum size of each disk is 100 GB" info
+        while $(check_input "int" "${storage_device_size}" 100 10000000)
+        do
+                if [ ! -z "$GI_STORAGE_DEVICE_SIZE" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_STORAGE_DEVICE_SIZE] or insert cluster storage disk device size (in GB): " true "$GI_STORAGE_DEVICE_SIZE"
+                        storage_device_size="$GI_STORAGE_DEVICE_SIZE"
+                else
+                        get_input "txt" "Insert cluster storage disk device size (in GB): " false
+                fi
+                storage_device_size="${input_variable}"
+        done
+        save_variable GI_STORAGE_DEVICE_SIZE "$storage_device_size"
+        [[ "$storage_type" == 'P' ]] && get_px_options
+}
+
 function get_hardware_info() {
         msg "Collecting hardware information" task
         msg "Automatic CoreOS and storage deployment requires information about NIC and storage devices" info
@@ -651,6 +685,23 @@ function get_ocp_domain() {
         save_variable GI_DOMAIN $ocp_domain
 }
 
+function get_px_options() {
+        msg "Gather Portworx Essential Parameters" task
+        msg "Portworx will use all disks available on nodes specified by path /dev/${storage_device}" info
+        msg "Please insert your Essential Entitlement ID, it must be unlinked to be usable for deploying new Portwork Storage Server instance (https://central.portworx.com/profile)" info
+        while $(check_input "uuid" ${px_id})
+        do
+                if [[ ! -z "$GI_PX_ID" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_PX_ID] or insert Portworx Essential Entitlement ID: " true "$GI_PX_ID"
+                else
+                        get_input "txt" "Insert Portworx Essential Entitlement ID: " false
+                fi
+                px_id=${input_variable}
+        done
+        save_variable GI_PX_ID $px_id
+}
+
 function get_service_assignment() {
         msg "Architecture decisions about service location on cluster nodes" task
         local -a selected_arr
@@ -684,13 +735,8 @@ function get_service_assignment() {
                 save_variable GI_DB2_NODES "$db2_nodes"
                 IFS=',' read -r -a selected_arr <<< "$db2_nodes"
                 IFS=',' read -r -a node_arr <<< "$worker_name"
-                #if [[ "$db2_tainted" == 'N' ]]
-                #then
-                #        worker_wo_db2_name=$worker_name
-                #else
-                        for element in ${selected_arr[@]};do node_arr=("${node_arr[@]/$element}");done
-                        worker_wo_db2_name=`echo ${node_arr[*]}|tr ' ' ','`
-                #fi
+                for element in ${selected_arr[@]};do node_arr=("${node_arr[@]/$element}");done
+                worker_wo_db2_name=`echo ${node_arr[*]}|tr ' ' ','`
         else
                 IFS=',' read -r -a node_arr <<< "$worker_name"
                 worker_wo_db2_name="${worker_name[@]}"
@@ -702,7 +748,7 @@ function get_service_assignment() {
                 msg "Only disks from specified nodes will be configured as a cluster storage" info
                 while $(check_input "yn" $rook_on_list false)
                 do
-                        get_input "yn" "Would you like to install Rook-Ceph on strictly specified nodes?: " true
+                        get_input "yn" "Would you like to install Rook-Ceph on specified nodes?: " true
                         rook_on_list=${input_variable^^}
                 done
                 if [ "$rook_on_list" == 'Y' ]
@@ -742,10 +788,10 @@ function get_service_assignment() {
         fi
         if [[ $ics_install == "Y" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
         then
-                msg "You can force to deploy ICS on strictly defined node list" info
+                msg "You can force to deploy CPFS on strictly defined node list" info
                 while $(check_input "yn" $ics_on_list false)
                 do
-                        get_input "yn" "Would you like to install ICS on strictly specified nodes?: " true
+                        get_input "yn" "Would you like to install CPFS on specified nodes?: " true
                         ics_on_list=${input_variable^^}
                 done
                 if [ "$ics_on_list" == 'Y' ]
@@ -776,7 +822,7 @@ function get_service_assignment() {
                         msg "You can force to deploy GI on strictly defined node list" info
                         while $(check_input "yn" $gi_on_list false)
                         do
-                                get_input "yn" "Would you like to install GI on strictly specified nodes?: " true
+                                get_input "yn" "Would you like to install GI on specified nodes?: " true
                                 gi_on_list=${input_variable^^}
                         done
                 fi

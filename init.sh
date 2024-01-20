@@ -37,7 +37,7 @@ get_worker_nodes
 get_set_services
 get_hardware_info
 get_service_assignment
-#get_cluster_storage_info
+get_cluster_storage_info
 #get_inter_cluster_info
 #get_credentials
 #get_certificates
