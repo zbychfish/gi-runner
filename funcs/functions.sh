@@ -434,6 +434,22 @@ function get_network_installation_type() {
         fi
 }
 
+function get_ocp_domain() {
+        msg "Set cluster domain name" task
+        msg "Insert the OCP cluster domain name - it is local cluster, so it doesn't have to be registered as public one" info
+        while $(check_input "domain" ${ocp_domain})
+        do
+                if [[ ! -z "$GI_DOMAIN" ]]
+                then
+                        get_input "txt" "Press <ENTER> to accept the previous choice [$GI_DOMAIN] or insert domain name: " true "$GI_DOMAIN"
+                else
+                        get_input "txt" "Insert domain name: " false
+                fi
+                ocp_domain=${input_variable}
+        done
+        save_variable GI_DOMAIN $ocp_domain
+}
+
 function get_software_architecture() {
         msg "Some important architecture decisions about software deployment must be made now" task
         msg "3 nodes only instalation consideration decisions" info
