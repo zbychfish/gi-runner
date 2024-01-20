@@ -684,13 +684,13 @@ function get_service_assignment() {
                 save_variable GI_DB2_NODES "$db2_nodes"
                 IFS=',' read -r -a selected_arr <<< "$db2_nodes"
                 IFS=',' read -r -a node_arr <<< "$worker_name"
-                if [[ "$db2_tainted" == 'N' ]]
-                then
-                        worker_wo_db2_name=$worker_name
-                else
+                #if [[ "$db2_tainted" == 'N' ]]
+                #then
+                #        worker_wo_db2_name=$worker_name
+                #else
                         for element in ${selected_arr[@]};do node_arr=("${node_arr[@]/$element}");done
                         worker_wo_db2_name=`echo ${node_arr[*]}|tr ' ' ','`
-                fi
+                #fi
         else
                 IFS=',' read -r -a node_arr <<< "$worker_name"
                 worker_wo_db2_name="${worker_name[@]}"
