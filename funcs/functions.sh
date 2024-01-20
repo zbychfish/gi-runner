@@ -769,10 +769,10 @@ function get_service_assignment() {
         fi
 	if [ "$gi_install" == 'Y' ]
         then
-		echo ${#worker_wo_db2_name[@]}
-		echo ${worker_wo_db2_name}
+		local -a available_nodes_arr
+		IFS=',' read -r -a available_nodes_arr <<< "$worker_wo_db2_name"
                 IFS=',' read -r -a worker_arr <<< "$worker_name"
-                if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) || ( $db2_tainted == 'N' && ${#worker_wo_db2_name[@]} -gt 3 ) ]]
+                if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) || ( $db2_tainted == 'N' && ${#available_nodes_arr[@]} -gt 3 ) ]]
                 then
                         msg "You can force to deploy GI on strictly defined node list" info
                         while $(check_input "yn" $gi_on_list false)
@@ -783,6 +783,13 @@ function get_service_assignment() {
                 fi
                 if [ "$gi_on_list" == 'Y' ]
                 then
+			local gi_nodes_needed
+			if [[ $db2_tainted == 'N' ]]
+			then
+				gi_nodes_needed=`expr 3 - $db2_nodes_number`
+			else
+				gi_nodes_needed=3
+			fi
                         if [ ! -z "$GI_GI_NODES" ]
                         then
                                 local previous_node_ar
@@ -792,13 +799,13 @@ function get_service_assignment() {
                                 for element in ${db2_node_arr[@]};do previous_node_arr=("${previous_node_arr[@]/$element}");done
                                 current_selection=`echo ${previous_node_arr[*]}|tr ' ' ','`
                         fi
-                        msg "DB2 node/nodes: $db2_nodes are already on the list included, additionally you must select minimum 3 node/nodes from the list below:" info
+                        msg "DB2 node/nodes: $db2_nodes are already on the list included, additionally you must select minimum $gi_nodes_needed node/nodes from the list below:" info
                         msg "Available worker nodes: $workers_for_gi_selection" info
-                        while $(check_input "nodes" $gi_nodes $workers_for_gi_selection $no_nodes_2_select "max")
+                        while $(check_input "nodes" $gi_nodes $workers_for_gi_selection $gi_nodes_needed "max")
                         do
                                 if [ ! -z "$GI_GI_NODES" ]
                                 then
-                                        get_input "txt" "Push <ENTER> to accept the previous choice [$current_selection] or specify minimum $no_nodes_2_select node/nodes (comma separated, without spaces)?: " true "$current_selection"
+                                        get_input "txt" "Push <ENTER> to accept the previous choice [$current_selection] or specify minimum $gi_nodes_needed node/nodes (comma separated, without spaces)?: " true "$current_selection"
                                 else
                                         get_input "txt" "Specify minimum $no_nodes_2_select node/nodes (comma separated, without spaces)?: " false
                                 fi
