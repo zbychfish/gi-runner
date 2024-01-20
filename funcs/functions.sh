@@ -320,6 +320,49 @@ function display_list () {
         done
 }
 
+function get_bastion_info() {
+        msg "Collecting data about bastion" task
+        msg "If your bastion have two or more network interfaces, provide IP address of the interface which is connected to this same subnet, vlan where the OCP nodes are located" info
+        while $(check_input "ip" ${bastion_ip})
+        do
+                if [[ ! -z "$GI_BASTION_IP" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_BASTION_IP] or insert bastion IP: " true "$GI_BASTION_IP"
+                else
+                        get_input "txt" "Insert bastion IP: " false
+                fi
+                bastion_ip=${input_variable}
+        done
+        save_variable GI_BASTION_IP $bastion_ip
+        msg "Provide the name used to resolve bastion in cluster doman $ocp_domain" info
+        while $(check_input "txt" ${bastion_name} "alphanumeric_max64_chars")
+        do
+                if [[ ! -z "$GI_BASTION_NAME" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_BASTION_NAME] or insert bastion name: " true "$GI_BASTION_NAME"
+                else
+                        get_input "txt" "Insert bastion name: " false
+                fi
+                bastion_name=${input_variable}
+        done
+        save_variable GI_BASTION_NAME $bastion_name
+        if [[ $one_subnet == 'Y' ]]
+        then
+                msg "Provide the IP gateway of subnet where cluster nodes are located" info
+                while $(check_input "ip" ${subnet_gateway})
+                do
+                        if [[ ! -z "$GI_GATEWAY" ]]
+                        then
+				get_input "txt" "Insert IP address of the default gateway (press ENTER to confirm previous selection [$GI_GATEWAY]): " true "$GI_GATEWAY"
+                        else
+                                get_input "txt" "Insert IP address of the default gateway: " false
+                        fi
+                        subnet_gateway=${input_variable}
+                done
+                save_variable GI_GATEWAY $subnet_gateway
+        fi
+}
+
 function get_input() {
         unset input_variable
         msg "$2" monit
@@ -423,7 +466,7 @@ function get_network_architecture {
         do
 		if [[ ! -z "$GI_ONE_SUBNET" ]]
 		then
-			get_input "yn" "Would you like to place the cluster nodes in one subnet (or press ENTER to select the previous choice [$GI_ONE_SUBNET] " false $GI_ONE_SUBNET
+			get_input "yn" "Would you like to place the cluster nodes in one subnet (or press ENTER to select the previous choice [$GI_ONE_SUBNET]) " false $GI_ONE_SUBNET
 		else
                 	get_input "yn"  "Would you like to place the cluster nodes in one subnet?: " false
 		fi

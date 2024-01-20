@@ -28,7 +28,7 @@ msg "Installing tools for init.sh" task
 [[ "$use_air_gap" == 'N' ]] && { dnf -qy install jq;[[ $? -ne 0 ]] && display_error "Cannot install jq"; }
 get_network_architecture
 #[[ $one_subnet == 'N' ]] && get_subnets
-#get_bastion_info
+get_bastion_info
 #msg "Collecting data about bootstrap node (IP and MAC addres, name)" task
 #get_nodes_info 1 "boot"
 #msg "Collecting Control Plane nodes data (IP and MAC addres, name), values must be inserted as comma separated list without spaces" task
