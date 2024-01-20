@@ -752,7 +752,7 @@ function get_service_assignment() {
                 do
 			if [ ${#local_arr[@]} -eq 3 ]
 			then
-				get_input "yn" "Would you like to install Rook-Ceph on specified nodes or press ENTER to confirm previous decision [Y] " true 'Y'
+				get_input "yn" "Would you like to install Rook-Ceph on specified nodes or press ENTER to confirm previous decision [Y]? " true 'Y'
 			else
                         	get_input "yn" "Would you like to install Rook-Ceph on specified nodes?: " true
 			fi
@@ -793,12 +793,18 @@ function get_service_assignment() {
         else
 		[[ $storage_type == "O" ]] && save_variable GI_OCS_NODES "$worker_name" || save_variable GI_OCS_NODES ''
         fi
+	IFS=',' read -r -a local_arr <<< "$GI_ICS_NODES"
         if [[ $ics_install == "Y" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
         then
                 msg "You can force to deploy CPFS on strictly defined node list" info
                 while $(check_input "yn" $ics_on_list false)
                 do
-                        get_input "yn" "Would you like to install CPFS on specified nodes?: " true
+			if [ ${#local_arr[@]} -eq 3 ]
+                        then
+				get_input "yn" "Would you like to install CPFS on specified nodes or press ENTER to confirm previous decision [Y]? " true 'Y'
+			else
+                        	get_input "yn" "Would you like to install CPFS on specified nodes?: " true
+			fi
                         ics_on_list=${input_variable^^}
                 done
                 if [ "$ics_on_list" == 'Y' ]
@@ -822,6 +828,7 @@ function get_service_assignment() {
 	if [ "$gi_install" == 'Y' ]
         then
 		local -a available_nodes_arr
+		IFS=',' read -r -a local_arr <<< "$GI_GI_NODES"
 		IFS=',' read -r -a available_nodes_arr <<< "$worker_wo_db2_name"
                 IFS=',' read -r -a worker_arr <<< "$worker_name"
                 if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) || ( $db2_tainted == 'N' && ${#available_nodes_arr[@]} -gt 3 ) ]]
@@ -829,7 +836,12 @@ function get_service_assignment() {
                         msg "You can force to deploy GI on strictly defined node list" info
                         while $(check_input "yn" $gi_on_list false)
                         do
-                                get_input "yn" "Would you like to install GI on specified nodes?: " true
+				if [ ${#local_arr[@]} -gt 0 ]
+                        	then
+					get_input "yn" "Would you like to install GI on specified nodes or press ENTER to confirm previous decision [Y]? " true 'Y'	
+				else
+                                	get_input "yn" "Would you like to install GI on specified nodes?: " true
+				fi
                                 gi_on_list=${input_variable^^}
                         done
                 fi
