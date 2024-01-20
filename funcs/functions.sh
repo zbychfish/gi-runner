@@ -413,6 +413,25 @@ function get_input() {
         esac
 }
 
+function get_network_architecture {
+        msg "Network subnet assignment for OCP nodes" task
+        msg "OpenShift cluster nodes can be located in the different subnets" info
+        msg "If you plan to place individual nodes in separate subnets it is necessary to ensure that DHCP requests are forwarded to the bastion ($bastion_ip) using DHCP relay" info
+        msg "It is also recommended to place the bastion outside the subnets used by the cluster" info
+        msg "If you cannot setup DHCP relay in your network, all cluster nodes and bastion must be located in this same subnet (DHCP broadcast network)" info
+        while $(check_input "yn" "$one_subnet")
+        do
+		if [[ ! -z "$GI_ONE_SUBNET" ]]
+		then
+			get _input "yn" "Would you like to place the cluster nodes in one subnet (or press ENTER to select the previous choice [$GI_ONE_SUBNET] " false $GI_ONE_SUBNET
+		else
+                	get_input "yn"  "Would you like to place the cluster nodes in one subnet?: " false
+		fi
+                one_subnet=${input_variable^^}
+        done
+        save_variable GI_ONE_SUBNET $one_subnet
+}
+
 function get_network_installation_type() {
 	msg "You can deploy OCP with (direct or proxy) or without (named as air-gapped, offline, disconnected) access to the internet" info
         while $(check_input "yn" ${use_air_gap})
@@ -436,7 +455,7 @@ function get_network_installation_type() {
 
 function get_ocp_domain() {
         msg "Set cluster domain name" task
-        msg "Insert the OCP cluster domain name - it is local cluster, so it doesn't have to be registered as public one" info
+        msg "Insert the OCP cluster domain name - it will be managed by DNS on bastion but OCP clients must correctly resolves names to get acccess to" info
         while $(check_input "domain" ${ocp_domain})
         do
                 if [[ ! -z "$GI_DOMAIN" ]]
