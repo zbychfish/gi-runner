@@ -787,6 +787,36 @@ function get_software_selection() {
         save_variable GI_INSTALL_LDAP $install_ldap
 }
 
+function get_worker_nodes() {
+        local worker_number=3
+        local inserted_worker_number
+        if [[ $is_master_only == 'N' ]]
+        then
+                msg "Collecting workers data" task
+                [[ $storage_type == 'P' ]] && max_workers_number=5 || max_workers_number=50
+                if [[ $storage_type == 'O' && $ocs_tainted == 'Y' ]]
+                then
+                        msg "Collecting ODF dedicated nodes data because tainting has been chosen" task
+                        get_nodes_info 3 "ocs"
+                fi
+                if [[ "$db2_tainted" == 'Y' ]]
+                then
+                        worker_number=$($worker_number+$db2_nodes_number)
+                fi
+                msg "Your cluster architecture decisions require to have minimum $worker_number additional workers" info
+                [[ $storage_type == 'P' ]] && msg "Because Portworx Essential will be installed you can specify maximum 5 workers, limitation of this free Portworx release" info
+		[[ $storage_type == 'R' ]] && msg "If you plan deploy rook on dedicated nodes, you must deploy minimum $($worker_number+3) nodes" info
+		msg "If you plan deploy CPFS on dedicated nodes, you must deploy minimum $($worker_number+3) nodes" info
+                while $(check_input "int" $inserted_worker_number $worker_number $max_workers_number)
+                do
+                        get_input "int" "How many additional workers would you like to add to cluster?: " false
+                        inserted_worker_number=${input_variable}
+                done
+                msg "Collecting workers nodes data (IP and MAC addresses, node names), values inserted as comma separated list without spaces" task
+                get_nodes_info $inserted_worker_number "wrk"
+        fi
+}
+
 function msg() {
         case "$2" in
                 "continue")
