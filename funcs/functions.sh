@@ -710,6 +710,7 @@ function get_service_assignment() {
         local rook_on_list
 	local worker_wo_db2_name
 	local workers_for_gi_selection
+	local -a local_arr
         if [[ $gi_install == 'Y' ]]
         then
                 [[ $is_master_only == 'Y' ]] && available_nodes=$master_name || available_nodes=$worker_name
@@ -741,14 +742,20 @@ function get_service_assignment() {
                 IFS=',' read -r -a node_arr <<< "$worker_name"
                 worker_wo_db2_name="${worker_name[@]}"
         fi
+	IFS=',' read -r -a local_arr <<< "$GI_ROOK_NODES"
 	if [[ $storage_type == "R" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
         then
                 msg "You specified Rook-Ceph as a cluster storage" info
-                msg "You can force to deploy it on strictly defined node list" info
+                msg "You can force to deploy it on defined nodes only" info
                 msg "Only disks from specified nodes will be configured as a cluster storage" info
                 while $(check_input "yn" $rook_on_list false)
                 do
-                        get_input "yn" "Would you like to install Rook-Ceph on specified nodes?: " true
+			if [ ${#local_arr[@]} -eq 3 ]
+			then
+				get_input "yn" "Would you like to install Rook-Ceph on specified nodes or press ENTER to confirm previous decision [Y] " true 'Y'
+			else
+                        	get_input "yn" "Would you like to install Rook-Ceph on specified nodes?: " true
+			fi
                         rook_on_list=${input_variable^^}
                 done
                 if [ "$rook_on_list" == 'Y' ]
