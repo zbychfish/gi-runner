@@ -423,7 +423,7 @@ function get_network_architecture {
         do
 		if [[ ! -z "$GI_ONE_SUBNET" ]]
 		then
-			get _input "yn" "Would you like to place the cluster nodes in one subnet (or press ENTER to select the previous choice [$GI_ONE_SUBNET] " false $GI_ONE_SUBNET
+			get_input "yn" "Would you like to place the cluster nodes in one subnet (or press ENTER to select the previous choice [$GI_ONE_SUBNET] " false $GI_ONE_SUBNET
 		else
                 	get_input "yn"  "Would you like to place the cluster nodes in one subnet?: " false
 		fi
