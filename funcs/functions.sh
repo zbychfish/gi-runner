@@ -690,7 +690,6 @@ function get_service_assignment() {
                 else
                         for element in ${selected_arr[@]};do node_arr=("${node_arr[@]/$element}");done
                         worker_wo_db2_name=`echo ${node_arr[*]}|tr ' ' ','`
-                        workers_for_gi_selection=$worker_wo_db2_name
                 fi
         else
                 IFS=',' read -r -a node_arr <<< "$worker_name"
@@ -800,8 +799,8 @@ function get_service_assignment() {
                                 current_selection=`echo ${previous_node_arr[*]}|tr ' ' ','`
                         fi
                         msg "DB2 node/nodes: $db2_nodes are already on the list included, additionally you must select minimum $gi_nodes_needed node/nodes from the list below:" info
-                        msg "Available worker nodes: $workers_for_gi_selection" info
-                        while $(check_input "nodes" $gi_nodes $workers_for_gi_selection $gi_nodes_needed "max")
+                        msg "Available worker nodes: $worker_wo_db2_name" info
+                        while $(check_input "nodes" $gi_nodes $worker_wo_db2_name $gi_nodes_needed "max")
                         do
                                 if [ ! -z "$GI_GI_NODES" ]
                                 then
