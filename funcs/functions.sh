@@ -507,7 +507,7 @@ function get_nodes_info() {
         case $2 in
                 "ocs")
                         local pl_names=("addresses" "names" "IP's" "hosts")
-                        local node_type="OCS nodes"
+                        local node_type="ODF nodes"
                         local global_var_ip=$GI_OCS_IP
                         local global_var_mac=$GI_OCS_MAC_ADDRESS
                         local global_var_name=$GI_OCS_NAME
@@ -706,22 +706,25 @@ function get_software_architecture() {
         else
                 save_variable GI_DB2_NODES_NUMBER 0
         fi
-
         if [[ $gi_install == "Y" && $is_master_only == 'N' ]]
         then
-                msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend" info
-                while $(check_input "yn" ${db2_tainted})
-                do
-			if [[ ! -z "$GI_DB2_TAINTED" ]]
-                        then
-                                get_input "yn" "Decide to taint DB2 nodes or confirm previous decision [$GI_DB2_TAINTED] " true $GI_DB2_TAINTED
-                        else
-                        	get_input "yn" "Should be DB2 tainted?: " true
-                        fi
-                        db2_tainted=${input_variable^^}
-                done
-                save_variable GI_DB2_TAINTED $db2_tainted
+		if [[ $storage_type != 'P' || ( $storage_type == 'P' && $db2_nodes_number -lt 3 ) ]]
+		then	
+                	msg "DB2 tainting will require additional workers in your cluster to manage Guardium Insights database backend" info
+                	while $(check_input "yn" ${db2_tainted})
+                	do
+				if [[ ! -z "$GI_DB2_TAINTED" ]]
+                        	then
+                                	get_input "yn" "Decide to taint DB2 nodes or confirm previous decision [$GI_DB2_TAINTED] " true $GI_DB2_TAINTED
+                        	else
+                        		get_input "yn" "Should be DB2 tainted?: " true
+                        	fi
+                        	db2_tainted=${input_variable^^}
+                	done
+               	 	save_variable GI_DB2_TAINTED $db2_tainted
+		fi
         else
+		[[ $storage_type == 'P' && $db2_nodes_number -eq 3 ]] && msg "DB2 cannot be tainted because Portworx Essential has limitation of 5 workers only" info
                 save_variable GI_DB2_TAINTED "N"
         fi
 }
