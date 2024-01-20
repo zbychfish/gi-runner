@@ -799,6 +799,11 @@ function get_software_selection() {
 function get_worker_nodes() {
         local worker_number=3
         local inserted_worker_number
+	if [[ ! -z "$GI_WORKER_NAME" ]]
+	then
+		local -a workers_list
+		IFS="," read -r -a workers_list <<< $GI_WORKER_NAME
+	fi
         if [[ $is_master_only == 'N' ]]
         then
                 msg "Collecting workers data" task
@@ -816,11 +821,18 @@ function get_worker_nodes() {
                 msg "Your cluster architecture decisions require to have minimum $worker_number additional workers" info
                 [[ $storage_type == 'P' ]] && msg "Because Portworx Essential will be installed you can specify maximum 5 workers, limitation of this free Portworx release" info
 		[[ $storage_type == 'R' ]] && msg "If you plan deploy rook on dedicated nodes, you must deploy minimum $(($worker_number + 3)) nodes" info
-		[[ ( $cp4s_install == 'N' && $edr_install == 'N' ) && $ics_install == 'Y' && $storage_type != 'P' ]] && msg "If you plan deploy CPFS on dedicated nodes, you must deploy minimum $(($worker_number + 3)) nodes" info
+		[[ $gi_install == 'Y' && $storage_type != 'P' ]] && msg "If you plan deploy CPFS on dedicated nodes, you must deploy minimum $(($worker_number + 3)) nodes" info
                 while $(check_input "int" $inserted_worker_number $worker_number $max_workers_number)
                 do
-                        get_input "int" "How many additional workers would you like to add to cluster?: " false
-                        inserted_worker_number=${input_variable}
+			if [[ ! -z "$GI_WORKER_NAME" ]]
+        		then
+                		local -a workers_list
+                		IFS="," read -r -a workers_list <<< $GI_WORKER_NAME
+				get_input "int" "How many additional workers would you like to add to cluster? (press ENTER to confirm previous decision [${#workers_list[@]}: " false ${#workers_list[@]}
+			else
+ 	                        get_input "int" "How many additional workers would you like to add to cluster?: " false
+        	                inserted_worker_number=${input_variable}
+			fi
                 done
                 msg "Collecting workers nodes data (IP and MAC addresses, node names), values inserted as comma separated list without spaces" task
                 get_nodes_info $inserted_worker_number "wrk"
