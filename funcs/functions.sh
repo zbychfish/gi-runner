@@ -772,7 +772,7 @@ function get_service_assignment() {
 		echo ${worker_wo_db2_name[@]}
 		echo ${worker_wo_db2_name}
                 IFS=',' read -r -a worker_arr <<< "$worker_name"
-                if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) ]] || [[ ( $db2_tainted == 'N' && ${worker_wo_db2_name[@]} -gt 3 ) ]]
+                if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) ]] || [[ ( $db2_tainted == 'N' && ${#worker_wo_db2_name[@]} -gt 3 ) ]]
                 then
                         msg "You can force to deploy GI on strictly defined node list" info
                         while $(check_input "yn" $gi_on_list false)
@@ -781,7 +781,6 @@ function get_service_assignment() {
                                 gi_on_list=${input_variable^^}
                         done
                 fi
-                no_nodes_2_select=3
                 if [ "$gi_on_list" == 'Y' ]
                 then
                         if [ ! -z "$GI_GI_NODES" ]
@@ -793,7 +792,7 @@ function get_service_assignment() {
                                 for element in ${db2_node_arr[@]};do previous_node_arr=("${previous_node_arr[@]/$element}");done
                                 current_selection=`echo ${previous_node_arr[*]}|tr ' ' ','`
                         fi
-                        msg "DB2 node/nodes: $db2_nodes are already on the list included, additionally you must select minimum $no_nodes_2_select node/nodes from the list below:" info
+                        msg "DB2 node/nodes: $db2_nodes are already on the list included, additionally you must select minimum 3 node/nodes from the list below:" info
                         msg "Available worker nodes: $workers_for_gi_selection" info
                         while $(check_input "nodes" $gi_nodes $workers_for_gi_selection $no_nodes_2_select "max")
                         do
