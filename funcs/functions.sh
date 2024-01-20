@@ -828,11 +828,12 @@ function get_worker_nodes() {
         		then
                 		local -a workers_list
                 		IFS="," read -r -a workers_list <<< $GI_WORKER_NAME
-				get_input "int" "How many additional workers would you like to add to cluster? (press ENTER to confirm previous decision [${#workers_list[@]}: " false ${#workers_list[@]}
+				get_input "int" "How many workers would you like to add to cluster? (press ENTER to confirm previous decision [${#workers_list[@]}]: " false ${#workers_list[@]}
+				
 			else
- 	                        get_input "int" "How many additional workers would you like to add to cluster?: " false
-        	                inserted_worker_number=${input_variable}
+ 	                        get_input "int" "How many workers would you like to add to cluster?: " false
 			fi
+        	        inserted_worker_number=${input_variable}
                 done
                 msg "Collecting workers nodes data (IP and MAC addresses, node names), values inserted as comma separated list without spaces" task
                 get_nodes_info $inserted_worker_number "wrk"
