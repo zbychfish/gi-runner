@@ -801,12 +801,12 @@ function get_worker_nodes() {
                 fi
                 if [[ "$db2_tainted" == 'Y' ]]
                 then
-                        worker_number=$($worker_number+$db2_nodes_number)
+			worker_number=$(($worker_number + $db2_nodes_number))
                 fi
                 msg "Your cluster architecture decisions require to have minimum $worker_number additional workers" info
                 [[ $storage_type == 'P' ]] && msg "Because Portworx Essential will be installed you can specify maximum 5 workers, limitation of this free Portworx release" info
-		[[ $storage_type == 'R' ]] && msg "If you plan deploy rook on dedicated nodes, you must deploy minimum $($worker_number+3) nodes" info
-		msg "If you plan deploy CPFS on dedicated nodes, you must deploy minimum $($worker_number+3) nodes" info
+		[[ $storage_type == 'R' ]] && msg "If you plan deploy rook on dedicated nodes, you must deploy minimum $(($worker_number + 3)) nodes" info
+		msg "If you plan deploy CPFS on dedicated nodes, you must deploy minimum $(($worker_number + 3)) nodes" info
                 while $(check_input "int" $inserted_worker_number $worker_number $max_workers_number)
                 do
                         get_input "int" "How many additional workers would you like to add to cluster?: " false
