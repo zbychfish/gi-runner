@@ -663,7 +663,6 @@ function get_service_assignment() {
         then
                 #[[ $gi_size == 'values-small' ]] && db2_nodes_size=2 || db2_nodes_size=1
                 [[ $is_master_only == 'Y' ]] && available_nodes=$master_name || available_nodes=$worker_name
-                msg "$master_name, $available_nodes" info
                 if [[ $db2_tainted == 'Y' ]]
                 then
                         msg "You decided that DB2 will be installed on dedicated node/nodes" info
@@ -673,13 +672,13 @@ function get_service_assignment() {
                 fi
                 msg "DB2 node/nodes should have enough resources (CPU, RAM) to get this role, check GI documentation" info
                 msg "Available worker nodes: $available_nodes" info
-                while $(check_input "nodes" $db2_nodes $available_nodes $db2_nodes_size "def")
+                while $(check_input "nodes" $db2_nodes $available_nodes $db2_nodes_number "def")
                 do
                         if [ ! -z "$GI_DB2_NODES" ]
                         then
-                                get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DB2_NODES] or specify $db2_nodes_size node/nodes (comma separated, without spaces)?: " true "$GI_DB2_NODES"
+                                get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DB2_NODES] or specify $db2_nodes_number node/nodes names (comma separated, without spaces)?: " true "$GI_DB2_NODES"
                         else
-                                get_input "txt" "Specify $db2_nodes_size node/nodes (comma separated, without spaces)?: " false
+                                get_input "txt" "Specify $db2_node_number node/nodes names (comma separated, without spaces)?: " false
                         fi
                         db2_nodes=${input_variable}
                 done
