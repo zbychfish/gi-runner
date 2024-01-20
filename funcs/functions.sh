@@ -807,6 +807,7 @@ function get_worker_nodes() {
                 then
                         msg "Collecting ODF dedicated nodes data because tainting has been chosen" task
                         get_nodes_info 3 "ocs"
+			worker_number=$(($worker_number + 3))
                 fi
                 if [[ "$db2_tainted" == 'Y' ]]
                 then
