@@ -29,9 +29,9 @@ msg "Installing tools for init.sh" task
 get_network_architecture
 #[[ $one_subnet == 'N' ]] && get_subnets
 get_bastion_info
-#msg "Collecting data about bootstrap node (IP and MAC addres, name)" task
-#get_nodes_info 1 "boot"
-#msg "Collecting Control Plane nodes data (IP and MAC addres, name), values must be inserted as comma separated list without spaces" task
+msg "Collecting data about bootstrap node (IP and MAC addres, name)" task
+get_nodes_info 1 "boot"
+msg "Collecting Control Plane nodes data (IP and MAC addres, name), values must be inserted as comma separated list without spaces" task
 #get_nodes_info 3 "mst"
 #get_worker_nodes
 #get_set_services

@@ -496,6 +496,107 @@ function get_network_installation_type() {
         fi
 }
 
+function get_nodes_info() {
+        local temp_ip
+        local temp_mac
+        local temp_name
+        case $2 in
+                "ocs")
+                        local pl_names=("addresses" "names" "IP's" "hosts")
+                        local node_type="OCS nodes"
+                        local global_var_ip=$GI_OCS_IP
+                        local global_var_mac=$GI_OCS_MAC_ADDRESS
+                        local global_var_name=$GI_OCS_NAME
+                        ;;
+                "boot")
+                        local pl_names=("address" "name" "IP" "host")
+                        local node_type="bootstrap node"
+                        local global_var_ip=$GI_BOOTSTRAP_IP
+                        local global_var_mac=$GI_BOOTSTRAP_MAC_ADDRESS
+                        local global_var_name=$GI_BOOTSTRAP_NAME
+                        ;;
+                "mst")
+                        local pl_names=("addresses" "names" "IP's" "hosts")
+                        local node_type="master nodes"
+                        local global_var_ip=$GI_MASTER_IP
+                        local global_var_mac=$GI_MASTER_MAC_ADDRESS
+                        local global_var_name=$GI_MASTER_NAME
+                        ;;
+                "wrk")
+                        local pl_names=("addresses" "names" "IP's" "hosts")
+                        local node_type="worker nodes"
+                        local global_var_ip=$GI_WORKER_IP
+                        local global_var_mac=$GI_WORKER_MAC_ADDRESS
+                        local global_var_name=$GI_WORKER_NAME
+                        ;;
+                "*")
+                        display_error "Incorrect parameters get_nodes_info function"
+        esac
+	msg "Insert $1 ${pl_names[2]} ${pl_names[0]} of $node_type, should be located in subnet with gateway - $subnet_gateway" info
+        while $(check_input "ips" ${temp_ip} $1)
+        do
+                if [ ! -z "$global_var_ip" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_ip] or insert $node_type ${pl_names[2]}: " true "$global_var_ip"
+                else
+                        get_input "txt" "Insert $node_type IP: " false
+                fi
+                temp_ip=${input_variable}
+        done
+        msg "Insert $1 MAC ${pl_names[0]} of $node_type" info
+        while $(check_input "macs" ${temp_mac} $1)
+        do
+                if [ ! -z "$global_var_mac" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_mac] or insert $node_type MAC ${pl_names[0]}: " true "$global_var_mac"
+                else
+                        get_input "txt" "Insert $node_type MAC ${pl_names[0]}: " false
+                fi
+                temp_mac=${input_variable}
+        done
+        msg "Insert $1 ${pl_names[3]} ${pl_names[1]} of $node_type" info
+        while $(check_input "txt_list" ${temp_name} $1)
+        do
+                if [ ! -z "$global_var_name" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_name] or insert $node_type ${pl_names[1]}: " true "$global_var_name"
+                else
+                        get_input "txt" "Insert $node_type ${pl_names[1]}: " false
+                fi
+                temp_name=${input_variable}
+        done
+        case $2 in
+                "ocs")
+                        ocs_ip=$temp_ip
+                        save_variable GI_OCS_IP $temp_ip
+                        save_variable GI_OCS_MAC_ADDRESS $temp_mac
+                        save_variable GI_OCS_NAME $temp_name
+                        ;;
+                "boot")
+                        boot_ip=$temp_ip
+                        save_variable GI_BOOTSTRAP_IP $temp_ip
+                        save_variable GI_BOOTSTRAP_MAC_ADDRESS $temp_mac
+                        save_variable GI_BOOTSTRAP_NAME $temp_name
+                        ;;
+                "mst")
+                        master_ip=$temp_ip
+                        master_name=$temp_name
+                        save_variable GI_MASTER_IP $temp_ip
+                        save_variable GI_MASTER_MAC_ADDRESS $temp_mac
+                        save_variable GI_MASTER_NAME $temp_name
+                        ;;
+                "wrk")
+                        worker_ip=$temp_ip
+                        worker_name=$temp_name
+                        save_variable GI_WORKER_IP $temp_ip
+                        save_variable GI_WORKER_MAC_ADDRESS $temp_mac
+                        save_variable GI_WORKER_NAME $temp_name
+                        ;;
+                "*")
+                        :wdisplay_error "Incorrect parameters get_node function"
+        esac
+}
+
 function get_ocp_domain() {
         msg "Set cluster domain name" task
         msg "Insert the OCP cluster domain name - it will be managed by DNS on bastion but OCP clients must correctly resolves names to get acccess to" info
