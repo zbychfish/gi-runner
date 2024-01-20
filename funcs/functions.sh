@@ -678,7 +678,7 @@ function get_service_assignment() {
                         then
                                 get_input "txt" "Push <ENTER> to accept the previous choice [$GI_DB2_NODES] or specify $db2_nodes_number node/nodes names (comma separated, without spaces)?: " true "$GI_DB2_NODES"
                         else
-                                get_input "txt" "Specify $db2_node_number node/nodes names (comma separated, without spaces)?: " false
+                                get_input "txt" "Specify $db2_nodes_number node/nodes names (comma separated, without spaces)?: " false
                         fi
                         db2_nodes=${input_variable}
                 done
