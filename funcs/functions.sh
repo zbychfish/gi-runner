@@ -661,7 +661,6 @@ function get_service_assignment() {
 	local workers_for_gi_selection
         if [[ $gi_install == 'Y' ]]
         then
-                #[[ $gi_size == 'values-small' ]] && db2_nodes_size=2 || db2_nodes_size=1
                 [[ $is_master_only == 'Y' ]] && available_nodes=$master_name || available_nodes=$worker_name
                 if [[ $db2_tainted == 'Y' ]]
                 then
@@ -740,7 +739,7 @@ function get_service_assignment() {
                 done
                 save_variable GI_OCS_NODES "$ocs_nodes"
         else
-                save_variable GI_OCS_NODES "$worker_name"
+		[[ $storage_type == "O" ]] && save_variable GI_OCS_NODES "$worker_name" || save_variable GI_OCS_NODES ''
         fi
         if [[ $ics_install == "Y" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
         then
@@ -765,11 +764,13 @@ function get_service_assignment() {
                         done
                 fi
                 save_variable GI_ICS_NODES "$ics_nodes"
+	else
+		save_variable GI_ICS_NODES ''
         fi
 	if [ "$gi_install" == 'Y' ]
         then
                 IFS=',' read -r -a worker_arr <<< "$worker_name"
-                if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) ]] || [[ ( $db2_tainted == 'N' && "$gi_size" == "values-small" && ${#worker_arr[@]} -gt 5 ) ]] || [[ ( $db2_tainted == 'N' && "$gi_size" == "values-dev" && ${#worker_arr[@]} -gt 4 ) ]]
+                if [[ ( $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ) ]] || [[ ( $db2_tainted == 'N' && ${worker_wo_db2_name[@]} -gt 3 ) ]]
                 then
                         msg "You can force to deploy GI on strictly defined node list" info
                         while $(check_input "yn" $gi_on_list false)
@@ -778,12 +779,7 @@ function get_service_assignment() {
                                 gi_on_list=${input_variable^^}
                         done
                 fi
-                if [[ $db2_tainted == 'Y' && ${#node_arr[@]} -gt 3 ]]
-                then
-                        no_nodes_2_select=3
-                else
-                        [ "$gi_size" == "values-small" ] && no_nodes_2_select=1 || no_nodes_2_select=2
-                fi
+                no_nodes_2_select=3
                 if [ "$gi_on_list" == 'Y' ]
                 then
                         if [ ! -z "$GI_GI_NODES" ]
@@ -1112,7 +1108,7 @@ function get_worker_nodes() {
         		then
                 		local -a workers_list
                 		IFS="," read -r -a workers_list <<< $GI_WORKER_NAME
-				get_input "int" "How many workers would you like to add to cluster? (press ENTER to confirm previous decision [${#workers_list[@]}]: " false ${#workers_list[@]}
+				get_input "int" "How many workers would you like to add to cluster? (press ENTER to confirm previous decision [${#workers_list[@]}]): " false ${#workers_list[@]}
 				
 			else
  	                        get_input "int" "How many workers would you like to add to cluster?: " false
