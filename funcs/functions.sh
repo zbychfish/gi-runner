@@ -477,7 +477,7 @@ function get_credentials() {
                         then
                                 get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_ICSADMIN_PWD] or insert CPFS admin user password: " true "$GI_ICSADMIN_PWD"
                         else
-                                get_input "pwd" "Insert ICS admin user password: " false
+                                get_input "pwd" "Insert CPFS admin user password: " false
                         fi
                         ics_password="${input_variable}"
                 done
