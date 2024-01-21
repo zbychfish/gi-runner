@@ -397,6 +397,109 @@ function get_cluster_storage_info() {
         [[ "$storage_type" == 'P' ]] && get_px_options
 }
 
+function get_credentials() {
+        local is_ok
+        msg "Collecting all required credentials" task
+        local is_ok=true #there is no possibility to send variable with unescaped json
+        if [ $use_air_gap == 'N' ]
+        then
+                msg "Non air-gapped OCP installations requires access to remote image registries located in the Internet" info
+                msg "Access to OCP images is restricted and requires authorization using RedHat account pull secret" info
+                msg "You can get access to your pull secret at this URL - https://cloud.redhat.com/openshift/install/local" info
+                while $is_ok
+                do
+                        if [ ! -z "$GI_RHN_SECRET" ]
+                        then
+                                msg "Push <ENTER> to accept the previous choice" newline
+                                msg "[$GI_RHN_SECRET]" newline
+                                get_input "txt" "or insert RedHat pull secret: " true "$GI_RHN_SECRET"
+                        else
+                                get_input "txt" "Insert RedHat pull secret: " false
+                        fi
+                        if [ "${input_variable}" ]
+                        then
+                                echo ${input_variable}|{ jq .auths 2>/dev/null 1>/dev/null ;}
+                                [[ $? -eq 0 ]] && is_ok=false
+                                rhn_secret="${input_variable}"
+                        fi
+                done
+                save_variable GI_RHN_SECRET "'${input_variable}'"
+                if [[ $gi_install == 'Y' || $cp4s_install == 'Y' ]]
+                then
+                        msg "GI and CP4S require access to restricted IBM image registries" info
+                        msg "You need provide the IBM Cloud containers key located at URL - https://myibm.ibm.com/products-services/containerlibrary" info
+                        msg "Your account must be entitled to install Cloud Pak like Guardium Insights, Cloud Pak for Security, Qradar EDR" info
+                        while $(check_input "jwt" "${ibm_secret}")
+                        do
+                                if [ ! -z "$GI_IBM_SECRET" ]
+                                then
+                                        msg "Push <ENTER> to accept the previous choice" newline
+                                        msg "[$GI_IBM_SECRET]" newline
+                                        get_input "txt" "or insert IBM Cloud container key: " true "$GI_IBM_SECRET"
+                                else
+                                        get_input "txt" "Insert IBM Cloud container key: " false
+                                fi
+                                ibm_secret="${input_variable}"
+                        done
+                        save_variable GI_IBM_SECRET "'$ibm_secret'"
+                fi
+        fi
+	msg "Define user name and password of an additional OpenShift administrator" info
+        while $(check_input "txt" "${ocp_admin}" "non_empty")
+        do
+                if [ ! -z "$GI_OCADMIN" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCADMIN] or insert OCP admin username: " true "$GI_OCADMIN"
+                else
+                        get_input "txt" "Insert OCP admin username (default - ocpadmin): " true "ocpadmin"
+                fi
+                ocp_admin="${input_variable}"
+        done
+        save_variable GI_OCADMIN "$ocp_admin"
+        while $(check_input "txt" "${ocp_password}" "non_empty")
+        do
+                if [ ! -z "$GI_OCADMIN_PWD" ]
+                then
+                        get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_OCADMIN_PWD] or insert OCP $ocp_admin user password: " true "$GI_OCADMIN_PWD"
+                else
+                        get_input "pwd" "Insert OCP $ocp_admin user password: " false
+                fi
+                ocp_password="${input_variable}"
+        done
+        save_variable GI_OCADMIN_PWD "'$curr_password'"
+        if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' || "$cp4s_install" == 'Y' ]]
+        then
+                msg "Define CPFS admin user password" info
+                msg "This same account is used by GI for default account with access management role" info
+                while $(check_input "txt" "${ics_password}" "non_empty")
+                do
+                        if [ ! -z "$GI_ICSADMIN_PWD" ]
+                        then
+                                get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_ICSADMIN_PWD] or insert CPFS admin user password: " true "$GI_ICSADMIN_PWD"
+                        else
+                                get_input "pwd" "Insert ICS admin user password: " false
+                        fi
+                        ics_password="${input_variable}"
+                done
+                save_variable GI_ICSADMIN_PWD "'$curr_password'"
+        fi
+        if [[ "$install_ldap" == 'Y' ]]
+        then
+                msg "Define LDAP users initial password" info
+                while $(check_input "txt" "${ldap_password}" "non_empty")
+                do
+                        if [ ! -z "$GI_LDAP_USERS_PWD" ]
+                        then
+                                get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_LDAP_USERS_PWD] or insert default LDAP users password: " true "$GI_LDAP_USERS_PWD"
+                        else
+                                get_input "pwd" "Insert default LDAP users password: " false
+                        fi
+                        ldap_password="${input_variable}"
+                done
+                save_variable GI_LDAP_USERS_PWD "'$curr_password'"
+        fi
+}
+
 function get_hardware_info() {
         msg "Collecting hardware information" task
         msg "Automatic CoreOS and storage deployment requires information about NIC and storage devices" info
