@@ -528,6 +528,42 @@ function get_input() {
         esac
 }
 
+function get_inter_cluster_info() {
+        msg "CNI plug-in selection" task
+        while $(check_input "sk" ${ocp_cni})
+        do
+                get_input "sk" "Would you like use default CNI plug-in from OCP 4.12 - OVN[K]ubernetes or OpenShift[S]DN (\e[4mK\e[0m)/S): " true
+                ocp_cni=${input_variable^^}
+        done
+        save_variable GI_OCP_CNI $ocp_cni
+        msg "Inter-node cluster pod communication" task
+        msg "Pods in cluster communicate with one another using private network, use non-default values only if your physical network use IP address space 10.128.0.0/16" info
+        while $(check_input "cidr" "${ocp_cidr}")
+        do
+                if [ ! -z "$GI_OCP_CIDR" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCP_CIDR] or insert cluster interconnect CIDR (IP/MASK): " true "$GI_OCP_CIDR"
+                else
+                        get_input "txt" "Insert cluster interconnect CIDR (default - 10.128.0.0/16): " true "10.128.0.0/16"
+                fi
+                ocp_cidr="${input_variable}"
+        done
+        save_variable GI_OCP_CIDR "$ocp_cidr"
+        cidr_subnet=$(echo "$ocp_cidr"|awk -F'/' '{print $2}')
+        msg "Each pod will reserve IP address range from subnet $ocp_cidr, provide this range using subnet mask (must be higher than $cidr_subnet)" info
+        while $(check_input "int" "${ocp_cidr_mask}" $cidr_subnet 27)
+        do
+                if [ ! -z "$GI_OCP_CIDR_MASK" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_OCP_CIDR_MASK] or insert pod IP address range (MASK): " true "$GI_OCP_CIDR_MASK"
+                else
+                        get_input "txt" "Insert pod IP address range (default - 23): " true 23
+                fi
+                ocp_cidr_mask="${input_variable}"
+        done
+        save_variable GI_OCP_CIDR_MASK "$ocp_cidr_mask"
+}
+
 function get_network_architecture {
         msg "Network subnet assignment for OCP nodes" task
         msg "OpenShift cluster nodes can be located in the different subnets" info
