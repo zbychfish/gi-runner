@@ -363,6 +363,71 @@ function get_bastion_info() {
         fi
 }
 
+function get_certificates() {
+        [[ "$use_air_gap" == 'N' ]] && { msg "Installing openssl ..." info; dnf -y install openssl > /dev/null; }
+        msg "Collecting certificates information" task
+        msg "You can replace self-signed certicates for UI's by providing your own created by trusted CA" info
+        msg "Certificates must be uploaded to bastion to provide full path to them" info
+        msg "CA cert, service cert and private key files must be stored separately in PEM format" info
+        while $(check_input "yn" "$ocp_ext_ingress" false)
+        do
+		if [[ ! -z "$GI_OCP_IN" ]]
+		then
+			get_input "yn" "Would you like to install own certificates for OCP (or press ENTER to select the previous choice [$GI_OCP_IN]) " false $GI_OCP_IN
+		else
+                	get_input "yn" "Would you like to install own certificates for OCP?: " true
+		fi
+                ocp_ext_ingress=${input_variable^^}
+        done
+        save_variable GI_OCP_IN $ocp_ext_ingress
+        [ $ocp_ext_ingress == 'Y' ] && validate_certs "ocp"
+        if [[ "$gi_install" == 'Y' || "$ics_install" == 'Y' ]]
+        then
+                while $(check_input "yn" "$ics_ext_ingress" false)
+                do
+			if [[ ! -z "$GI_ICS_IN" ]]
+                	then
+                        	get_input "yn" "Would you like to install own certificates for CPFS (or press ENTER to select the previous choice [$GI_ICS_IN]) " false $GI_ICS_IN
+			else
+                        	get_input "yn" "Would you like to install own certificates for CPFS?: " true
+			fi
+                        ics_ext_ingress=${input_variable^^}
+                done
+                save_variable GI_ICS_IN $ics_ext_ingress
+                [ $ics_ext_ingress == 'Y' ] && validate_certs "ics"
+        fi
+        if [[ "$gi_install" == 'Y' ]]
+        then
+                while $(check_input "yn" "$gi_ext_ingress" false)
+                do
+			if [[ ! -z "$GI_IN" ]]
+                        then
+                                get_input "yn" "Would you like to install own certificates for GI (or press ENTER to select the previous choice [$GI_IN]) " false $GI_IN
+			else
+                        	get_input "yn" "Would you like to install own certificates for GI?: " true
+			fi
+                        gi_ext_ingress=${input_variable^^}
+                done
+                save_variable GI_IN $gi_ext_ingress
+                [ $gi_ext_ingress == 'Y' ] && validate_certs "gi"
+        fi
+        if [[ "$cp4s_install" == 'Y' ]]
+        then
+                while $(check_input "yn" "$cp4s_ext_ingress" false)
+                do
+			if [[ ! -z "$GI_CP4S_IN" ]]
+                        then
+                                get_input "yn" "Would you like to install own certificates for CP4S (or press ENTER to select the previous choice [$GI_CP4S_IN]) " false $GI_CP4S_IN
+			else
+                        	get_input "yn" "Would you like to install own certificates for CP4S?: " true
+			fi
+                        cp4s_ext_ingress=${input_variable^^}
+                done
+                save_variable GI_CP4S_IN $cp4s_ext_ingress
+                [ $cp4s_ext_ingress == 'Y' ] && validate_certs "cp4s"
+        fi
+}
+
 function get_cluster_storage_info() {
         msg "Cluster storage information" task
         msg "There is assumption that all storage cluster node use this same device specification for storage disk" info
