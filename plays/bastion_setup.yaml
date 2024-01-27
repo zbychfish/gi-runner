@@ -199,3 +199,33 @@
     state: restarted
     enabled: yes
   when: ntp_server == bas_ip
+
+- name: Check presence of RHCOS images
+  ansible.builtin.stat:
+    path: "{{ temp_dir }}/downloads/{{ item.file }}"
+  register: rhcos_images
+  with_items:
+    - { file: "rhcos-live-initramfs.x86_64.img" }
+    - { file: "rhcos-live-kernel-x86_64" }
+    - { file: "rhcos-live-rootfs.x86_64.img" }
+  ignore_errors: true
+
+- name: Download RHCOS images {{ ocp_major_release }}
+  ansible.builtin.get_url:
+    url: https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/{{ ocp_major_release }}/latest/{{ item.item.file }}
+    dest: "{{ temp_dir }}/downloads"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  with_items: "{{ rhcos_images.results }}"
+  when: item.stat.exists == False and internet_type != 'A'
+
+- name: Copy RHCOS images to matchbox assets for online
+  ansible.builtin.copy:
+    src: "{{ temp_dir }}/downloads/{{ item.name }}"
+    dest: "/var/lib/matchbox/assets/{{ item.name }}"
+    owner: matchbox
+    group: matchbox
+  with_items:
+    - { name: "rhcos-live-initramfs.x86_64.img" }
+    - { name: "rhcos-live-kernel-x86_64" }
+    - { name: "rhcos-live-rootfs.x86_64.img" }
+
