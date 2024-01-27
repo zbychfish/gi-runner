@@ -229,3 +229,27 @@
     - { name: "rhcos-live-kernel-x86_64" }
     - { name: "rhcos-live-rootfs.x86_64.img" }
 
+- name: prepare TFTP for iPXE
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: dnsmasq
+    group: dnsmasq
+    mode: 0644
+  with_items:
+    - { src: "/usr/share/ipxe/undionly.kpxe", dest: "/var/lib/tftp" }
+    - { src: "/usr/share/ipxe/ipxe-i386.efi", dest: "/var/lib/tftp" }
+    - { src: "/usr/share/ipxe/ipxe-x86_64.efi", dest: "/var/lib/tftp/ipxe.efi" }
+
+- name: Matchbox bootstrap group json
+  ansible.builtin.template:
+    src: "groups.j2"
+    dest: "/var/lib/matchbox/groups/{{ item.id }}.json"
+  vars:
+    id: "{{ item.id }}"
+    name: "{{ item.name }}"
+    profile: "{{ item.profile }}"
+    mac: "{{ item.mac }}"
+  with_items:
+    - { id: "bootstrap", name: "Bootstrap node", profile: "bootstrap", mac: "{{ boot_mac }}" }
+

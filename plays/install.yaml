@@ -6,6 +6,10 @@
     ocp_release: "{{ lookup('env','GI_OCP_RELEASE') }}"
     ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}"
     ocp_minor_release: "{{ ocp_release.split('.')[-1] }}"
+    boot_name: "{{ lookup('env','GI_BOOTSTRAP_NAME') }}"
+    boot_ip: "{{ lookup('env','GI_BOOTSTRAP_IP') }}"
+    boot_mac: "{{ lookup('env','GI_BOOTSTRAP_MAC_ADDRESS') }}"
+
 
   vars_files:
     - constants.yaml
@@ -18,6 +22,9 @@
         - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
         - { name: "GI_NTP_SRV", value: "{{ ntp_server }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
+        - { name: "GI_BOOTSTRAP_NAME", value: "{{ boot_name }}" }
+        - { name: "GI_BOOTSTRAP_IP", value: "{{ boot_ip }}" }
+        - { name: "GI_BOOTSTRAP_MAC_ADDRESS", value: "{{ boot_mac }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
