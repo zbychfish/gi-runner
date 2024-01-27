@@ -4,6 +4,7 @@ function ansible_constants() {
 	echo "# gi-runner playbooks constants" > $afile
 	echo "skip_phase: 0" >> $afile
 	echo "temp_dir: $GI_TEMP" >> $afile
+	echo "matchbox_version: $matchbox_version" >> $afile
 }
 
 function check_input() {

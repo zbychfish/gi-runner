@@ -1,3 +1,22 @@
+- name: Cleanup configuration files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items:
+    - { path: "/etc/systemd/system/matchbox.service" }
+    - { path: "/usr/local/bin/matchbox" }
+    - { path: "/var/lib/matchbox" }
+    - { path: "/var/lib/tftp" }
+    - { path: "{{ temp_dir }}/plays" }
+
+- name: Create temp subdirectories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+  with_items:
+    - { path: "{{ temp_dir }}/plays" }
+    - { path: "{{ temp_dir }}/downloads" }
+
 - name: Start firewall
   ansible.builtin.service:
     name: firewalld
@@ -28,4 +47,122 @@
     - { port: "80", type: "tcp" } #cluster app access
     - { port: "443", type: "tcp" } #cluster app access
     - { port: "123", type: "udp" } #ntpd
+
+- name: Check original nsswitch.conf file existence
+  ansible.builtin.stat:
+    path: "/etc/nsswitch.conf.orig"
+  register: nsswitch_config_presence
+
+- name: Copy original nsswitch.conf file
+  ansible.builtin.copy:
+    src: "/etc/nsswitch.conf"
+    dest: "/etc/nsswitch.conf.orig"
+  when: nsswitch_config_presence.stat.exists == false
+
+- name: Restore original nsswitch.conf file
+  ansible.builtin.copy:
+    src: "/etc/nsswitch.conf.orig"
+    dest: "/etc/nsswitch.conf"
+  when: nsswitch_config_presence.stat.exists == true
+
+- name: Check original resolved.conf file existence
+  ansible.builtin.stat:
+    path: "/etc/systemd/resolved.conf.orig"
+  register: resolved_config_presence
+
+- name: Copy original resolved.conf file
+  ansible.builtin.copy:
+    src: "/etc/systemd/resolved.conf"
+    dest: "/etc/systemd/resolved.conf.orig"
+  when: resolved_config_presence.stat.exists == false
+
+- name: Restore original resolved.conf file
+  ansible.builtin.copy:
+    src: "/etc/systemd/resolved.conf.orig"
+    dest: "/etc/systemd/resolved.conf"
+  when: resolved_config_presence.stat.exists == true
+
+- name: Unlink resolv.conf
+  ansible.builtin.file:
+    path: "/etc/resolv.conf"
+    state: absent
+
+- name: Link resolv.conf
+  ansible.builtin.file:
+    src: "/run/systemd/resolve/resolv.conf"
+    dest: "/etc/resolv.conf"
+    state: link
+
+- name: Create TFTP directory
+  ansible.builtin.file:
+    path: "/var/lib/tftp"
+    state: directory
+    mode: '0755'
+
+- name: Add the user 'matchbox'
+  ansible.builtin.user:
+    name: matchbox
+
+- name: Clean matchbox directory
+  ansible.builtin.file:
+    path: "/var/lib/matchbox"
+    state: absent
+
+- name: Create Matchbox directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "0755"
+    owner: matchbox
+    group: matchbox
+  with_items:
+    - { path: "/var/lib/matchbox" }
+    - { path: "/var/lib/matchbox/assets" }
+    - { path: "/var/lib/matchbox/groups" }
+    - { path: "/var/lib/matchbox/ignition" }
+    - { path: "/var/lib/matchbox/profiles" }
+
+- name: Check matchbox package presence
+  ansible.builtin.stat:
+    path: "{{ temp_dir }}/downloads/matchbox-v{{ matchbox_version }}-linux-amd64.tar.gz"
+  register: matchbox_presence
+
+- name: Download matchbox
+  ansible.builtin.get_url:
+    url: "https://github.com/poseidon/matchbox/releases/download/v{{ matchbox_version }}/matchbox-v{{ matchbox_version }}-linux-amd64.tar.gz"
+    dest: "{{ temp_dir }}/downloads"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  when: matchbox_presence.stat.exists == false and internet_type != 'A'
+
+- name: Unzip matchbox
+  ansible.builtin.command:
+    cmd: "tar zxf {{ temp_dir }}/downloads/matchbox-v{{ matchbox_version }}-linux-amd64.tar.gz -C {{ temp_dir }}"
+
+- name: Copy matchbox to bin
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - { src: "{{ temp_dir }}/matchbox-v{{ matchbox_version }}-linux-amd64/matchbox", dest: "/usr/local/bin" }
+
+- name: Copy matchbox service file
+  ansible.builtin.copy:
+    src: "{{ temp_dir }}/matchbox-v{{ matchbox_version }}-linux-amd64/contrib/systemd/matchbox.service"
+    dest: "/etc/systemd/system/matchbox.service"
+    owner: root
+    mode: 0644
+
+- name: Start and enable matchbox
+  ansible.builtin.service:
+    name: matchbox
+    state: restarted
+    enabled: yes
+
+- name: Clean matchbox temp directory
+  ansible.builtin.file:
+    path: "{{ temp_dir }}/matchbox-v{{ matchbox_version }}-linux-amd64"
+    state: absent
 
