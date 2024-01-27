@@ -40,7 +40,7 @@ get_service_assignment
 get_cluster_storage_info
 get_inter_cluster_info
 get_credentials
-#get_certificates
+get_certificates
 #[[ "$gi_install" == 'Y' ]] && get_gi_options
 #[[ "$ics_install" == 'Y' || "$gi_install" == 'Y' ]] && get_ics_options
 #[[ "$cp4s_install" == 'Y' ]] && get_cp4s_options
