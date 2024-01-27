@@ -7,6 +7,7 @@ script_argument=$1
 . ./funcs/functions.sh
 # import global variables
 . ./funcs/init.globals.sh
+ansible_constants # synchronizes constants between shell and ansible
 trap "display_error 'Unexpected error'" EXIT
 export MPID=$$ #init.sh process ID
 #MAIN PART
@@ -53,13 +54,13 @@ then
 	msg "Execute these commands after relogin to bastion:" info
 	msg "- go to gi-runner home directory: \"cd $GI_HOME\"" info
 	msg "- import variables: \". $variables_file\"" info
-        msg "- start first playbook: \"ansible-playbook playbooks/install_all.yaml\"" info
+        msg "- start first playbook: \"ansible-playbook play/install.yaml\"" info
 	read -p "Press enter to continue to reboot system"
 	shutdown -r now
 else
 	msg "Execute commands below to continue:" info
 	[[ $use_proxy == 'P' ]] &&  msg "- import PROXY settings: \". /etc/profile\"" info
 	msg "- import variables: \". $variables_file\"" info
-	msg "- start playbook: \"ansible-playbook playbooks/install_all.yaml\"" info
+	msg "- start playbook: \"ansible-playbook plays/install.yaml\"" info
 fi
 trap - EXIT
