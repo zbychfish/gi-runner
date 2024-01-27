@@ -3,6 +3,9 @@
     internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
     bas_ip: "{{ lookup('env','GI_BASTION_IP') }}"
     ntp_server: "{{ lookup('env','GI_NTP_SRV') }}"
+    ocp_release: "{{ lookup('env','GI_OCP_RELEASE') }}"
+    ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}"
+    ocp_minor_release: "{{ ocp_release.split('.')[-1] }}"
 
   vars_files:
     - constants.yaml
@@ -14,6 +17,7 @@
         - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
         - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
         - { name: "GI_NTP_SRV", value: "{{ ntp_server }}" }
+        - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
