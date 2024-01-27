@@ -10,12 +10,24 @@
   tasks:
     - name: Check standard configuration parameters
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      when: item.value == ""
       loop:
         - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
         - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
         - { name: "GI_NTP_SRV", value: "{{ ntp_server }}" }
+      when: item.value == ""
+
+    - name: Set parameters for ntp set on bastion
+      ansible.builtin.set_fact:
+        ntp_clients: "{{ lookup('env','GI_NTP_CLIENTS') }}"
+      when: ntp_server == bas_ip
+
+    - name: Check parameters for ntp set on bastion
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_NTP_CLIENTS", value: "{{ ntp_clients }}" }
+      when: ntp_server == bas_ip and item.value == ""
 
     - name: Setup bastion
       ansible.builtin.include_tasks: bastion_setup.yaml
       when: skip_phase|int < 1
+
