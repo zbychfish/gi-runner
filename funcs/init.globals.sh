@@ -3,7 +3,7 @@ GI_HOME=`pwd` # gi-runner home directory
 GI_TEMP=$GI_HOME/gitemp # temp directory
 variables_file=$GI_HOME/variables.sh # variables file
 
-declare -a fedora_supp_releases=(38) # list supported Fedora releases
+declare -a fedora_supp_releases=(38 39) # list supported Fedora releases
 declare -a gi_versions=(3.2.11 3.2.12 3.2.13)
 declare -a gi_cases=(2.2.11 2.2.12 2.2.13)
 declare -a gi_redis_releases=(1.6.5 1.6.5 1.6.5)
