@@ -1,6 +1,6 @@
 function ansible_constants() {
 	local afile
-	afile=$GI_TEMP/plays/constants.yaml
+	afile=$GI_HOME/plays/constants.yaml
 	echo "# gi-runner playbooks constants" > $afile
 	echo "skip_phase: 0" >> $afile
 	echo "temp_dir: $GI_TEMP" >> $afile
