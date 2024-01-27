@@ -2,6 +2,9 @@
   vars:
     internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
 
+  vars_files:
+    - constants.yaml
+
   tasks:
     - name: Check standard configuration parameters
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
