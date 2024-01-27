@@ -296,11 +296,44 @@
     id: "{{ item.id }}"
     name: "{{ item.name }}"
     ign_file: "{{ item.ign_file }}"
-    dom: "{{ item.dom }}"
   ansible.builtin.template:
     src: "matchbox_profiles.j2"
     dest: "/var/lib/matchbox/profiles/{{ item.id }}.json"
   with_items:
-    - { id: "bootstrap", name: "Bootstrap node", ign_file: "bootstrap.ign", dom: "{{ ocp_domain }}" }
-    - { id: "master", name: "OCP master", ign_file: "master.ign", dom: "{{ ocp_domain }}" }
-    - { id: "worker", name: "OCP worker", ign_file: "worker.ign", dom: "{{ ocp_domain }}" }
+    - { id: "bootstrap", name: "Bootstrap node", ign_file: "bootstrap.ign" }
+    - { id: "master", name: "OCP master", ign_file: "master.ign" }
+    - { id: "worker", name: "OCP worker", ign_file: "worker.ign" }
+
+- name: Prepare PTR name for bastion
+  ansible.builtin.shell: >
+    echo "{{ bas_ip }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
+  register: bas_ptr
+
+- name: Prepare PTR name for boot
+  ansible.builtin.shell: >
+    echo "{{ boot_ip }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'
+  register: boot_ptr
+
+- name: Prepare PTR name for nodes
+  ansible.builtin.shell: >
+    echo "ptr-record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ item.1 }}.{{ domain }}"
+  register: node_ptr
+  with_together:
+    - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+    - "{{ master_name+worker_name|default([])+ocs_name|default([]) }}"
+
+- name: Prepare DHCP entries for nodes
+  ansible.builtin.shell: >
+    echo "dhcp-host={{ item.0 }},{{ item.1 }},12h"
+  register: node_dhcp
+  with_together:
+    - "{{ master_mac+worker_mac|default([])+ocs_mac|default([]) }}"
+    - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+
+- name: Prepare DNS entries for nodes
+  ansible.builtin.shell: >
+    echo "address=/{{ item.0 }}.{{ domain }}/{{ item.1 }}"
+  register: node_dns
+  with_together:
+    - "{{ master_name+worker_name|default([])+ocs_name|default([]) }}"
+    - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
