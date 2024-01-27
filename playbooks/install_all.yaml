@@ -1,10 +1,8 @@
 - hosts: bastion
   vars:
-    domain: "{{ lookup('env','GI_DOMAIN') }}"
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
     ssh_key: "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_cni: "{{ lookup('env','GI_OCP_CNI') }}"
-    boot_disk: "{{ lookup('env','GI_BOOT_DEVICE') }}"
     bas_int: "{{ lookup('env','GI_NETWORK_INTERFACE') }}"
     dns_forwarder: "{{ lookup('env','GI_DNS_FORWARDER') }}"
     bas_name: "{{ lookup('env','GI_BASTION_NAME') }}"
@@ -31,11 +29,9 @@
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       when: item.value == ""
       loop:
-        - { name: "GI_DOMAIN", value: "{{ domain }}" }
         - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
         - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
-        - { name: "GI_BOOT_DEVICE", value: "{{ boot_disk }}" }
         - { name: "GI_NETWORK_INTERFACE", value: "{{ bas_int }}" }
         - { name: "GI_DNS_FORWARDER", value: "{{ dns_forwarder }}" }
         - { name: "GI_BASTION_NAME", value: "{{ bas_name }}" }

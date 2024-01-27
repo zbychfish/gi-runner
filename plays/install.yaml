@@ -14,6 +14,8 @@
     master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
     is_master_only: "{{ lookup('env','GI_MASTER_ONLY') }}"
     is_ocs_tainted: "{{ lookup('env','GI_OCS_TAINTED') }}"
+    ocp_domain: "{{ lookup('env','GI_DOMAIN') }}"
+    boot_disk: "{{ lookup('env','GI_BOOT_DEVICE') }}"
 
 
 
@@ -36,6 +38,8 @@
         - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
         - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
         - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
+        - { name: "GI_DOMAIN", value: "{{ ocp_domain }}" }
+        - { name: "GI_BOOT_DEVICE", value: "{{ boot_disk }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion

@@ -290,3 +290,17 @@
   with_items:
     - "{{ worker_mac|list }}"
   when: is_master_only == 'N'
+
+- name: Matchbox profiles files
+  vars:
+    id: "{{ item.id }}"
+    name: "{{ item.name }}"
+    ign_file: "{{ item.ign_file }}"
+    dom: "{{ item.dom }}"
+  ansible.builtin.template:
+    src: "matchbox_profiles.j2"
+    dest: "/var/lib/matchbox/profiles/{{ item.id }}.json"
+  with_items:
+    - { id: "bootstrap", name: "Bootstrap node", ign_file: "bootstrap.ign", dom: "{{ ocp_domain }}" }
+    - { id: "master", name: "OCP master", ign_file: "master.ign", dom: "{{ ocp_domain }}" }
+    - { id: "worker", name: "OCP worker", ign_file: "worker.ign", dom: "{{ ocp_domain }}" }
