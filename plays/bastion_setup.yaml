@@ -243,7 +243,7 @@
 
 - name: Matchbox bootstrap group json
   ansible.builtin.template:
-    src: "groups.j2"
+    src: "matchbox_groups.j2"
     dest: "/var/lib/matchbox/groups/{{ item.id }}.json"
   vars:
     id: "{{ item.id }}"
@@ -253,3 +253,14 @@
   with_items:
     - { id: "bootstrap", name: "Bootstrap node", profile: "bootstrap", mac: "{{ boot_mac }}" }
 
+- name: Matchbox masters group json
+  ansible.builtin.template:
+    src: "imatchbox_groups.j2"
+    dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
+  vars:
+    id: "master"
+    name: "OCP master"
+    profile: "master"
+    mac: "{{ item }}"
+  with_items:
+    - "{{ master_mac|list }}"

@@ -22,9 +22,6 @@
     install_ics: "{{ lookup('env','GI_ICS') }}"
     install_cp4s: "{{ lookup('env','GI_CP4S') }}"
     one_subnet: "{{ lookup('env','GI_ONE_SUBNET') }}"
-    master_ip: "{{ lookup('env', 'GI_MASTER_IP').split(',') }}"
-    master_mac: "{{ lookup('env', 'GI_MASTER_MAC_ADDRESS').split(',') }}"
-    master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
     storage_class_rw_many: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' if storage_type == 'O' else 'px-csi-replicated' }}"
     storage_class_rw_one: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'px-csi-replicated' }}"
 
@@ -59,9 +56,6 @@
         - { name: "GI_ICS", value: "{{ install_ics }}" }
         - { name: "GI_CP4S", value: "{{ install_cp4s }}" }
         - { name: "GI_ONE_SUBNET", value: "{{ one_subnet }}" }
-        - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
-        - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
-        - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
 
     - name: Set parameters for installation with proxy
       ansible.builtin.set_fact:

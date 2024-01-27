@@ -9,6 +9,9 @@
     boot_name: "{{ lookup('env','GI_BOOTSTRAP_NAME') }}"
     boot_ip: "{{ lookup('env','GI_BOOTSTRAP_IP') }}"
     boot_mac: "{{ lookup('env','GI_BOOTSTRAP_MAC_ADDRESS') }}"
+    master_ip: "{{ lookup('env', 'GI_MASTER_IP').split(',') }}"
+    master_mac: "{{ lookup('env', 'GI_MASTER_MAC_ADDRESS').split(',') }}"
+    master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
 
 
   vars_files:
@@ -25,6 +28,9 @@
         - { name: "GI_BOOTSTRAP_NAME", value: "{{ boot_name }}" }
         - { name: "GI_BOOTSTRAP_IP", value: "{{ boot_ip }}" }
         - { name: "GI_BOOTSTRAP_MAC_ADDRESS", value: "{{ boot_mac }}" }
+        - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
+        - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
+        - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
