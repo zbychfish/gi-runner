@@ -1101,6 +1101,7 @@ function get_set_services() {
         local ntpd_server
         local tzone
         local tida
+	local ntp_clients
         msg "Some additional questions allow to configure supporting services in your environment" info
         msg "Time settings" task
         msg "It is recommended to use existing NTPD server in the local intranet but you can also decide to setup bastion as a new one" info
@@ -1124,6 +1125,17 @@ function get_set_services() {
                 done
                 save_variable GI_NTP_SRV $ntpd_server
         else
+		msg "NTP server set on bastion requires information about client subnets to serve. Insert value using CIDR notation, for example 192.168.10.0/24" info
+		while $(check_input "cidr" ${ntp_clients})
+                do
+                        if [ ! -z "$GI_NTP_CLIENTS" ]
+				get_input "txt" "Insert subnet specification to define IP address space to server by NTP server on bastion or press ENTER to accept previous value [$GI_NTP_CLIENTS]: " false $GI_NTP_CLIENTS
+			else
+				get_input "txt" "Insert subnet specification to define IP address space to server by NTP server on bastion: " false
+			fi
+			ntp_clients=${input_variable}
+		done
+		save_variable GI_NTP_CLIENTS $ntp_clients
                 ntpd_server=$bastion_ip
                 timedatectl set-ntp false
         fi

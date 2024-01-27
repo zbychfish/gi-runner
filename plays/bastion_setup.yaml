@@ -166,3 +166,36 @@
     path: "{{ temp_dir }}/matchbox-v{{ matchbox_version }}-linux-amd64"
     state: absent
 
+- name: Check original chrony config file existence
+  ansible.builtin.stat:
+    path: "/etc/chrony.conf.orig"
+  register: chrony_config_presence
+
+- name: Restore original chrony config file
+  ansible.builtin.copy:
+    dest: /etc/chrony.conf
+    src: /etc/chrony.conf.orig
+  when: chrony_config_presence.stat.exists == true
+
+- name: Copy original chrony config file
+  ansible.builtin.copy:
+    src: /etc/chrony.conf
+    dest: /etc/chrony.conf.orig
+  when: chrony_config_presence.stat.exists == false
+
+- name: Modify chrony.conf
+  ansible.builtin.lineinfile:
+    path: /etc/chrony.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - { regexp: '^#allow 192.168.0.0/16', line: "allow all" }
+    - { regexp: '^#local stratum 10', line: "local stratum 10" }
+  when: ntp_server == bas_ip
+
+- name: Start and enable chronyd
+  ansible.builtin.service:
+    name: chronyd
+    state: restarted
+    enabled: yes
+  when: ntp_server == bas_ip
