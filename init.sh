@@ -46,20 +46,20 @@ get_certificates
 #[[ "$cp4s_install" == 'Y' ]] && get_cp4s_options
 #[[ "$install_ldap" == 'Y' ]] && get_ldap_options
 #create_cluster_ssh_key
-#msg "All information to deploy environment collected" info
-#if LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then true; else false; fi;
-#then
-#	msg "System reboot required because new kernel has been installed" info
-#	msg "Execute these commands after relogin to bastion:" info
-#	msg "- go to gi-runner home directory: \"cd $GI_HOME\"" info
-#	msg "- import variables: \". $file\"" info
-#        msg "- start first playbook: \"ansible-playbook playbooks/install_all.yaml\"" info
-#	read -p "Press enter to continue to reboot system"
-#	shutdown -r now
-#else
-#	msg "Execute commands below to continue:" info
-#	[[ $use_proxy == 'P' ]] &&  msg "- import PROXY settings: \". /etc/profile\"" info
-#	msg "- import variables: \". $file\"" info
-#	msg "- start playbook: \"ansible-playbook playbooks/install_all.yaml\"" info
-#fi
+msg "All information to deploy environment collected" info
+if LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then true; else false; fi;
+then
+	msg "System reboot required because new kernel has been installed" info
+	msg "Execute these commands after relogin to bastion:" info
+	msg "- go to gi-runner home directory: \"cd $GI_HOME\"" info
+	msg "- import variables: \". $file\"" info
+        msg "- start first playbook: \"ansible-playbook playbooks/install_all.yaml\"" info
+	read -p "Press enter to continue to reboot system"
+	shutdown -r now
+else
+	msg "Execute commands below to continue:" info
+	[[ $use_proxy == 'P' ]] &&  msg "- import PROXY settings: \". /etc/profile\"" info
+	msg "- import variables: \". $file\"" info
+	msg "- start playbook: \"ansible-playbook playbooks/install_all.yaml\"" info
+fi
 trap - EXIT

@@ -2,6 +2,7 @@
 GI_HOME=`pwd` # gi-runner home directory
 GI_TEMP=$GI_HOME/gitemp # temp directory
 variables_file=$GI_HOME/variables.sh # variables file
+
 declare -a fedora_supp_releases=(38) # list supported Fedora releases
 declare -a gi_versions=(3.2.11 3.2.12 3.2.13)
 declare -a gi_cases=(2.2.11 2.2.12 2.2.13)
@@ -16,7 +17,13 @@ declare -a ocp_supported_by_ics=(0 0)
 declare -a ocp_supported_by_cp4s=(0)
 declare -a ocp_supported_by_edr=(0)
 declare -a gi_sizes=(small medium demo)
+
 cp4s_channel="1.10"
+
+galaxy_community_general="8.2.0" # https://github.com/ansible-collections/community.general
+galaxy_ansible_utils="3.0.0" # https://github.com/ansible-collections/ansible.utils
+galaxy_community_crypto="2.17.0" # https://github.com/ansible-collections/community.crypto
+galaxy_containers_podman="1.11.0" # https://github.com/containers/ansible-podman-collections
 
 linux_soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bootimgs" "chrony" "dnsmasq" "unzip" "wget" "httpd-tools" "policycoreutils-python-utils" "python3-ldap" "openldap-servers" "openldap-clients" "pip" "skopeo" "nfs-utils" "openssl")
 python_soft=("passlib" "dnspython" "beautifulsoup4" "argparse" "jmespath")
