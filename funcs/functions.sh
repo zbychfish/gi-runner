@@ -1577,3 +1577,106 @@ function switch_dnf_sync_off() {
                 sed -i 's/.*metadata_timer_sync=.*/metadata_timer_sync=0/' /etc/dnf/dnf.conf
         fi
 }
+
+function validate_certs() {
+        local pre_value_ca
+        local pre_value_app
+        local pre_value_key
+        local ca_cert
+        local app_cert
+        local app_key
+        local label
+        local cert_info
+        case $1 in
+                "ocp")
+                        label="OCP"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"*.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_OCP_IN_CA"
+                        pre_value_app="$GI_OCP_IN_CERT"
+                        pre_value_key="$GI_OCP_IN_KEY"
+                        ;;
+                "ics")
+                        label="ICS"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"cp-console.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_ICS_IN_CA"
+                        pre_value_app="$GI_ICS_IN_CERT"
+                        pre_value_key="$GI_ICS_IN_KEY"
+                        ;;
+                "gi")
+                        label="GI"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"insights.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_IN_CA"
+                        pre_value_app="$GI_IN_CERT"
+                        pre_value_key="$GI_IN_KEY"
+                        ;;
+                "cp4s")
+                        label="CP4S"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"*.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_CP4S_CA"
+                        pre_value_app="$GI_CP4S_CERT"
+                        pre_value_key="$GI_CP4S_KEY"
+                        ;;
+
+                "*")
+                        display_error "Unknown cert information"
+                        ;;
+        esac
+	while $(check_input "cert" "${ca_cert}" "ca")
+        do
+                if [ ! -z "$pre_value_ca" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_ca] or insert the full path to root CA of $label certificate: " true "$pre_value_ca"
+                else
+                        get_input "txt" "Insert the full path to root CA of $label certificate: " false
+                fi
+                ca_cert="${input_variable}"
+        done
+        msg "$cert_info" info
+        while $(check_input "cert" "${app_cert}" "app" "$ca_cert")
+        do
+                if [ ! -z "$pre_value_app" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_app] or insert the full path to $label certificate: " true "$pre_value_app"
+                else
+                        get_input "txt" "Insert the full path to $label certificate: " false
+                fi
+                app_cert="${input_variable}"
+        done
+        while $(check_input "cert" "${app_key}" "key" "$app_cert")
+        do
+                if [ ! -z "$pre_value_key" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$pre_value_key] or insert the full path to $label private key: " true "$pre_value_key"
+                else
+                        get_input "txt" "Insert the full path to $label private key: " false
+                fi
+                app_key="${input_variable}"
+        done
+
+        case $1 in
+                "ocp")
+                        save_variable GI_OCP_IN_CA "$ca_cert"
+                        save_variable GI_OCP_IN_CERT "$app_cert"
+                        save_variable GI_OCP_IN_KEY "$app_key"
+                        ;;
+                "ics")
+                        save_variable GI_ICS_IN_CA "$ca_cert"
+                        save_variable GI_ICS_IN_CERT "$app_cert"
+                        save_variable GI_ICS_IN_KEY "$app_key"
+                        ;;
+                "gi")
+                        save_variable GI_IN_CA "$ca_cert"
+                        save_variable GI_IN_CERT "$app_cert"
+                        save_variable GI_IN_KEY "$app_key"
+                        ;;
+                "cp4s")
+                        save_variable GI_CP4S_CA "$ca_cert"
+                        save_variable GI_CP4S_CERT "$app_cert"
+                        save_variable GI_CP4S_KEY "$app_key"
+                        ;;
+                "*")
+                        display_error "Unknown cert information"
+                        ;;
+        esac
+}
+
