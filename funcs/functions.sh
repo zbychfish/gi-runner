@@ -1599,7 +1599,7 @@ function software_installation_on_online() {
         for package in "${python_soft[@]}"
         do
                 msg "- installing $package ..." info
-                [[ $use_proxy == 'D' ]] && pip3 install "$package" || pip3 install "$package" --proxy http://$proxy_ip:$proxy_port
+                [[ $use_proxy == 'D' ]] && { pip3 install "$package" &> /dev/null; } || { pip3 install "$package" --proxy http://$proxy_ip:$proxy_port &> /dev/null; }
                 [[ $? -ne 0 ]] && display_error "Cannot install python package $package"
         done
         msg "Configuring Ansible" task
