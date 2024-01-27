@@ -189,7 +189,7 @@
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
   with_items:
-    - { regexp: '^#allow {{ ntp_clients }}', line: "allow all" }
+    - { regexp: '^#allow 192.168.0.0/16', line: "allow {{ ntp_clients }}" }
     - { regexp: '^#local stratum 10', line: "local stratum 10" }
   when: ntp_server == bas_ip
 
