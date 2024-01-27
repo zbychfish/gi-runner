@@ -12,6 +12,9 @@
     master_ip: "{{ lookup('env', 'GI_MASTER_IP').split(',') }}"
     master_mac: "{{ lookup('env', 'GI_MASTER_MAC_ADDRESS').split(',') }}"
     master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
+    is_master_only: "{{ lookup('env','GI_MASTER_ONLY') }}"
+    is_ocs_tainted: "{{ lookup('env','GI_OCS_TAINTED') }}"
+
 
 
   vars_files:
@@ -31,6 +34,8 @@
         - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
         - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
         - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
+        - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
+        - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
@@ -43,6 +48,36 @@
       loop:
         - { name: "GI_NTP_CLIENTS", value: "{{ ntp_clients }}" }
       when: ntp_server == bas_ip and item.value == ""
+
+    - name: Set worker nodes array
+      ansible.builtin.set_fact:
+        worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
+        worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
+        worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
+      when: is_master_only == 'N'
+
+    - name: Check workers configuration
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_WORKER_IP", value: "{{ worker_ip }}" }
+        - { name: "GI_WORKER_MAC_ADDRESS", value: "{{ worker_mac }}" }
+        - { name: "GI_WORKER_NAME", value: "{{ worker_name }}" }
+      when: is_master_only == 'N' and item.value == ""
+
+    - name: Set ODF tainted nodes array
+      ansible.builtin.set_fact:
+        ocs_ip: "{{ lookup('env', 'GI_OCS_IP').split(',') }}"
+        ocs_mac: "{{ lookup('env', 'GI_OCS_MAC_ADDRESS').split(',') }}"
+        ocs_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
+      when: is_ocs_tainted == 'Y'
+
+    - name: Check OCS configuration
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_OCS_IP", value: "{{ ocs_ip }}" }
+        - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
+        - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
+      when: is_ocs_tainted == 'Y' and item.value == ""
 
     - name: Setup bastion
       ansible.builtin.include_tasks: bastion_setup.yaml

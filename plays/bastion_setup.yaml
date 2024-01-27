@@ -255,7 +255,7 @@
 
 - name: Matchbox masters group json
   ansible.builtin.template:
-    src: "imatchbox_groups.j2"
+    src: "matchbox_groups.j2"
     dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
   vars:
     id: "master"
@@ -264,3 +264,29 @@
     mac: "{{ item }}"
   with_items:
     - "{{ master_mac|list }}"
+
+- name: Matchbox tainted ODF group json
+  ansible.builtin.template:
+    src: "matchbox_groups.j2"
+    dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
+  vars:
+    id: "worker"
+    name: "OCP worker"
+    profile: "worker"
+    mac: "{{ item }}"
+  with_items:
+    - "{{ ocs_mac|list }}"
+  when: is_ocs_tainted == 'Y'
+
+- name: Matchbox worker group json
+  ansible.builtin.template:
+    src: "matchbox_groups.j2"
+    dest: "/var/lib/matchbox/groups/{{ id }}.{{ mac }}.json"
+  vars:
+    id: "worker"
+    name: "OCP worker"
+    profile: "worker"
+    mac: "{{ item }}"
+  with_items:
+    - "{{ worker_mac|list }}"
+  when: is_master_only == 'N'
