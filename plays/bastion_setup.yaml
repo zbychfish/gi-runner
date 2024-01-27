@@ -1,0 +1,31 @@
+- name: Start firewall
+  ansible.builtin.service:
+    name: firewalld
+    state: started
+    enabled: yes
+
+- name: Open ports on bastion for services installation
+  ansible.builtin.firewalld:
+    service: "{{ item.service }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  with_items:
+    - { service: "http" } 
+
+- name: Open ports on bastion
+  ansible.builtin.firewalld:
+    port: "{{ item.port }}/{{ item.type }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  with_items:
+    - { port: "67-69", type: "udp" } #dhcp, bootp, tftp
+    - { port: "8080", type: "tcp" } #matchbox
+    - { port: "53", type: "udp" } #dns
+    - { port: "6443", type: "tcp" } #cluster API
+    - { port: "22623", type: "tcp" } #cluster API
+    - { port: "80", type: "tcp" } #cluster app access
+    - { port: "443", type: "tcp" } #cluster app access
+    - { port: "123", type: "udp" } #ntpd
+

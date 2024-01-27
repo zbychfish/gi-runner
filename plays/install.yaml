@@ -12,4 +12,6 @@
       loop:
         - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
 
-
+    - name: Setup bastion
+      ansible.builtin.include_tasks: bastion_setup.yaml
+      when: skip_phase|int < 1
