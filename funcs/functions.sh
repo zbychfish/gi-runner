@@ -1578,6 +1578,47 @@ function switch_dnf_sync_off() {
         fi
 }
 
+function software_installation_on_online() {
+	local update_system
+        msg "Update and installation of software packages" task
+	msg "gi-runner can update OS packages before required packages will be installed. dnf update command will be executed" info
+	while $(check_input "yn" ${update_system})
+        do
+        	get_input "yn" "Would you like to update operating system before software package installation? " false
+                update_system=${input_variable^^}
+        done
+	[[ $update_system == 'Y' ]] && { msg "Updating operating system ..." info; dnf -qy update; }
+        msg "Installing OS packages" task
+        for package in "${linux_soft[@]}"
+        do
+                msg "- installing $package ..." info
+                dnf -qy install $package &>/dev/null
+                [[ $? -ne 0 ]] && display_error "Cannot install $package"
+        done
+        msg "Installing Python packages" task
+        for package in "${python_soft[@]}"
+        do
+                msg "- installing $package ..." info
+                [[ $use_proxy == 'D' ]] && pip3 install "$package" || pip3 install "$package" --proxy http://$proxy_ip:$proxy_port
+                [[ $? -ne 0 ]] && display_error "Cannot install python package $package"
+        done
+        msg "Configuring Ansible" task
+        mkdir -p /etc/ansible
+        [[ $use_proxy == 'P' ]] && echo -e "[bastion]\n127.0.0.1 \"http_proxy=http://$proxy_ip:$proxy_port\" https_proxy=\"http://$proxy_ip:$proxy_port\" ansible_connection=local" > /etc/ansible/hosts || echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
+        msg "Installing Ansible galaxy packages" task
+        for package in "${galaxy_soft[@]}"
+        do
+                msg "- installing $package ..." info
+                wget https://galaxy.ansible.com/download/${package}.tar.gz &> /dev/null
+                [[ $? -ne 0 ]] && display_error "Cannot download Ansible Galaxy package $package"
+                ansible-galaxy collection install ${package}.tar.gz &> /dev/null
+                [[ $? -ne 0 ]] && display_error "Cannot install Ansible Galaxy package $package"
+                rm -f ${package}.tar.gz
+        done
+        #mkdir -p ${GI_TEMP}/os
+        #echo "pullSecret: '$rhn_secret'" > ${GI_TEMP}/os/pull_secret.tmp
+}
+
 function validate_certs() {
         local pre_value_ca
         local pre_value_app
