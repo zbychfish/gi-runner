@@ -1,0 +1,12 @@
+- hosts: bastion
+  vars:
+    internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+
+  tasks:
+    - name: Check standard configuration parameters
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      when: item.value == ""
+      loop:
+        - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
+
+
