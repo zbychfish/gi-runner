@@ -475,6 +475,7 @@
       - "Resolve IP of api-int.{{ ocp_domain }} - {{ lookup('dig', 'api-int.{{ ocp_domain }}.', '@127.0.0.1') }}"
       - "Resolve IP of insights.apps.{{ ocp_domain }} - {{ lookup('dig', 'insights.apps.{{ ocp_domain }}.', '@127.0.0.1') }}"
       - "Resolve name from IP for {{ boot_ip }} - {{ lookup('dig', '{{ boot_ptr.stdout }}./PTR', '@127.0.0.1') }}"
+      - "Resolve name from IP for {{ boot_ip }} - {{ lookup('dig', '{{ boot_ip }}/PTR', '@127.0.0.1') }}"
 
 - name: Set SELINUX for dnsmasq
   shell:
