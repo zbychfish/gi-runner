@@ -25,7 +25,7 @@ galaxy_ansible_utils="3.0.0" # https://github.com/ansible-collections/ansible.ut
 galaxy_community_crypto="2.17.0" # https://github.com/ansible-collections/community.crypto
 galaxy_containers_podman="1.11.0" # https://github.com/containers/ansible-podman-collections
 
-linux_soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bootimgs" "chrony" "dnsmasq" "unzip" "wget" "httpd-tools" "policycoreutils-python-utils" "python3-ldap" "openldap-servers" "openldap-clients" "pip" "skopeo" "nfs-utils" "openssl")
+linux_soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bootimgs" "chrony" "dnsmasq" "unzip" "wget" "httpd-tools" "policycoreutils-python-utils" "python3-ldap" "openldap-servers" "openldap-clients" "python3-pip" "skopeo" "nfs-utils" "openssl")
 python_soft=("passlib" "dnspython" "beautifulsoup4" "argparse" "jmespath")
 galaxy_soft=("community-general-${galaxy_community_general}" "ansible-utils-${galaxy_ansible_utils}" "community-crypto-${galaxy_community_crypto}" "containers-podman-${galaxy_containers_podman}" )
 

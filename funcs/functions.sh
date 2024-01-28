@@ -318,7 +318,7 @@ function create_cluster_ssh_key() {
         then
 	        ssh-keygen -N '' -f /root/.ssh/cluster_id_rsa -q <<< y > /dev/null
         	echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
-        	cat cluster_id_rsa.pub >> /root/.ssh/authorized_keys
+        	cat /root/.ssh/cluster_id_rsa.pub >> /root/.ssh/authorized_keys
 	fi
         	save_variable GI_SSH_KEY "/root/.ssh/cluster_id_rsa"
         	msg "Your SSH keys: /root/.ssh/cluster_id_rsa and /root/.ssh/cluster_id_rsa.pub" info
