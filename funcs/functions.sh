@@ -330,6 +330,7 @@ function display_list () {
 }
 
 function get_bastion_info() {
+	local bastion_nic
         msg "Collecting data about bastion" task
         msg "If your bastion have two or more network interfaces, provide IP address of the interface which is connected to this same subnet, vlan where the OCP nodes are located" info
         while $(check_input "ip" ${bastion_ip})
@@ -370,6 +371,18 @@ function get_bastion_info() {
                 done
                 save_variable GI_GATEWAY $subnet_gateway
         fi
+	msg "DHCP server will be deployed on bastion. You must provide the bastion network interface specification on which the service would listen." info
+	while $(check_input "txt" "${bastion_nic}" "non_empty")
+        do
+                if [ ! -z "$GI_BASTION_INTERFACE" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_BASTION_INTERFACE] or insert NIC specification: " true "$GI_BASTION_INTERFACE"
+                else
+                        get_input "txt" "Insert NIC specification for DHCP service on bastion: " false
+                fi
+                bastion_nic="${input_variable}"
+        done
+        save_variable GI_BASTION_INTERFACE "$bastion_nic"
 }
 
 function get_certificates() {
