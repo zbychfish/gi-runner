@@ -548,5 +548,5 @@
 
 - name: Adding RHN pull secret to install_config
   shell:
-    cmd: "echo \"pullSecret: $RHN_SECRET\" >> {{ temp_dir }}/yamls/install-config.yaml"
+    cmd: "echo \"pullSecret: '$GI_RHN_SECRET'\" >> {{ temp_dir }}/yamls/install-config.yaml"
   when: internet_type != 'A'
