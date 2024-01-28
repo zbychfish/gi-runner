@@ -3,6 +3,7 @@ function ansible_constants() {
 	afile=$GI_HOME/plays/constants.yaml
 	echo "# gi-runner playbooks constants" > $afile
 	echo "skip_phase: 0" >> $afile
+	echo "clean_downloads: 'N' " >> $afile
 	echo "temp_dir: $GI_TEMP" >> $afile
 	echo "matchbox_version: $matchbox_version" >> $afile
 }

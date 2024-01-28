@@ -104,6 +104,12 @@
         - { name: "GI_GATEWAY", value: "{{ bas_gw }}" }
       when: one_subnet == 'Y' and item.value == ""
 
+    - name: Clean downloads directory
+      ansible.builtin.file:
+        path: "{{ temp_dir }}/downloads" 
+        state: absent
+      when: clean_downloads == 'Y'
+
     - name: Setup bastion
       ansible.builtin.include_tasks: bastion_setup.yaml
       when: skip_phase|int < 1
