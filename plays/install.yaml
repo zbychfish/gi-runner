@@ -24,6 +24,10 @@
     one_subnet: "{{ lookup('env','GI_ONE_SUBNET') }}"
     dns_forwarder: "{{ lookup('env','GI_DNS_FORWARDER') }}"
     install_gi: "{{ lookup('env','GI_INSTALL_GI') }}"
+    cluster_network: "{{ lookup('env','GI_OCP_CIDR') }}"
+    cluster_network_subnet:  "{{ lookup('env','GI_OCP_CIDR_MASK') }}"
+    ocp_cni: "{{ lookup('env','GI_OCP_CNI') }}"
+    ssh_key: "{{ lookup('env','GI_SSH_KEY') }}"
 
   vars_files:
     - constants.yaml
@@ -52,6 +56,10 @@
         - { name: "GI_ONE_SUBNET", value: "{{ one_subnet }}" }
         - { name: "GI_DNS_FORWARDER", value: "{{ dns_forwarder }}" }
         - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
+        - { name: "GI_OCP_CIDR", value: "{{ cluster_network }}" }
+        - { name: "GI_OCP_CIDR_MASK", value: "{{ cluster_network_subnet }}" }
+        - { name: "GI_OCP_CNI", value: "{{ ocp_cni }}" }
+        - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion

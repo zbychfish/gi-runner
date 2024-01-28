@@ -299,6 +299,31 @@ function check_linux_distribution_and_release() {
         fi
 }
 
+function create_cluster_ssh_key() {
+	local regenerate_ssh_key
+        msg "Add a new RSA SSH key" task
+	if [[ -f cluster_id_rsa.pub ]]
+	then
+		while $(check_input "yn" "$regenerate_ssh_key" false)
+        	do
+                        get_input "yn" "There is a ssh key from previous gi-runner execution, would you like to regenerate it? " false
+		done
+		regenerate_ssh_key=${input_variable^^}
+	fi
+	if [[ $regenerate_ssh_key == 'Y' ]]
+	then
+		rm -f /root/.ssh/cluster_id_rsa*
+	fi
+	if ! [[ -f cluster_id_rsa.pub ]]
+        then
+	        ssh-keygen -N '' -f cluster_id_rsa -q <<< y > /dev/null
+        	echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
+        	cat cluster_id_rsa.pub >> /root/.ssh/authorized_keys
+        	save_variable GI_SSH_KEY "/root/.ssh/cluster_id_rsa"
+	fi
+        	msg "Save SSH keys names: cluster_id_rsa and cluster_id_rsa.pub" info
+}
+
 function display_default_ics() {
         local gi_version
         local i=0

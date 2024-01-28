@@ -9,7 +9,7 @@ controlPlane:
   name: master
   replicas: {{ n_masters }}
 metadata:
-  name: {{ ocp_domain }}
+  name: {{ cluster_domain }}
 networking:
   clusterNetwork:
   - cidr: {{ cluster_network }}

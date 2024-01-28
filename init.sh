@@ -46,7 +46,7 @@ get_certificates
 #[[ "$ics_install" == 'Y' || "$gi_install" == 'Y' ]] && get_ics_options
 #[[ "$cp4s_install" == 'Y' ]] && get_cp4s_options
 #[[ "$install_ldap" == 'Y' ]] && get_ldap_options
-#create_cluster_ssh_key
+create_cluster_ssh_key
 msg "All information to deploy environment collected" info
 if LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then true; else false; fi;
 then

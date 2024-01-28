@@ -1,11 +1,7 @@
 - hosts: bastion
   vars:
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
-    ssh_key: "{{ lookup('env','GI_SSH_KEY') }}"
-    ocp_cni: "{{ lookup('env','GI_OCP_CNI') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
-    cluster_network: "{{ lookup('env','GI_OCP_CIDR') }}"
-    cluster_network_subnet:  "{{ lookup('env','GI_OCP_CIDR_MASK') }}"
     ocpadmin: "{{ lookup('env','GI_OCADMIN') }}"
     ocpadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
     storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
@@ -25,13 +21,9 @@
       when: item.value == ""
       loop:
         - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
-        - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
         - { name: "GI_NETWORK_INTERFACE", value: "{{ bas_int }}" }
         - { name: "GI_OCP_IN", value: "{{ ocp_ext_ingress }}" }
-        - { name: "GI_OCP_CIDR", value: "{{ cluster_network }}" }
-        - { name: "GI_OCP_CIDR_MASK", value: "{{ cluster_network_subnet }}" }
-        - { name: "GI_OCP_CNI", value: "{{ ocp_cni }}" }
         - { name: "GI_OCADMIN", value: "{{ ocpadmin }}" }
         - { name: "GI_OCADMIN_PWD", value: "{{ ocpadmin_password }}" }
         - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }

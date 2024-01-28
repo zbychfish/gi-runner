@@ -7,14 +7,14 @@
     - { path: "/usr/local/bin/matchbox" }
     - { path: "/var/lib/matchbox" }
     - { path: "/var/lib/tftp" }
-    - { path: "{{ temp_dir }}/plays" }
+    - { path: "{{ temp_dir }}/yamls" }
 
 - name: Create temp subdirectories
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
   with_items:
-    - { path: "{{ temp_dir }}/plays" }
+    - { path: "{{ temp_dir }}/yamls" }
     - { path: "{{ temp_dir }}/downloads" }
 
 - name: Start firewall
@@ -532,4 +532,16 @@
     cmd: "mv /usr/local/bin/oc-ibm_pak-linux-amd64 /usr/local/bin/oc-ibm_pak"
   when: install_gi == 'Y'
 
+- name: Set variable for public SSH key
+  ansible.builtin.shell: >
+    cat "{{ ssh_key }}.pub"
+  register: ssh_pub_key
 
+- name: Create OCP config for standard deployment
+  ansible.builtin.template:
+    src: ocp_install_config.j2
+    dest: "{{ temp_dir }}/yamls/install-config.yaml"
+  vars:
+    n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
+    n_masters: "{{ master_ip|length }}"
+  when: internet_type == 'D'
