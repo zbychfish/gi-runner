@@ -479,3 +479,38 @@
 - name: Set SELINUX for dnsmasq
   shell:
     cmd: semanage permissive -a dnsmasq_t
+
+- name: Check presence of RHCOS tools
+  ansible.builtin.stat:
+    path: "{{ temp_dir }}/downloads/{{ item.file }}"
+  register: rhcos_tools
+  with_items:
+    - { file: "openshift-client-linux.tar.gz" }
+    - { file: "openshift-install-linux.tar.gz" }
+  ignore_errors: true
+
+- name: "Download RHCOS tools {{ ocp_release }}"
+  ansible.builtin.get_url:
+    url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/{{ 'stable-'+ocp_major_release if ocp_minor_release == 'latest' else ocp_release }}/{{ item.item.file }}"
+    dest: "{{ temp_dir }}/downloads"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  with_items: "{{ rhcos_tools.results }}"
+  when: item.stat.exists == False and internet_type != 'A'
+
+- name: Check presence of oc ibm-pak
+  ansible.builtin.stat:
+    path: "{{ temp_dir }}/downloads/{{ item.file }}"
+  register: ibm_pak_tool
+  with_items:
+    - { file: "oc-ibm_pak-linux-amd64.tar.gz" }
+  ignore_errors: true
+
+- name: Download oc ibm-pak
+  ansible.builtin.get_url:
+    url: "https://github.com/IBM/ibm-pak/releases/download/v{{ ibm_pak_version }}/oc-ibm_pak-linux-amd64.tar.gz"
+    dest: "{{ temp_dir }}/downloads"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  with_items: "{{ ibm_pak_tool.results }}"
+  when: item.stat.exists == False and internet_type != 'A'
+
+
