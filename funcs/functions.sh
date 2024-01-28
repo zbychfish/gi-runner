@@ -319,8 +319,8 @@ function create_cluster_ssh_key() {
 	        ssh-keygen -N '' -f /root/.ssh/cluster_id_rsa -q <<< y > /dev/null
         	echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
         	cat cluster_id_rsa.pub >> /root/.ssh/authorized_keys
-        	save_variable GI_SSH_KEY "/root/.ssh/cluster_id_rsa"
 	fi
+        	save_variable GI_SSH_KEY "/root/.ssh/cluster_id_rsa"
         	msg "Your SSH keys: /root/.ssh/cluster_id_rsa and /root/.ssh/cluster_id_rsa.pub" info
 }
 
@@ -1642,6 +1642,7 @@ function switch_dnf_sync_off() {
 
 function software_installation_on_online() {
 	local update_system
+	local comm_out
         msg "Update and installation of software packages" task
 	msg "gi-runner can update OS packages before required packages will be installed. dnf update command will be executed" info
 	while $(check_input "yn" ${update_system})
@@ -1653,16 +1654,24 @@ function software_installation_on_online() {
         msg "Installing OS packages" task
         for package in "${linux_soft[@]}"
         do
-                msg "- installing $package ..." info
-                dnf -qy install $package &>/dev/null
-                [[ $? -ne 0 ]] && display_error "Cannot install $package"
+		dnf list installed ${package}.x86_64 ${package}.noarch 1> /dev/null 2> /dev/null
+		if [[ $? -eq 1 ]]
+		then
+                	msg "- installing $package ..." info
+                	dnf -qy install $package &>/dev/null
+                	[[ $? -ne 0 ]] && display_error "Cannot install $package"
+		fi
         done
         msg "Installing Python packages" task
         for package in "${python_soft[@]}"
         do
-                msg "- installing $package ..." info
-                [[ $use_proxy == 'D' ]] && { pip3 install "$package" &> /dev/null; } || { pip3 install "$package" --proxy http://$proxy_ip:$proxy_port &> /dev/null; }
-                [[ $? -ne 0 ]] && display_error "Cannot install python package $package"
+		pip show $package 1> /dev/null 2> /dev/null
+		if [[ $? -eq 1 ]]
+                then
+                	msg "- installing $package ..." info
+                	[[ $use_proxy == 'D' ]] && { pip3 install "$package" &> /dev/null; } || { pip3 install "$package" --proxy http://$proxy_ip:$proxy_port &> /dev/null; }
+                	[[ $? -ne 0 ]] && display_error "Cannot install python package $package"
+		fi
         done
         msg "Configuring Ansible" task
         mkdir -p /etc/ansible
