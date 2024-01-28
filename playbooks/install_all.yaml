@@ -11,7 +11,6 @@
     storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
     storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
     storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
-    install_gi: "{{ lookup('env','GI_INSTALL_GI') }}"
     install_ics: "{{ lookup('env','GI_ICS') }}"
     install_cp4s: "{{ lookup('env','GI_CP4S') }}"
     storage_class_rw_many: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' if storage_type == 'O' else 'px-csi-replicated' }}"
@@ -38,7 +37,6 @@
         - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
         - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
         - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
-        - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
         - { name: "GI_ICS", value: "{{ install_ics }}" }
         - { name: "GI_CP4S", value: "{{ install_cp4s }}" }
 

@@ -474,7 +474,6 @@
       - "Resolve IP of api.{{ ocp_domain }} - {{ lookup('dig', 'api.{{ ocp_domain }}.', '@127.0.0.1') }}"
       - "Resolve IP of api-int.{{ ocp_domain }} - {{ lookup('dig', 'api-int.{{ ocp_domain }}.', '@127.0.0.1') }}"
       - "Resolve IP of insights.apps.{{ ocp_domain }} - {{ lookup('dig', 'insights.apps.{{ ocp_domain }}.', '@127.0.0.1') }}"
-      - "Resolve name from IP for {{ boot_ip }} - {{ lookup('dig', '{{ boot_ptr.stdout }}./PTR', '@127.0.0.1') }}"
       - "Resolve name from IP for {{ boot_ip }} - {{ lookup('dig', '{{ boot_ip }}/PTR', '@127.0.0.1') }}"
 
 - name: Set SELINUX for dnsmasq
@@ -513,5 +512,24 @@
     use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
   with_items: "{{ ibm_pak_tool.results }}"
   when: item.stat.exists == False and internet_type != 'A'
+
+- name: Unpack OCP tools
+  ansible.builtin.shell:
+    cmd: "tar xf {{ temp_dir }}/downloads/{{ item.src }} -C /usr/local/bin"
+  with_items:
+    - { src: "openshift-client-linux.tar.gz" }
+    - { src: "openshift-install-linux.tar.gz" }
+
+- name: Unpack oc ibm-pak
+  ansible.builtin.shell:
+    cmd: "tar xf {{ temp_dir }}/downloads/{{ item.src }} -C /usr/local/bin"
+  with_items:
+    - { src: "oc-ibm_pak-linux-amd64.tar.gz" }
+  when: install_gi == 'Y'
+
+- name: Rename oc ibm-pak file
+  ansible.builtin.shell:
+    cmd: "mv /usr/local/bin/oc-ibm_pak-linux-amd64 /usr/local/bin/oc-ibm_pak"
+  when: install_gi == 'Y'
 
 

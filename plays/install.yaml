@@ -15,12 +15,15 @@
     is_master_only: "{{ lookup('env','GI_MASTER_ONLY') }}"
     is_ocs_tainted: "{{ lookup('env','GI_OCS_TAINTED') }}"
     ocp_domain: "{{ lookup('env','GI_DOMAIN') }}"
+    base_domain: "{{ ocp_domain.split('.')[1:] | join('.') }}"
+    cluster_domain: "{{ ocp_domain.split('.')[0] }}"
     boot_disk: "{{ lookup('env','GI_BOOT_DEVICE') }}"
     bas_int: "{{ lookup('env','GI_BASTION_INTERFACE') }}"
     bas_name: "{{ lookup('env','GI_BASTION_NAME') }}"
     net_int: "{{ lookup('env','GI_NETWORK_INTERFACE') }}"
     one_subnet: "{{ lookup('env','GI_ONE_SUBNET') }}"
     dns_forwarder: "{{ lookup('env','GI_DNS_FORWARDER') }}"
+    install_gi: "{{ lookup('env','GI_INSTALL_GI') }}"
 
   vars_files:
     - constants.yaml
@@ -48,6 +51,7 @@
         - { name: "GI_NETWORK_INTERFACE", value: "{{ net_int }}" }
         - { name: "GI_ONE_SUBNET", value: "{{ one_subnet }}" }
         - { name: "GI_DNS_FORWARDER", value: "{{ dns_forwarder }}" }
+        - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
