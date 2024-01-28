@@ -302,7 +302,7 @@ function check_linux_distribution_and_release() {
 function create_cluster_ssh_key() {
 	local regenerate_ssh_key
         msg "Add a new RSA SSH key" task
-	if [[ -f cluster_id_rsa.pub ]]
+	if [[ -f /root/.ssh/cluster_id_rsa.pub ]]
 	then
 		while $(check_input "yn" "$regenerate_ssh_key" false)
         	do
@@ -314,9 +314,9 @@ function create_cluster_ssh_key() {
 	then
 		rm -f /root/.ssh/cluster_id_rsa*
 	fi
-	if ! [[ -f cluster_id_rsa.pub ]]
+	if ! [[ -f /root/.ssh/cluster_id_rsa.pub ]]
         then
-	        ssh-keygen -N '' -f cluster_id_rsa -q <<< y > /dev/null
+	        ssh-keygen -N '' -f /root/.ssh/cluster_id_rsa -q <<< y > /dev/null
         	echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
         	cat cluster_id_rsa.pub >> /root/.ssh/authorized_keys
         	save_variable GI_SSH_KEY "/root/.ssh/cluster_id_rsa"
