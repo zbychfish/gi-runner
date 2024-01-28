@@ -28,6 +28,7 @@
     cluster_network_subnet:  "{{ lookup('env','GI_OCP_CIDR_MASK') }}"
     ocp_cni: "{{ lookup('env','GI_OCP_CNI') }}"
     ssh_key: "{{ lookup('env','GI_SSH_KEY') }}"
+    rhn_secret: "{{ lookup('env','GI_RHN_SECRET') }}"
 
   vars_files:
     - constants.yaml
@@ -60,6 +61,7 @@
         - { name: "GI_OCP_CIDR_MASK", value: "{{ cluster_network_subnet }}" }
         - { name: "GI_OCP_CNI", value: "{{ ocp_cni }}" }
         - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
+        - { name: "GI_RHN_SECRET", value: "{{ rhn_secret }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
