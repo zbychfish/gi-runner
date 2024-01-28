@@ -8,6 +8,7 @@
     - { path: "/var/lib/matchbox" }
     - { path: "/var/lib/tftp" }
     - { path: "{{ temp_dir }}/yamls" }
+    - { path: "../ocp" }
 
 - name: Create temp subdirectories
   ansible.builtin.file:
@@ -16,6 +17,7 @@
   with_items:
     - { path: "{{ temp_dir }}/yamls" }
     - { path: "{{ temp_dir }}/downloads" }
+    - { path: "../ocp" }
 
 - name: Start firewall
   ansible.builtin.service:
@@ -550,3 +552,21 @@
   shell:
     cmd: "echo \"pullSecret: '$GI_RHN_SECRET'\" >> {{ temp_dir }}/yamls/install-config.yaml"
   when: internet_type != 'A'
+
+- name: Copy install-config to ocp dir
+  ansible.builtin.copy:
+    dest: "../ocp/install-config.yaml"
+    src: "{{ temp_dir }}/yamls/install-config.yaml"
+
+- name: Create manifests files
+  ansible.builtin.command:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "openshift-install create manifests --dir=../ocp" }
+
+- name: Create ignition files
+  ansible.builtin.command:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "openshift-install create ignition-configs --dir=../ocp" }
+
