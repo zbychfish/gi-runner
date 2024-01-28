@@ -362,3 +362,43 @@
     line: "{{ item.line }}"
   with_items:
     - { regexp: '^#interface=', line: 'interface={{ bas_int }}' }
+
+- name: Add lines to dnsmasq.conf
+  ansible.builtin.lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item }}"
+  with_items:
+    - "#Gateway"
+    - "dhcp-option=2,7200"
+    - "dhcp-option=42,{{ ntp_server }}"
+    - "dhcp-option=66,{{ bas_ip }}"
+    - "#DNS"
+    - "dhcp-option=6,{{ bas_ip }}"
+    - "dhcp-host={{ boot_mac }},{{ boot_ip }},12h"
+    - "domain={{ ocp_domain }}"
+    - "#Static DNS"
+    - "address=/{{ bas_name }}.{{ ocp_domain }}/{{ bas_ip }}"
+    - "address=/registry.{{ ocp_domain }}/{{ bas_ip }}"
+    - "address=/{{ boot_name }}.{{ ocp_domain }}/{{ boot_ip }}"
+    - "ptr-record={{ boot_ptr.stdout }},{{ boot_name }}.{{ ocp_domain }}"
+    - "ptr-record={{ bas_ptr.stdout }},{{ bas_name }}.{{ ocp_domain }}"
+    - "address=/matchbox.{{ ocp_domain }}/{{ bas_ip }}"
+    - "address=/api.{{ ocp_domain }}/{{ bas_ip }}"
+    - "ptr-record={{ bas_ptr.stdout }},api.{{ ocp_domain }}"
+    - "address=/api-int.{{ ocp_domain }}/{{ bas_ip }}"
+    - "ptr-record={{ bas_ptr.stdout }},api-int.{{ ocp_domain }}"
+    - "address=/.apps.{{ ocp_domain }}/{{ bas_ip }}"
+    - "#TFTP"
+    - "enable-tftp"
+    - "tftp-root=/var/lib/tftp"
+    - "tftp-secure"
+    - "dhcp-match=set:bios,option:client-arch,0"
+    - "dhcp-boot=tag:bios,undionly.kpxe"
+    - "dhcp-match=set:efi32,option:client-arch,6"
+    - "dhcp-boot=tag:efi32,ipxe.efi"
+    - "dhcp-match=set:efibc,option:client-arch,7"
+    - "dhcp-boot=tag:efibc,ipxe.efi"
+    - "dhcp-match=set:efi64,option:client-arch,9"
+    - "dhcp-boot=tag:efi64,ipxe.efi"
+    - "dhcp-userclass=set:ipxe,iPXE"
+    - "dhcp-boot=tag:ipxe,http://matchbox.{{ ocp_domain }}:8080/boot.ipxe"
