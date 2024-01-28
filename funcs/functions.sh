@@ -1140,7 +1140,7 @@ function get_set_services() {
                 save_variable GI_NTP_SRV $ntpd_server
         else
 		msg "NTP server set on bastion requires information about client subnets to serve. Insert value using CIDR notation, for example 192.168.10.0/24" info
-		while $(check_input "cidr" ${ntp_clients})
+		while $(check_input "cidr" "${ntp_clients}")
                 do
                         if [ ! -z "$GI_NTP_CLIENTS" ]
 			then

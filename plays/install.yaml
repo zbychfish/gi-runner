@@ -20,6 +20,7 @@
     bas_name: "{{ lookup('env','GI_BASTION_NAME') }}"
     net_int: "{{ lookup('env','GI_NETWORK_INTERFACE') }}"
     one_subnet: "{{ lookup('env','GI_ONE_SUBNET') }}"
+    dns_forwarder: "{{ lookup('env','GI_DNS_FORWARDER') }}"
 
   vars_files:
     - constants.yaml
@@ -46,6 +47,7 @@
         - { name: "GI_BASTION_NAME", value: "{{ bas_name }}" }
         - { name: "GI_NETWORK_INTERFACE", value: "{{ net_int }}" }
         - { name: "GI_ONE_SUBNET", value: "{{ one_subnet }}" }
+        - { name: "GI_DNS_FORWARDER", value: "{{ dns_forwarder }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion

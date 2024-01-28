@@ -430,3 +430,52 @@
     line: "{{ item.stdout }}"
   with_items: "{{ node_dns.results }}"
 
+- name: Add DNS forwarder to dnsmasq.conf
+  ansible.builtin.lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item }}"
+  with_items:
+    - "server={{ dns_forwarder }}"
+    - "address=/.{{ domain }}/"
+
+- name: Get bastion interface name
+  ansible.builtin.shell:
+    cmd: "nmcli c show | grep {{ bas_int }} | awk '{print $1}'"
+  register: bas_int_name
+
+- name: Set self DNS for interface
+  ansible.builtin.command:
+    cmd: "{{ item }}"
+  with_items:
+    - "nmcli c modify {{ bas_int_name.stdout }} ipv4.dns \"{{ bas_ip }}\""
+
+- name: Start and enable dnsmasq
+  ansible.builtin.service:
+    name: dnsmasq
+    state: restarted
+    enabled: yes
+
+- name: Restart systemd-resolved
+  ansible.builtin.service:
+    name: systemd-resolved
+    state: restarted
+
+- name: Restart Network Manager
+  ansible.builtin.service:
+    name: NetworkManager
+    state: restarted
+
+- name: Resolve some cluster names to check DNS state
+  ansible.builtin.debug:
+    msg:
+      - "Resolve IP of {{ bas_name }}.{{ ocp_domain }} - {{ lookup('dig', '{{ bas_name }}.{{ ocp_domain }}.', '@127.0.0.1') }}"
+      - "Resolve IP of registry.{{ ocp_domain }} - {{ lookup('dig', 'registry.{{ ocp_domain }}.', '@127.0.0.1') }}"
+      - "Resolve IP of {{ boot_name }}.{{ ocp_domain }} - {{ lookup('dig', '{{ boot_name }}.{{ ocp_domain }}.', '@127.0.0.1') }}"
+      - "Resolve IP of api.{{ ocp_domain }} - {{ lookup('dig', 'api.{{ ocp_domain }}.', '@127.0.0.1') }}"
+      - "Resolve IP of api-int.{{ ocp_domain }} - {{ lookup('dig', 'api-int.{{ ocp_domain }}.', '@127.0.0.1') }}"
+      - "Resolve IP of insights.apps.{{ ocp_domain }} - {{ lookup('dig', 'insights.apps.{{ ocp_domain }}.', '@127.0.0.1') }}"
+      - "Resolve name from IP for {{ boot_ip }} - {{ lookup('dig', '{{ boot_ptr.stdout }}./PTR', '@127.0.0.1') }}"
+
+- name: Set SELINUX for dnsmasq
+  shell:
+    cmd: semanage permissive -a dnsmasq_t
