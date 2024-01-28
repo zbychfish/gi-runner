@@ -436,7 +436,7 @@
     line: "{{ item }}"
   with_items:
     - "server={{ dns_forwarder }}"
-    - "address=/.{{ domain }}/"
+    - "address=/.{{ ocp_domain }}/"
 
 - name: Get bastion interface name
   ansible.builtin.shell:
