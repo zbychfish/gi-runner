@@ -16,8 +16,9 @@
     is_ocs_tainted: "{{ lookup('env','GI_OCS_TAINTED') }}"
     ocp_domain: "{{ lookup('env','GI_DOMAIN') }}"
     boot_disk: "{{ lookup('env','GI_BOOT_DEVICE') }}"
-    bas_int: "{{ lookup('env','GI_NETWORK_INTERFACE') }}"
+    bas_int: "{{ lookup('env','GI_BASTION_INTERFACE') }}"
     bas_name: "{{ lookup('env','GI_BASTION_NAME') }}"
+    net_int: "{{ lookup('env','GI_NETWORK_INTERFACE') }}"
 
   vars_files:
     - constants.yaml
@@ -40,8 +41,9 @@
         - { name: "GI_OCS_TAINTED", value: "{{ is_ocs_tainted }}" }
         - { name: "GI_DOMAIN", value: "{{ ocp_domain }}" }
         - { name: "GI_BOOT_DEVICE", value: "{{ boot_disk }}" }
-        - { name: "GI_NETWORK_INTERFACE", value: "{{ bas_int }}" }
+        - { name: "GI_BASTION_INTERFACE", value: "{{ bas_int }}" }
         - { name: "GI_BASTION_NAME", value: "{{ bas_name }}" }
+        - { name: "GI_NETWORK_INTERFACE", value: "{{ net_int }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
@@ -84,6 +86,21 @@
         - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
         - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
       when: is_ocs_tainted == 'Y' and item.value == ""
+
+    - name: Set parameters for one subnet installation
+      ansible.builtin.set_fact:
+        dhcp_range_start: "{{ lookup('env','GI_DHCP_RANGE_START') }}"
+        dhcp_range_stop: "{{ lookup('env','GI_DHCP_RANGE_STOP') }}"
+        bas_gw: "{{ lookup('env','GI_GATEWAY') }}"
+      when: one_subnet == 'Y'
+
+    - name: Check configuration parameters for one subnet installation
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_DHCP_RANGE_START", value: "{{ dhcp_range_start }}" }
+        - { name: "GI_DHCP_RANGE_STOP", value: "{{ dhcp_range_stop }}" }
+        - { name: "GI_GATEWAY", value: "{{ bas_gw }}" }
+      when: one_subnet == 'Y' and item.value == ""
 
     - name: Setup bastion
       ansible.builtin.include_tasks: bastion_setup.yaml

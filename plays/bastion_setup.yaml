@@ -402,3 +402,31 @@
     - "dhcp-boot=tag:efi64,ipxe.efi"
     - "dhcp-userclass=set:ipxe,iPXE"
     - "dhcp-boot=tag:ipxe,http://matchbox.{{ ocp_domain }}:8080/boot.ipxe"
+
+- name: Add lines to dnsmasq.conf for one subnet installation
+  ansible.builtin.lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item }}"
+  with_items:
+    - "dhcp-option=3,{{ bas_gw }}"
+    - "dhcp-range={{ dhcp_range_start }},{{ dhcp_range_stop }},12h"
+  when: one_subnet == 'Y'
+
+- name: Add  PTR lines to dnsmasq.conf
+  ansible.builtin.lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item.stdout }}"
+  with_items: "{{ node_ptr.results }}"
+
+- name: Add DHCP lines to dnsmasq.conf
+  ansible.builtin.lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item.stdout }}"
+  with_items: "{{ node_dhcp.results }}"
+
+- name: Add DNS lines to dnsmasq.conf
+  ansible.builtin.lineinfile:
+    path: /etc/dnsmasq.conf
+    line: "{{ item.stdout }}"
+  with_items: "{{ node_dns.results }}"
+

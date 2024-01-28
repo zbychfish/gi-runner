@@ -1143,7 +1143,7 @@ function get_set_services() {
                 do
                         if [ ! -z "$GI_NTP_CLIENTS" ]
 			then
-				get_input "txt" "Insert subnet specification to define IP address space to server by NTP server on bastion or press ENTER to accept previous value [$GI_NTP_CLIENTS]: " false $GI_NTP_CLIENTS
+				get_input "txt" "Insert subnet specification to define IP address space to server by NTP server on bastion or press ENTER to accept previous value [$GI_NTP_CLIENTS]: " false "${GI_NTP_CLIENTS}"
 			else
 				get_input "txt" "Insert subnet specification to define IP address space to server by NTP server on bastion: " false
 			fi

@@ -3,9 +3,7 @@
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
     ssh_key: "{{ lookup('env','GI_SSH_KEY') }}"
     ocp_cni: "{{ lookup('env','GI_OCP_CNI') }}"
-    bas_int: "{{ lookup('env','GI_NETWORK_INTERFACE') }}"
     dns_forwarder: "{{ lookup('env','GI_DNS_FORWARDER') }}"
-    bas_name: "{{ lookup('env','GI_BASTION_NAME') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
     cluster_network: "{{ lookup('env','GI_OCP_CIDR') }}"
     cluster_network_subnet:  "{{ lookup('env','GI_OCP_CIDR_MASK') }}"
@@ -34,7 +32,6 @@
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
         - { name: "GI_NETWORK_INTERFACE", value: "{{ bas_int }}" }
         - { name: "GI_DNS_FORWARDER", value: "{{ dns_forwarder }}" }
-        - { name: "GI_BASTION_NAME", value: "{{ bas_name }}" }
         - { name: "GI_OCP_IN", value: "{{ ocp_ext_ingress }}" }
         - { name: "GI_OCP_CIDR", value: "{{ cluster_network }}" }
         - { name: "GI_OCP_CIDR_MASK", value: "{{ cluster_network_subnet }}" }
@@ -63,21 +60,6 @@
         - { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
           #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
       when: internet_type == 'P' and item.value == ""
-
-    - name: Set parameters for one subnet installation
-      ansible.builtin.set_fact:
-        dhcp_range_start: "{{ lookup('env','GI_DHCP_RANGE_START') }}"
-        dhcp_range_stop: "{{ lookup('env','GI_DHCP_RANGE_STOP') }}"
-        bas_gw: "{{ lookup('env','GI_GATEWAY') }}"
-      when: one_subnet == 'Y'
-
-    - name: Check configuration parameters for one subnet installation
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_DHCP_RANGE_START", value: "{{ dhcp_range_start }}" }
-        - { name: "GI_DHCP_RANGE_STOP", value: "{{ dhcp_range_stop }}" }
-        - { name: "GI_GATEWAY", value: "{{ bas_gw }}" }
-      when: one_subnet == 'Y' and item.value == ""
 
     - name: Set parameters for multiple subnets installation
       ansible.builtin.set_fact:
