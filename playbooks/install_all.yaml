@@ -137,7 +137,6 @@
         - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
         - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
         - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
-        - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
         - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
         - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
         - { name: "GI_METADATA_STORAGE_SIZE", value: "{{ gi_meta_size }}" }
