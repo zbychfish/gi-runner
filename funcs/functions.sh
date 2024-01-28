@@ -307,8 +307,8 @@ function create_cluster_ssh_key() {
 		while $(check_input "yn" "$regenerate_ssh_key" false)
         	do
                         get_input "yn" "There is a ssh key from previous gi-runner execution, would you like to regenerate it? " false
+			regenerate_ssh_key=${input_variable^^}
 		done
-		regenerate_ssh_key=${input_variable^^}
 	fi
 	if [[ $regenerate_ssh_key == 'Y' ]]
 	then
@@ -321,7 +321,7 @@ function create_cluster_ssh_key() {
         	cat cluster_id_rsa.pub >> /root/.ssh/authorized_keys
         	save_variable GI_SSH_KEY "/root/.ssh/cluster_id_rsa"
 	fi
-        	msg "Save SSH keys names: cluster_id_rsa and cluster_id_rsa.pub" info
+        	msg "Your SSH keys: /root/.ssh/cluster_id_rsa and /root/.ssh/cluster_id_rsa.pub" info
 }
 
 function display_default_ics() {
