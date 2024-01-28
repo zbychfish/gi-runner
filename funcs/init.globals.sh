@@ -29,4 +29,5 @@ linux_soft=("tar" "ansible" "haproxy" "openldap" "perl" "podman-docker" "ipxe-bo
 python_soft=("passlib" "dnspython" "beautifulsoup4" "argparse" "jmespath")
 galaxy_soft=("community-general-${galaxy_community_general}" "ansible-utils-${galaxy_ansible_utils}" "community-crypto-${galaxy_community_crypto}" "containers-podman-${galaxy_containers_podman}" )
 
-matchbox_version=0.10.0
+matchbox_version=0.10.0 # https://github.com/poseidon/matchbox
+ibm_pak_version=1.12.0 # https://github.com/IBM/ibm-pak
