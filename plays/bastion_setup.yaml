@@ -610,7 +610,7 @@
 
 - name: Create HA Proxy config file
   ansible.builtin.template:
-    src: haproxy-no-workers.j2
+    src: haproxy_masters_only.j2
     dest: /etc/haproxy/haproxy.cfg
   vars:
     masters: "{{ master_name|zip(master_ip)|list }}"
