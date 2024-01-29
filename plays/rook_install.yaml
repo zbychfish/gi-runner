@@ -67,8 +67,6 @@
     - "oc apply -f {{ temp_dir }}/yamls/rook-operator.yaml"
     - "oc apply -f {{ temp_dir }}/yamls/rook_red_filesystem.yaml"
 
-- meta: end_play
-
 - name: Deploy rook operator and filesystem
   ansible.builtin.shell:
     cmd: "{{ item }}"
