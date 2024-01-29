@@ -18,3 +18,9 @@
   vars:
     multiple_per_node: "true"
     use_all_devices: "false"
+
+- name: Setup rook toolbox file
+  ansible.builtin.template:
+    src: "{{ 'rook-toolbox.j2' if internet_type != 'A' else 'rook-toolbox-offline.j2' }}"
+    dest: "{{ temp_dir }}/yamls/rook-toolbox.yaml"
+
