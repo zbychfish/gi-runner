@@ -1,11 +1,7 @@
 - hosts: bastion
   vars:
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
-    install_ics: "{{ lookup('env','GI_ICS') }}"
     install_cp4s: "{{ lookup('env','GI_CP4S') }}"
-
-  vars_files:
-    - version_vars.yaml
 
   tasks:
     - name: Check standard configuration parameters
@@ -13,9 +9,6 @@
       when: item.value == ""
       loop:
         - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
-        - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
-        - { name: "GI_NETWORK_INTERFACE", value: "{{ bas_int }}" }
-        - { name: "GI_ICS", value: "{{ install_ics }}" }
         - { name: "GI_CP4S", value: "{{ install_cp4s }}" }
 
     - name: Set parameters for installation with proxy
@@ -65,25 +58,6 @@
       ansible.builtin.set_fact:
         nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
         ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
-
-    - name: Set ICS installation variables from env
-      ansible.builtin.set_fact:
-        ics_ext_ingress: "{{ lookup('env','GI_ICS_IN') }}"
-        ics_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
-        ics_operands: "{{ lookup('env', 'GI_ICS_OPERANDS').split(',') }}"
-        ics_dedicated_nodes: "{{ lookup('env', 'GI_ICS_NODES').split(',') }}"
-        ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
-      when: install_ics == 'Y' 
-
-    - name: Check ICS variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_ICS_IN", value: "{{ ics_ext_ingress }}" }
-        - { name: "GI_ICS_VERSION", value: "{{ ics_version_hint }}" }
-        - { name: "GI_ICS_OPERANDS", value: "{{ ics_operands }}" }
-        - { name: "GI_ICS_NODES", value: "{{ ics_dedicated_nodes }}" }
-        - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
-      when: install_ics == 'Y' and item.value == ""
 
     - name: Set GI installation variables from env
       ansible.builtin.set_fact:
@@ -297,15 +271,6 @@
       ansible.builtin.set_fact:
         ics_size_hint: 'S'
       when: install_gi == 'N' #add possibility to select ICS size
-
-    - name: Set ICS installation variables
-      ansible.builtin.set_fact:
-        ics_version: "{{ ics_versions[ics_version_hint|int] }}"
-        ics_case: "{{ ics_cases[ics_version_hint|int] }}"
-        ics_size: "{{ 'small' if ics_size_hint == 'S' else 'medium' if ics_size_hint == 'M' else 'large' }}"
-        ics_registry: 'icr.io/cpopen'
-        ics_update_channel: "{{ ics_versions[ics_version_hint|int].split('.')[0:2]|join('.') }}"
-      when: install_ics == 'Y'
 
     - name: Set GI installation variables
       ansible.builtin.set_fact:

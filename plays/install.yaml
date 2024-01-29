@@ -183,6 +183,15 @@
         - { name: "GI_ICSADMIN_PWD", value: "{{ cpfs_admin_password }}" }
       when: install_cpfs == 'Y' and item.value == ""
 
+    - name: Set CPFS installation variables
+      ansible.builtin.set_fact:
+        cpfs_version: "{{ cpfs_versions[cpfs_version_hint|int] }}"
+        cpfs_case: "{{ cpfs_cases[cpfs_version_hint|int] }}"
+        cpfs_size: "{{ 'small' if cpfs_size_hint == 'S' else 'medium' if cpfs_size_hint == 'M' else 'large' }}"
+        cpfs_registry: 'icr.io/cpopen'
+        cpfs_update_channel: "{{ cpfs_versions[cpfs_version_hint|int].split('.')[0:2]|join('.') }}"
+      when: install_cpfs == 'Y'
+
     - name: Clean downloads directory
       ansible.builtin.file:
         path: "{{ temp_dir }}/downloads" 

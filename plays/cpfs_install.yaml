@@ -61,3 +61,13 @@
   until: "cpfs_catalog_source_status.stdout == \"1\""
   retries: 30
   delay: 10
+
+- name: Create CPFS operator subscription file
+  ansible.builtin.template:
+    src: cpfs_subscription.j2
+    dest: "{{ temp_dir }}/yamls/cpfs_subscription.yaml"
+
+- name: Subscribe ICS operator
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/cpfs_subscription.yaml"
+

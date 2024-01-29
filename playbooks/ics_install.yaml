@@ -1,8 +1,3 @@
-- name: Create ICS operator namespace
-  ansible.builtin.shell:
-    cmd: "oc create namespace {{ ics_operator_namespace }} || echo 'Namespace exists'"
-  ignore_errors: yes
-
 - name: Label ICS nodes
   ansible.builtin.shell:
     cmd: "oc label node {{ item }}.{{ domain }} ics_role=yes --overwrite=true"
@@ -17,44 +12,11 @@
     - "oc patch namespace ibm-common-services -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"ics_role=yes\"}}}'"
   when: ics_dedicated_nodes|length > 2
 
-- name: Check presence of cloudctl tool
-  ansible.builtin.stat:
-    path: "{{ temp_dir }}/{{ offline_inventory }}/{{ item.file }}"
-  register: cloudctl_tool
-  with_items:
-    - { file: "cloudctl-linux-amd64.tar.gz" }
-  ignore_errors: true
-
 - name: Stop if cloudct tool is not uploaded for air-gapped installation
   ansible.builtin.fail:
     msg: "Please upload cloud tool to download directory"
   with_items: "{{ cloudctl_tool.results }}"
   when: item.stat.exists == False and internet_type == 'A'
-
-- name: "Download cloud tool"
-  ansible.builtin.get_url:
-    url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz"
-    dest: "{{ temp_dir }}/{{ offline_inventory }}"
-    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
-  when: internet_type != 'A'
-
-- name: Unpack cloudctl tools
-  ansible.builtin.shell:
-    cmd: "tar xf {{ temp_dir }}/{{ offline_inventory }}/{{ item.src }} -C /usr/local/bin"
-  with_items:
-    - { src: "cloudctl-linux-amd64.tar.gz" }
-
-- name: Standarize cloudctl name
-  ansible.builtin.command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
-
-- name: Set correct rights for RHCOS tools in /usr/local/bin
-  ansible.builtin.file:
-    path: "/usr/local/bin/{{ item.file }}"
-    owner: root
-    group: root
-    mode: 0755
-  with_items:
-    - { file: "cloudctl" }
 
 - name: Set catalog reference for CPFS and GI (offline)
   ansible.builtin.shell:
@@ -85,33 +47,6 @@
   ansible.builtin.shell:
     cmd: "cloudctl case launch --case {{ temp_dir }}/{{ offline_inventory }}/{{ ics_manifest_dir }}/ibm-cp-common-services-{{ ics_case }}.tgz --inventory {{ ics_case_inventory_setup }}  --action installCatalog --namespace openshift-marketplace --args \"--registry registry.{{ domain }}:5000\""
   when: internet_type == 'A' and install_gi == 'N'
-
-- name: Create ICS catalog file
-  ansible.builtin.template:
-    src: ics_catalog.j2
-    dest: "{{ temp_dir }}/ics_arch/ics_catalog.yaml"
-  when: internet_type != 'A'
-
-- name: Publish ICS catalog
-  ansible.builtin.shell:
-    cmd: "oc apply -f {{ temp_dir }}/ics_arch/ics_catalog.yaml"
-  when: internet_type != 'A'
-
-- name: Wait for ICS catalog
-  ansible.builtin.shell:
-    cmd: "oc get pods -n openshift-marketplace|grep opencloud-operators|grep 1/1|grep Running|wc -l"
-  register: ics_catalog_status
-  until: "ics_catalog_status.stdout == \"1\""
-  retries: 30
-  delay: 10
-
-- name: Wait for ICS catalog source
-  ansible.builtin.shell:
-    cmd: "oc get catalogsource -n openshift-marketplace|grep opencloud-operators|wc -l"
-  register: ics_catalog_source_status
-  until: "ics_catalog_source_status.stdout == \"1\""
-  retries: 30
-  delay: 10
 
 - name: Create ICS subscription file
   ansible.builtin.template:
