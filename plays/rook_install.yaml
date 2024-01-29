@@ -128,7 +128,7 @@
 - name: Setup FS storage class without redundancy
   ansible.builtin.template:
     src: "rook_storage_class_fs.j2"
-    dest: "{{ temp_dir }}/yamls/rook_storage_class_fsi_nr.yaml"
+    dest: "{{ temp_dir }}/yamls/rook_storage_class_fs_nr.yaml"
   vars:
     cf_name: "myfsnr"
     class_name: "rook-cephfsi-nr"
