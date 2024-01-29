@@ -14,11 +14,6 @@
     - CSI_VOLUME_REPLICATION_IMAGE
   when: internet_type == 'A'
 
-- name: Set rook-registry URL
-  ansible.builtin.set_fact:
-    rook_registry: "{{ 'quay.io/ceph/ceph:'+rook_ceph_version if internet_type != 'A' else 'registry.'+domain+':5000/rook/ceph:'+rook_ceph_version }}"
-    rook_ceph_image: "{{ 'ceph:'+rook_ceph_version if internet_type != 'A' else rook_digests.results[1].stdout }}"
-
 - name: Label rook storage nodes for dedicated node space
   ansible.builtin.shell:
     cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --overwrite=true;oc label node {{ item }}.{{ domain }} storage=rook --overwrite=true"

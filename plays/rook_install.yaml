@@ -1,4 +1,8 @@
 - name: Set rook-registry URL
   ansible.builtin.set_fact:
-    rook_registry: "{{ 'quay.io/ceph/ceph:'+rook_ceph_version if internet_type != 'A' else 'registry.'+ocp_domain+':5000/rook/ceph:'+rook_ceph_version }}"
-    rook_ceph_image: "{{ 'ceph:'+rook_ceph_version if internet_type != 'A' else rook_digests.results[1].stdout }}"
+    rook_registry: "{{ 'quay.io/ceph/ceph:v'+rook_ceph_version if internet_type != 'A' else 'registry.'+ocp_domain+':5000/rook/ceph:v'+rook_ceph_version }}"
+    rook_ceph_image: "{{ 'ceph:v'+rook_ceph_version if internet_type != 'A' else rook_digests.results[1].stdout }}"
+
+- name: Configure rook-ceph CRD's
+  ansible.builtin.shell:
+    cmd: "oc apply -f ../funcs/yamls/rook-crds.yaml"
