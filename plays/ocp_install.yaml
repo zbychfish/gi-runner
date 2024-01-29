@@ -99,7 +99,7 @@
   ansible.builtin.shell:
     cmd: "{{ item.cmd }}"
   with_items:
-    - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/files/ocpadmin.htpasswd -n openshift-config" }
+    - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd={{ temp_dir }}/files/ocpadmin.htpasswd -n openshift-config" }
   when: is_htpasswd_secret.stdout|int == 0
 
 - name: Register htpasswd oauth provider
