@@ -111,7 +111,7 @@
 
 - name: Wait to initiate changes related to added admin
   ansible.builtin.pause:
-    minutes: 5
+    minutes: 3
   when: is_htpasswd_secret.stdout|int == 0
 
 - name: Add CM with new CA cert
@@ -149,7 +149,7 @@
 
 - name: Wait for cluster stabilization - cluster cert changed
   ansible.builtin.pause:
-    minutes: 1
+    minutes: 3
   when: ocp_ext_ingress == 'Y'
 
 - name: Check cluster nodes health after ingress change

@@ -1,7 +1,6 @@
 - hosts: bastion
   vars:
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
-    storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
     storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
     storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
     install_ics: "{{ lookup('env','GI_ICS') }}"
@@ -20,7 +19,6 @@
         - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
         - { name: "GI_NETWORK_INTERFACE", value: "{{ bas_int }}" }
-        - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
         - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
         - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
         - { name: "GI_ICS", value: "{{ install_ics }}" }
@@ -349,11 +347,6 @@
         offline_inventory: "{{ 'gi_arch' if install_gi == 'Y' else 'ics_arch' }}"
         ics_manifest_dir: "{{ 'gi_offline' if install_gi == 'Y' else 'ics_offline' }}"
       when: install_ics == 'Y'
-
-    - name: Set rook nodes
-      ansible.builtin.set_fact:
-        rook_dedicated_nodes: "{{ lookup('env', 'GI_ROOK_NODES').split(',') }}"
-      when: storage_type == 'R'
 
     - name: Install rook-ceph
       ansible.builtin.include_tasks: rook_install.yaml

@@ -7,6 +7,8 @@ function ansible_constants() {
 	echo "temp_dir: $GI_TEMP" >> $afile
 	echo "matchbox_version: $matchbox_version" >> $afile
 	echo "ibm_pak_version: $ibm_pak_version" >> $afile
+	echo "rook_operator_version: $rook_operator_version" >> $afile
+	echo "rook_ceph_version: $rook_ceph_version" >> $afile
 }
 
 function check_input() {

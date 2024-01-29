@@ -31,3 +31,5 @@ galaxy_soft=("community-general-${galaxy_community_general}" "ansible-utils-${ga
 
 matchbox_version=0.10.0 # https://github.com/poseidon/matchbox
 ibm_pak_version=1.12.0 # https://github.com/IBM/ibm-pak
+rook_operator_version="1.9.13" # https://github.com/rook/rook
+rook_ceph_version="16.2.10"

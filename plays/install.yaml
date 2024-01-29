@@ -32,6 +32,7 @@
     ocpadmin: "{{ lookup('env','GI_OCADMIN') }}"
     ocpadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
+    storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
 
   vars_files:
     - constants.yaml
@@ -68,6 +69,7 @@
         - { name: "GI_OCADMIN", value: "{{ ocpadmin }}" }
         - { name: "GI_OCADMIN_PWD", value: "{{ ocpadmin_password }}" }
         - { name: "GI_OCP_IN", value: "{{ ocp_ext_ingress }}" }
+        - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
@@ -141,6 +143,17 @@
         - { name: "GI_OCP_IN_KEY", value: "{{ ocp_key }}" }
       when: ocp_ext_ingress == 'Y' and item.value == ""
 
+    - name: Set rook-ceph variables
+      ansible.builtin.set_fact:
+        rook_dedicated_nodes: "{{ lookup('env', 'GI_ROOK_NODES').split(',') }}"
+      when: storage_type == 'R'
+
+    - name: Check rook-ceph variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_ROOK_NODES", value: "{{ rook_dedicated_nodes }}" }
+      when: storage_type == 'R' and item.value == ""
+
     - name: Clean downloads directory
       ansible.builtin.file:
         path: "{{ temp_dir }}/downloads" 
@@ -165,3 +178,7 @@
     - name: Deploy OCP
       ansible.builtin.include_tasks: ocp_install.yaml
       when: skip_phase|int < 2
+
+    - name: Install rook-ceph
+      ansible.builtin.include_tasks: rook_install.yaml
+      when: skip_phase|int < 3 and storage_type == 'R'
