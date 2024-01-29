@@ -22,28 +22,6 @@
     replica_size: "2"
     requires_replica: "true"
 
-- name: Wait for Rook operator
-  ansible.builtin.shell:
-    cmd: "oc get pods -n rook-ceph --selector app=rook-ceph-operator --no-headers -o custom-columns=STATUS:.status.phase|grep -v Running|wc -l"
-  register: rook_operator_status
-  until: "rook_operator_status.stdout == \"0\""
-  retries: 30
-  delay: 10
-
-- name: Deploy rook-ceph cluster
-  ansible.builtin.shell:
-    cmd: "{{ item.cmd }}"
-  with_items:
-    - { cmd: "oc apply -f {{ temp_dir }}/rook/'rook-cluster.yaml'" }
-
-- name: Wait for correct Rook Ceph cluster deployment
-  ansible.builtin.shell:
-    cmd: "oc get cephcluster -n rook-ceph --no-headers -o custom-columns=HEALTH:.status.ceph.health"
-  register: ceph_installation_status
-  until: "ceph_installation_status.stdout == \"HEALTH_OK\" or ceph_installation_status.stdout == \"HEALTH_WARN\""
-  retries: 60
-  delay: 15
-
 - name: Configure storage classes
   ansible.builtin.shell:
     cmd: "{{ item.cmd }}"
