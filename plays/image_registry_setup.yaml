@@ -3,3 +3,48 @@
     src: "ocp_registry_pvc.j2"
     dest: "{{ temp_dir }}/yamls/ocp_registry_pvc.yaml"
 
+- name: Create PVC for registry storage
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/ocp_registry_pvc.yaml"
+
+- name: Wait for PVC
+  shell:
+    cmd: "oc get pvc -n openshift-image-registry --no-headers -o custom-columns=STATUS:.status.phase"
+  register: image_pvc_status
+  until: "image_pvc_status.stdout == \"Bound\""
+  retries: 30
+  delay: 10
+
+- name: Configure OCP registry with PVC
+  shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --type=merge --patch '{\"spec\":{\"storage\":{\"pvc\":{\"claim\": \"registry\"}}}}'" }
+    - { cmd: "oc patch configs.imageregistry.operator.openshift.io/cluster --type=merge --patch '{\"spec\": {\"managementState\": \"Managed\"}}'" }
+
+- pause:
+    seconds: 30
+
+- name: Wait for Image registry successful reconfiguration
+  shell:
+    cmd: "oc get clusteroperators image-registry --no-headers | awk '{ print $3\":\"$4\":\"$5 }'"
+  register: image_registry_status
+  until: "image_registry_status.stdout.split(\":\")[0] == \"True\" and image_registry_status.stdout.split(\":\")[1] == \"False\" and image_registry_status.stdout.split(\":\")[2] == \"False\""
+  retries: 20
+  delay: 10
+
+- name: Set public route for image registry
+  shell:
+    cmd: oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
+
+- pause:
+    seconds: 30
+
+- name: Check cluster nodes health after image registry setup change
+  shell: ../funcs/scripts/check_cluster_health_operators.sh
+  register: cluster_health_operators
+  until: cluster_health_operators.stdout == "0"
+  retries: 100
+  delay: 10
+
+
