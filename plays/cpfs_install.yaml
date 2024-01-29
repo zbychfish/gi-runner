@@ -1,0 +1,3 @@
+- name: Create ICS operator namespace
+  ansible.builtin.shell:
+    cmd: "oc create namespace {{ ics_operator_namespace }} || echo 'Namespace exists'"
