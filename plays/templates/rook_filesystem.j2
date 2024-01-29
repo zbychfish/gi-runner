@@ -54,13 +54,13 @@ spec:
     placement:
 {% if rook_dedicated_nodes|length > 2 %}
       nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
+        preferedDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
               - key: role
                 operator: In
                 values:
-                  - storage_node
+                  - storage-node
 {% endif %}
       #  topologySpreadConstraints:
       #  tolerations:
