@@ -17,8 +17,6 @@
   ansible.builtin.shell:
     cmd: "oc apply -f ../funcs/yamls/rook-common.yaml"
 
-- meta: end_play
-
 - name: Setup rook-ceph cluster file
   ansible.builtin.template:
     src: "rook-cluster.j2"
@@ -32,29 +30,49 @@
     src: "{{ 'rook-toolbox.j2' if internet_type != 'A' else 'rook-toolbox-offline.j2' }}"
     dest: "{{ temp_dir }}/yamls/rook-toolbox.yaml"
 
-- name: Setup rook filesystem file
+- name: Setup redundant rook filesystem file
   ansible.builtin.template:
     src: "{{ 'rook_filesystem.j2' }}"
-    dest: "{{ temp_dir }}/yamls/rook_filesystem.yaml"
+    dest: "{{ temp_dir }}/yamls/rook_red_filesystem.yaml"
   vars:
-    data_chunks: 2
+    data_chunks: "{{ '3' if rook_depl_type == '1' else '2' }}"
     is_replica: "true"
+    cf_name: "myfs"
 
-- name: Configure rook operator file
+- name: Setup non-reduntant rook filesystem file
+  ansible.builtin.template:
+    src: "{{ 'rook_filesystem.j2' }}"
+    dest: "{{ temp_dir }}/yamls/rook_nored_filesystem.yaml"
+  vars:
+    data_chunks: "1"
+    is_replica: "false"
+    cf_name: "myfs_nr"
+  when: rook_depl_type == '3'
+
+- name: Setup rook operator file
   ansible.builtin.template:
     src: "{{ 'rook-operator.j2' if internet_type != 'A' else 'rook-operator-offline.j2' }}"
     dest: "{{ temp_dir }}/yamls/rook-operator.yaml"
+
+- meta: end_play
 
 - name: Deploy rook toolbox
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/rook-toolbox.yaml"
 
-- name: Configure rook operator and filesystem
+- name: Deploy rook operator and filesystem
   ansible.builtin.shell:
     cmd: "{{ item }}"
   loop:
     - "oc apply -f {{ temp_dir }}/yamls/rook-operator.yaml"
-    - "oc apply -f {{ temp_dir }}/yamls/rook_filesystem.yaml"
+    - "oc apply -f {{ temp_dir }}/yamls/rook_red_filesystem.yaml"
+
+- name: Deploy rook operator and filesystem
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+  loop:
+    - "oc apply -f {{ temp_dir }}/yamls/rook_nored_filesystem.yaml"
+  when: rook_depl_type == '3'
 
 - name: Wait for Rook operator
   ansible.builtin.shell:
