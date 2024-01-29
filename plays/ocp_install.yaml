@@ -133,8 +133,8 @@
   ansible.builtin.shell: ../funcs/scripts/check_cluster_health_operators.sh
   register: cluster_health_operators
   until: cluster_health_operators.stdout == "0"
-  retries: 100
-  delay: 30
+  retries: 150
+  delay: 10
   when: ocp_ext_ingress == 'Y'
 
 - name: Add secret with new cert
@@ -156,7 +156,7 @@
   ansible.builtin.shell: ../funcs/scripts/check_cluster_health_operators.sh
   register: cluster_health_operators
   until: cluster_health_operators.stdout == "0"
-  retries: 100
-  delay: 30
+  retries: 150
+  delay: 10
   when: ocp_ext_ingress == 'Y'
 
