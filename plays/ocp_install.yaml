@@ -1,0 +1,67 @@
+- name: Waiting for OCP cluster deployment (it takes 15-40 minutes)
+  ansible.builtin.command: openshift-install --dir=../ocp wait-for bootstrap-complete
+
+- name: Check bootstrap availability
+  ansible.builtin.command:
+    cmd: "ping -c 1 {{ boot_name }}.{{ ocp_domain }}"
+  register: boot_availability
+  ignore_errors: yes
+
+- name: Stop bootstrap
+  ansible.builtin.shell:
+    cmd: "ssh -l core {{ boot_name }}.{{ ocp_domain }} -i {{ ssh_key }} sudo shutdown -h +1"
+  remote_user: core
+  when: boot_availability.rc != 2 and boot_availability.rc != 1
+
+- name: Wait for boostrap shutdown
+  ansible.builtin.pause:
+    minutes: 1
+  when: boot_availability.rc != 2 and boot_availability.rc != 1
+
+- name: Remove DNS records
+  ansible.builtin.lineinfile:
+    path: /etc/dnsmasq.conf
+    regexp: "{{ item.regexp }}"
+    state: absent
+  with_items:
+    - { regexp: "^address=/matchbox." }
+    - { regexp: "^address=/boot." }
+    - { regexp: "^#TFTP" }
+    - { regexp: "^tftp-" }
+    - { regexp: "^enable-tftp" }
+    - { regexp: "^dhcp-match" }
+    - { regexp: "^dhcp-boot" }
+    - { regexp: "^dhcp-userclass" }
+
+- name: Restart dnsmasq
+  ansible.builtin.service:
+    name: dnsmasq
+    state: restarted
+    enabled: yes
+
+- name: Stop unused services
+  ansible.builtin.service:
+    name: "{{ item.name }}"
+    state: stopped
+    enabled: no
+  with_items:
+    - { name: "matchbox" }
+
+- name: Reconfigure HA Proxy
+  ansible.builtin.lineinfile:
+    path: /etc/haproxy/haproxy.cfg
+    regexp: "{{ item.regexp }}"
+    state: absent
+  with_items:
+    - { regexp: '^ server m0' }
+
+- name: Restart HA Proxy
+  ansible.builtin.service:
+    name: haproxy
+    state: restarted
+    enabled: yes
+
+- name: Copy main HA Proxy config file
+  ansible.builtin.copy:
+    src: /etc/haproxy/haproxy.cfg
+    dest: /etc/haproxy/haproxy.cfg.main
