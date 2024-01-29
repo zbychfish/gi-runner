@@ -37,6 +37,7 @@
     storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
     storage_class_rw_many: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' if storage_type == 'O' else 'px-csi-replicated' }}"
     storage_class_rw_one: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'px-csi-replicated' }}"
+    install_cpfs: "{{ lookup('env','GI_ICS') }}"
 
   vars_files:
     - constants.yaml
@@ -76,6 +77,7 @@
         - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
         - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
         - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
+        - { name: "GI_ICS", value: "{{ install_cpfs }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
@@ -161,6 +163,25 @@
         - { name: "GI_ROOK_NODES", value: "{{ rook_dedicated_nodes }}" }
         - { name: "GI_ROOK_DEPL", value: "{{ rook_depl_type }}" }
       when: storage_type == 'R' and item.value == ""
+
+    - name: Set CPFS installation variables from env
+      ansible.builtin.set_fact:
+        cpfs_ext_ingress: "{{ lookup('env','GI_ICS_IN') }}"
+        cpfs_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
+        cpfs_operands: "{{ lookup('env', 'GI_ICS_OPERANDS').split(',') }}"
+        cpfs_dedicated_nodes: "{{ lookup('env', 'GI_ICS_NODES').split(',') }}"
+        cpfs_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+      when: install_cpfs == 'Y'
+
+    - name: Check CPFS variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_ICS_IN", value: "{{ cpfs_ext_ingress }}" }
+        - { name: "GI_ICS_VERSION", value: "{{ cpfs_version_hint }}" }
+        - { name: "GI_ICS_OPERANDS", value: "{{ cpfs_operands }}" }
+        - { name: "GI_ICS_NODES", value: "{{ cpfs_dedicated_nodes }}" }
+        - { name: "GI_ICSADMIN_PWD", value: "{{ cpfs_admin_password }}" }
+      when: install_cpfs == 'Y' and item.value == ""
 
     - name: Clean downloads directory
       ansible.builtin.file:
