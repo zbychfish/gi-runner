@@ -131,7 +131,7 @@
     dest: "{{ temp_dir }}/yamls/rook_storage_class_fs_nr.yaml"
   vars:
     cf_name: "myfsnr"
-    class_name: "rook-cephfsi-nr"
+    class_name: "rook-cephfs-nr"
   when: rook_depl_type == '3'
 
 - name: Configure storage classes
