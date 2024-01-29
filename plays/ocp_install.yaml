@@ -67,7 +67,7 @@
     dest: /etc/haproxy/haproxy.cfg.main
 
 - name: Check cluster nodes health and approve CSR's if needed
-  ansible.builtin.shell: ../scripts/check_cluster_health.sh
+  ansible.builtin.shell: ../funcs/scripts/check_cluster_health.sh
   vars:
     node_number: "{{ master_ip|length+worker_ip|default([])|length+ocs_ip|default([])|length }}"
   register: cluster_health
