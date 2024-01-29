@@ -6,3 +6,7 @@
 - name: Configure rook-ceph CRD's
   ansible.builtin.shell:
     cmd: "oc apply -f ../funcs/yamls/rook-crds.yaml"
+
+- name: Configure common rook settings
+  ansible.builtin.shell:
+    cmd: "oc apply -f ../funcs/yamls/rook-common.yaml"
