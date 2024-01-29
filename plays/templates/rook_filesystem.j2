@@ -54,7 +54,7 @@ spec:
     placement:
 {% if rook_dedicated_nodes|length > 2 %}
       nodeAffinity:
-        preferedDuringSchedulingIgnoredDuringExecution:
+        requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
               - key: role
