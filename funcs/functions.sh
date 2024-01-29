@@ -960,11 +960,11 @@ function get_px_options() {
 function get_rook_settings() {
 	local rook_deployment_type
 	local deployment_types
-	deployment_types=("Standard" "Simple" "Cloud Pak")
+	deployment_types=("Standard" "Simple" "Cloud_Pak")
 	msg "Rook-Ceph configuration:" task
 	msg "- Standard - production deployment assumes that rook-ceph volumes store 3 copies of data" info
 	msg "- Simple - each volume will store 2 chunks of data" info
-	msg "- Cloud Pak - two sets of storage classes will be created, one without data redundancy (for Mongo, Redis, Kafka, PGSQL) and one with 2 copies (for DB2DWH)" info
+	msg "- Cloud_Pak - two sets of storage classes will be created, one without data redundancy (for Mongo, Redis, Kafka, PGSQL) and one with 2 copies (for DB2DWH)" info
 	msg "You can change default behaviour and deploy rook-ceph more controlled way" info
 	while $(check_input "list" ${rook_deployment_type} ${deployment_types[@]})
         do
