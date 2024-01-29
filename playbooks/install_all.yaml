@@ -1,8 +1,6 @@
 - hosts: bastion
   vars:
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
-    storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
-    storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
     install_ics: "{{ lookup('env','GI_ICS') }}"
     install_cp4s: "{{ lookup('env','GI_CP4S') }}"
     storage_class_rw_many: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' if storage_type == 'O' else 'px-csi-replicated' }}"
@@ -19,8 +17,6 @@
         - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
         - { name: "GI_NETWORK_INTERFACE", value: "{{ bas_int }}" }
-        - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
-        - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
         - { name: "GI_ICS", value: "{{ install_ics }}" }
         - { name: "GI_CP4S", value: "{{ install_cp4s }}" }
 

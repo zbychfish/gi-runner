@@ -33,6 +33,8 @@
     ocpadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
     storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
+    storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
+    storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
 
   vars_files:
     - constants.yaml
@@ -70,6 +72,8 @@
         - { name: "GI_OCADMIN_PWD", value: "{{ ocpadmin_password }}" }
         - { name: "GI_OCP_IN", value: "{{ ocp_ext_ingress }}" }
         - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
+        - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
+        - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
