@@ -30,6 +30,14 @@
     src: "{{ 'rook-toolbox.j2' if internet_type != 'A' else 'rook-toolbox-offline.j2' }}"
     dest: "{{ temp_dir }}/yamls/rook-toolbox.yaml"
 
+- name: Setup rook filesystem file
+  ansible.builtin.template:
+    src: "{{ 'rook_filesystem.j2' }}"
+    dest: "{{ temp_dir }}/yamls/rook_filesystem.yaml"
+  vars:
+    data_chunks: 2
+    is_replica: "true"
+
 - name: Configure rook operator file
   ansible.builtin.template:
     src: "{{ 'rook-operator.j2' if internet_type != 'A' else 'rook-operator-offline.j2' }}"
@@ -44,7 +52,4 @@
     cmd: "{{ item }}"
   loop:
     - "oc apply -f {{ temp_dir }}/yamls/rook-operator.yaml"
-    - "oc apply -f ../funcs/yamls/rook-filesystem.yaml"
-  vars:
-    data_chunks: 2
-    is_replica: "true"
+    - "oc apply -f {{ temp_dir }}/yamls/rook_filesystem.yaml"
