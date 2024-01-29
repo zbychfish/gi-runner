@@ -380,17 +380,6 @@
       ansible.builtin.include_tasks: stage1.yaml
       when: skip_phase|int < 1
 
-    - ansible.builtin.debug:
-        msg:
-          - "Bastion prepared for OpenShift boot"
-          - "Start all nodes and confirm that they are correctly booted, then push <ENTER> to continue"
-      when: skip_phase|int < 1
-
-    - ansible.builtin.pause:
-        echo: no
-        prompt: "Press ENTER to continue"
-      when: skip_phase|int < 1
-
     - name: Wait for OCP boot phase ready
       ansible.builtin.include_tasks: stage2.yaml
       when: skip_phase|int < 2

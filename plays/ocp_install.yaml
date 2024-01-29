@@ -61,7 +61,25 @@
     state: restarted
     enabled: yes
 
-- name: Copy main HA Proxy config file
+- name: Copy HA Proxy config file
   ansible.builtin.copy:
     src: /etc/haproxy/haproxy.cfg
     dest: /etc/haproxy/haproxy.cfg.main
+
+- name: Check cluster nodes health and approve CSR's if needed
+  ansible.builtin.shell: ../scripts/check_cluster_health.sh
+  vars:
+    node_number: "{{ master_ip|length+worker_ip|default([])|length+ocs_ip|default([])|length }}"
+  register: cluster_health
+  until: node_number == cluster_health.stdout
+  retries: 150
+  delay: 10
+
+- name: Wait for cluster operators
+  ansible.builtin.shell:
+    cmd: "oc get co --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
+  register: co_status
+  until: "co_status.stdout == \"0\""
+  retries: 150
+  delay: 10
+
