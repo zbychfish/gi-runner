@@ -966,7 +966,7 @@ function get_rook_settings() {
 	msg "- Simple - each volume will store 2 chunks of data" info
 	msg "- Cloud_Pak - two sets of storage classes will be created, one without data redundancy (for Mongo, Redis, Kafka, PGSQL) and one with 2 copies (for DB2DWH)" info
 	msg "You can change default behaviour and deploy rook-ceph more controlled way" info
-	while $(check_input "list" ${rook_deployment_type} ${deployment_types[@]})
+	while $(check_input "list" ${rook_deployment_type} ${#deployment_types[@]})
         do
         	get_input "list" "Select Guardium Insights deployment template: " ${deployment_types[@]}
                 rook_deployment_type=$input_variable
