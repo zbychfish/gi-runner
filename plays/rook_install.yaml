@@ -48,7 +48,7 @@
     data_chunks: "1"
     data_chunks_meta: "2"
     is_replica: "false"
-    cf_name: "myfs_nr"
+    cf_name: "myfsnr"
   when: rook_depl_type == '3'
 
 - name: Setup rook operator file
@@ -114,6 +114,6 @@
   vars:
     replica_size: "1"
     requires_replica: "false"
-    rp_name: "replicapool_nr"
+    rp_name: "replicapoolnr"
   when: rook_depl_type == '3'
 
