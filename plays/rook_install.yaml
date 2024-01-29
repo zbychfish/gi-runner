@@ -3,6 +3,12 @@
     rook_registry: "{{ 'quay.io/ceph/ceph:v'+rook_ceph_version if internet_type != 'A' else 'registry.'+ocp_domain+':5000/rook/ceph:v'+rook_ceph_version }}"
     rook_ceph_image: "{{ 'ceph:v'+rook_ceph_version if internet_type != 'A' else rook_digests.results[1].stdout }}"
 
+- name: Label rook storage nodes for dedicated node space
+  ansible.builtin.shell:
+    cmd: "oc label node {{ item }}.{{ ocp_domain }} role=storage-node --overwrite=true;oc label node {{ item }}.{{ ocp_domain }} storage=rook --overwrite=true"
+  with_items: "{{ rook_dedicated_nodes|list }}"
+  when: rook_dedicated_nodes|length > 2
+
 - name: Configure rook-ceph CRD's
   ansible.builtin.shell:
     cmd: "oc apply -f ../funcs/yamls/rook-crds.yaml"
@@ -24,3 +30,7 @@
     src: "{{ 'rook-toolbox.j2' if internet_type != 'A' else 'rook-toolbox-offline.j2' }}"
     dest: "{{ temp_dir }}/yamls/rook-toolbox.yaml"
 
+- name: Configure rook operator file
+  ansible.builtin.template:
+    src: "{{ 'rook-operator.j2' if internet_type != 'A' else 'rook-operator-offline.j2' }}"
+    dest: "{{ temp_dir }}/yamls/rook-operator.yaml"

@@ -20,11 +20,6 @@
   with_items: "{{ rook_dedicated_nodes|list }}"
   when: rook_dedicated_nodes|length > 2
 
-- name: Setup rook toolbox file
-  ansible.builtin.template:
-    src: "{{ 'rook-toolbox.j2' if internet_type != 'A' else 'rook-toolbox-offline.j2' }}"
-    dest: "{{ temp_dir }}/rook/rook-toolbox.yaml"
-
 - name: Setup rook-ceph-rbd-sc file
   ansible.builtin.template:
     src: "rook-storage_class_rbd.j2"
