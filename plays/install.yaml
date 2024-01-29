@@ -150,12 +150,14 @@
     - name: Set rook-ceph variables
       ansible.builtin.set_fact:
         rook_dedicated_nodes: "{{ lookup('env', 'GI_ROOK_NODES').split(',') }}"
+        rook_depl_type: "{{ lookup('env','GI_ROOK_DEPL') }}"
       when: storage_type == 'R'
 
     - name: Check rook-ceph variables
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_ROOK_NODES", value: "{{ rook_dedicated_nodes }}" }
+        - { name: "GI_ROOK_DEPL", value: "{{ rook_depl_type }}" }
       when: storage_type == 'R' and item.value == ""
 
     - name: Clean downloads directory

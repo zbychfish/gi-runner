@@ -17,6 +17,8 @@
   ansible.builtin.shell:
     cmd: "oc apply -f ../funcs/yamls/rook-common.yaml"
 
+- meta: end_play
+
 - name: Setup rook-ceph cluster file
   ansible.builtin.template:
     src: "rook-cluster.j2"
