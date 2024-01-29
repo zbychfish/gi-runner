@@ -36,6 +36,7 @@
     dest: "{{ temp_dir }}/yamls/rook_red_filesystem.yaml"
   vars:
     data_chunks: "{{ '3' if rook_depl_type == '1' else '2' }}"
+    data_chunks_meta: "{{ '3' if rook_depl_type == '1' else '2' }}"
     is_replica: "true"
     cf_name: "myfs"
 
@@ -45,6 +46,7 @@
     dest: "{{ temp_dir }}/yamls/rook_nored_filesystem.yaml"
   vars:
     data_chunks: "1"
+    data_chunks_meta: "2"
     is_replica: "false"
     cf_name: "myfs_nr"
   when: rook_depl_type == '3'
@@ -53,8 +55,6 @@
   ansible.builtin.template:
     src: "{{ 'rook-operator.j2' if internet_type != 'A' else 'rook-operator-offline.j2' }}"
     dest: "{{ temp_dir }}/yamls/rook-operator.yaml"
-
-- meta: end_play
 
 - name: Deploy rook toolbox
   ansible.builtin.shell:
@@ -66,6 +66,8 @@
   loop:
     - "oc apply -f {{ temp_dir }}/yamls/rook-operator.yaml"
     - "oc apply -f {{ temp_dir }}/yamls/rook_red_filesystem.yaml"
+
+- meta: end_play
 
 - name: Deploy rook operator and filesystem
   ansible.builtin.shell:

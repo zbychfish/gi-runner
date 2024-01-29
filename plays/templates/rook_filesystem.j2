@@ -14,7 +14,7 @@ spec:
   # The metadata pool spec. Must use replication.
   metadataPool:
     replicated:
-      size: {{ data_chunks }}
+      size: {{ data_chunk_meta }}
       requireSafeReplicaSize: true
     parameters:
       # Inline compression mode for the data pool
