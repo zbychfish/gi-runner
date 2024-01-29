@@ -1,9 +1,6 @@
 - hosts: bastion
   vars:
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
-    ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
-    ocpadmin: "{{ lookup('env','GI_OCADMIN') }}"
-    ocpadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
     storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
     storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
     storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
@@ -23,9 +20,6 @@
         - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
         - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
         - { name: "GI_NETWORK_INTERFACE", value: "{{ bas_int }}" }
-        - { name: "GI_OCP_IN", value: "{{ ocp_ext_ingress }}" }
-        - { name: "GI_OCADMIN", value: "{{ ocpadmin }}" }
-        - { name: "GI_OCADMIN_PWD", value: "{{ ocpadmin_password }}" }
         - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
         - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
         - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
@@ -246,21 +240,6 @@
         - { name: "GI_IBM_SECRET", value: "{{ ibm_secret }}" }
       when: internet_type != 'A' and (install_gi == 'Y' or install_cp4s == 'Y') and item.value == ""
 
-    - name: Set OCP ingress cert variables
-      ansible.builtin.set_fact:
-        ocp_ca: "{{ lookup('env', 'GI_OCP_IN_CA') }}"
-        ocp_cert: "{{ lookup('env', 'GI_OCP_IN_CERT') }}"
-        ocp_key: "{{ lookup('env', 'GI_OCP_IN_KEY') }}"
-      when: ocp_ext_ingress == 'Y'
-
-    - name: Check OCP ingress cert variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_OCP_IN_CA", value: "{{ ocp_ca }}" }
-        - { name: "GI_OCP_IN_CERT", value: "{{ ocp_cert }}" }
-        - { name: "GI_OCP_IN_KEY", value: "{{ ocp_key }}" }
-      when: ocp_ext_ingress == 'Y' and item.value == ""
-
     - name: Set endpoint cert variables
       set_fact:
         ics_ca: "{{ lookup('env', 'GI_ICS_IN_CA') }}"
@@ -375,14 +354,6 @@
       ansible.builtin.set_fact:
         rook_dedicated_nodes: "{{ lookup('env', 'GI_ROOK_NODES').split(',') }}"
       when: storage_type == 'R'
-
-    - name: Setup bastion
-      ansible.builtin.include_tasks: stage1.yaml
-      when: skip_phase|int < 1
-
-    - name: Wait for OCP boot phase ready
-      ansible.builtin.include_tasks: stage2.yaml
-      when: skip_phase|int < 2
 
     - name: Install rook-ceph
       ansible.builtin.include_tasks: rook_install.yaml

@@ -31,6 +31,7 @@
     rhn_secret: "{{ lookup('env','GI_RHN_SECRET') }}"
     ocpadmin: "{{ lookup('env','GI_OCADMIN') }}"
     ocpadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
+    ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
 
   vars_files:
     - constants.yaml
@@ -66,6 +67,7 @@
         - { name: "GI_RHN_SECRET", value: "{{ rhn_secret }}" }
         - { name: "GI_OCADMIN", value: "{{ ocpadmin }}" }
         - { name: "GI_OCADMIN_PWD", value: "{{ ocpadmin_password }}" }
+        - { name: "GI_OCP_IN", value: "{{ ocp_ext_ingress }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
@@ -123,6 +125,21 @@
         - { name: "GI_DHCP_RANGE_STOP", value: "{{ dhcp_range_stop }}" }
         - { name: "GI_GATEWAY", value: "{{ bas_gw }}" }
       when: one_subnet == 'Y' and item.value == ""
+
+    - name: Set OCP ingress cert variables
+      ansible.builtin.set_fact:
+        ocp_ca: "{{ lookup('env', 'GI_OCP_IN_CA') }}"
+        ocp_cert: "{{ lookup('env', 'GI_OCP_IN_CERT') }}"
+        ocp_key: "{{ lookup('env', 'GI_OCP_IN_KEY') }}"
+      when: ocp_ext_ingress == 'Y'
+
+    - name: Check OCP ingress cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_OCP_IN_CA", value: "{{ ocp_ca }}" }
+        - { name: "GI_OCP_IN_CERT", value: "{{ ocp_cert }}" }
+        - { name: "GI_OCP_IN_KEY", value: "{{ ocp_key }}" }
+      when: ocp_ext_ingress == 'Y' and item.value == ""
 
     - name: Clean downloads directory
       ansible.builtin.file:

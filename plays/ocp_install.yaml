@@ -109,3 +109,54 @@
     - { cmd: "oc apply -f ../funcs/yamls/oauth_provider.yaml" }
     - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocpadmin }}" }
 
+- name: Wait to initiate changes related to added admin
+  ansible.builtin.pause:
+    minutes: 5
+  when: is_htpasswd_secret.stdout|int == 0
+
+- name: Add CM with new CA cert
+  ansible.builtin.shell:
+    cmd: "oc create configmap gn-ca --from-file=ca-bundle.crt={{ ocp_ca }} -n openshift-config"
+  when: ocp_ext_ingress == 'Y'
+
+- name: Add CA cert to OCP proxy configuration
+  ansible.builtin.shell:
+    cmd: "oc patch proxy/cluster --type=merge -p '{\"spec\":{\"trustedCA\":{\"name\":\"gn-ca\"}}}'"
+  when: ocp_ext_ingress == 'Y'
+
+- name: Wait for cluster stabilization - CA cert added
+  ansible.builtin.pause:
+    minutes: 5
+  when: ocp_ext_ingress == 'Y'
+
+- name: Check cluster nodes health after proxy certificate change
+  ansible.builtin.shell: ../funcs/scripts/check_cluster_health_operators.sh
+  register: cluster_health_operators
+  until: cluster_health_operators.stdout == "0"
+  retries: 100
+  delay: 30
+  when: ocp_ext_ingress == 'Y'
+
+- name: Add secret with new cert
+  ansible.builtin.shell:
+    cmd: "oc create secret tls gncert --cert={{ ocp_cert }} --key={{ ocp_key }} -n openshift-ingress"
+  when: ocp_ext_ingress == 'Y'
+
+- name: Modify certificate for ingress
+  ansible.builtin.shell:
+    cmd: "oc patch ingresscontroller.operator default --type=merge -p '{\"spec\":{\"defaultCertificate\": {\"name\": \"gncert\"}}}' -n openshift-ingress-operator"
+  when: ocp_ext_ingress == 'Y'
+
+- name: Wait for cluster stabilization - cluster cert changed
+  ansible.builtin.pause:
+    minutes: 1
+  when: ocp_ext_ingress == 'Y'
+
+- name: Check cluster nodes health after ingress change
+  ansible.builtin.shell: ../funcs/scripts/check_cluster_health_operators.sh
+  register: cluster_health_operators
+  until: cluster_health_operators.stdout == "0"
+  retries: 100
+  delay: 30
+  when: ocp_ext_ingress == 'Y'
+
