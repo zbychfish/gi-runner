@@ -8,6 +8,7 @@
     - { path: "/var/lib/matchbox" }
     - { path: "/var/lib/tftp" }
     - { path: "{{ temp_dir }}/yamls" }
+    - { path: "{{ temp_dir }}/files" }
     - { path: "../ocp" }
 
 - name: Create temp subdirectories
@@ -17,6 +18,7 @@
   with_items:
     - { path: "{{ temp_dir }}/yamls" }
     - { path: "{{ temp_dir }}/downloads" }
+    - { path: "{{ temp_dir }}/files" }
     - { path: "../ocp" }
 
 - name: Start firewall

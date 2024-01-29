@@ -83,3 +83,29 @@
   retries: 150
   delay: 10
 
+- name: Is htpasswd secret available
+  ansible.builtin.shell:
+    cmd: "oc get secret htpass-secret -n openshift-config -oname|wc -l"
+  register: is_htpasswd_secret
+
+- name: Create htpasswd file
+  community.general.htpasswd:
+    path: "{{ temp_dir }}/files/ocpadmin.htpasswd"
+    name: "{{ ocpadmin }}"
+    password: "{{ ocpadmin_password }}"
+  when: is_htpasswd_secret.stdout|int == 0
+
+- name: Register htpasswd secret for OCP admin
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc create secret generic htpass-secret --from-file=htpasswd=../gi-temp/files/ocpadmin.htpasswd -n openshift-config" }
+  when: is_htpasswd_secret.stdout|int == 0
+
+- name: Register htpasswd oauth provider
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc apply -f ../funcs/yamls/oauth_provider.yaml" }
+    - { cmd: "oc adm policy add-cluster-role-to-user cluster-admin {{ ocpadmin }}" }
+
