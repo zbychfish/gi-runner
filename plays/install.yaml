@@ -20,7 +20,7 @@
     boot_disk: "{{ lookup('env','GI_BOOT_DEVICE') }}"
     bas_int: "{{ lookup('env','GI_BASTION_INTERFACE') }}"
     bas_name: "{{ lookup('env','GI_BASTION_NAME') }}"
-    net_int: "{{ lookup('env','GI_NETWORK_INTERFACE') }}"
+      # net_int: "{{ lookup('env','GI_NETWORK_INTERFACE') }}"
     one_subnet: "{{ lookup('env','GI_ONE_SUBNET') }}"
     dns_forwarder: "{{ lookup('env','GI_DNS_FORWARDER') }}"
     install_gi: "{{ lookup('env','GI_INSTALL_GI') }}"
@@ -59,7 +59,7 @@
         - { name: "GI_BOOT_DEVICE", value: "{{ boot_disk }}" }
         - { name: "GI_BASTION_INTERFACE", value: "{{ bas_int }}" }
         - { name: "GI_BASTION_NAME", value: "{{ bas_name }}" }
-        - { name: "GI_NETWORK_INTERFACE", value: "{{ net_int }}" }
+          # - { name: "GI_NETWORK_INTERFACE", value: "{{ net_int }}" }
         - { name: "GI_ONE_SUBNET", value: "{{ one_subnet }}" }
         - { name: "GI_DNS_FORWARDER", value: "{{ dns_forwarder }}" }
         - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }

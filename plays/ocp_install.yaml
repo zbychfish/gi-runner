@@ -95,6 +95,10 @@
     password: "{{ ocpadmin_password }}"
   when: is_htpasswd_secret.stdout|int == 0
 
+- name: Wait a while before htpasswd secret will be registered
+  ansible.builtin.pause:
+    minutes: 1
+
 - name: Register htpasswd secret for OCP admin
   ansible.builtin.shell:
     cmd: "{{ item.cmd }}"

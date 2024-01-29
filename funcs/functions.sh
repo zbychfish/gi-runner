@@ -620,19 +620,19 @@ function get_hardware_info() {
         msg "Collecting hardware information" task
         msg "Automatic CoreOS and storage deployment requires information about NIC and storage devices" info
         msg "There is assumption that all cluster nodes including bootstrap machine use this same HW specification for network and storage" info
-        msg "The Network Interface Card (NIC) device specification must provide the one of the interfaces attached to cluster subnet" info
-        msg "In most cases the first NIC attached to machine will have on Fedora and RedHat the name \"ens192\"" info
-        while $(check_input "txt" "${machine_nic}" "non_empty")
-        do
-                if [ ! -z "$GI_NETWORK_INTERFACE" ]
-                then
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_NETWORK_INTERFACE] or insert NIC specification: " true "$GI_NETWORK_INTERFACE"
-                else
-                        get_input "txt" "Insert NIC specification: " false
-                fi
-                machine_nic="${input_variable}"
-        done
-        save_variable GI_NETWORK_INTERFACE "$machine_nic"
+        #msg "The Network Interface Card (NIC) device specification must provide the one of the interfaces attached to cluster subnet" info
+        #msg "In most cases the first NIC attached to machine will have on Fedora and RedHat the name \"ens192\"" info
+        #while $(check_input "txt" "${machine_nic}" "non_empty")
+        #do
+        #        if [ ! -z "$GI_NETWORK_INTERFACE" ]
+        #        then
+        #                get_input "txt" "Push <ENTER> to accept the previous choice [$GI_NETWORK_INTERFACE] or insert NIC specification: " true "$GI_NETWORK_INTERFACE"
+        #        else
+        #                get_input "txt" "Insert NIC specification: " false
+        #        fi
+        #        machine_nic="${input_variable}"
+        #done
+        #save_variable GI_NETWORK_INTERFACE "$machine_nic"
         msg "There is assumption that all cluster machines use this device specification for boot disk" info
         msg "In most cases the first boot disk will have specification \"sda\" or \"nvmne0\"" info
 	msg "The inserted value refers to device located in /dev directory (it means that value sda refers to /dev/sda)" info
@@ -955,6 +955,21 @@ function get_px_options() {
                 px_id=${input_variable}
         done
         save_variable GI_PX_ID $px_id
+}
+
+function get_rook_settings() {
+	local rook_deployment_type
+	msg "Rook-Ceph configuration:" task
+	msg "- Standard - production deployment assumes that rook-ceph volumes store 3 copies of data" info
+	msg "- Simple - each volume will store 2 chunks of data" info
+	msg "- Cloud Pak - two sets of storage classes will be created, one without data redundancy (for Mongo, Redis, Kafka, PGSQL) and one with 2 copies (for DB2DWH)" info
+	msg "You can change default behaviour and deploy rook-ceph more controlled way" info
+	while $(check_input "list" ${rook_deployment_type} ("Standard" "Simple" "Cloud Pak"))
+        do
+        	get_input "list" "Select Guardium Insights deployment template: " ("Standard" "Simple" "Cloud Pak")
+                rook_deployment_type=$input_variable
+        done
+	save_variable GI_ROOK_DEPL $rook_deployment_type
 }
 
 function get_service_assignment() {
