@@ -20,21 +20,6 @@
   with_items: "{{ rook_dedicated_nodes|list }}"
   when: rook_dedicated_nodes|length > 2
 
-- name: Configure rook-ceph CRD's
-  ansible.builtin.shell:
-    cmd: "oc apply -f ../scripts/rook-latest-crds.yaml"
-
-- name: Configure common rook settings
-  ansible.builtin.shell:
-    cmd: "oc apply -f ../scripts/rook-latest-common.yaml"
-
-- name: Setup rook-ceph cluster file
-  ansible.builtin.template:
-    src: "rook-latest-cluster.j2"
-    dest: "{{ temp_dir }}/rook/rook-cluster.yaml"
-  vars:
-    multiple_per_node: "true"
-
 - name: Setup rook toolbox file
   ansible.builtin.template:
     src: "{{ 'rook-toolbox.j2' if internet_type != 'A' else 'rook-toolbox-offline.j2' }}"

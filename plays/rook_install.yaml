@@ -10,3 +10,11 @@
 - name: Configure common rook settings
   ansible.builtin.shell:
     cmd: "oc apply -f ../funcs/yamls/rook-common.yaml"
+
+- name: Setup rook-ceph cluster file
+  ansible.builtin.template:
+    src: "rook-cluster.j2"
+    dest: "{{ temp_dir }}/yamls/rook-cluster.yaml"
+  vars:
+    multiple_per_node: "true"
+    use_all_devices: "false"
