@@ -99,19 +99,21 @@
 - name: Setup RBD storage class
   ansible.builtin.template:
     src: "rook_storage_class_rbd.j2"
-    dest: "{{ temp_dir }}/rook/rook_storage_class_rbd.yaml"
+    dest: "{{ temp_dir }}/yamls/rook_storage_class_rbd.yaml"
   vars:
     replica_size: "{{ '3' if rook_depl_type == '1' else '2' }}"
     requires_replica: "true"
     rp_name: "replicapool"
+    class_name: "rook-ceph-block"
 
 - name: Setup RBD storage class without redundancy
   ansible.builtin.template:
     src: "rook_storage_class_rbd.j2"
-    dest: "{{ temp_dir }}/rook/rook_storage_class_rbd.yaml"
+    dest: "{{ temp_dir }}/yamls/rook_storage_class_rbd_nrd.yaml"
   vars:
     replica_size: "1"
     requires_replica: "false"
     rp_name: "replicapoolnr"
+    class_name: "rook-ceph-block-nr"
   when: rook_depl_type == '3'
 
