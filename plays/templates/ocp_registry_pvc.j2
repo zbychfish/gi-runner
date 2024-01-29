@@ -1,0 +1,13 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+ name: registry
+ namespace: openshift-image-registry
+spec:
+ accessModes:
+  - ReadWriteMany
+ resources:
+  requests:
+   storage: 100Gi
+ storageClassName: {{ storage_class_rw_many }}
+

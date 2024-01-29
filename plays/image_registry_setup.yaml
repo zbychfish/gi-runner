@@ -1,0 +1,5 @@
+- name: Configure registry PVC file
+  template:
+    src: "ocp_registry_pvc.j2"
+    dest: "{{ temp_dir }}/yamls/ocp_registry_pvc.yaml"
+

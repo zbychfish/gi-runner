@@ -188,3 +188,8 @@
     - name: Install rook-ceph
       ansible.builtin.include_tasks: rook_install.yaml
       when: skip_phase|int < 3 and storage_type == 'R'
+
+    - name: Setup image registry
+      ansible.builtin.include_tasks: image_registry_setup.yaml
+      when: skip_phase|int < 4
+
