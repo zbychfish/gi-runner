@@ -109,7 +109,7 @@
 - name: Setup RBD storage class without redundancy
   ansible.builtin.template:
     src: "rook_storage_class_rbd.j2"
-    dest: "{{ temp_dir }}/yamls/rook_storage_class_rbd_nrd.yaml"
+    dest: "{{ temp_dir }}/yamls/rook_storage_class_rbd_nr.yaml"
   vars:
     replica_size: "1"
     requires_replica: "false"
@@ -117,3 +117,40 @@
     class_name: "rook-ceph-block-nr"
   when: rook_depl_type == '3'
 
+- name: Setup FS storage class
+  ansible.builtin.template:
+    src: "rook_storage_class_fs.j2"
+    dest: "{{ temp_dir }}/yamls/rook_storage_class_fs.yaml"
+  vars:
+    cf_name: "myfs"
+    class_name: "rook-cephfs"
+
+- name: Setup FS storage class without redundancy
+  ansible.builtin.template:
+    src: "rook_storage_class_fs.j2"
+    dest: "{{ temp_dir }}/yamls/rook_storage_class_fsi_nr.yaml"
+  vars:
+    cf_name: "myfsnr"
+    class_name: "rook-cephfsi-nr"
+  when: rook_depl_type == '3'
+
+- name: Configure storage classes
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc apply -f {{ temp_dir }}/yaml/rook_storage_class_rbd.yaml" }
+    - { cmd: "oc apply -f {{ temp_dir }}/yaml/rook_storage_class_fs.yaml" }
+
+- name: Configure storage classes without redundancy
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc apply -f {{ temp_dir }}/yaml/rook_storage_class_rbd_nr.yaml" }
+    - { cmd: "oc apply -f {{ temp_dir }}/yaml/rook_storage_class_fs_nr.yaml" }
+  when: rook_depl_type == '3'
+
+- name: Set default storage class
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc patch storageclass rook-ceph-block -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
