@@ -14,12 +14,6 @@
     - CSI_VOLUME_REPLICATION_IMAGE
   when: internet_type == 'A'
 
-- name: Label rook storage nodes for dedicated node space
-  ansible.builtin.shell:
-    cmd: "oc label node {{ item }}.{{ domain }} role=storage-node --overwrite=true;oc label node {{ item }}.{{ domain }} storage=rook --overwrite=true"
-  with_items: "{{ rook_dedicated_nodes|list }}"
-  when: rook_dedicated_nodes|length > 2
-
 - name: Setup rook-ceph-rbd-sc file
   ansible.builtin.template:
     src: "rook-storage_class_rbd.j2"
@@ -27,22 +21,6 @@
   vars:
     replica_size: "2"
     requires_replica: "true"
-
-- name: Configure rook operator file
-  ansible.builtin.template:
-    src: "{{ 'rook-latest-operator.j2' if internet_type != 'A' else 'rook-latest-operator-offline.j2' }}"
-    dest: "{{ temp_dir }}/rook/rook-latest-operator.yaml"
-
-- name: Deploy rook toolbox
-  ansible.builtin.shell:
-    cmd: "oc apply -f {{ temp_dir }}/rook/rook-toolbox.yaml"
-
-- name: Configure rook operator
-  ansible.builtin.shell:
-    cmd: "{{ item }}"
-  loop:
-    - "oc apply -f {{ temp_dir }}/rook/rook-latest-operator.yaml"
-    - "oc apply -f ../scripts/rook-latest-filesystem.yaml"
 
 - name: Wait for Rook operator
   ansible.builtin.shell:
