@@ -14,19 +14,3 @@
     - CSI_VOLUME_REPLICATION_IMAGE
   when: internet_type == 'A'
 
-- name: Setup rook-ceph-rbd-sc file
-  ansible.builtin.template:
-    src: "rook-storage_class_rbd.j2"
-    dest: "{{ temp_dir }}/rook/rook-storage_class_rbd.yaml"
-  vars:
-    replica_size: "2"
-    requires_replica: "true"
-
-- name: Configure storage classes
-  ansible.builtin.shell:
-    cmd: "{{ item.cmd }}"
-  with_items:
-    - { cmd: "oc apply -f {{ temp_dir }}/rook/rook-storage_class_rbd.yaml" }
-    - { cmd: "oc apply -f ../scripts/rook-storage_class_cephfs.yaml" }
-    - { cmd: "oc patch storageclass rook-ceph-block -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
-
