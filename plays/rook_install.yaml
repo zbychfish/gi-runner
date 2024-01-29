@@ -47,3 +47,4 @@
     - "oc apply -f ../funcs/yamls/rook-filesystem.yaml"
   vars:
     data_chunks: 2
+    is_replica: "true"
