@@ -138,15 +138,15 @@
   ansible.builtin.shell:
     cmd: "{{ item.cmd }}"
   with_items:
-    - { cmd: "oc apply -f {{ temp_dir }}/yaml/rook_storage_class_rbd.yaml" }
-    - { cmd: "oc apply -f {{ temp_dir }}/yaml/rook_storage_class_fs.yaml" }
+    - { cmd: "oc apply -f {{ temp_dir }}/yamls/rook_storage_class_rbd.yaml" }
+    - { cmd: "oc apply -f {{ temp_dir }}/yamls/rook_storage_class_fs.yaml" }
 
 - name: Configure storage classes without redundancy
   ansible.builtin.shell:
     cmd: "{{ item.cmd }}"
   with_items:
-    - { cmd: "oc apply -f {{ temp_dir }}/yaml/rook_storage_class_rbd_nr.yaml" }
-    - { cmd: "oc apply -f {{ temp_dir }}/yaml/rook_storage_class_fs_nr.yaml" }
+    - { cmd: "oc apply -f {{ temp_dir }}/yamls/rook_storage_class_rbd_nr.yaml" }
+    - { cmd: "oc apply -f {{ temp_dir }}/yamls/rook_storage_class_fs_nr.yaml" }
   when: rook_depl_type == '3'
 
 - name: Set default storage class
