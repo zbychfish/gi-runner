@@ -105,9 +105,9 @@
     src: "cpfs_operands.j2"
     dest: "{{ temp_dir }}/yamls/cpfs_operands.yaml"
 
-- name: Deploy ICS
+- name: Deploy CPFS
   ansible.builtin.shell:
-    cmd: "oc apply -f {{ temp_dir }}/ics_arch/ics_operands.yaml"
+    cmd: "oc apply -f {{ temp_dir }}/yamls/cpfs_operands.yaml"
 
 - name: Wait for operands deployment initiation
   ansible.builtin.pause:
