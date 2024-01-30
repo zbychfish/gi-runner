@@ -14,6 +14,9 @@ function ansible_constants() {
 	echo "cpfs_versions: [ ${arr_values%,} ]" >> $afile
 	printf -v arr_values '"%s",' "${ics_cases[@]}"
 	echo "cpfs_cases: [ ${arr_values%,} ]" >> $afile
+	echo "cpfs_operator_namespace: $cpfs_operator_namespace" >> $afile
+	echo "cpfs_case_name: $cpfs_case_name" >> $afile
+	echo "cpfs_case_inventory_setup: $cpfs_case_inventory_setup" >> $afile
 }
 
 function check_input() {
