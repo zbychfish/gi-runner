@@ -37,3 +37,33 @@
   retries: 20
   delay: 10
 
+- name: Add route for openldap
+  shell:
+    cmd: "oc expose service/openldap -n openldap"
+  register: result
+  failed_when: result.rc != 0 and "already exists" not in result.stderr
+
+- name: Get openldap route name
+  shell:
+    cmd: "oc get routes -n openldap -o json|jq .items[0].spec.host|tr -d '\"'"
+  register: openldap_route
+
+- name: Encode Base64 ldap admin password
+  shell:
+    cmd: "echo -n {{ ldap_password }} | base64"
+  register: ldap_password_base64
+
+- name: Login to ICS
+  shell:
+    cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} --skip-ssl-validation -u admin -p '{{ cpfs_admin_password }}' -n ibm-common-services"
+  when: install_cpfs == 'Y'
+
+- name: Extract ICS Access Token
+  shell:
+    cmd: "cloudctl tokens|grep Access|awk -F ':' '{ print $2 }'|awk -F ' ' '{ print $2}'"
+  register: access_token
+  when: install_cpfs == 'Y' or install_cp4s == 'Y'
+
+- name: Set LDAP URL for container
+  set_fact:
+    ldap_url: "{{ openldap_route.stdout }}:1389"
