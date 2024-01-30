@@ -2,6 +2,19 @@
   ansible.builtin.shell:
     cmd: "oc create namespace {{ cpfs_operator_namespace }} || echo 'Namespace exists'"
 
+- name: Label CPFS nodes
+  ansible.builtin.shell:
+    cmd: "oc label node {{ item }}.{{ ocp_domain }} role=cpfs --overwrite=true"
+  with_items: "{{ cpfs_dedicated_nodes|list }}"
+  when: cpfs_dedicated_nodes|length > 2
+
+- name: Create CPFS namespace with node selector
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc patch namespace ibm-common-services -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"role=cpfs\"}}}'"
+  when: cpfs_dedicated_nodes|length > 2
+
 - name: Check presence of cloudctl tool
   ansible.builtin.stat:
     path: "{{ temp_dir }}/downloads/{{ item.file }}"
@@ -128,4 +141,63 @@
   until: "ics_containers_status.stdout == \"0\""
   retries: 100
   delay: 10
+
+- name: Login to CPFS
+  ansible.builtin.shell:
+    cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
+
+- name: Set CPFS admin password
+  ansible.builtin.shell:
+    cmd: "cloudctl pm update-secret ibm-common-services platform-auth-idp-credentials -f -d admin_password='{{ cpfs_admin_password }}'"
+
+- name: Wait for authentication changes
+  ansible.builtin.pause:
+    minutes: 3
+
+- name: Wait for successful password change
+  ansible.builtin.shell:
+    cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+  register: ics_pods_status
+  until: "ics_pods_status.stdout == \"0\""
+  retries: 80
+  delay: 10
+
+- name: Switch off automatic endpoint certificate recreation
+  ansible.builtin.shell:
+    cmd: oc -n ibm-common-services patch managementingress default --type merge --patch '{"spec":{"ignoreRouteCert":true}}'
+  when: cpfs_ext_ingress == 'Y'
+
+- name: Wait for endpoint configuration change
+  ansible.builtin.shell:
+    cmd: "oc logs `oc get pods -n ibm-common-services | grep ibm-management-ingress-operator|awk '{print $1}'` -n ibm-common-services|grep 'IgnoreRouteCert is true'|wc -l"
+  register: cpfs_pod_status
+  until: "cpfs_pods_status.stdout != \"1\""
+  retries: 20
+  delay: 10
+  when: cpfs_ext_ingress == 'Y'
+
+- name: Change endpoint cert
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc -n ibm-common-services delete certificates.v1alpha1.certmanager.k8s.io route-cert"
+    - "oc -n ibm-common-services delete secret route-tls-secret"
+    - "oc -n ibm-common-services create secret generic route-tls-secret --from-file=ca.crt={{ ics_ca }}  --from-file=tls.crt={{ ics_cert }}  --from-file=tls.key={{ ics_key }}"
+    - "oc -n ibm-common-services delete secret ibmcloud-cluster-ca-cert"
+    - "oc -n ibm-common-services delete pod -l app=auth-idp"
+  when: cpfs_ext_ingress == 'Y'
+
+- name: Wait for certificate changes
+  ansible.builtin.pause:
+    minutes: 3
+  when: cpfs_ext_ingress == 'Y'
+
+- name: Wait for successful cert replacement
+  ansible.builtin.shell:
+    cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+  register: cpfs_pods_status
+  until: "cpfs_pods_status.stdout == \"0\""
+  retries: 50
+  delay: 20
+  when: cpfs_ext_ingress == 'Y'
 
