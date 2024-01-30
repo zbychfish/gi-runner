@@ -210,6 +210,22 @@
         - { name: "GI_ICS_IN_KEY", value: "{{ cpfs_key }}" }
       when: install_cpfs == 'Y' and cpfs_ext_ingress == 'Y' and item.value == ""
 
+    - name: Set LDAP installation variables from env
+      ansible.builtin.set_fact:
+        ldap_domain: "{{ lookup('env','GI_LDAP_DOMAIN') }}"
+        ldap_password: "{{ lookup('env','GI_LDAP_USERS_PWD') }}"
+        ldap_users: "{{ lookup('env','GI_LDAP_USERS').split(',') }}"
+        ldap_users_raw: "{{ lookup('env','GI_LDAP_USERS') }}"
+      when: install_ldap == 'Y'
+
+    - name: Check LDAP variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_LDAP_DOMAIN", value: "{{ ldap_domain }}" }
+        - { name: "GI_LDAP_USERS_PWD", value: "{{ ldap_password }}" }
+        - { name: "GI_LDAP_USERS", value: "{{ ldap_users }}" }
+      when: install_ldap == 'Y' and item.value == ""
+
     - name: Clean downloads directory
       ansible.builtin.file:
         path: "{{ temp_dir }}/downloads" 

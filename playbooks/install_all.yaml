@@ -164,24 +164,6 @@
           #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
       when: install_cp4s == 'Y' and internet_type == 'A' and item.value == ""
 
-    - name: Set LDAP installation variables from env
-      ansible.builtin.set_fact:
-        ldap_domain: "{{ lookup('env','GI_LDAP_DOMAIN') }}"
-        ldap_password: "{{ lookup('env','GI_LDAP_USERS_PWD') }}"
-        ldap_users: "{{ lookup('env','GI_LDAP_USERS').split(',') }}"
-        ldap_users_raw: "{{ lookup('env','GI_LDAP_USERS') }}"
-        ldap_depl_type: "{{ lookup('env','GI_LDAP_DEPLOYMENT') }}"
-      when: install_ldap == 'Y'
-
-    - name: Check LDAP variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_LDAP_DOMAIN", value: "{{ ldap_domain }}" }
-        - { name: "GI_LDAP_USERS_PWD", value: "{{ ldap_password }}" }
-        - { name: "GI_LDAP_USERS", value: "{{ ldap_users }}" }
-        - { name: "GI_LDAP_DEPLOYMENT", value: "{{ ldap_depl_type }}" }
-      when: install_ldap == 'Y' and item.value == ""
-
     - name: Set OCS nodes list
       ansible.builtin.set_fact:
         ocs_nodes: "{{ lookup('env', 'GI_OCS_NODES').split(',') }}"
