@@ -655,6 +655,50 @@ function get_hardware_info() {
 	msg "All your nodes have the NIC ${machine_nic} attached to cluster subnet/subnets. All your nodes use /dev/${machine_disk} as a boot disk." info
 }
 
+function get_ics_options() {
+	msg "Collecting IBM Cloud Pak Foundational Services (CPFS) - former Common Services - parameters" task
+        local operand
+        local curr_op
+	local cpfs_sizes
+	local cpfs_size
+	cpfs_sizes=("large" "medium" "small")
+	msg "CPFS can be deployed in the 3 different service redundancies: small, medium and large" info
+	msg "Use small deployment for test and demo Cloud Pak systems, medium for production deployment and large if you really require high performance and redundancy" info
+	while $(check_input "list" ${cpfs_size} ${#cpfs_sizes[@]})
+        do
+                get_input "list" "Select CPFS size deployment: " ${cpfs_sizes[@]}
+                cpfs_size=$input_variable
+        done
+        save_variable GI_CPFS_SIZE 'S' [[ $cpfs_size -eq 1 ]] && echo 'L' || [[ $cpfs_size -eq 2 ]] && echo 'M' || echo 'S'
+        msg "CPFS provides possibility to define which services will be deployed, some of them are required by CP4S, EDR and GI and will installed as default, the others are optional." info
+        msg "These operands will be installed as default:" info
+        msg "- Certificate Manager" info
+        msg "- Healthcheck" info
+        msg "- IBM IAM" info
+        msg "- Management ingress" info
+        msg "- Licensing" info
+        msg "- ICS Common UI" info
+        msg "- Platform API" info
+        msg "- IBM Events" info
+        msg "- Audit Logging" info
+        msg "- MongoDB" info
+        msg "Define additional operands to install:" info
+        local operand_list=("Monitoring,Y" "Zen,N" "DB2,N" "Postgres,N" "User_Data_Services,N" "Business_Teams,N")
+        declare -a ics_ops
+        for operand in ${operand_list[@]}
+        do
+                unset op_option
+                IFS="," read -r -a curr_op <<< $operand
+                while $(check_input "yn" "$op_option")
+                do
+                        get_input "yn"  "Would you like to install ${curr_op[0]//_/ } operand: " $([[ "${curr_op[1]}" != 'Y' ]] && echo true || echo false)
+                        op_option=${input_variable^^}
+                done
+                ics_ops+=($op_option)
+        done
+        save_variable GI_ICS_OPERANDS $(echo ${ics_ops[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1')
+}
+
 function get_input() {
         unset input_variable
         msg "$2" monit
