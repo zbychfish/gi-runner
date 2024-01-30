@@ -6,6 +6,6 @@ frontend openldap
 backend openldap
  balance source
  mode tcp
-{% for name, ip in workers %}
+{% for name, ip in nodes_list %}
  server {{ name }} {{ ip }}:31389 check
 {% endfor %}
