@@ -206,21 +206,6 @@
         - { name: "GI_IBM_SECRET", value: "{{ ibm_secret }}" }
       when: internet_type != 'A' and (install_gi == 'Y' or install_cp4s == 'Y') and item.value == ""
 
-    - name: Set endpoint cert variables
-      set_fact:
-        ics_ca: "{{ lookup('env', 'GI_ICS_IN_CA') }}"
-        ics_cert: "{{ lookup('env', 'GI_ICS_IN_CERT') }}"
-        ics_key: "{{ lookup('env', 'GI_ICS_IN_KEY') }}"
-      when: install_ics == 'Y' and ics_ext_ingress == 'Y'
-
-    - name: Check ICS endpoint cert variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_ICS_IN_CA", value: "{{ ics_ca }}" }
-        - { name: "GI_ICS_IN_CERT", value: "{{ ics_cert }}" }
-        - { name: "GI_ICS_IN_KEY", value: "{{ ics_key }}" }
-      when: install_ics == 'Y' and ics_ext_ingress == 'Y' and item.value == ""
-
     - name: Set Portworx variables
       ansible.builtin.set_fact:
         px_id: "{{ lookup('env', 'GI_PX_ID') }}"
@@ -261,16 +246,6 @@
         - { name: "GI_CP4S_CERT", value: "{{ cp4s_cert }}" }
         - { name: "GI_CP4S_KEY", value: "{{ cp4s_key }}" }
       when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y' and item.value == ""
-
-    - name: ICS size
-      ansible.builtin.set_fact:
-        ics_size_hint: "{{ 'S' if gi_size == 'values-dev' else 'M' }}"
-      when: install_gi == 'Y'
-
-    - name: ICS size
-      ansible.builtin.set_fact:
-        ics_size_hint: 'S'
-      when: install_gi == 'N' #add possibility to select ICS size
 
     - name: Set GI installation variables
       ansible.builtin.set_fact:

@@ -38,6 +38,7 @@
     storage_class_rw_many: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' if storage_type == 'O' else 'px-csi-replicated' }}"
     storage_class_rw_one: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'px-csi-replicated' }}"
     install_cpfs: "{{ lookup('env','GI_ICS') }}"
+    install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
 
   vars_files:
     - constants.yaml
@@ -78,6 +79,7 @@
         - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
         - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
         - { name: "GI_ICS", value: "{{ install_cpfs }}" }
+        - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
       when: item.value == ""
 
     - name: Set parameters for ntp set on bastion
@@ -200,7 +202,7 @@
         cpfs_key: "{{ lookup('env', 'GI_ICS_IN_KEY') }}"
       when: install_cpfs == 'Y' and cpfs_ext_ingress == 'Y'
 
-    - name: Check ICS endpoint cert variables
+    - name: Check CPFS endpoint cert variables
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_ICS_IN_CA", value: "{{ cpfs_ca }}" }
@@ -244,3 +246,21 @@
     - name: Deploy CPFS
       ansible.builtin.include_tasks: cpfs_install.yaml
       when: skip_phase|int < 5 and install_cpfs == 'Y'
+
+    - name: OCP deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "Openshift {{ ocp_release }} has been installed and configured"
+          - "Add to hosts on your web browser workstation this line to login to OCP:"
+          - "{{ bas_ip }} console-openshift-console.apps.{{ ocp_domain }} oauth-openshift.apps.{{ ocp_domain }}"
+          - "Login to OCP console as {{ ocpadmin }} user - https://console-openshift-console.apps.{{ ocp_domain }}"
+
+    - name: CPFS deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "IBM Cloud Pak Foundational Services {{ cpfs_version }} installation finished"
+          - Update the hosts file on your web browser workstation
+          - "{{ bas_ip }} cp-console.apps.{{ ocp_domain }}"
+          - "Login to CPFS console as admin user - https://cp-console.apps.{{ ocp_domain }}"
+          - "{{ 'LDAP instance registered in CPFS with name openldap' if install_ldap == 'Y' else 'You need register external identity provider'}}"
+      when: install_cpfs == 'Y'
