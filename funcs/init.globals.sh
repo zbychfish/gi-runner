@@ -21,7 +21,7 @@ declare -a gi_sizes=(small medium demo)
 cpfs_operator_namespace="common-service"
 cpfs_case_name="ibm-cp-common-services"
 cpfs_case_inventory_setup="ibmCommonServiceOperatorSetup"
-cpfs_update_channel="v3"
+cpfs_update_channel="3"
 
 cp4s_channel="1.10"
 
