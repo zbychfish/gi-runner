@@ -80,9 +80,6 @@ function check_input() {
                                 fi
                         fi
                         ;;
-                "cs")
-                        [[ $2 == 'C' || $2 == 'S' ]] && echo false || echo true
-                        ;;
 		"dir")
                         [ -d "$2" ] && echo false || echo true
                         ;;
@@ -708,10 +705,6 @@ function get_input() {
         unset input_variable
         msg "$2" monit
         case $1 in
-                "cs")
-                        read input_variable
-                        $3 && input_variable=${input_variable:-C} || input_variable=${input_variable:-S}
-                        ;;
                 "dp")
                         read input_variable
                         $3 && input_variable=${input_variable:-D} || input_variable=${input_variable:-P}
