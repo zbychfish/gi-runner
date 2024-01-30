@@ -1,3 +1,32 @@
 - name: Add openldap namespace
   shell:
     cmd: oc create namespace openldap || echo "Namespace exists"
+
+- name: Create password list
+  shell:
+    cmd: "USER_PWD_LIST=\"\";IFS=',' read -r -a USER_ARR <<< {{ ldap_users_raw }};for user in ${USER_ARR[@]}; do USER_PWD_LIST+=\"{{ ldap_password }},\";done;echo $USER_PWD_LIST"
+  register: ldap_user_pwds
+
+- name: Add openldap secret
+  shell:
+    cmd: "oc create secret generic openldap --from-literal=adminpassword={{ ldap_password }} --from-literal=users={{ ldap_users_raw }} --from-literal=passwords={{ ldap_user_pwds.stdout }} -n openldap"
+  register: result
+  failed_when: result.rc != 0 and "already exists" not in result.stderr
+
+- name: Configure openldap deployment plan
+  template:
+    src: "openldap_depl.j2"
+    dest: "{{ temp_dir }}/yamls/openldap_depl.yaml"
+  vars:
+    ldap_version: "{{ ':latest' if internet_type != 'A' }}"
+
+- name: Deploy bitnami.openldap
+  shell:
+    cmd: "oc create -f {{ item }} -n openldap"
+  register: result
+  with_items:
+    - "{{ temp_dir }}/yamls/openldap_depl.yaml"
+    - ../funcs/yamls/openldap_svc.yaml
+  failed_when: result.rc != 0 and "already exists" not in result.stderr and "already allocated" not in result.stderr
+
+
