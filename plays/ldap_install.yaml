@@ -85,14 +85,6 @@
     nodes_list: "{{ workers if is_master_only == 'N' else masters }}"
   when: is_openldap_in_haproxy.stdout == "0"
 
-    #- name: Create HA Proxy config file with openldap (masters only)
-    #template:
-    #src: haproxy_with_ldap_masters_only.j2
-    #dest: /etc/haproxy/haproxy.cfg.ldap
-    #vars:
-    #masters: "{{ master_name|zip(master_ip)|list }}"
-    #when: is_master_only == 'Y' and is_openldap_in_haproxy.stdout == "0"
-
 - name: Update HA proxy config
   shell:
     cmd: cat /etc/haproxy/haproxy.cfg.ldap >> /etc/haproxy/haproxy.cfg
