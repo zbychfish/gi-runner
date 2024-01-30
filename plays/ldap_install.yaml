@@ -29,4 +29,11 @@
     - ../funcs/yamls/openldap_svc.yaml
   failed_when: result.rc != 0 and "already exists" not in result.stderr and "already allocated" not in result.stderr
 
+- name: Wait for openldap successful deployment
+  shell:
+    cmd: "oc get pods -n openldap|grep 1/1|wc -l"
+  register: openldap_status
+  until: "openldap_status.stdout == \"1\""
+  retries: 20
+  delay: 10
 
