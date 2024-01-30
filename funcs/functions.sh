@@ -837,6 +837,43 @@ function get_inter_cluster_info() {
         save_variable GI_OCP_CIDR_MASK "$ocp_cidr_mask"
 }
 
+function get_ldap_options() {
+        msg "Collecting OpenLDAP deployment parameters" task
+        msg "Define LDAP domain distinguished name, only DC components are allowed like dc=test,dc=com" info
+        while $(check_input "ldap_domain" "${ldap_domain}")
+        do
+                if [ ! -z "$GI_LDAP_DOMAIN" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_LDAP_DOMAIN] or insert LDAP organization domain DN: " true "$GI_LDAP_DOMAIN"
+                else
+                        get_input "txt" "Insert LDAP organization domain DN (for example: DC=io,DC=priv): " false
+                fi
+                ldap_domain="${input_variable}"
+        done
+        save_variable GI_LDAP_DOMAIN "'$ldap_domain'"
+	msg "Provide list of users which will be created in OpenLDAP instance" info
+        while $(check_input "users_list" "${ldap_users}" )
+        do
+                if [ ! -z "$GI_LDAP_USERS" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_LDAP_USERS] or insert comma separated list of LDAP users (without spaces): " true "$GI_LDAP_USERS"
+                else
+                        get_input "txt" "Insert comma separated list of LDAP users (without spaces): " false
+                fi
+                ldap_users="${input_variable}"
+        done
+        # avoid repetition accounts in LDAP
+        if [[ $cp4s_install == 'Y' ]]
+        then
+                IFS="," read -r -a ldap_users <<< $ldap_users
+                ldap_users+=($cp4s_admin)
+                IFS=" " read -r -a ldap_users <<< "$(tr ' ' '\n' <<< "${ldap_users[@]}" | sort -u | tr '\n' ' ')"
+                local IFS=,
+                ldap_users=`echo "${ldap_users[*]}"`
+        fi
+        save_variable GI_LDAP_USERS "'$ldap_users'"
+}
+
 function get_network_architecture {
         msg "Network subnet assignment for OCP nodes" task
         msg "OpenShift cluster nodes can be located in the different subnets" info
