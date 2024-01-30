@@ -80,27 +80,27 @@
     src: cpfs_subscription.j2
     dest: "{{ temp_dir }}/yamls/cpfs_subscription.yaml"
 
-- name: Subscribe ICS operator
+- name: Subscribe CPFS operator
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/cpfs_subscription.yaml"
 
-- name: Wait for ICS csv
+- name: Wait for CPFS csv
   ansible.builtin.shell:
     cmd: "oc -n common-service get csv|grep ibm-common-service-operator|grep Succeeded|wc -l"
-  register: ics_csv_status
-  until: "ics_csv_status.stdout == \"1\""
+  register: cpfs_csv_status
+  until: "cpfs_csv_status.stdout == \"1\""
   retries: 30
   delay: 10
 
-- name: Wait for ICS crd's
+- name: Wait for CPFS crd's
   ansible.builtin.shell:
     cmd: "oc get crd | grep operandrequest|wc -l"
-  register: ics_crd_status
-  until: "ics_crd_status.stdout == \"1\""
+  register: cpfs_crd_status
+  until: "cpfs_crd_status.stdout == \"1\""
   retries: 30
   delay: 10
 
-- name: Set ICS deployment size
+- name: Set CPFS deployment size
   ansible.builtin.shell:
     cmd: "oc patch commonservice common-service -n ibm-common-services --type=\"json\" -p='[{\"op\": \"replace\", \"path\": \"/spec/size\", \"value\": \"{{ cpfs_size }}\"}]'"
   when: cpfs_size != 'T'
@@ -108,8 +108,8 @@
 - name: Wait for deployment size change
   ansible.builtin.shell:
     cmd: "oc get commonservice common-service -n ibm-common-services -o json|jq -r .status.phase"
-  register: ics_commonservice_status
-  until: "ics_commonservice_status.stdout == \"Succeeded\""
+  register: cpfs_commonservice_status
+  until: "cpfs_commonservice_status.stdout == \"Succeeded\""
   retries: 30
   delay: 10
 
@@ -137,8 +137,8 @@
 - name: Check pod's containers status
   ansible.builtin.shell:
     cmd: "oc get pods -n ibm-common-services|grep Running|awk '{print $2}'|awk -F'/' '$1!=$2'|wc -l"
-  register: ics_containers_status
-  until: "ics_containers_status.stdout == \"0\""
+  register: cpfs_containers_status
+  until: "cpfs_containers_status.stdout == \"0\""
   retries: 100
   delay: 10
 
@@ -157,8 +157,8 @@
 - name: Wait for successful password change
   ansible.builtin.shell:
     cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
-  register: ics_pods_status
-  until: "ics_pods_status.stdout == \"0\""
+  register: cpfs_pods_status
+  until: "cpfs_pods_status.stdout == \"0\""
   retries: 80
   delay: 10
 
@@ -182,7 +182,7 @@
   with_items:
     - "oc -n ibm-common-services delete certificates.v1alpha1.certmanager.k8s.io route-cert"
     - "oc -n ibm-common-services delete secret route-tls-secret"
-    - "oc -n ibm-common-services create secret generic route-tls-secret --from-file=ca.crt={{ ics_ca }}  --from-file=tls.crt={{ ics_cert }}  --from-file=tls.key={{ ics_key }}"
+    - "oc -n ibm-common-services create secret generic route-tls-secret --from-file=ca.crt={{ cpfs_ca }}  --from-file=tls.crt={{ cpfs_cert }}  --from-file=tls.key={{ cpfs_key }}"
     - "oc -n ibm-common-services delete secret ibmcloud-cluster-ca-cert"
     - "oc -n ibm-common-services delete pod -l app=auth-idp"
   when: cpfs_ext_ingress == 'Y'

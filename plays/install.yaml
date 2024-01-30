@@ -193,6 +193,21 @@
         cpfs_registry: 'icr.io/cpopen'
       when: install_cpfs == 'Y'
 
+    - name: Set CPFS endpoint cert variables
+      set_fact:
+        cpfs_ca: "{{ lookup('env', 'GI_ICS_IN_CA') }}"
+        cpfs_cert: "{{ lookup('env', 'GI_ICS_IN_CERT') }}"
+        cpfs_key: "{{ lookup('env', 'GI_ICS_IN_KEY') }}"
+      when: install_cpfs == 'Y' and cpfs_ext_ingress == 'Y'
+
+    - name: Check ICS endpoint cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_ICS_IN_CA", value: "{{ cpfs_ca }}" }
+        - { name: "GI_ICS_IN_CERT", value: "{{ cpfs_cert }}" }
+        - { name: "GI_ICS_IN_KEY", value: "{{ cpfs_key }}" }
+      when: install_cpfs == 'Y' and cpfs_ext_ingress == 'Y' and item.value == ""
+
     - name: Clean downloads directory
       ansible.builtin.file:
         path: "{{ temp_dir }}/downloads" 
