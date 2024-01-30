@@ -270,14 +270,6 @@
       ansible.builtin.include_tasks: px_install.yaml
       when: skip_phase|int < 3 and storage_type == 'P'
 
-    - name: Install NFS client
-      ansible.builtin.include_tasks: nfs_client_install.yaml
-      when: skip_phase|int < 6 and install_gi == 'Y' and gi_nfs_backup == 'Y'
-
-    - name: Install GI
-      ansible.builtin.include_tasks: gi_install.yaml
-      when: skip_phase|int < 7 and install_gi == 'Y'
-
     - name: Install CP4S
       ansible.builtin.include_tasks: cp4s_install.yaml
       when: skip_phase|int < 7 and install_cp4s == 'Y'
@@ -299,11 +291,4 @@
           - Update the hosts file on your web browser workstation
           - "{{ bas_ip }} cp4s.apps.{{ domain }}"
       when: install_cp4s == 'Y'
-
-    - name: LDAP info
-      ansible.builtin.debug:
-        msg:
-          - "Open LDAP installed"
-          - "LDAP instance configured in ICS with name openldap"
-      when: install_ldap == 'Y'
 

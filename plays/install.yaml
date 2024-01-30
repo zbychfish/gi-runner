@@ -267,6 +267,14 @@
       ansible.builtin.include_tasks: ldap_install.yaml
       when: skip_phase|int < 8 and install_ldap == 'Y'
 
+    - name: Install NFS client
+      ansible.builtin.include_tasks: nfs_client_install.yaml
+      when: skip_phase|int < 6 and install_gi == 'Y' and gi_nfs_backup == 'Y'
+
+    - name: Install GI
+      ansible.builtin.include_tasks: gi_install.yaml
+      when: skip_phase|int < 7 and install_gi == 'Y'
+
     - name: OCP deployment summary
       ansible.builtin.debug:
         msg:
@@ -284,3 +292,10 @@
           - "Login to CPFS console as admin user - https://cp-console.apps.{{ ocp_domain }}"
           - "{{ 'LDAP instance registered in CPFS with name openldap' if install_ldap == 'Y' else 'You need register external identity provider'}}"
       when: install_cpfs == 'Y'
+
+    - name: LDAP deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "OpenLDAP installed"
+          - "LDAP instance configured in CPFS with name openldap"
+      when: install_ldap == 'Y'
