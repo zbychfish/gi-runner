@@ -53,12 +53,12 @@
     cmd: "echo -n {{ ldap_password }} | base64"
   register: ldap_password_base64
 
-- name: Login to ICS
+- name: Login to CPFS
   shell:
     cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} --skip-ssl-validation -u admin -p '{{ cpfs_admin_password }}' -n ibm-common-services"
-  when: install_cpfs == 'Y'
+  when: install_cpfs == 'Y' or install_cp4s == 'Y'
 
-- name: Extract ICS Access Token
+- name: Extract CPFS Access Token
   shell:
     cmd: "cloudctl tokens|grep Access|awk -F ':' '{ print $2 }'|awk -F ' ' '{ print $2}'"
   register: access_token
@@ -67,3 +67,59 @@
 - name: Set LDAP URL for container
   set_fact:
     ldap_url: "{{ openldap_route.stdout }}:1389"
+
+- name: Check HA proxy with OpenLDAP
+  shell:
+    cmd: cat /etc/haproxy/haproxy.cfg|grep "frontend openldap"|wc -l
+  register: is_openldap_in_haproxy
+
+- name: Create HA Proxy config file with openldap
+  template:
+    src: haproxy_with_ldap.j2
+    dest: /etc/haproxy/haproxy.cfg.ldap
+  vars:
+    masters: "{{ master_name|zip(master_ip)|list }}"
+    nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
+    ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
+    workers: "{{ nodes|zip(ips)|list }}"
+  when: is_master_only == 'N' and is_openldap_in_haproxy.stdout == "0"
+
+- name: Create HA Proxy config file with openldap (masters only)
+  template:
+    src: haproxy_with_ldap_masters_only.j2
+    dest: /etc/haproxy/haproxy.cfg.ldap
+  vars:
+    masters: "{{ master_name|zip(master_ip)|list }}"
+  when: is_master_only == 'Y' and is_openldap_in_haproxy.stdout == "0"
+
+- name: Update HA proxy config
+  shell:
+    cmd: cat /etc/haproxy/haproxy.cfg.ldap >> /etc/haproxy/haproxy.cfg
+  when: is_openldap_in_haproxy.stdout == "0"
+
+- name: Open openldap port on load balancer
+  firewalld:
+    port: "1389/tcp"
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Restart HA Proxy
+  service:
+    name: haproxy
+    state: restarted
+  when: is_openldap_in_haproxy.stdout == "0"
+
+- name: Add email address to users
+  community.general.ldap_attrs:
+    dn: "cn={{ item }},ou=users,{{ ldap_domain }}"
+    attributes:
+        mail: "{{ item }}@{{ ocp_domain }}"
+        cn: "{{ item }}"
+        sn: "{{ item }}"
+    state: exact
+    server_uri: "ldap://{{ ldap_url }}"
+    bind_dn: "cn=admin,{{ ldap_domain }}"
+    bind_pw: "{{ ldap_password }}"
+  with_items:
+    - "{{ ldap_users | list }}"
