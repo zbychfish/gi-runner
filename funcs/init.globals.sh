@@ -18,6 +18,10 @@ declare -a ocp_supported_by_cp4s=(0)
 declare -a ocp_supported_by_edr=(0)
 declare -a gi_sizes=(small medium demo)
 
+cpfs_operator_namespace="common-service"
+cpfs_case_name="ibm-cp-common-services"
+cpfs_case_inventory_setup="ibmCommonServiceOperatorSetup"
+
 cp4s_channel="1.10"
 
 galaxy_community_general="8.2.0" # https://github.com/ansible-collections/community.general
@@ -31,5 +35,6 @@ galaxy_soft=("community-general-${galaxy_community_general}" "ansible-utils-${ga
 
 matchbox_version=0.10.0 # https://github.com/poseidon/matchbox
 ibm_pak_version=1.12.0 # https://github.com/IBM/ibm-pak
+
 rook_operator_version="1.12.11" # https://github.com/rook/rook
 rook_ceph_version="17.2.6"
