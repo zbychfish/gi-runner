@@ -71,3 +71,20 @@
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/cpfs_subscription.yaml"
 
+- name: Wait for ICS csv
+  ansible.builtin.shell:
+    cmd: "oc -n common-service get csv|grep ibm-common-service-operator|grep Succeeded|wc -l"
+  register: ics_csv_status
+  until: "ics_csv_status.stdout == \"1\""
+  retries: 30
+  delay: 10
+
+- name: Wait for ICS crd's
+  ansible.builtin.shell:
+    cmd: "oc get crd | grep operandrequest|wc -l"
+  register: ics_crd_status
+  until: "ics_crd_status.stdout == \"1\""
+  retries: 30
+  delay: 10
+
+
