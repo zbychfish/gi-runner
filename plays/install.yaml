@@ -171,6 +171,7 @@
         cpfs_operands: "{{ lookup('env', 'GI_ICS_OPERANDS').split(',') }}"
         cpfs_dedicated_nodes: "{{ lookup('env', 'GI_ICS_NODES').split(',') }}"
         cpfs_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+        cpfs_size_hint: "{{ lookup('env','GI_CPFS_SIZE') }}"
       when: install_cpfs == 'Y'
 
     - name: Check CPFS variables
@@ -181,6 +182,7 @@
         - { name: "GI_ICS_OPERANDS", value: "{{ cpfs_operands }}" }
         - { name: "GI_ICS_NODES", value: "{{ cpfs_dedicated_nodes }}" }
         - { name: "GI_ICSADMIN_PWD", value: "{{ cpfs_admin_password }}" }
+        - { name: "GI_CPFS_SIZE", value: "{{ cpfs_size_hint }}" }
       when: install_cpfs == 'Y' and item.value == ""
 
     - name: Set CPFS installation variables
