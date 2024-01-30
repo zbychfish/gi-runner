@@ -87,4 +87,15 @@
   retries: 30
   delay: 10
 
+- name: Set ICS deployment size
+  ansible.builtin.shell:
+    cmd: "oc patch commonservice common-service -n ibm-common-services --type=\"json\" -p='[{\"op\": \"replace\", \"path\": \"/spec/size\", \"value\": \"{{ ics_size }}\"}]'"
+  when: ics_size != 'T'
 
+- name: Wait for deployment size change
+  ansible.builtin.shell:
+    cmd: "oc get commonservice common-service -n ibm-common-services -o json|jq -r .status.phase"
+  register: ics_commonservice_status
+  until: "ics_commonservice_status.stdout == \"Succeeded\""
+  retries: 30
+  delay: 10

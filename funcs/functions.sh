@@ -665,15 +665,15 @@ function get_ics_options() {
         local curr_op
 	local cpfs_sizes
 	local cpfs_size
-	cpfs_sizes=("large" "medium" "small")
-	msg "CPFS can be deployed in the 3 different service redundancies: small, medium and large" info
-	msg "Use small deployment for test and demo Cloud Pak systems, medium for production deployment and large if you really require high performance and redundancy" info
+	cpfs_sizes=("large" "medium" "small" "starterset")
+	msg "CPFS can be deployed in the 4 different service redundancies configuration: starterset, small, medium and large" info
+	msg "Use small or starterset deployment for test and demo Cloud Pak systems, medium for production deployment and large (minimum 5 workers needed) if you really require high performance and redundancy" info
 	while $(check_input "list" ${cpfs_size} ${#cpfs_sizes[@]})
         do
                 get_input "list" "Select CPFS size deployment: " ${cpfs_sizes[@]}
                 cpfs_size=$input_variable
         done
-	[[ $cpfs_size -eq 1 ]] && cpfs_size='L' || [[ $cpfs_size -eq 2 ]] && cpfs_size='M' || cpfs_size='S'
+	[[ $cpfs_size -eq 1 ]] && cpfs_size='L' || [[ $cpfs_size -eq 2 ]] && cpfs_size='M' || [[ $cpfs_size -eq 3 ]] && cpfs_size='S' || cpfs_size='T'
         save_variable GI_CPFS_SIZE $cpfs_size
         msg "CPFS provides possibility to define which services will be deployed, some of them are required by CP4S, EDR and GI and will installed as default, the others are optional." info
         msg "These operands will be installed as default:" info

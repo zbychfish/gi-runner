@@ -189,7 +189,7 @@
       ansible.builtin.set_fact:
         cpfs_version: "{{ cpfs_versions[cpfs_version_hint|int] }}"
         cpfs_case: "{{ cpfs_cases[cpfs_version_hint|int] }}"
-        cpfs_size: "{{ 'small' if cpfs_size_hint == 'S' else 'medium' if cpfs_size_hint == 'M' else 'large' }}"
+        cpfs_size: "{{ 'small' if cpfs_size_hint == 'S' else 'medium' if cpfs_size_hint == 'M' else 'large' if cpfs_size_hint == 'L' else 'starterset' }}"
         cpfs_registry: 'icr.io/cpopen'
       when: install_cpfs == 'Y'
 
