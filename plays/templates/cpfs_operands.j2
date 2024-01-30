@@ -16,23 +16,23 @@ spec:
         - name: ibm-events-operator
         - name: ibm-auditlogging-operator
         - name: ibm-mongodb-operator
-{% if ics_operands[1] == 'Y' %}
+{% if cpfs_operands[1] == 'Y' %}
         - name: ibm-zen-operator
         - name: zen-cpp-operator
 {% endif %}
-{% if ics_operands[0] == 'Y' %}
+{% if cpfs_operands[0] == 'Y' %}
         - name: ibm-monitoring-grafana-operator
 {% endif %}
-{% if ics_operands[4] == 'Y' %}
+{% if cpfs_operands[4] == 'Y' %}
         - name: ibm-user-data-services-operator
 {% endif %}
-{% if ics_operands[2] == 'Y' %}
+{% if cpfs_operands[2] == 'Y' %}
         - name: ibm-db2u-operator
 {% endif %}
-{% if ics_operands[3] == 'Y' %}
+{% if cpfs_operands[3] == 'Y' %}
         - name: cloud-native-postgresql
 {% endif %}
-{% if ics_operands[5] == 'Y' %}
+{% if cpfs_operands[5] == 'Y' %}
         - name: ibm-bts-operator
 {% endif %}
       registry: common-service

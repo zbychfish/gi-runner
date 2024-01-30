@@ -99,3 +99,8 @@
   until: "ics_commonservice_status.stdout == \"Succeeded\""
   retries: 30
   delay: 10
+
+- name: Generate operands file
+  ansible.builtin.template:
+    src: "cpfs_operands.j2"
+    dest: "{{ temp_dir }}/yamls/cpfs_operands.yaml"
