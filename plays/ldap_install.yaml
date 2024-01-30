@@ -1,0 +1,3 @@
+- name: Add openldap namespace
+  shell:
+    cmd: oc create namespace openldap || echo "Namespace exists"

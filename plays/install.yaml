@@ -247,6 +247,10 @@
       ansible.builtin.include_tasks: cpfs_install.yaml
       when: skip_phase|int < 5 and install_cpfs == 'Y'
 
+    - name: Install openldap
+      ansible.builtin.include_tasks: ldap_install.yaml
+      when: skip_phase|int < 8 and install_ldap == 'Y'
+
     - name: OCP deployment summary
       ansible.builtin.debug:
         msg:
