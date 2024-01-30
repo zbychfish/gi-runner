@@ -1,5 +1,6 @@
 function ansible_constants() {
 	local afile
+	local arr_values
 	afile=$GI_HOME/plays/constants.yaml
 	echo "# gi-runner playbooks constants" > $afile
 	echo "skip_phase: 0" >> $afile
@@ -9,6 +10,8 @@ function ansible_constants() {
 	echo "ibm_pak_version: $ibm_pak_version" >> $afile
 	echo "rook_operator_version: $rook_operator_version" >> $afile
 	echo "rook_ceph_version: $rook_ceph_version" >> $afile
+	printf -v arr_values '"%s",' "${ics_versions[@]}"
+	echo "cpfs_versions: [ ${arr_values%,} ]"
 }
 
 function check_input() {
