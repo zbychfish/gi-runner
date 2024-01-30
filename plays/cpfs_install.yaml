@@ -1,6 +1,6 @@
 - name: Create CPFS operator namespace
   ansible.builtin.shell:
-    cmd: "oc create namespace {{ ics_operator_namespace }} || echo 'Namespace exists'"
+    cmd: "oc create namespace {{ cpfs_operator_namespace }} || echo 'Namespace exists'"
 
 - name: Check presence of cloudctl tool
   ansible.builtin.stat:
