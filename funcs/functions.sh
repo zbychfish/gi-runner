@@ -669,7 +669,7 @@ function get_ics_options() {
                 get_input "list" "Select CPFS size deployment: " ${cpfs_sizes[@]}
                 cpfs_size=$input_variable
         done
-        save_variable GI_CPFS_SIZE 'S' [[ $cpfs_size -eq 1 ]] && echo 'L' || [[ $cpfs_size -eq 2 ]] && echo 'M' || echo 'S'
+        save_variable GI_CPFS_SIZE [[ $cpfs_size -eq 1 ]] && 'L' || [[ $cpfs_size -eq 2 ]] && 'M' || 'S'
         msg "CPFS provides possibility to define which services will be deployed, some of them are required by CP4S, EDR and GI and will installed as default, the others are optional." info
         msg "These operands will be installed as default:" info
         msg "- Certificate Manager" info
@@ -1017,7 +1017,7 @@ function get_rook_settings() {
 	msg "You can change default behaviour and deploy rook-ceph more controlled way" info
 	while $(check_input "list" ${rook_deployment_type} ${#deployment_types[@]})
         do
-        	get_input "list" "Select Guardium Insights deployment template: " ${deployment_types[@]}
+        	get_input "list" "Select rook-ceph storage deployment: " ${deployment_types[@]}
                 rook_deployment_type=$input_variable
         done
 	save_variable GI_ROOK_DEPL $rook_deployment_type
