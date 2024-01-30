@@ -669,7 +669,7 @@ function get_ics_options() {
                 get_input "list" "Select CPFS size deployment: " ${cpfs_sizes[@]}
                 cpfs_size=$input_variable
         done
-        save_variable GI_CPFS_SIZE [[ $cpfs_size -eq 1 ]] && 'L' || [[ $cpfs_size -eq 2 ]] && 'M' || 'S'
+        save_variable GI_CPFS_SIZE [[ $cpfs_size -eq 1 ]] && return 'L' || [[ $cpfs_size -eq 2 ]] && return 'M' || return 'S'
         msg "CPFS provides possibility to define which services will be deployed, some of them are required by CP4S, EDR and GI and will installed as default, the others are optional." info
         msg "These operands will be installed as default:" info
         msg "- Certificate Manager" info
