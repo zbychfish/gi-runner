@@ -104,3 +104,28 @@
   ansible.builtin.template:
     src: "cpfs_operands.j2"
     dest: "{{ temp_dir }}/yamls/cpfs_operands.yaml"
+
+- name: Deploy ICS
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/ics_arch/ics_operands.yaml"
+
+- name: Wait for operands deployment initiation
+  ansible.builtin.pause:
+    minutes: 3
+
+- name: Wait for successful CPFS deployment (takes 20-60 minutes)
+  ansible.builtin.shell:
+    cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+  register: cpfs_pods_status
+  until: "cpfs_pods_status.stdout == \"0\""
+  retries: 150
+  delay: 10
+
+- name: Check pod's containers status
+  ansible.builtin.shell:
+    cmd: "oc get pods -n ibm-common-services|grep Running|awk '{print $2}'|awk -F'/' '$1!=$2'|wc -l"
+  register: ics_containers_status
+  until: "ics_containers_status.stdout == \"0\""
+  retries: 100
+  delay: 10
+
