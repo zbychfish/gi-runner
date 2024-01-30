@@ -12,6 +12,8 @@ function ansible_constants() {
 	echo "rook_ceph_version: $rook_ceph_version" >> $afile
 	printf -v arr_values '"%s",' "${ics_versions[@]}"
 	echo "cpfs_versions: [ ${arr_values%,} ]" >> $afile
+	printf -v arr_values '"%s",' "${ics_cases[@]}"
+	echo "cpfs_cases: [ ${arr_values%,} ]" >> $afile
 }
 
 function check_input() {
