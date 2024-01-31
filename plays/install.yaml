@@ -265,15 +265,15 @@
 
     - name: Install openldap
       ansible.builtin.include_tasks: ldap_install.yaml
-      when: skip_phase|int < 8 and install_ldap == 'Y'
+      when: skip_phase|int < 6 and install_ldap == 'Y'
 
     - name: Install NFS client
       ansible.builtin.include_tasks: nfs_client_install.yaml
-      when: skip_phase|int < 6 and install_gi == 'Y' and gi_nfs_backup == 'Y'
+      when: skip_phase|int < 7 and install_gi == 'Y' and gi_nfs_backup == 'Y'
 
     - name: Install GI
       ansible.builtin.include_tasks: gi_install.yaml
-      when: skip_phase|int < 7 and install_gi == 'Y'
+      when: skip_phase|int < 8 and install_gi == 'Y'
 
     - name: OCP deployment summary
       ansible.builtin.debug:
