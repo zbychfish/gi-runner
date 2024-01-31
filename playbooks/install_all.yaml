@@ -59,7 +59,6 @@
 
     - name: Set GI installation variables from env
       ansible.builtin.set_fact:
-        gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
         gi_size:  "{{ lookup('env','GI_SIZE_GI') }}"
         db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
         db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
@@ -83,7 +82,6 @@
     - name: Check GI variables
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
-        - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
         - { name: "GI_SIZE_GI", value: "{{ gi_size }}" }
         - { name: "GI_DB2_ENCRYPTED", value: "{{ db2_enc_hint }}" }
         - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
@@ -210,8 +208,6 @@
 
     - name: Set GI installation variables
       ansible.builtin.set_fact:
-        gi_version: "{{ gi_versions[gi_version_index|int] }}"
-        gi_case_version: "{{ gi_cases[gi_version_index|int] }}"
         db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
         db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
         gi_license: "{{ '' if gi_version_index|int < 0 else 'L-GBLK-CDVHGZ' }}"

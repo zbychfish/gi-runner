@@ -1,21 +1,3 @@
-- name: Label GI nodes
-  shell:
-    cmd: "oc label node {{ item }}.{{ domain }} role=gi --overwrite=true"
-  with_items: "{{ gi_dedicated_nodes|list }}"
-  when: gi_dedicated_nodes|length > 2
-
-- name: Create GI namespace with node selector
-  shell:
-    cmd: "{{ item }}"
-  with_items:
-    - "oc create namespace  {{ gi_namespace }} || echo 'Namespace exists'"
-    - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"gi_role=yes\"}}}'"
-  when: gi_dedicated_nodes|length > 2
-
-- name: Create GI namespace
-  shell:
-    cmd: "oc create namespace {{ gi_namespace }}|| echo 'Namespace exists'"
-
 - name: GI download case file
   shell:
     cmd: "oc ibm-pak get ibm-guardium-insights --version {{ gi_case_version }}"

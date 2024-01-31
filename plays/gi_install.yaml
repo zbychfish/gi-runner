@@ -21,4 +21,8 @@
     - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"role=gi\"}}}'"
   when: gi_dedicated_nodes|length > 2
 
+- name: GI download case file
+  shell:
+    cmd: "oc ibm-pak get ibm-guardium-insights --version {{ gi_case_version }}"
+  when: internet_type != 'A'
 

@@ -19,6 +19,10 @@ function ansible_constants() {
 	echo "cpfs_case_inventory_setup: $cpfs_case_inventory_setup" >> $afile
 	echo "cpfs_update_channel: $cpfs_update_channel" >> $afile
 	echo "nfs_provisioner_version: $nfs_provisioner_version" >> $afile
+	printf -v arr_values '"%s",' "${gi_versions[@]}"
+        echo "gi_versions: [ ${arr_values%,} ]" >> $afile
+	printf -v arr_values '"%s",' "${gi_cases[@]}"
+        echo "gi_cases: [ ${arr_values%,} ]" >> $afile
 }
 
 function check_input() {
