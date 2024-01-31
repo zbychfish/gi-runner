@@ -229,12 +229,14 @@
     - name: Set GI installation variables from env
       ansible.builtin.set_fact:
         gi_nfs_backup: "{{ lookup('env','GI_NFS_BACKUP') }}"
+        gi_namespace: "{{ lookup('env','GI_NAMESPACE_GI') }}"
       when: install_gi == 'Y'
 
     - name: Check GI variables
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_NFS_BACKUP", value: "{{ gi_nfs_backup }}" }
+        - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
       when: install_gi == 'Y' and item.value == ""
 
     - name: Set GI NFS variables

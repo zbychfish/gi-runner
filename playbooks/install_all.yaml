@@ -62,7 +62,6 @@
         gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
         gi_size:  "{{ lookup('env','GI_SIZE_GI') }}"
         gi_dedicated_nodes: "{{ lookup('env', 'GI_GI_NODES').split(',') }}"
-        gi_namespace: "{{ lookup('env','GI_NAMESPACE_GI') }}"
         db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
         db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
         db2_tainted: "{{ lookup('env','GI_DB2_TAINTED') }}"
@@ -80,7 +79,6 @@
         gi_pgsql_size:  "{{ lookup('env','GI_POSTGRES_STORAGE_SIZE') }}"
         gi_ssh_host: "{{ lookup('env','GI_SSH_HOST') }}"
         gi_ssh_port: "{{ lookup('env','GI_SSH_PORT') }}"
-        gi_nfs_backup: "{{ lookup('env','GI_NFS_BACKUP') }}"
       when: install_gi == 'Y'
 
     - name: Check GI variables
@@ -89,7 +87,6 @@
         - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
         - { name: "GI_SIZE_GI", value: "{{ gi_size }}" }
         - { name: "GI_GI_NODES", value: "{{ gi_dedicated_nodes }}" }
-        - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
         - { name: "GI_DB2_ENCRYPTED", value: "{{ db2_enc_hint }}" }
         - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
         - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
@@ -107,7 +104,6 @@
         - { name: "GI_POSTGRES_STORAGE_SIZE", value: "{{ gi_pgsql_size }}" }
         - { name: "GI_SSH_HOST", value: "{{ gi_ssh_host }}" }
         - { name: "GI_SSH_PORT", value: "{{ gi_ssh_port }}" }
-        - { name: "GI_NFS_BACKUP", value: "{{ gi_nfs_backup }}" }
       when: install_gi == 'Y' and item.value == ""
 
     - name: Set GI NFS variables
