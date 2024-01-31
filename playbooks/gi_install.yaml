@@ -1,6 +1,6 @@
 - name: Label GI nodes
   shell:
-    cmd: "oc label node {{ item }}.{{ domain }} gi_role=yes --overwrite=true"
+    cmd: "oc label node {{ item }}.{{ domain }} role=gi --overwrite=true"
   with_items: "{{ gi_dedicated_nodes|list }}"
   when: gi_dedicated_nodes|length > 2
 
