@@ -1223,6 +1223,7 @@ function get_service_assignment() {
         local rook_on_list
 	local worker_wo_db2_name
 	local workers_for_gi_selection
+	local nodes_for_selection
 	local -a local_arr
         if [[ $gi_install == 'Y' ]]
         then
@@ -1251,9 +1252,9 @@ function get_service_assignment() {
                 IFS=',' read -r -a node_arr <<< "$worker_name"
                 for element in ${selected_arr[@]};do node_arr=("${node_arr[@]/$element}");done
                 worker_wo_db2_name=`echo ${node_arr[*]}|tr ' ' ','`
-        else
-                IFS=',' read -r -a node_arr <<< "$worker_name"
-                worker_wo_db2_name="${worker_name[@]}"
+        #else
+        #        IFS=',' read -r -a node_arr <<< "$worker_name"
+        #        worker_wo_db2_name="${worker_name[@]}"
         fi
 	IFS=',' read -r -a local_arr <<< "$GI_ROOK_NODES"
 	if [[ $storage_type == "R" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
@@ -1273,7 +1274,8 @@ function get_service_assignment() {
                 done
                 if [ "$rook_on_list" == 'Y' ]
                 then
-                        msg "Available worker nodes: $worker_wo_db2_name" info
+			[[ $gi_install == 'Y' && $db2_tainted == 'N' ]] && nodes_for_selection=$worker_wo_db2_name || { IFS=',' read -r -a node_arr <<< "$worker_name"; nodes_for_selection="${worker_name[@]}"; }
+                        msg "Available worker nodes:  $nodes_for_selection" info
                         while $(check_input "nodes" $rook_nodes $worker_wo_db2_name 3 "def")
                         do
                                 if [ ! -z "$GI_ROOK_NODES" ]
