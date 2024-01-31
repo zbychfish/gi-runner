@@ -622,6 +622,163 @@ function get_credentials() {
         fi
 }
 
+function get_gi_options() {
+        local change_ssh_host
+        msg "Collecting Guardium Insights parameters" task
+        msg "Guardium Insights deployment requires some decisions such as storage size, functions enabled" info
+        msg "Namespace define the space where most GI pods, objects and supporting services will be located" info
+        while $(check_input "txt" "${gi_namespace}" "with_limited_length" 10)
+        do
+                if [ ! -z "$GI_NAMESPACE_GI" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_NAMESPACE_GI] or insert GI namespace name (maximum 10 characters)" true "$GI_NAMESPACE_GI"
+                else
+                        get_input "txt" "Insert GI namespace name (maximum 10 characters, default gi): " true "gi"
+                fi
+                gi_namespace="${input_variable}"
+        done
+        save_variable GI_NAMESPACE_GI $gi_namespace
+        while $(check_input "yn" "$db2_enc" false)
+        do
+		if [ ! -z "$GI_DB2_ENCRYPTED" ]
+                then
+                	get_input "yn" "Should be DB2u tablespace encrypted or accept previous choice [$GI_DB2_ENCRYPTED]? " true $GI_DB2_ENCRYPTED
+		else
+                	get_input "yn" "Should be DB2u tablespace encrypted? " true
+		fi
+                db2_enc=${input_variable^^}
+        done
+        save_variable GI_DB2_ENCRYPTED $db2_enc
+        while $(check_input "yn" "$stap_supp" false)
+        do
+		if [ ! -z "$GI_STAP_STREAMING" ]
+                then
+                	get_input "yn" "Should be enabled the direct streaming from STAP's and Outliers engine, press ENTER to accept previous decision [$GI_STAP_STREAMING]? " false $GI_STAP_STREAMING
+		else
+                	get_input "yn" "Should be enabled the direct streaming from STAP's and Outliers engine?: " false
+		fi
+                stap_supp=${input_variable^^}
+        done
+        save_variable GI_STAP_STREAMING $stap_supp
+        while $(check_input "yn" "$outliers_demo" false)
+        do
+		if [ ! -z "$GI_OUTLIERS_DEMO" ]
+                then
+                	get_input "yn" "Should the Outliers engine work in demo mode, press ENTER to accept previous selection [$GI_OUTLIERS_DEMO]? " false $GI_OUTLIERS_DEMO
+		else
+                	get_input "yn" "Should the Outliers engine work in demo mode?: " false
+		fi
+                outliers_demo=${input_variable^^}
+        done
+        save_variable GI_OUTLIERS_DEMO $outliers_demo
+        get_gi_pvc_size
+        msg "GDP integration" task
+        msg "One of the method to send events to Guardium is integration with Guardium Data Protection" info
+        msg "In this case the selected collectors will transfer to GI audited events by copying datamarts to GI ssh service" info
+        msg "As a default the collector sends data to cluster proxy on bastion using random port range 30000-32768" info
+        while $(check_input "yn" "$change_ssh_host" false)
+        do
+                get_input "yn" "Would you like to send datamarts using another proxy server?: " true
+                change_ssh_host=${input_variable^^}
+        done
+        if [[ $change_ssh_host == 'Y' ]]
+        then
+                while $(check_input "ip" $ssh_host)
+                do
+			if [ ! -z "$GI_SSH_HOST" ]
+                	then
+                        	get_input "txt" "Insert IP address of Load Balancer to which datamarts should be redirected or press ENTER to accept previous choice [$GI_SSH_HOST]: " false $GI_SSH_HOST
+			else
+                        	get_input "txt" "Insert IP address of Load Balancer to which datamarts should be redirected: " false
+			fi
+                        ssh_host=${input_variable}
+                done
+                save_variable GI_SSH_HOST $ssh_host
+        else
+                save_variable GI_SSH_HOST "0.0.0.0"
+        fi
+        msg "You can define static port on load balancer to send datamarts" info
+        msg "ssh port change is managed automatically on HA Proxy on bastion, in case of use the separate appliance you must provide the port defined on it" info
+        while $(check_input "yn" "$change_ssh_port" false)
+        do
+                get_input "yn" "Would you like to set ssh port used to send datamarts?: " true
+                change_ssh_port=${input_variable^^}
+        done
+        if [[ $change_ssh_port == 'Y' ]]
+        then
+                while $(check_input "int" $ssh_port 1024 65635)
+                do
+			if [ ! -z "$GI_SSH_PORT" ]
+                        then
+                        	get_input "txt" "Insert port number used on Load Balancer to transfer datamarts to GI or press ENTER to select previously selected [$GI_SSH_PORT]: " true $GI_SSH_PORT
+			else
+                        	get_input "txt" "Insert port number used on Load Balancer to transfer datamarts to GI: " true
+			fi
+                        ssh_port=${input_variable}
+                done
+                save_variable GI_SSH_PORT $ssh_port
+        else
+                save_variable GI_SSH_PORT "0"
+        fi
+        msg "GI Backup configuration" task
+        msg "There is possible to use NFS based storage for GI backups" info
+        while $(check_input "yn" "$use_nfs_backup" false)
+        do
+		if [ ! -z "$GI_NFS_BACKUP" ]
+                then
+                	get_input "yn" "Would you like to configure GI backups using NFS storage or press ENTER to select previous decision [$GI_NFS_BACKUP]? " true $GI_NFS_BACKUP
+		else
+                	get_input "yn" "Would you like to configure GI backups using NFS storage? " true
+		fi
+                use_nfs_backup=${input_variable^^}
+        done
+        save_variable GI_NFS_BACKUP $use_nfs_backup
+        if [[ $use_nfs_backup == 'Y' ]]
+        then
+                while $(check_input "ip" $nfs_server)
+                do
+                        if [ ! -z "$GI_NFS_SERVER" ]
+                        then
+                                get_input "txt" "Push <ENTER> to accept previously pointed NFS server - [$GI_NFS_SERVER] or insert a new address: " true "$GI_NFS_SERVER"
+                        else
+                                get_input "txt" "Insert IP address of NFS server: " false
+                        fi
+                        nfs_server=${input_variable}
+                done
+                save_variable GI_NFS_SERVER $nfs_server
+                while $(check_input "txt" $nfs_path "non_empty")
+                do
+                        if [ ! -z "$GI_NFS_PATH" ]
+                        then
+                                get_input "txt" "Push <ENTER> to accept NFS share path for backup - [$GI_NFS_PATH] or insert another NFS server path: " true "$GI_NFS_PATH"
+                        else
+                                get_input "txt" "Insert NFS server path: " false
+                        fi
+                        nfs_path=${input_variable}
+                done
+                save_variable GI_NFS_PATH $nfs_path
+        fi
+}
+
+function get_gi_pvc_size() {
+        local custom_pvc
+        msg "The cluster storage contains 3 disks - ${storage_device_size} GB each" info
+        [[ "$storage_type" == 'O' ]] && msg "ODF creates 3 copies of data chunks so you have ${storage_device_size} of GB effective space for PVC's" info || msg "Rook-Ceph creates 2 copies of data chunks so you have $((2*${storage_device_size})) GB effective space for PVC's" info
+        while $(check_input "yn" "$custom_pvc")
+        do
+                get_input "yn" "Would you like customize Guardium Insights PVC sizes (default) or use default settings?: " false
+                custom_pvc=${input_variable^^}
+        done
+        if [ $custom_pvc == 'Y' ]
+        then
+                pvc_arr=("db2-data" "db2-meta" "db2-logs" "db2-temp" "mongo-data" "mongo-logs" "kafka" "zookeeper" "redis" "pgsql")
+                for pvc in ${pvc_arr[@]};do pvc_sizes $pvc;done
+        else
+                local pvc_variables=("GI_DATA_STORAGE_SIZE" "GI_METADATA_STORAGE_SIZE" "GI_ARCHIVELOGS_STORAGE_SIZE" "GI_TEMPTS_STORAGE_SIZE" "GI_MONGO_DATA_STORAGE_SIZE" "GI_MONGO_METADATA_STORAGE_SIZE" "GI_KAFKA_STORAGE_SIZE" "GI_ZOOKEEPER_STORAGE_SIZE" "GI_REDIS_STORAGE_SIZE" "GI_POSTGRES_STORAGE_SIZE")
+                for pvc in ${pvc_variables[@]};do save_variable $pvc 0;done
+        fi
+}
+
 function get_hardware_info() {
         msg "Collecting hardware information" task
         msg "Automatic CoreOS and storage deployment requires information about NIC and storage devices" info
@@ -1598,6 +1755,113 @@ function msg() {
                         display_error "msg with incorrect parameter - $2"
                         ;;
         esac
+}
+
+function pvc_sizes() {
+        local global_var
+        local global_var_val
+        local curr_value
+        local size_min=20
+        local size_max=1000000
+        local m_desc
+        local m_ask
+        local v_aux1
+        case $1 in
+                "db2-data")
+                        size_min=200
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
+                        m_desc="DB2 DATA pvc - stores activity events, installation proces will create $v_aux1 PVC/PVC's, each instance contains different data"
+                        m_ask="DB2 DATA pvc, minium size $size_min GB"
+                        global_var="GI_DATA_STORAGE_SIZE"
+                        global_var_val="$GI_DATA_STORAGE_SIZE"
+                        ;;
+                "db2-meta")
+                        size_min=30
+                        m_desc="DB2 METADATA pvc - stores DB2 shared, temporary, tool files, installation proces will create 1 PVC"
+                        m_ask="DB2 METADATA pvc, minimum size $size_min GB"
+                        global_var="GI_METADATA_STORAGE_SIZE"
+                        global_var_val="$GI_METADATA_STORAGE_SIZE"
+                        ;;
+                "db2-logs")
+                        size_min=50
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
+                        m_desc="DB2 ARCHIVELOG pvc - stores DB2 archive logs, 1 PVC"
+                        m_ask="DB2 ARCHIVELOG pvc, minium size $size_min GB"
+                        global_var="GI_ARCHIVELOGS_STORAGE_SIZE"
+                        global_var_val="$GI_ARCHIVELOGS_STORAGE_SIZE"
+                        ;;
+                "db2-temp")
+                        size_min=50
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
+                        m_desc="DB2 TEMPTS pvc - temporary objects space in DB2, installation process will create $v_aux1 PVC/PVC's, each instance contains different data"
+                        m_ask="DB2 TEMPTS pvc, minium size $size_min GB"
+                        global_var="GI_TEMPTS_STORAGE_SIZE"
+                        global_var_val="$GI_TEMPTS_STORAGE_SIZE"
+                        ;;
+                "mongo-data")
+                        size_min=50
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="MONGODB DATA pvc - stores MongoDB data related to GI metadata and reports, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_ask="MONGODB DATA pvc, minium size $size_min GB"
+                        global_var="GI_MONGO_DATA_STORAGE_SIZE"
+                        global_var_val="$GI_MONGO_DATA_STORAGE_SIZE"
+                        ;;
+                "mongo-logs")
+                        size_min=10
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="MONGODB LOG pvc - stores MongoDB logs, installation process will create $v_aux1 PVC/PVC's, each instance contains different data"
+                        m_ask="MONGODB LOG pvc, minium size $size_min GB"
+                        global_var="GI_MONGO_METADATA_STORAGE_SIZE"
+                        global_var_val="$GI_MONGO_METADATA_STORAGE_SIZE"
+                        ;;
+                "kafka")
+                        size_min=50
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="KAFKA pvc - stores ML and Streaming data for last 7 days, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_ask="KAFKA pvc, minium size $size_min GB"
+                        global_var="GI_KAFKA_STORAGE_SIZE"
+                        global_var_val="$GI_KAFKA_STORAGE_SIZE"
+                        ;;
+		"zookeeper")
+                        size_min=2
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="ZOOKEEPER pvc - stores Kafka configuration and health data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_ask="ZOOKEEPER pvc, minium size $size_min GB"
+                        global_var="GI_ZOOKEEPER_STORAGE_SIZE"
+                        global_var_val="$GI_ZOOKEEPER_STORAGE_SIZE"
+                        ;;
+                "redis")
+                        size_min=5
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="REDIS pvc - stores Redis configuration and cached session data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_ask="REDIS pvc, minium size $size_min GB"
+                        global_var="GI_REDIS_STORAGE_SIZE"
+                        global_var_val="$GI_REDIS_STORAGE_SIZE"
+                        ;;
+                "pgsql")
+                        size_min=5
+                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
+                        m_desc="POSTGRES pvc - stores anomalies and analytics data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_ask="POSTGRES pvc, minium size $size_min GB"
+                        global_var="GI_POSTGRES_STORAGE_SIZE"
+                        global_var_val="$GI_POSTGRES_STORAGE_SIZE"
+                        ;;
+                "*")
+                        display_error "Wrong PVC type name"
+                        ;;
+        esac
+        while $(check_input "int" "${curr_value}" $size_min $size_max)
+        do
+                msg "$m_desc" info
+                if [ ! -z "$global_var_val" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$global_var_val] or insert size of $m_ask: " true "$global_var_val"
+                else
+                        get_input "txt" "Insert size of $m_ask: " false
+                fi
+                curr_value="${input_variable}"
+        done
+        save_variable $global_var $curr_value
 }
 
 function save_variable() {
