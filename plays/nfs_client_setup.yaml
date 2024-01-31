@@ -34,7 +34,7 @@
 
 - name: Add NFS client storage class
   ansible.builtin.shell:
-    cmd: oc apply -f ../func/yamls/nfs_client_sc.yaml
+    cmd: oc apply -f ../funcs/yamls/nfs_client_sc.yaml
 
 - name: Setup PVC file
   template:

@@ -315,7 +315,7 @@ function create_cluster_ssh_key() {
 	then
 		while $(check_input "yn" "$regenerate_ssh_key" false)
         	do
-                        get_input "yn" "There is a ssh key from previous gi-runner execution, would you like to regenerate it? " false
+                        get_input "yn" "There is a ssh key from previous gi-runner execution, would you like to regenerate it? " true
 			regenerate_ssh_key=${input_variable^^}
 		done
 	fi
@@ -763,7 +763,7 @@ function get_gi_options() {
 		gi_backup_active='Y'
         fi
 	if [[ $gi_backup_active == 'Y' ]]
-	msg "Backup PVC will be created during GI deployment, you must provide its size (in GiB)" info
+	msg "Backup PVC will be created during GI deployment, you must provide its size (in GiB) - minimum 100 Gi" info
         then
 		while $(check_input "int" $gi_backup_volume_size 100 100000)
                 do
