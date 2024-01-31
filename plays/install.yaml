@@ -226,6 +226,30 @@
         - { name: "GI_LDAP_USERS", value: "{{ ldap_users }}" }
       when: install_ldap == 'Y' and item.value == ""
 
+    - name: Set GI installation variables from env
+      ansible.builtin.set_fact:
+        gi_nfs_backup: "{{ lookup('env','GI_NFS_BACKUP') }}"
+      when: install_gi == 'Y'
+
+    - name: Check GI variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_NFS_BACKUP", value: "{{ gi_nfs_backup }}" }
+      when: install_gi == 'Y' and item.value == ""
+
+    - name: Set GI NFS variables
+      ansible.builtin.set_fact:
+        gi_nfs_server: "{{ lookup('env','GI_NFS_SERVER') }}"
+        gi_nfs_path: "{{ lookup('env','GI_NFS_PATH') }}"
+      when: install_gi == 'Y' and gi_nfs_backup == 'Y'
+
+    - name: Check GI NFS variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_NFS_SERVER", value: "{{ gi_nfs_server }}" }
+        - { name: "GI_NFS_PATH", value: "{{ gi_nfs_path }}" }
+      when: install_gi == 'Y' and gi_nfs_backup == 'Y' and item.value == ""
+
     - name: Clean downloads directory
       ansible.builtin.file:
         path: "{{ temp_dir }}/downloads" 
