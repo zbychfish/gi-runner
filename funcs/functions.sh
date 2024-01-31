@@ -1225,9 +1225,9 @@ function get_service_assignment() {
 	local workers_for_gi_selection
 	local nodes_for_selection
 	local -a local_arr
+        [[ $is_master_only == 'Y' ]] && available_nodes=$master_name || available_nodes=$worker_name
         if [[ $gi_install == 'Y' ]]
         then
-                [[ $is_master_only == 'Y' ]] && available_nodes=$master_name || available_nodes=$worker_name
                 if [[ $db2_tainted == 'Y' ]]
                 then
                         msg "You decided that DB2 will be installed on dedicated node/nodes" info
@@ -1248,13 +1248,16 @@ function get_service_assignment() {
                         db2_nodes=${input_variable}
                 done
                 save_variable GI_DB2_NODES "$db2_nodes"
-                IFS=',' read -r -a selected_arr <<< "$db2_nodes"
-                IFS=',' read -r -a node_arr <<< "$worker_name"
-                for element in ${selected_arr[@]};do node_arr=("${node_arr[@]/$element}");done
-                worker_wo_db2_name=`echo ${node_arr[*]}|tr ' ' ','`
-        #else
-        #        IFS=',' read -r -a node_arr <<< "$worker_name"
-        #        worker_wo_db2_name="${worker_name[@]}"
+		if [[ $db2_tainted == 'Y' ]]
+                then
+                	IFS=',' read -r -a selected_arr <<< "$db2_nodes"
+                	IFS=',' read -r -a node_arr <<< "$worker_name"
+                	for element in ${selected_arr[@]};do node_arr=("${node_arr[@]/$element}");done
+                	worker_wo_db2_name=`echo ${node_arr[*]}|tr ' ' ','`
+        	else
+                	IFS=',' read -r -a node_arr <<< "$worker_name"
+               	 	worker_wo_db2_name="${worker_name[@]}"
+		fi
         fi
 	IFS=',' read -r -a local_arr <<< "$GI_ROOK_NODES"
 	if [[ $storage_type == "R" && $is_master_only == "N" && ${#node_arr[@]} -gt 3 ]]
@@ -1274,8 +1277,7 @@ function get_service_assignment() {
                 done
                 if [ "$rook_on_list" == 'Y' ]
                 then
-			[[ $gi_install == 'Y' && $db2_tainted == 'N' ]] && nodes_for_selection=$worker_wo_db2_name || { IFS=',' read -r -a node_arr <<< "$worker_name"; nodes_for_selection="${worker_name[@]}"; }
-                        msg "Available worker nodes:  $nodes_for_selection" info
+                        msg "Available worker nodes:  $worker_wo_db2_name" info
                         while $(check_input "nodes" $rook_nodes $worker_wo_db2_name 3 "def")
                         do
                                 if [ ! -z "$GI_ROOK_NODES" ]
@@ -1432,9 +1434,9 @@ function get_set_services() {
                 do
                         if [ ! -z "$GI_NTP_CLIENTS" ]
 			then
-				get_input "txt" "Insert subnet specification to define IP address space to server by NTP server on bastion or press ENTER to accept previous value [$GI_NTP_CLIENTS]: " true "${GI_NTP_CLIENTS}"
+				get_input "txt" "Insert subnet specification to define IP address space served by NTP server on bastion or press ENTER to accept previous value [$GI_NTP_CLIENTS]: " true "${GI_NTP_CLIENTS}"
 			else
-				get_input "txt" "Insert subnet specification to define IP address space to server by NTP server on bastion: " false
+				get_input "txt" "Insert subnet specification to define IP address space served by NTP server on bastion: " false
 			fi
 			ntp_clients=${input_variable}
 		done
