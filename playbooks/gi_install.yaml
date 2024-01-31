@@ -1,9 +1,3 @@
-- name: Link python3 to python name
-  file:
-    src: /usr/bin/python3
-    dest: /usr/bin/python
-    state: link
-
 - name: Label GI nodes
   shell:
     cmd: "oc label node {{ item }}.{{ domain }} gi_role=yes --overwrite=true"
