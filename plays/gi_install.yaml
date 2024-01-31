@@ -56,3 +56,18 @@
   shell:
     cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key --inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\""
   when: internet_type != 'A'
+
+- name: Wait for GI operators
+  shell:
+    cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
+  register: operator_status
+  until: "operator_status.stdout|int > 0"
+  retries: 30
+  delay: 10
+  with_items:
+    - { operator_pattern: "db2u-operator-manager" }
+    - { operator_pattern: "ibm-cloud-databases-redis-operator" }
+    - { operator_pattern: "mongodb-kubernetes-operator" }
+    - { operator_pattern: "guardiuminsights-controller-manager" }
+    - "{ operator_pattern: 'noobaa-operator' } if gi_version_hint > 0 else { operator_pattern: 'operator' }" # new operator from 3.3 release
+
