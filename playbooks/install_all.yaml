@@ -61,9 +61,6 @@
       ansible.builtin.set_fact:
         gi_size:  "{{ lookup('env','GI_SIZE_GI') }}"
         db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
-        db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
-        db2_tainted: "{{ lookup('env','GI_DB2_TAINTED') }}"
-        gi_ext_ingress: "{{ lookup('env','GI_IN') }}"
         gi_deployment_size: "{{ lookup('env','GI_SIZE_GI') }}"
         stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
         gi_ds_size: "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
@@ -84,9 +81,6 @@
       loop:
         - { name: "GI_SIZE_GI", value: "{{ gi_size }}" }
         - { name: "GI_DB2_ENCRYPTED", value: "{{ db2_enc_hint }}" }
-        - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
-        - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
-        - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
         - { name: "GI_SIZE_GI", value: "{{ gi_deployment_size }}" }
         - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
         - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
@@ -176,21 +170,6 @@
         - { name: "GI_PX_ID", value: "{{ px_id }}" }
       when: storage_type == 'P' and item.value == ""
 
-    - name: Set GI cert variables
-      ansible.builtin.set_fact:
-        gi_ca: "{{ lookup('env', 'GI_IN_CA') }}"
-        gi_cert: "{{ lookup('env', 'GI_IN_CERT') }}"
-        gi_key: "{{ lookup('env', 'GI_IN_KEY') }}"
-      when: install_gi == 'Y' and gi_ext_ingress == 'Y'
-
-    - name: Check GI cert variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_IN_CA", value: "{{ gi_ca }}" }
-        - { name: "GI_IN_CERT", value: "{{ gi_cert }}" }
-        - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
-      when: install_gi == 'Y' and gi_ext_ingress == 'Y' and item.value == ""
-
     - name: Set CP4S cert variables
       ansible.builtin.set_fact:
         cp4s_ca: "{{ lookup('env', 'GI_CP4S_CA') }}"
@@ -209,10 +188,7 @@
     - name: Set GI installation variables
       ansible.builtin.set_fact:
         db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
-        db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
         gi_license: "{{ '' if gi_version_index|int < 0 else 'L-GBLK-CDVHGZ' }}"
-        add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
-        add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
         db2_class_fs: "{{ 'portworx-db2-rwx-sc' if storage_type == 'P' else storage_class_rw_many }}"
         db2_class_block: "{{ 'portworx-db2-rwo-sc' if storage_type == 'P' else storage_class_rw_one }}"
       when: install_gi == 'Y'

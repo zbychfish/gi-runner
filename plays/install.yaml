@@ -232,6 +232,9 @@
         gi_namespace: "{{ lookup('env','GI_NAMESPACE_GI') }}"
         gi_dedicated_nodes: "{{ lookup('env', 'GI_GI_NODES').split(',') }}"
         gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
+        db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
+        db2_tainted: "{{ lookup('env','GI_DB2_TAINTED') }}"
+        gi_ext_ingress: "{{ lookup('env','GI_IN') }}"
       when: install_gi == 'Y'
 
     - name: Check GI variables
@@ -241,12 +244,18 @@
         - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
         - { name: "GI_GI_NODES", value: "{{ gi_dedicated_nodes }}" }
         - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+        - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
+        - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
+        - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
       when: install_gi == 'Y' and item.value == ""
 
     - name: Set GI installation variables
       ansible.builtin.set_fact:
         gi_version: "{{ gi_versions[gi_version_index|int] }}"
         gi_case_version: "{{ gi_cases[gi_version_index|int] }}"
+        db2_nodes_list: "{{ db2_nodes_array|product([domain])|map('join','.')|join(',') }}"
+        gi_add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
+        gi_add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
       when: install_gi == 'Y'
 
     - name: Set GI NFS variables
@@ -263,6 +272,21 @@
         - { name: "GI_NFS_PATH", value: "{{ gi_nfs_path }}" }
         - { name: "GI_BACKUP_SIZE", value: "{{ gi_backup_volume_size }}" }
       when: install_gi == 'Y' and gi_nfs_backup == 'Y' and item.value == ""
+
+    - name: Set GI cert variables
+      ansible.builtin.set_fact:
+        gi_ca: "{{ lookup('env', 'GI_IN_CA') }}"
+        gi_cert: "{{ lookup('env', 'GI_IN_CERT') }}"
+        gi_key: "{{ lookup('env', 'GI_IN_KEY') }}"
+      when: install_gi == 'Y' and gi_ext_ingress == 'Y'
+
+    - name: Check GI cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_IN_CA", value: "{{ gi_ca }}" }
+        - { name: "GI_IN_CERT", value: "{{ gi_cert }}" }
+        - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
+      when: install_gi == 'Y' and gi_ext_ingress == 'Y' and item.value == ""
 
     - name: Clean downloads directory
       ansible.builtin.file:

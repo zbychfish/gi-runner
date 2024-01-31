@@ -18,6 +18,9 @@ declare -a ocp_supported_by_cp4s=(0)
 declare -a ocp_supported_by_edr=(0)
 declare -a gi_sizes=(small medium demo)
 
+gi_case_name="ibm-guardium-insights"
+gi_case_inventory_setup="install"
+
 cpfs_operator_namespace="common-service"
 cpfs_case_name="ibm-cp-common-services"
 cpfs_case_inventory_setup="ibmCommonServiceOperatorSetup"
