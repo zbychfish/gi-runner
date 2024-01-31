@@ -18,24 +18,6 @@
     cmd: "IBMPAK_HOME={{ temp_dir }}/gi_arch IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch ibm-guardium-insights --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry registry.{{ domain }} --user {{ repo_user }} --pass {{ repo_user_password }} --secret ibm-entitlement-key --inputDir {{ temp_dir }}/gi_arch/.ibm-pak/data/cases/ibm-guardium-insights/{{ gi_case_version }}\""
   when: internet_type == 'A'
 
-- name: Wait for GI operators
-  shell:
-    cmd: "oc get pods -n {{ gi_namespace }}|grep {{ item.operator_pattern }}|grep 1/1|grep Running|wc -l"
-  register: operator_status
-  until: "operator_status.stdout == \"1\""
-  retries: 30
-  delay: 10
-  with_items:
-    - { operator_pattern: "db2u-operator-manager" }
-    - { operator_pattern: "ibm-cloud-databases-redis-operator" }
-    - { operator_pattern: "mongodb-kubernetes-operator" }
-    - { operator_pattern: "guardiuminsights-controller-manager" }
-
-- name: Generate GI deployment file
-  template:
-    src: "{{ 'gi.j2' if gi_version_index|int > 0 else 'gi-3210.j2' }}"
-    dest: "{{ temp_dir }}/gi_arch/gi.yaml"
-
 - name: Deploy GI
   shell:
     cmd: "oc apply -f {{ temp_dir }}/gi_arch/gi.yaml"
