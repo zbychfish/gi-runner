@@ -9,3 +9,14 @@
   ansible.builtin.shell:
     cmd: oc apply -f ../funcs/scripts/nfs_client_rbac.yaml
 
+- name: Set security context for NFS client
+  ansible.builtin.shell:
+    cmd: oc adm policy add-scc-to-user hostmount-anyuid system:serviceaccount:nfs-provisioner:nfs-client-provisioner
+
+- name: Setup deployment file
+  template:
+    src: "nfs_client_deployment.j2"
+    dest: "{{ temp_dir }}/yamls/nfs_client_deployment.yaml"
+  vars:
+    nfs_version: "{{ ':v'+nfs_provisioner_version if internet_type != 'A' }}"
+
