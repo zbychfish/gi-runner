@@ -148,17 +148,6 @@
         - { name: "GI_OCS_NODES", value: "{{ ocs_nodes }}" }
       when: storage_type == 'O' and is_ocs_tainted == 'N' and item.value == ""
 
-    - name: Set parameters for non air-gapped installation
-      ansible.builtin.set_fact:
-        ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
-      when: (install_gi == 'Y' or install_cp4s == 'Y') and internet_type != 'A'
-
-    - name: Check configuration parameters for non air-gapped installation
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_IBM_SECRET", value: "{{ ibm_secret }}" }
-      when: internet_type != 'A' and (install_gi == 'Y' or install_cp4s == 'Y') and item.value == ""
-
     - name: Set Portworx variables
       ansible.builtin.set_fact:
         px_id: "{{ lookup('env', 'GI_PX_ID') }}"
