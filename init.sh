@@ -13,6 +13,7 @@ export MPID=$$ #init.sh process ID
 #MAIN PART
 mkdir -p $GI_TEMP
 echo "#gi-runner configuration file" > $variables_file
+save_variable IBMPAK_HOME ${GI_HOME}
 msg "gi-runner installation tool for IBM Security Cloud Pak's on bare metal" title
 msg "Checking OS release" task
 save_variable KUBECONFIG "$GI_HOME/ocp/auth/kubeconfig"

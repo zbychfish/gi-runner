@@ -529,12 +529,10 @@
     cmd: "tar xf {{ temp_dir }}/downloads/{{ item.src }} -C /usr/local/bin"
   with_items:
     - { src: "oc-ibm_pak-linux-amd64.tar.gz" }
-  when: install_gi == 'Y'
 
 - name: Rename oc ibm-pak file
   ansible.builtin.shell:
     cmd: "mv /usr/local/bin/oc-ibm_pak-linux-amd64 /usr/local/bin/oc-ibm_pak"
-  when: install_gi == 'Y'
 
 - name: Set variable for public SSH key
   ansible.builtin.shell: >

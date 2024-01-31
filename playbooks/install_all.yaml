@@ -61,7 +61,6 @@
       ansible.builtin.set_fact:
         gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
         gi_size:  "{{ lookup('env','GI_SIZE_GI') }}"
-        gi_dedicated_nodes: "{{ lookup('env', 'GI_GI_NODES').split(',') }}"
         db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
         db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
         db2_tainted: "{{ lookup('env','GI_DB2_TAINTED') }}"
@@ -86,7 +85,6 @@
       loop:
         - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
         - { name: "GI_SIZE_GI", value: "{{ gi_size }}" }
-        - { name: "GI_GI_NODES", value: "{{ gi_dedicated_nodes }}" }
         - { name: "GI_DB2_ENCRYPTED", value: "{{ db2_enc_hint }}" }
         - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
         - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
