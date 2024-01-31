@@ -249,6 +249,21 @@
         - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
       when: install_gi == 'Y' and item.value == ""
 
+    - name: Set GI cert variables
+      ansible.builtin.set_fact:
+        gi_ca: "{{ lookup('env', 'GI_IN_CA') }}"
+        gi_cert: "{{ lookup('env', 'GI_IN_CERT') }}"
+        gi_key: "{{ lookup('env', 'GI_IN_KEY') }}"
+      when: install_gi == 'Y' and gi_ext_ingress == 'Y'
+
+    - name: Check GI cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_IN_CA", value: "{{ gi_ca }}" }
+        - { name: "GI_IN_CERT", value: "{{ gi_cert }}" }
+        - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
+      when: install_gi == 'Y' and gi_ext_ingress == 'Y' and item.value == ""
+
     - name: Set GI installation variables
       ansible.builtin.set_fact:
         gi_version: "{{ gi_versions[gi_version_index|int] }}"
@@ -272,21 +287,6 @@
         - { name: "GI_NFS_PATH", value: "{{ gi_nfs_path }}" }
         - { name: "GI_BACKUP_SIZE", value: "{{ gi_backup_volume_size }}" }
       when: install_gi == 'Y' and gi_nfs_backup == 'Y' and item.value == ""
-
-    - name: Set GI cert variables
-      ansible.builtin.set_fact:
-        gi_ca: "{{ lookup('env', 'GI_IN_CA') }}"
-        gi_cert: "{{ lookup('env', 'GI_IN_CERT') }}"
-        gi_key: "{{ lookup('env', 'GI_IN_KEY') }}"
-      when: install_gi == 'Y' and gi_ext_ingress == 'Y'
-
-    - name: Check GI cert variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_IN_CA", value: "{{ gi_ca }}" }
-        - { name: "GI_IN_CERT", value: "{{ gi_cert }}" }
-        - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
-      when: install_gi == 'Y' and gi_ext_ingress == 'Y' and item.value == ""
 
     - name: Clean downloads directory
       ansible.builtin.file:
