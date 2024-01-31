@@ -243,6 +243,7 @@
       ansible.builtin.set_fact:
         gi_nfs_server: "{{ lookup('env','GI_NFS_SERVER') }}"
         gi_nfs_path: "{{ lookup('env','GI_NFS_PATH') }}"
+        gi_backup_volume_size: "{{ lookup('env','GI_BACKUP_SIZE') }}"
       when: install_gi == 'Y' and gi_nfs_backup == 'Y'
 
     - name: Check GI NFS variables
@@ -250,6 +251,7 @@
       loop:
         - { name: "GI_NFS_SERVER", value: "{{ gi_nfs_server }}" }
         - { name: "GI_NFS_PATH", value: "{{ gi_nfs_path }}" }
+        - { name: "GI_BACKUP_SIZE", value: "{{ gi_backup_volume_size }}" }
       when: install_gi == 'Y' and gi_nfs_backup == 'Y' and item.value == ""
 
     - name: Clean downloads directory

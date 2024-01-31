@@ -106,19 +106,6 @@
         - { name: "GI_SSH_PORT", value: "{{ gi_ssh_port }}" }
       when: install_gi == 'Y' and item.value == ""
 
-    - name: Set GI NFS variables
-      ansible.builtin.set_fact:
-        gi_nfs_server: "{{ lookup('env','GI_NFS_SERVER') }}"
-        gi_nfs_path: "{{ lookup('env','GI_NFS_PATH') }}"
-      when: install_gi == 'Y' and gi_nfs_backup == 'Y'
-
-    - name: Check GI NFS variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_NFS_SERVER", value: "{{ gi_nfs_server }}" }
-        - { name: "GI_NFS_PATH", value: "{{ gi_nfs_path }}" }
-      when: install_gi == 'Y' and gi_nfs_backup == 'Y' and item.value == ""
-
     - name: Set CP4S installation variables from env
       ansible.builtin.set_fact:
         cp4s_namespace: "{{ lookup('env','GI_CP4S_NS') }}"
