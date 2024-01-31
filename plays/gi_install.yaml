@@ -3,3 +3,21 @@
     src: /usr/bin/python3
     dest: /usr/bin/python
     state: link
+
+- name: Label GI nodes
+  shell:
+    cmd: "oc label node {{ item }}.{{ ocp_domain }} role=gi --overwrite=true"
+  with_items: "{{ gi_dedicated_nodes|list }}"
+  when: gi_dedicated_nodes|length > 2
+
+- name: Create GI namespace with node selector
+  shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc create namespace  {{ gi_namespace }} || echo 'Namespace exists'"
+    - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"role=gi\"}}}' if gi_dedicated_nodes|length > 2"
+      #when: gi_dedicated_nodes|length > 2
+
+    #- name: Create GI namespace
+    #shell:
+    #cmd: "oc create namespace {{ gi_namespace }}|| echo 'Namespace exists'"
