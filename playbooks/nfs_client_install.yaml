@@ -7,15 +7,3 @@
   set_fact:
     nfs_version: "{{ ':v'+nfs_provisioner_version if internet_type != 'A' else '@'+nfs_digest.stdout }}"
 
-- name: Add NFS client storage class
-  ansible.builtin.shell:
-    cmd: oc apply -f ../scripts/nfs-client-sc.yaml
-
-- name: Setup PVC file
-  template:
-    src: "nfs_backup_pvc.j2"
-    dest: "{{ temp_dir }}/gi_arch/nfs_backup_pvc.yaml"
-
-- name: Deploy NFS backup PVC
-  ansible.builtin.shell:
-    cmd: "oc apply -f {{ temp_dir }}/gi_arch/nfs_backup_pvc.yaml"

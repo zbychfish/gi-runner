@@ -625,6 +625,7 @@ function get_credentials() {
 
 function get_gi_options() {
         local change_ssh_host
+	local gi_backup_active
         msg "Collecting Guardium Insights parameters" task
         msg "Guardium Insights deployment requires some decisions such as storage size, functions enabled" info
         msg "Namespace define the space where most GI pods, objects and supporting services will be located" info
@@ -734,6 +735,7 @@ function get_gi_options() {
                 use_nfs_backup=${input_variable^^}
         done
         save_variable GI_NFS_BACKUP $use_nfs_backup
+	gi_backup_active='N'
         if [[ $use_nfs_backup == 'Y' ]]
         then
                 while $(check_input "ip" $nfs_server)
@@ -758,7 +760,23 @@ function get_gi_options() {
                         nfs_path=${input_variable}
                 done
                 save_variable GI_NFS_PATH $nfs_path
+		gi_backup_active='Y'
         fi
+	if [[ $gi_backup_active == 'Y' ]]
+	msg "Backup PVC will be created during GI deployment, you must provide its size (in GiB)" info
+        then
+		while $(check_input "int" $gi_backup_volume_size 100 100000)
+                do
+                        if [ ! -z "$GI_BACKUP_SIZE" ]
+                        then
+                                get_input "int" "Insert size of backup volume (in gibibytes) or press <ENTER> to accept previous value [$GI_BACKUP_SIZE]: " false "$GI_BACKUP_SIZE"
+                        else
+				get_input "int" "Insert size of backup volume (in gibibytes): " false
+                        fi
+                        gi_backup_volume_size=${input_variable}
+                done
+                save_variable GI_BACKUP_SIZE $gi_backup_volume_size
+	fi
 }
 
 function get_gi_pvc_size() {
