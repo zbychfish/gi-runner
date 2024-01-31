@@ -15,7 +15,7 @@
     cmd: "{{ item }}"
   with_items:
     - "oc create namespace  {{ gi_namespace }} || echo 'Namespace exists'"
-    - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"role=gi\"}}}' if gi_dedicated_nodes|length > 2"
+    - "[[ gi_dedicated_nodes|length > 2 ]] && oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"role=gi\"}}}'"
       #when: gi_dedicated_nodes|length > 2
 
     #- name: Create GI namespace
