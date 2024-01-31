@@ -678,7 +678,7 @@ function get_gi_options() {
                 then
                         get_input "int" "How many partitions per node should be deployed in DB2 cluster, press ENTER to accept previous selection [$GI_DB2_PARTITION_PER_NODE]? " false $GI_DB2_PARTITION_PER_NODE
                 else
-                        get_input "int" "Should be enabled the direct streaming from STAP's and Outliers engine?: " false
+			get_input "int" "How many partitions per node should be deployed in DB2 cluster (default 1)?: " false 1
                 fi
                 partition_per_node=${input_variable}
         done

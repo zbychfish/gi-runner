@@ -76,3 +76,26 @@
     src: gi.j2
     dest: "{{ temp_dir }}/yamls/gi.yaml"
 
+- name: Deploy GI
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/gi.yaml"
+
+- name: Wait for DB2 deployment
+  shell:
+    cmd: "oc get pod -n {{ gi_namespace }} | grep db2-ready | grep Completed | wc -l"
+  register: db2_deployment_status
+  until: db2_deployment_status.stdout|int == 1
+  retries: 150
+  delay: 10
+
+- name: Patch deployment (BUG in 3.2.10)
+  shell:
+    cmd: "oc patch guardiuminsights {{ gi_namespace }} -n {{ gi_namespace }} --type json -p '[{\"op\": \"replace\", \"path\": \"/spec/guardiumInsightsGlobal/deploySettings/ensureDb2InstallPlacement\", \"value\": false}]'"
+
+- name: Wait for successful GI deployment (takes 20-60 minutes)
+  shell:
+    cmd: "oc get guardiuminsights -n {{ gi_namespace }} -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
+  register: gi_deployment_status
+  until: gi_deployment_status.stdout == gi_version
+  retries: 200
+  delay: 10
