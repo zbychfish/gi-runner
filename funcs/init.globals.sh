@@ -40,4 +40,4 @@ ibm_pak_version=1.12.0 # https://github.com/IBM/ibm-pak
 rook_operator_version="1.12.11" # https://github.com/rook/rook
 rook_ceph_version="17.2.6"
 
-nfs_provisioner_version=4.0.18 # https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner
+nfs_provisioner_version=4.0.2 # https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner; tag does not correspond image 4.0.18 refers to image 4.0.2
