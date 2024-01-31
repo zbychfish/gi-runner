@@ -7,7 +7,7 @@
 
 - name: Set RBAC for NFS client
   ansible.builtin.shell:
-    cmd: oc apply -f ../funcs/scripts/nfs_client_rbac.yaml
+    cmd: oc apply -f ../funcs/yamls/nfs_client_rbac.yaml
 
 - name: Set security context for NFS client
   ansible.builtin.shell:
@@ -31,4 +31,17 @@
   until: "nfs_client_status.stdout|int == 1"
   retries: 30
   delay: 10
+
+- name: Add NFS client storage class
+  ansible.builtin.shell:
+    cmd: oc apply -f ../func/yamls/nfs_client_sc.yaml
+
+- name: Setup PVC file
+  template:
+    src: "nfs_backup_pvc.j2"
+    dest: "{{ temp_dir }}/yamls/nfs_backup_pvc.yaml"
+
+- name: Deploy NFS backup PVC
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/nfs_backup_pvc.yaml"
 
