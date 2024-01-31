@@ -68,11 +68,11 @@
     - { operator_pattern: "db2u-operator-manager" }
     - { operator_pattern: "ibm-cloud-databases-redis-operator" }
     - { operator_pattern: "mongodb-kubernetes-operator" }
-    - "{ operator_pattern: 'ibm-guardium-insights-operator' } if gi_version_hint > 0 else { operator_pattern: 'guardiuminsights-controller-manager' }" # operator name changed in 3.3
-    - "{ operator_pattern: 'noobaa-operator' } if gi_version_hint > 0 else { operator_pattern: 'operator' }" # new operator from 3.3 release
+    - "{ 'operator_pattern': 'ibm-guardium-insights-operator' } if gi_version_hint > 0 else { 'operator_pattern': 'guardiuminsights-controller-manager' }" # operator name changed in 3.3
+    - "{ 'operator_pattern': 'noobaa-operator' } if gi_version_hint > 0 else { 'operator_pattern': 'operator' }" # new operator from 3.3 release
 
 - name: Generate GI deployment file
   template:
-    src: "{{ 'gi.j2' if gi_version_index|int > 0 else 'gi-3210.j2' }}"
-    dest: "{{ temp_dir }}/gi_arch/gi.yaml"
+    src: gi.j2
+    dest: "{{ temp_dir }}/yamls/gi.yaml"
 
