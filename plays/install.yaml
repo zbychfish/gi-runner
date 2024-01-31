@@ -235,6 +235,8 @@
         db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
         db2_tainted: "{{ lookup('env','GI_DB2_TAINTED') }}"
         gi_ext_ingress: "{{ lookup('env','GI_IN') }}"
+        gi_ssh_host: "{{ lookup('env','GI_SSH_HOST') }}"
+        gi_ssh_port: "{{ lookup('env','GI_SSH_PORT') }}"
       when: install_gi == 'Y'
 
     - name: Check GI variables
@@ -271,6 +273,7 @@
         db2_nodes_list: "{{ db2_nodes_array|product([ocp_domain])|map('join','.')|join(',') }}"
         gi_add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
         gi_add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
+        gi_license: "{{ 'L-TFWF-ZZ5233' if gi_version_index|int > 0 else 'L-GBLK-CDVHGZ' }}"
       when: install_gi == 'Y'
 
     - name: Set GI NFS variables
