@@ -23,6 +23,6 @@
 
 - name: GI download case file
   shell:
-    cmd: "oc ibm-pak get ibm-guardium-insights --version {{ gi_case_version }}"
+    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get ibm-guardium-insights --version {{ gi_case_version }}"
   when: internet_type != 'A'
 
