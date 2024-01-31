@@ -13,10 +13,22 @@
   ansible.builtin.shell:
     cmd: oc adm policy add-scc-to-user hostmount-anyuid system:serviceaccount:nfs-provisioner:nfs-client-provisioner
 
-- name: Setup deployment file
+- name: Setup NFS deployment file
   template:
     src: "nfs_client_deployment.j2"
     dest: "{{ temp_dir }}/yamls/nfs_client_deployment.yaml"
   vars:
     nfs_version: "{{ ':v'+nfs_provisioner_version if internet_type != 'A' }}"
+
+- name: Deploy NFS client
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/nfs_client_deployment.yaml"
+
+- name: Confirm successful deployment of NFS client
+  ansible.builtin.shell:
+    cmd: "oc get pods -n nfs-provisioner | grep -e Running -e 1/1 | wc -l"
+  register: nfs_client_status
+  until: "nfs_client_status.stdout|int == 1"
+  retries: 30
+  delay: 10
 
