@@ -292,7 +292,7 @@
       when: skip_phase|int < 6 and install_ldap == 'Y'
 
     - name: Install NFS client
-      ansible.builtin.include_tasks: nfs_client_install.yaml
+      ansible.builtin.include_tasks: nfs_client_setup.yaml
       when: skip_phase|int < 7 and install_gi == 'Y' and gi_nfs_backup == 'Y'
 
     - name: Install GI
