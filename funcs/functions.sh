@@ -669,6 +669,20 @@ function get_gi_options() {
                 stap_supp=${input_variable^^}
         done
         save_variable GI_STAP_STREAMING $stap_supp
+	msg "DB2 growth have some limitations related to unchangeable number of partitions. You must define the total number of partition in DB2 cluster at the beginning. Then you can add more DB2 nodes but the number partition cannot be changed" info
+	msg "For example, if deployed initially 10 partitions on two DB2 nodes (5 partitions per node) then you can extend cluster to have 5 DB2 nodes (2 partition per node) or 10 DB2 nodes (1 partition per node)" info
+	msg "1 partition should not server more that 5 TB of data, so in this example the total DB2 data storage should not exceed 50 TB" info
+	while $(check_input "int" "$partition_per_node" 1 10)
+        do
+                if [ ! -z "$GI_DB2_PARTITION_PER_NODE" ]
+                then
+                        get_input "int" "How many partitions per node should be deployed in DB2 cluster, press ENTER to accept previous selection [$GI_DB2_PARTITION_PER_NODE]? " false $GI_DB2_PARTITION_PER_NODE
+                else
+                        get_input "int" "Should be enabled the direct streaming from STAP's and Outliers engine?: " false
+                fi
+                partition_per_node=${input_variable}
+        done
+        save_variable GI_DB2_PARTITION_PER_NODE $partition_per_node
         while $(check_input "yn" "$outliers_demo" false)
         do
 		if [ ! -z "$GI_OUTLIERS_DEMO" ]

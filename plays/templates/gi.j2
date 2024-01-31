@@ -1,7 +1,6 @@
 apiVersion: gi.ds.isc.ibm.com/v1
 kind: GuardiumInsights
 metadata:
-  #name: This must be 10 or less characters
   name: {{ gi_namespace }}
 spec:
 {% if gi_ssh_host != '0.0.0.0' or gi_ssh_port|int != 0 %}
@@ -25,17 +24,17 @@ spec:
     size: {{ gi_deployment_size }}
     insights:
       ingress:
-        hostName: insights.apps.{{ domain }}
-        domainName: apps.{{ domain }}
+        hostName: insights.apps.{{ ocp_domain }}
+        domainName: apps.{{ ocp_domain }}
       ics:
         namespace: ibm-common-services
         registry: common-service
-    storageClassName: "{{ storage_class_rw_many }}"
+    storageClassName: "{{ db2_sc_fs }}"
     backupsupport:
 {% if gi_nfs_backup == 'Y' %}
       enabled: "true"
       name: "backup-nfs-pvc"  
-      size: {{ (gi_ds_size|float * 1.2)|int }}Gi
+      size: {{ gi_backup_volume_size }}Gi
       storageClassName: nfs-client
 {% else %}
       enabled: "false"
@@ -43,13 +42,13 @@ spec:
   dependency-kafka:
     kafka:
       storage:
-        class: "{{ storage_class_rw_one }}"
+        class: "{{ nodb2_sc_block }}"
 {% if gi_kafka_size|int != 0 %}
         size: {{ gi_kafka_size }}Gi
 {% endif %}
     zookeeper:
       storage:
-        class: "{{ storage_class_rw_one }}"
+        class: "{{ nodb2_sc_block }}"
 {% if gi_zookeeper_size|int != 0 %}
         size: {{ gi_zookeeper_size }}Gi
 {% endif %}
@@ -57,13 +56,13 @@ spec:
     postgres:
       storage:
         size: {{ gi_pgsql_size }}Gi
-        storageClassName: "{{ storage_class_rw_one }}"
+        storageClassName: "{{ nodb2_sc_block }}"
   dependency-redis:
     size: 3
     persistence:
       enabled: true
       size: {{ gi_redis_size }}Gi
-      storageClass: "{{ storage_class_rw_one }}"
+      storageClass: "{{ nodb2_sc_block }}"
   dependency-mongodb:
     storage:
     - metadata:
@@ -76,7 +75,7 @@ spec:
           requests:
             storage: {{ gi_mongo_size }}Gi
 {% endif %}
-        storageClassName: "{{ storage_class_rw_one }}"
+        storageClassName: "{{ nodb2_sc_block }}"
     - metadata:
         name: logs-volume
       spec:
@@ -87,7 +86,7 @@ spec:
           requests:
             storage: {{ gi_mongo_meta_size }}Gi
 {% endif %}
-        storageClassName: "{{ storage_class_rw_many }}"
+        storageClassName: "{{ nodb2_sc_fs }}"
   dependency-db2:
     db2instance:
       installAsDefault: true
@@ -112,7 +111,7 @@ spec:
       - name: archivelogs
         type: create
         spec:
-          storageClassName: "{{ db2_class_fs }}"
+          storageClassName: "{{ db2_sc_fs }}"
           accessModes:
           - ReadWriteMany
           resources:
@@ -122,7 +121,7 @@ spec:
       - name: meta
         type: create
         spec:
-          storageClassName: "{{ db2_class_fs }}"
+          storageClassName: "{{ db2_sc_fs }}"
           accessModes:
           - ReadWriteMany
 {% if gi_meta_size|int != 0 %}
@@ -133,7 +132,7 @@ spec:
       - name: data
         type: template
         spec:
-          storageClassName: "{{ db2_class_block }}"
+          storageClassName: "{{ db2_sc_block }}"
           accessModes:
           - ReadWriteOnce
           resources:
@@ -142,31 +141,30 @@ spec:
       - name: tempts
         type: template
         spec:
-          storageClassName: "{{ db2_class_block }}"
+          storageClassName: "{{ db2_sc_block }}"
           accessModes:
           - ReadWriteOnce
           resources:
             requests:
               storage: {{ gi_ds_size|int // 10 }}Gi
       partitionConfig:
-#        total: {{ (db2_nodes_array|length) * 2 }}
-        total: {{ db2_nodes_array|length }}
+        total: {{ db2_nodes_array|length * db2_partition_per_node|int }}
       instance:
         registry:
           DB2_4K_DEVICE_SUPPORT: "ON"
   mini-snif:
     persistentVolumesClaims:
       mini-snif-shared:
-        storageClassName: "{{ storage_class_rw_many }}"
+        storageClassName: "{{ db2_sc_fs }}"
   universal-connector-manager:
     persistentVolumesClaims:
       universal-connector-manager-shared:
-        storageClassName: "{{ storage_class_rw_many }}"
+        storageClassName: "{{ db2_sc_fs }}"
   settings-datasources:
     persistentVolumesClaims:
       settings-datasources:
-        storageClassName: "{{ storage_class_rw_many }}"
+        storageClassName: "{{ db2_sc_fs }}"
   ticketing:
     persistentVolumesClaims:
       ticketing-keystore:
-        storageClassName: "{{ storage_class_rw_many }}"
+        storageClassName: "{{ db2_sc_fs }}"

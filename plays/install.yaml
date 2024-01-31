@@ -237,6 +237,18 @@
         gi_ext_ingress: "{{ lookup('env','GI_IN') }}"
         gi_ssh_host: "{{ lookup('env','GI_SSH_HOST') }}"
         gi_ssh_port: "{{ lookup('env','GI_SSH_PORT') }}"
+        gi_size:  "{{ lookup('env','GI_SIZE_GI') }}"
+        db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
+        gi_kafka_size: "{{ lookup('env','GI_KAFKA_STORAGE_SIZE') }}"
+        gi_zookeeper_size:  "{{ lookup('env','GI_ZOOKEEPER_STORAGE_SIZE') }}"
+        gi_redis_size:  "{{ lookup('env','GI_REDIS_STORAGE_SIZE') }}"
+        gi_pgsql_size:  "{{ lookup('env','GI_POSTGRES_STORAGE_SIZE') }}"
+        gi_mongo_size: "{{ lookup('env','GI_MONGO_DATA_STORAGE_SIZE') }}"
+        gi_mongo_meta_size:  "{{ lookup('env','GI_MONGO_METADATA_STORAGE_SIZE') }}"
+        gi_ds_size: "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
+        gi_meta_size: "{{ lookup('env','GI_METADATA_STORAGE_SIZE') }}"
+        gi_logs_size: "{{ lookup('env','GI_ARCHIVELOGS_STORAGE_SIZE') }}"
+        db2_partition_per_node: "{{ lookup('env','GI_DB2_PARTITION_PER_NODE') }}"
       when: install_gi == 'Y'
 
     - name: Check GI variables
@@ -249,6 +261,20 @@
         - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
         - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
         - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
+        - { name: "GI_SSH_HOST", value: "{{ gi_ssh_host }}" }
+        - { name: "GI_SSH_PORT", value: "{{ gi_ssh_port }}" }
+        - { name: "GI_SIZE_GI", value: "{{ gi_size }}" }
+        - { name: "GI_DB2_ENCRYPTED", value: "{{ db2_enc_hint }}" }
+        - { name: "GI_KAFKA_STORAGE_SIZE", value: "{{ gi_kafka_size }}" }
+        - { name: "GI_ZOOKEEPER_STORAGE_SIZE", value: "{{ gi_zookeeper_size }}" }
+        - { name: "GI_REDIS_STORAGE_SIZE", value: "{{ gi_redis_size }}" }
+        - { name: "GI_POSTGRES_STORAGE_SIZE", value: "{{ gi_pgsql_size }}" }
+        - { name: "GI_MONGO_DATA_STORAGE_SIZE", value: "{{ gi_mongo_size }}" }
+        - { name: "GI_MONGO_METADATA_STORAGE_SIZE", value: "{{ gi_mongo_meta_size }}" }
+        - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
+        - { name: "GI_METADATA_STORAGE_SIZE", value: "{{ gi_meta_size }}" }
+        - { name: "GI_ARCHIVELOGS_STORAGE_SIZE", value: "{{ gi_logs_size }}" }
+        - { name: "GI_DB2_PARTITION_PER_NODE", value: "{{ db2_partition_per_node }}" }
       when: install_gi == 'Y' and item.value == ""
 
     - name: Set GI cert variables
@@ -274,6 +300,12 @@
         gi_add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
         gi_add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
         gi_license: "{{ 'L-TFWF-ZZ5233' if gi_version_index|int > 0 else 'L-GBLK-CDVHGZ' }}"
+        gi_deployment_size: "{{ 'values-xsmall' if gi_size == 'S' else 'values-small' if gi_size == 'M' else 'values-med' }}"
+        db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
+        db2_sc_block: "{{ 'rook-ceph-block' if storage_type == 'R' else '' }}"
+        db2_sc_fs: "{{ 'rook-cephfs' if storage_type == 'R' else '' }}"
+        nodb2_sc_block: "{{ 'rook-ceph-block-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-ceph-block' if storage_type == 'R' else '' }}"
+        nodb2_sc_fs: "{{ 'rook-cephfs-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-cephfs' if storage_type == 'R' else '' }}"
       when: install_gi == 'Y'
 
     - name: Set GI NFS variables
