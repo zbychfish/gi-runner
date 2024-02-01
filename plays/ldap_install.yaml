@@ -79,9 +79,9 @@
     dest: /etc/haproxy/haproxy.cfg.ldap
   vars:
     masters: "{{ master_name|zip(master_ip)|list }}"
-    nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
-    ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
-    workers: "{{ nodes|zip(ips)|list }}"
+    nodes: "{{ worker_name|default([])+ocs_name|default([]) if is_master_only == 'N' else '' }}"
+    ips: "{{ worker_ip|default([])+ocs_ip|default([]) if is_master_only == 'N' else '' }}"
+    workers: "{{ nodes|zip(ips)|list if is_master_only == 'N' else '' }}"
     nodes_list: "{{ workers if is_master_only == 'N' else masters }}"
   when: is_openldap_in_haproxy.stdout == "0"
 

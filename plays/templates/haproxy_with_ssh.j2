@@ -10,6 +10,6 @@ frontend ssh
 backend ssh
  balance source
  mode tcp
-{% for name, ip in workers %}
+{% for name, ip in nodes_to_process %}
  server {{ name }} {{ ip }}:{{ ssh_node_port.stdout }} check
 {% endfor %}
