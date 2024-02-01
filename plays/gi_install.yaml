@@ -17,6 +17,21 @@
       use_proxy: no
     register: tenants
 
+  - name: Get JWT token
+    uri:
+      url: "https://insights.apps.{{ ocp_domain }}/api/v1/authorization"
+      method: POST
+      headers:
+        Authorization: "Basic {{ basic_token.stdout }}"
+      body_format: json
+      body: '{"IsRenew": false}'
+      validate_certs: no
+      use_proxy: no
+    register: jwt
+
+  - debug:
+      msg: "{{ jwt.json.JWT }}"
+
   - name: Set outliers feature on
     uri:
       url: "https://insights.apps.{{ ocp_domain }}/api/v3/feature_flags/overrides"
@@ -176,7 +191,7 @@
     with_items:
     - STAP_STREAMING
     when: stap_supp == 'Y'
-  when: gi_version == 0
+  when: gi_version == '3.2.13'
 
 
 - name: Set Outliers detection in Demo mode
