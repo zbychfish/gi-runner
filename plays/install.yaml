@@ -411,3 +411,13 @@
           - "OpenLDAP installed"
           - "LDAP instance configured in CPFS with name openldap"
       when: install_ldap == 'Y'
+
+    - name: GI deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "GI {{ gi_version }} installation finished"
+          - Update the hosts file on your web browser workstation
+          - "{{ bas_ip }} insights.apps.{{ ocp_domain }}"
+          - "Login to GI console as admin - https://insights.apps.{{ ocp_domain }}"
+          - "{{ '' if skip_phase|int > 4 else 'SSH port '+ssh_node_port.stdout+' integration with GDP routed and opened on bastion' }}"
+      when: install_gi == 'Y'

@@ -88,6 +88,7 @@
   until: db2_deployment_status.stdout|int == 1
   retries: 150
   delay: 10
+  when: false
 
 - name: Patch deployment (BUG in 3.2.10)
   shell:
