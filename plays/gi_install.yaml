@@ -36,7 +36,6 @@
     uri:
       url: "https://insights.apps.{{ ocp_domain }}/api/v3/feature_flags/overrides"
       method: PUT
-      headers:
       body_format: json
       body: 
         feature_flag:
