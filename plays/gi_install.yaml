@@ -158,7 +158,7 @@
     with_items:
     - STAP_STREAMING
     when: stap_supp == 'Y'
-when: gi_version == 0
+  when: gi_version == 0
 
 
 - name: Set Outliers detection in Demo mode
