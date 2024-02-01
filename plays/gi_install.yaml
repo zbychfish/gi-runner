@@ -17,6 +17,9 @@
       use_proxy: no
     register: tenants
 
+  - debug:
+      msg: "{{ json.Tenants[0].tenant_id }}"
+
 - meta: end_play
 
 
