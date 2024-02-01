@@ -216,7 +216,7 @@
       use_proxy: no
     vars:
       j_query: "Configs[?Name=='Outliers']._id"
-  when: outliers_demo == 'Y' and gi_version != '3.2.13'
+  when: outliers_demo == 'Y' and gi_version == '3.2.13'
 
 - name: Get ssh service node port
   shell:
@@ -262,12 +262,12 @@
 - name: Set script for DB2 parallelism
   template:
     src: "{{ item }}.j2"
-    dest: "../{{ gi_temp }}/scripts/{{ item }}.sh"
+    dest: "../{{ temp_dir }}/scripts/{{ item }}.sh"
   with_items:
     - db2_parallelism
-  when: gi_version|int == 0
+  when: gi_version|int == '3.2.13'
 
 - name: Setup DB2 parameters for parallelism
   shell:
-    cmd: "bash ../{{ gi_temp }}/scripts/db2_parallelism.sh"
-  when: gi_version|int == 0
+    cmd: "bash ../{{ temp_dir }}/scripts/db2_parallelism.sh"
+  when: gi_version == '3.2.13'
