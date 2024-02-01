@@ -43,8 +43,8 @@
           flag_name: "STAP_STREAMING"
           is_enabled: true
         tenant_id: "{{ tenants.json.Tenants[0].tenant_id }}"
-      url_username: zibi
-      url_password: guardium
+      user: zibi
+      password: guardium
       validate_certs: no
       use_proxy: no
 
