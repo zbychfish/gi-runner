@@ -44,6 +44,7 @@
         tenant_id: "{{ tenants.json.Tenants[0].tenant_id }}"
       url_username: zibi
       url_password: guardium
+      status_code: [ 200, 401 ]
       validate_certs: no
       use_proxy: no
 
