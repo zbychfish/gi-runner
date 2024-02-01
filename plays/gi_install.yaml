@@ -5,7 +5,7 @@
       cmd: "echo -n admin:{{ cpfs_admin_password }} | base64"
     register: basic_token
 
-  - name: Set outliers feature on
+  - name: Get tenant name
     uri:
       url: "https://insights.apps.{{ ocp_domain }}/api/v3/tenants"
       method: GET
@@ -16,6 +16,21 @@
       validate_certs: no
       use_proxy: no
     register: tenants
+
+  - name: Set outliers feature on
+    uri:
+      url: "https://insights.apps.{{ ocp_domain }}/api/v3/feature_flags/overrides"
+      method: GET
+      headers:
+        Authorization: "Basic {{ basic_token.stdout }}"
+      body_format: json
+      body: 
+      feature_flag:
+        flag_name: "STAP_STREAMING"
+        is_enabled: true
+      tenant_id: "{{ tenants.json.Tenants[0].tenant_id }}"
+      validate_certs: no
+      use_proxy: no
 
   - debug:
       msg: "{{ tenants.json.Tenants[0].tenant_id }}"
