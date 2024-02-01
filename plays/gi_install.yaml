@@ -20,7 +20,7 @@
   - name: Set outliers feature on
     uri:
       url: "https://insights.apps.{{ ocp_domain }}/api/v3/feature_flags/overrides"
-      method: GET
+      method: PUT
       headers:
         Authorization: "Basic {{ basic_token.stdout }}"
       body_format: json
