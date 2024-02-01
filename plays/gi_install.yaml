@@ -1,3 +1,25 @@
+- name: Enable STAP streaming and Outliers features for 3.2+
+  block:
+  - name: Generate basic token
+    shell:
+      cmd: "echo -n admin:{{ cpfs_admin_password }} | base64"
+    register: basic_token
+
+  - name: Set outliers feature on
+    uri:
+      url: "https://insights.apps.{{ ocp_domain }}/api/v3/tenants"
+      method: GET
+      headers:
+        Authorization: "Basic {{ basic_token.stdout }}"
+      body_format: json
+      body: '{"value": true}"}'
+      validate_certs: no
+      use_proxy: no
+    register: tenants
+
+- meta: end_play
+
+
 - name: Link python3 to python name
   file:
     src: /usr/bin/python3
@@ -136,6 +158,7 @@
     with_items:
     - STAP_STREAMING
     when: stap_supp == 'Y'
+when: gi_version == 0
 
 
 - name: Set Outliers detection in Demo mode

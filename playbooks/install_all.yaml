@@ -164,16 +164,6 @@
       ansible.builtin.include_tasks: cp4s_install.yaml
       when: skip_phase|int < 7 and install_cp4s == 'Y'
 
-    - name: GI info
-      ansible.builtin.debug:
-        msg:
-          - "GI {{ gi_version }} installation finished"
-          - Update the hosts file on your web browser workstation
-          - "{{ bas_ip }} insights.apps.{{ domain }}"
-          - "Login to GI console as admin - https://insights.apps.{{ domain }}"
-          - "{{ '' if skip_phase|int > 4 else 'SSH port '+ssh_node_port.stdout+' integration with GDP routed and opened on bastion' }}"
-      when: install_gi == 'Y'
-
     - name: CP4S info
       ansible.builtin.debug:
         msg:
