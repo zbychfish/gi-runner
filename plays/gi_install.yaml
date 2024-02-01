@@ -1,59 +1,3 @@
-- name: Enable STAP streaming and Outliers features for 3.2+
-  block:
-  - name: Generate basic token
-    shell:
-      cmd: "echo -n admin:{{ cpfs_admin_password }} | base64"
-    register: basic_token
-
-  - name: Get tenant name
-    uri:
-      url: "https://insights.apps.{{ ocp_domain }}/api/v3/tenants"
-      method: GET
-      headers:
-        Authorization: "Basic {{ basic_token.stdout }}"
-      body_format: json
-      body: '{"value": true}"}'
-      validate_certs: no
-      use_proxy: no
-    register: tenants
-
-  - name: Get JWT token
-    uri:
-      url: "https://insights.apps.{{ ocp_domain }}/api/v1/authorization"
-      method: POST
-      headers:
-        Authorization: "Basic {{ basic_token.stdout }}"
-      body_format: json
-      body: '{"IsRenew": false}'
-      validate_certs: no
-      use_proxy: no
-    register: jwt
-
-  - debug:
-      msg: "{{ jwt.json.JWT }}"
-
-  - name: Set outliers feature on
-    uri:
-      url: "https://insights.apps.{{ ocp_domain }}/api/v3/feature_flags/overrides"
-      method: PUT
-      headers:
-        Authorization: "Basic {{ basic_token.stdout }}"
-      body_format: json
-      body: 
-        feature_flag:
-          flag_name: "STAP_STREAMING"
-          is_enabled: false
-        tenant_id: "{{ tenants.json.Tenants[0].tenant_id }}"
-      status_code: [ 200, 401 ]
-      validate_certs: no
-      use_proxy: no
-
-  - debug:
-      msg: "{{ tenants.json.Tenants[0].tenant_id }}"
-
-- meta: end_play
-
-
 - name: Link python3 to python name
   file:
     src: /usr/bin/python3
@@ -158,7 +102,7 @@
   retries: 200
   delay: 10
 
-- name: Enable STAP streaming and Outliers features for 3.2+
+- name: Enable STAP streaming and Outliers features for 3.2.x
   block:
   - name: Generate basic token
     shell:
@@ -194,8 +138,43 @@
     when: stap_supp == 'Y'
   when: gi_version == '3.2.13'
 
+- name: Enable STAP streaming and Outliers features for 3.3
+  block:
+  - name: Generate basic token
+    shell:
+      cmd: "echo -n admin:{{ cpfs_admin_password }} | base64"
+    register: basic_token
 
-- name: Set Outliers detection in Demo mode
+  - name: Get tenant name
+    uri:
+      url: "https://insights.apps.{{ ocp_domain }}/api/v3/tenants"
+      method: GET
+      headers:
+        Authorization: "Basic {{ basic_token.stdout }}"
+      body_format: json
+      body: '{"value": true}"}'
+      validate_certs: no
+      use_proxy: no
+    register: tenants
+
+  - name: Set outliers feature on
+    uri:
+      url: "https://insights.apps.{{ ocp_domain }}/api/v3/feature_flags/overrides"
+      method: PUT
+      headers:
+        Authorization: "Basic {{ basic_token.stdout }}"
+      body_format: json
+      body:
+        feature_flag:
+          flag_name: "STAP_STREAMING"
+          is_enabled: false
+        tenant_id: "{{ tenants.json.Tenants[0].tenant_id }}"
+      status_code: [ 200, 401 ] # BUG in API
+      validate_certs: no
+      use_proxy: no
+  when: gi_version != '3.2.13'
+
+- name: Set Outliers detection in Demo mode for 3.2.x
   block:
   - name: Get JWT token
     uri:
@@ -208,9 +187,6 @@
       validate_certs: no
       use_proxy: no
     register: jwt
-
-  - debug:
-      msg: "{{ jwt.json.JWT }}"
 
   - name: Get Outliers settings
     uri:
@@ -240,7 +216,7 @@
       use_proxy: no
     vars:
       j_query: "Configs[?Name=='Outliers']._id"
-  when: outliers_demo == 'Y'
+  when: outliers_demo == 'Y' and gi_version != '3.2.13'
 
 - name: Get ssh service node port
   shell:
