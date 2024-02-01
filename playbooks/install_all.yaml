@@ -57,17 +57,6 @@
         nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
         ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
 
-    - name: Set GI installation variables from env
-      ansible.builtin.set_fact:
-        stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
-      when: install_gi == 'Y'
-
-    - name: Check GI variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
-      when: install_gi == 'Y' and item.value == ""
-
     - name: Set CP4S installation variables from env
       ansible.builtin.set_fact:
         cp4s_namespace: "{{ lookup('env','GI_CP4S_NS') }}"
@@ -156,17 +145,6 @@
       ansible.builtin.set_fact:
         gi_case: "ibm-guardium-insights-{{ gi_case_version }}.tgz"
       when: install_gi == 'Y'
-
-    - name: Set GI installation variables
-      ansible.builtin.set_fact:
-        outliers_demo: "{{ lookup('env', 'GI_OUTLIERS_DEMO') }}"
-      when: install_gi == 'Y'
-
-    - name: Check GI installation variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_OUTLIERS_DEMO", value: "{{ outliers_demo }}" }
-      when: install_gi == 'Y' and item.value == ""
 
     - name: Set parameters for air-gapped installation
       ansible.builtin.set_fact:

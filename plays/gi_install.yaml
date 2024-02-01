@@ -6,7 +6,7 @@
 
 - name: Label GI nodes
   shell:
-    cmd: "oc label node {{ item }}.{{ ocp_domain }} role=gi --overwrite=true"
+    cmd: "oc label node {{ item }}.{{ ocp_domain }} gi_node=yes --overwrite=true"
   with_items: "{{ gi_dedicated_nodes|list }}"
   when: gi_dedicated_nodes|length > 2
 
@@ -18,7 +18,7 @@
   shell:
     cmd: "{{ item }}"
   with_items:
-    - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"role=gi\"}}}'"
+    - "oc patch namespace {{ gi_namespace }} -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"gi_node=yes\"}}}'"
   when: gi_dedicated_nodes|length > 2
 
 - name: GI download case file
@@ -79,6 +79,7 @@
 - name: Deploy GI
   shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/gi.yaml"
+  when: false
 
 - name: Wait for DB2 deployment
   shell:
@@ -99,3 +100,128 @@
   until: gi_deployment_status.stdout == gi_version
   retries: 200
   delay: 10
+
+- name: Enable STAP streaming and Outliers features for 3.2+
+  block:
+  - name: Generate basic token
+    shell:
+      cmd: "echo -n admin:{{ cpfs_admin_password }} | base64"
+    register: basic_token
+
+  - name: Set outliers feature on
+    uri:
+      url: "https://insights.apps.{{ ocp_domain }}/api/v3/feature_flags/{{ item }}"
+      method: PATCH
+      headers:
+        Authorization: "Basic {{ basic_token.stdout }}"
+      body_format: json
+      body: '{"value": true}"}'
+      validate_certs: no
+      use_proxy: no
+    with_items:
+    - OUTLIERS_ENGINE
+    - GDP_OUTLIER_SUMMARIZED
+
+  - name: Set outliers STAP streaming on
+    uri:
+      url: "https://insights.apps.{{ ocp_domain }}/api/v3/feature_flags/{{ item }}"
+      method: PATCH
+      headers:
+        Authorization: "Basic {{ basic_token.stdout }}"
+      body_format: json
+      body: '{"value": true}"}'
+      validate_certs: no
+      use_proxy: no
+    with_items:
+    - STAP_STREAMING
+    when: stap_supp == 'Y'
+
+
+- name: Set Outliers detection in Demo mode
+  block:
+  - name: Get JWT token
+    uri:
+      url: "https://insights.apps.{{ ocp_domain }}/api/v1/authorization"
+      method: POST
+      headers:
+        Authorization: "Basic {{ basic_token.stdout }}"
+      body_format: json
+      body: '{"IsRenew": false}'
+      validate_certs: no
+      use_proxy: no
+    register: jwt
+
+  - debug:
+      msg: "{{ jwt.json.JWT }}"
+
+  - name: Get Outliers settings
+    uri:
+      url: "https://insights.apps.{{ ocp_domain }}/api/v1/configs"
+      method: GET
+      headers:
+        Authorization: "{{ jwt.json.JWT }}"
+      validate_certs: no
+      use_proxy: no
+    register: gi_configs
+
+  - debug:
+      msg: "{{ gi_configs.json|community.general.json_query(j_query) }}"
+    vars:
+      j_query: "Configs[?Name=='Outliers']._id"
+    register: outliers_id
+
+  - name: Set Outliers in demo mode
+    uri:
+      url: "https://insights.apps.{{ ocp_domain }}/api/v1/configs/{{ outliers_id.msg[0] }}"
+      method: PATCH
+      headers:
+        Authorization: "{{ jwt.json.JWT }}"
+      body_format: json
+      body: '{"Name": "","_id": "{{ outliers_id.msg[0] }}","Options": {"demoMode": "1","minDaysForAlerts": "0","intervalAlertsThreshold": "0.5","minNumIntervalsForMessageScorers": "2","minNumIntervalsForIntervalScorers": "2","alertsPerDay": "100"}}'
+      validate_certs: no
+      use_proxy: no
+    vars:
+      j_query: "Configs[?Name=='Outliers']._id"
+  when: outliers_demo == 'Y'
+
+- name: Get ssh service node port
+  shell:
+    cmd: "oc get services -n {{ gi_namespace }} {{ gi_namespace }}-ssh-service -o json|jq .spec.ports[0].nodePort"
+  register: ssh_node_port
+
+- name: Open ssh-service port on bastion
+  firewalld:
+    port: "{{ item.port }}/{{ item.type }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  with_items:
+    - { port: "{{ ssh_node_port.stdout }}", type: "tcp" }
+
+- name: Create HA Proxy config file with ssh-service
+  template:
+    src: haproxy_with_ssh.j2
+    dest: /etc/haproxy/haproxy.cfg.ssh
+  vars:
+    masters: "{{ master_name|zip(master_ip)|list }}"
+    nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
+    ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
+    workers: "{{ nodes|zip(ips)|list }}"
+  when: is_master_only == 'N'
+
+- name: Create HA Proxy config file with ssh-service (no dedicated workers)
+  template:
+    src: haproxy_with_ssh_masters_only.j2
+    dest: /etc/haproxy/haproxy.cfg.ssh
+  vars:
+    masters: "{{ master_name|zip(master_ip)|list }}"
+  when: is_master_only == 'Y'
+
+- name: Modify HA Proxy config file
+  shell:
+    cmd: cat /etc/haproxy/haproxy.cfg.ssh >> /etc/haproxy/haproxy.cfg
+
+- name: Restart HA Proxy
+  service:
+    name: haproxy
+    state: restarted

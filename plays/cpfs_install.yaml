@@ -4,7 +4,7 @@
 
 - name: Label CPFS nodes
   ansible.builtin.shell:
-    cmd: "oc label node {{ item }}.{{ ocp_domain }} role=cpfs --overwrite=true"
+    cmd: "oc label node {{ item }}.{{ ocp_domain }} cpfs_node=yes --overwrite=true"
   with_items: "{{ cpfs_dedicated_nodes|list }}"
   when: cpfs_dedicated_nodes|length > 2
 
@@ -12,7 +12,7 @@
   ansible.builtin.shell:
     cmd: "{{ item }}"
   with_items:
-    - "oc patch namespace ibm-common-services -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"role=cpfs\"}}}'"
+    - "oc patch namespace ibm-common-services -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"cpfs_node=yes\"}}}'"
   when: cpfs_dedicated_nodes|length > 2
 
 - name: Check presence of cloudctl tool

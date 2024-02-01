@@ -249,6 +249,8 @@
         gi_meta_size: "{{ lookup('env','GI_METADATA_STORAGE_SIZE') }}"
         gi_logs_size: "{{ lookup('env','GI_ARCHIVELOGS_STORAGE_SIZE') }}"
         db2_partition_per_node: "{{ lookup('env','GI_DB2_PARTITION_PER_NODE') }}"
+        stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
+        outliers_demo: "{{ lookup('env', 'GI_OUTLIERS_DEMO') }}"
       when: install_gi == 'Y'
 
     - name: Check GI variables
@@ -275,6 +277,8 @@
         - { name: "GI_METADATA_STORAGE_SIZE", value: "{{ gi_meta_size }}" }
         - { name: "GI_ARCHIVELOGS_STORAGE_SIZE", value: "{{ gi_logs_size }}" }
         - { name: "GI_DB2_PARTITION_PER_NODE", value: "{{ db2_partition_per_node }}" }
+        - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
+        - { name: "GI_OUTLIERS_DEMO", value: "{{ outliers_demo }}" }
       when: install_gi == 'Y' and item.value == ""
 
     - name: Set GI cert variables
@@ -300,7 +304,7 @@
         gi_add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
         gi_add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
         gi_license: "{{ 'L-TFWF-ZZ5233' if gi_version_index|int > 0 else 'L-GBLK-CDVHGZ' }}"
-        gi_deployment_size: "{{ 'values-xsmall' if gi_size == 'S' else 'values-small' if gi_size == 'M' else 'values-med' }}"
+        gi_deployment_size: "{{ 'values-xsmall' if gi_size == 'demo' else 'values-small' if gi_size == 'small' else 'values-med' }}"
         db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
         db2_sc_block: "{{ 'rook-ceph-block' if storage_type == 'R' else '' }}"
         db2_sc_fs: "{{ 'rook-cephfs' if storage_type == 'R' else '' }}"
