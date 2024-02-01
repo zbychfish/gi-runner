@@ -37,14 +37,14 @@
       url: "https://insights.apps.{{ ocp_domain }}/api/v3/feature_flags/overrides"
       method: PUT
       headers:
-        #Authorization: "Basic {{ basic_token.stdout }}"
-        Authorization:  "{{ jwt.json.JWT }}"
       body_format: json
       body: 
         feature_flag:
           flag_name: "STAP_STREAMING"
           is_enabled: true
         tenant_id: "{{ tenants.json.Tenants[0].tenant_id }}"
+      url_username: zibi
+      url_password: guardium
       validate_certs: no
       use_proxy: no
 
