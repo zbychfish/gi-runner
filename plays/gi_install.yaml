@@ -40,7 +40,7 @@
       body: 
         feature_flag:
           flag_name: "STAP_STREAMING"
-          is_enabled: true
+          is_enabled: false
         tenant_id: "{{ tenants.json.Tenants[0].tenant_id }}"
       url_username: zibi
       url_password: guardium
