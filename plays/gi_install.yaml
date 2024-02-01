@@ -224,3 +224,16 @@
   service:
     name: haproxy
     state: restarted
+
+- name: Set script for DB2 parallelism
+  template:
+    src: "{{ item }}.j2"
+    dest: "../{{ gi_temp }}/scripts/{{ item }}.sh"
+  with_items:
+    - db2_parallelism
+  when: gi_version|int == 0
+
+- name: Setup DB2 parameters for parallelism
+  shell:
+    cmd: "bash ../{{ gi_temp }}/scripts/db2_parallelism.sh"
+  when: gi_version|int == 0
