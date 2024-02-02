@@ -76,8 +76,6 @@
     src: gi.j2
     dest: "{{ temp_dir }}/yamls/gi.yaml"
 
-- meta: end_play
-
 - name: Deploy GI
   shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/gi.yaml"
@@ -95,7 +93,7 @@
     cmd: "oc patch guardiuminsights {{ gi_namespace }} -n {{ gi_namespace }} --type json -p '[{\"op\": \"replace\", \"path\": \"/spec/guardiumInsightsGlobal/deploySettings/ensureDb2InstallPlacement\", \"value\": false}]'"
 
 - name: Wait for successful GI deployment (takes 20-60 minutes) - 3.3.0 BUG
-  include_tasks: gi_check_deployment_status.yaml
+  ansible.builtin.include_tasks: gi_check_deployment_status.yaml
   until: gi_deployment_status.stdout == gi_version
   retries: 200
   delay: 10
