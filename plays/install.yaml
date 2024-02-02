@@ -357,7 +357,7 @@
       ansible.builtin.file:
         path: "{{ temp_dir }}/downloads" 
         state: absent
-      when: clean_downloads == 'Y'
+      when: clean_downloads|upper == 'Y'
 
     - name: Setup bastion
       ansible.builtin.include_tasks: bastion_setup.yaml
