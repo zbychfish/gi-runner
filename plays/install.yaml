@@ -123,21 +123,6 @@
         - { name: "GI_WORKER_NAME", value: "{{ worker_name }}" }
       when: is_master_only == 'N' and item.value == ""
 
-    - name: Set ODF tainted nodes array
-      ansible.builtin.set_fact:
-        ocs_ip: "{{ lookup('env', 'GI_OCS_IP').split(',') }}"
-        ocs_mac: "{{ lookup('env', 'GI_OCS_MAC_ADDRESS').split(',') }}"
-        ocs_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
-      when: is_ocs_tainted == 'Y'
-
-    - name: Check OCS configuration
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_OCS_IP", value: "{{ ocs_ip }}" }
-        - { name: "GI_OCS_MAC_ADDRESS", value: "{{ ocs_mac }}" }
-        - { name: "GI_OCS_NAME", value: "{{ ocs_name }}" }
-      when: is_ocs_tainted == 'Y' and item.value == ""
-
     - name: Set parameters for one subnet installation
       ansible.builtin.set_fact:
         dhcp_range_start: "{{ lookup('env','GI_DHCP_RANGE_START') }}"
@@ -180,6 +165,21 @@
         - { name: "GI_ROOK_NODES", value: "{{ rook_dedicated_nodes }}" }
         - { name: "GI_ROOK_DEPL", value: "{{ rook_depl_type }}" }
       when: storage_type == 'R' and item.value == ""
+
+    - name: Set ODF tainted nodes array
+      ansible.builtin.set_fact:
+        odf_ip: "{{ lookup('env', 'GI_OCS_IP').split(',') }}"
+        odf_mac: "{{ lookup('env', 'GI_OCS_MAC_ADDRESS').split(',') }}"
+        odf_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
+      when: storage_type == 'O' and is_odf_tainted == 'Y'
+
+    - name: Check OCS configuration
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_OCS_IP", value: "{{ odf_ip }}" }
+        - { name: "GI_OCS_MAC_ADDRESS", value: "{{ odf_mac }}" }
+        - { name: "GI_OCS_NAME", value: "{{ odf_name }}" }
+      when: storage_type == 'O' and is_odf_tainted == 'Y' and item.value == ""
 
     - name: Set ODF nodes list
       ansible.builtin.set_fact:
