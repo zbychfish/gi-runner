@@ -83,17 +83,6 @@
           #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
       when: install_cp4s == 'Y' and internet_type == 'A' and item.value == ""
 
-    - name: Set OCS nodes list
-      ansible.builtin.set_fact:
-        ocs_nodes: "{{ lookup('env', 'GI_OCS_NODES').split(',') }}"
-      when: storage_type == 'O' and is_ocs_tainted == 'N'
-
-    - name: Check OCS nodes list
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_OCS_NODES", value: "{{ ocs_nodes }}" }
-      when: storage_type == 'O' and is_ocs_tainted == 'N' and item.value == ""
-
     - name: Set Portworx variables
       ansible.builtin.set_fact:
         px_id: "{{ lookup('env', 'GI_PX_ID') }}"
