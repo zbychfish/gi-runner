@@ -82,6 +82,21 @@
         - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
       when: item.value == ""
 
+    - name: Set parameters for installation with proxy
+      ansible.builtin.set_fact:
+        proxy_url: "{{ lookup('env','GI_PROXY_URL') }}"
+        no_proxy_list: "{{ lookup('env','GI_NOPROXY_NET') }}"
+        no_proxy_adds: "{{ lookup('env','GI_NOPROXY_NET_ADDS') }}"
+      when: internet_type == 'P'
+
+    - name: Check configuration parameters for installation with proxy
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_PROXY_URL", value: "{{ proxy_url }}" }
+        - { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
+          #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
+      when: internet_type == 'P' and item.value == ""
+
     - name: Set parameters for ntp set on bastion
       ansible.builtin.set_fact:
         ntp_clients: "{{ lookup('env','GI_NTP_CLIENTS') }}"

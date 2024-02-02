@@ -1,18 +1,3 @@
-- name: Create temp subdirectories
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    state: directory
-  with_items:
-    - { path: "{{ temp_dir }}/coreos" }
-    - { path: "{{ temp_dir }}/adds" }
-    - { path: "{{ temp_dir }}/os" }
-    - { path: "{{ temp_dir }}/rook" }
-    - { path: "{{ temp_dir }}/olm" }
-    - { path: "{{ temp_dir }}/ics_arch" }
-    - { path: "{{ temp_dir }}/gi_arch" }
-    - { path: "{{ temp_dir }}/cp4s" }
-    - { path: "{{ temp_dir }}/gi_arch/cases" }
-
 - name: Create portable registry directories
   ansible.builtin.file:
     path: "{{ item.path }}"
