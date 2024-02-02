@@ -6,9 +6,9 @@ proxy:
   httpsProxy: http://{{ proxy_url }}
 {% endif %}
 {% if internet_type == 'P' and no_proxy_adds|length %}
-  noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},{{ no_proxy_list }},{{ no_proxy_adds }}
+  noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},{{ no_proxy_list|replace('*', '') }},{{ no_proxy_adds }}
 {% else %}
-  noProxy: .{{ base_domain }},172.30.0.0/16,{{ no_proxy_list }},{{ cluster_network }}
+  noProxy: .{{ base_domain }},172.30.0.0/16,{{ no_proxy_list|replace('*', '') }},{{ cluster_network }}
 {% endif %}
 compute:
 - hyperthreading: Enabled

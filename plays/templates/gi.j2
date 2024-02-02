@@ -39,6 +39,9 @@ spec:
 {% else %}
       enabled: "false"
 {% endif %}
+  dependency-s3:
+    storageClassName: "{{ db2_sc_block }}"
+
   dependency-kafka:
     kafka:
       storage:
