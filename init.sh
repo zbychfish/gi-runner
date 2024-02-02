@@ -23,7 +23,7 @@ get_network_installation_type
 msg "Deployment decisions about the software and its releases" task
 get_software_selection
 get_software_architecture
-#[[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
+[[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
 [[ "$use_air_gap" == 'Y' ]] && prepare_offline_bastion || software_installation_on_online
 get_ocp_domain
 msg "Installing tools for init.sh" task
@@ -53,6 +53,7 @@ if LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'
 then
 	msg "System reboot required because new kernel has been installed" info
 	msg "Execute these commands after relogin to bastion:" info
+	[[ $use_proxy == 'P' ]] &&  msg "- import PROXY settings: \". /etc/profile\"" info
 	msg "- go to gi-runner home directory: \"cd $GI_HOME\"" info
 	msg "- import variables: \". $variables_file\"" info
         msg "- start first playbook: \"ansible-playbook play/install.yaml\"" info

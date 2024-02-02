@@ -315,6 +315,84 @@ function check_linux_distribution_and_release() {
         fi
 }
 
+function configure_os_for_proxy() {
+        msg "Configuring proxy settings" task
+        msg "To support installation over Proxy some additional information must be gathered and reconfiguration of some bastion network services" info
+        msg "HTTP Proxy IP address" info
+        while $(check_input "ip" "${proxy_ip}")
+        do
+                if [[ ! -z "$GI_PROXY_URL" && "$GI_PROXY_URL" != "NO_PROXY" ]]
+                then
+                        local saved_proxy_ip=$(echo "$GI_PROXY_URL"|awk -F':' '{print $1}')
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$saved_proxy_ip] or insert IP address of Proxy server: " true "$saved_proxy_ip"
+                else
+                        get_input "txt" "Insert IP address of Proxy server: " false
+                fi
+                        proxy_ip="${input_variable}"
+        done
+        msg "HTTP Proxy port" info
+        while $(check_input "int" "${proxy_port}" 1024 65535)
+        do
+                if [[ ! -z "$GI_PROXY_URL" && "$GI_PROXY_URL" != "NO_PROXY" ]]
+                then
+                        local saved_proxy_port=$(echo "$GI_PROXY_URL"|awk -F':' '{print $2}')
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$saved_proxy_port] or insert Proxy server port: " true "$saved_proxy_port"
+                else
+                        get_input "txt" "Insert Proxy server port: " false
+                fi
+                        proxy_port="${input_variable}"
+        done
+        msg "You can exclude from proxy redirection the access to the intranet subnets" info
+        no_proxy_adds="init_value"
+        while $(check_input "cidr_list" "${no_proxy_adds}" true)
+        do
+        	get_input "txt" "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxied (do not need provide here cluster addresses): " false
+                no_proxy_adds="${input_variable}"
+        done
+        no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy_adds"
+	msg "Your proxy settings are:" info
+        msg "Proxy URL: http://$proxy_ip:$proxy_port" info
+        msg "System will not use proxy for: $no_proxy" info
+        msg "Setting your HTTP proxy environment on bastion" info
+        msg "Modyfying /etc/profile" info
+        [[ -f /etc/profile.gi_no_proxy ]] || cp -f /etc/profile /etc/profile.gi_no_proxy
+        if [[ `cat /etc/profile | grep "export http_proxy=" | wc -l` -ne 0 ]]
+        then
+                sed -i "s/^export http_proxy=.*/export http_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
+        else
+                echo "export http_proxy=\"http://$proxy_ip:$proxy_port\"" >> /etc/profile
+        fi
+        if [[ `cat /etc/profile | grep "export https_proxy=" | wc -l` -ne 0 ]]
+        then
+                sed -i "s/^export https_proxy=.*/export https_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
+        else
+                echo "export https_proxy=\"http://$proxy_ip:$proxy_port\"" >> /etc/profile
+        fi
+        if [[ `cat /etc/profile | grep "export ftp_proxy=" | wc -l` -ne 0 ]]
+        then
+                sed -i "s/^export ftp_proxy=.*/export ftp_proxy=\"$proxy_ip:$proxy_port\"/g" /etc/profile
+        else
+                echo "export ftp_proxy=\"$proxy_ip:$proxy_port\"" >> /etc/profile
+        fi
+        if [[ `cat /etc/profile | grep "export no_proxy=" | wc -l` -ne 0 ]]
+        then
+                sed -i "s#^export no_proxy=.*#export no_proxy=\"$no_proxy\"#g" /etc/profile
+        else
+                echo "export no_proxy=\"${no_proxy}\"" >> /etc/profile
+        fi
+        msg "Add proxy settings to DNF config file" info
+        [[ -f /etc/dnf/dnf.conf ]] || cp -f /etc/dnf/dnf.conf /etc/dnf/dnf.conf.gi_no_proxy
+        if [[ `cat /etc/dnf/dnf.conf | grep "proxy=" | wc -l` -ne 0 ]]
+        then
+                sed -i "s/^proxy=.*/proxy=http:\/\/$proxy_ip:$proxy_port/g" /etc/dnf/dnf.conf
+        else
+                echo "proxy=http://$proxy_ip:$proxy_port" >> /etc/dnf/dnf.conf
+        fi
+        save_variable GI_NOPROXY_NET "$no_proxy"
+        save_variable GI_NOPROXY_NET_ADDS "$no_proxy_adds"
+        save_variable GI_PROXY_URL "$proxy_ip:$proxy_port"
+}
+
 function create_cluster_ssh_key() {
 	local regenerate_ssh_key
         msg "Add a new RSA SSH key" task
@@ -2100,6 +2178,19 @@ function software_installation_on_online() {
         done
         #mkdir -p ${GI_TEMP}/os
         #echo "pullSecret: '$rhn_secret'" > ${GI_TEMP}/os/pull_secret.tmp
+}
+
+function unset_proxy_settings() {
+        msg "Configuring proxy settings" task
+        if [[ -f /etc/profile.gi_no_proxy ]]
+        then
+                mv -f /etc/profile.gi_no_proxy /etc/profile
+        fi
+        if [[ -f /etc/dnf/dnf.conf.gi_no_proxy ]]
+        then
+                mv -f /etc/dnf/dnf.conf.gi_no_proxy /etc/dnf/dnf.conf
+        fi
+        save_variable GI_PROXY_URL "NO_PROXY"
 }
 
 function validate_certs() {

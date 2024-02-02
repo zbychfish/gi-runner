@@ -170,84 +170,6 @@ function get_cp4s_options() {
         save_variable GI_CP4S_OPTS $(echo ${cp4s_opts[@]}|awk 'BEGIN { FS= " ";OFS="," } { $1=$1 } 1')
 }
 
-function configure_os_for_proxy() {
-        msg "Configuring proxy settings" task
-        msg "To support installation over Proxy some additional information must be gathered and bastion network services reconfiguration" info
-        msg "HTTP Proxy IP address" info
-        while $(check_input "ip" "${proxy_ip}")
-        do
-                if [[ ! -z "$GI_PROXY_URL" && "$GI_PROXY_URL" != "NO_PROXY" ]]
-                then
-                        local saved_proxy_ip=$(echo "$GI_PROXY_URL"|awk -F':' '{print $1}')
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$saved_proxy_ip] or insert IP address of Proxy server: " true "$saved_proxy_ip"
-                else
-                        get_input "txt" "Insert IP address of Proxy server: " false
-                fi
-                        proxy_ip="${input_variable}"
-        done
-        msg "HTTP Proxy port" info
-        while $(check_input "int" "${proxy_port}" 1024 65535)
-        do
-                if [[ ! -z "$GI_PROXY_URL" && "$GI_PROXY_URL" != "NO_PROXY" ]]
-                then
-                        local saved_proxy_port=$(echo "$GI_PROXY_URL"|awk -F':' '{print $2}')
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$saved_proxy_port] or insert Proxy server port: " true "$saved_proxy_port"
-                else
-                        get_input "txt" "Insert Proxy server port: " false
-                fi
-                        proxy_port="${input_variable}"
-        done
-        msg "You can exclude from proxy redirection the access to the intranet subnets" info
-        no_proxy_adds="init_value"
-        while $(check_input "cidr_list" "${no_proxy_adds}" true)
-        do
-                        get_input "txt" "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxied (do not need provide here cluster addresses): " false
-                        no_proxy_adds="${input_variable}"
-        done
-        no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy_adds"
-        msg "Your proxy settings are:" info
-        msg "Proxy URL: http://$proxy_ip:$proxy_port" info
-        msg "System will not use proxy for: $no_proxy" info
-        msg "Setting your HTTP proxy environment on bastion" info
-        msg "- Modyfying /etc/profile" info
-	[[ -f /etc/profile.gi_no_proxy ]] || cp -f /etc/profile /etc/profile.gi_no_proxy
-        if [[ `cat /etc/profile | grep "export http_proxy=" | wc -l` -ne 0 ]]
-        then
-                sed -i "s/^export http_proxy=.*/export http_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
-        else
-                echo "export http_proxy=\"http://$proxy_ip:$proxy_port\"" >> /etc/profile
-        fi
-        if [[ `cat /etc/profile | grep "export https_proxy=" | wc -l` -ne 0 ]]
-        then
-                sed -i "s/^export https_proxy=.*/export https_proxy=\"http:\/\/$proxy_ip:$proxy_port\"/g" /etc/profile
-        else
-                echo "export https_proxy=\"http://$proxy_ip:$proxy_port\"" >> /etc/profile
-        fi
-        if [[ `cat /etc/profile | grep "export ftp_proxy=" | wc -l` -ne 0 ]]
-        then
-                sed -i "s/^export ftp_proxy=.*/export ftp_proxy=\"$proxy_ip:$proxy_port\"/g" /etc/profile
-        else
-                echo "export ftp_proxy=\"$proxy_ip:$proxy_port\"" >> /etc/profile
-        fi
-        if [[ `cat /etc/profile | grep "export no_proxy=" | wc -l` -ne 0 ]]
-        then
-                sed -i "s#^export no_proxy=.*#export no_proxy=\"$no_proxy\"#g" /etc/profile
-        else
-                echo "export no_proxy=\"${no_proxy}\"" >> /etc/profile
-        fi
-        msg "- Add proxy settings to DNF config file" info
-	[[ -f /etc/dnf/dnf.conf ]] || cp -f /etc/dnf/dnf.conf /etc/dnf/dnf.conf.gi_no_proxy
-        if [[ `cat /etc/dnf/dnf.conf | grep "proxy=" | wc -l` -ne 0 ]]
-        then
-                sed -i "s/^proxy=.*/proxy=http:\/\/$proxy_ip:$proxy_port/g" /etc/dnf/dnf.conf
-        else
-                echo "proxy=http://$proxy_ip:$proxy_port" >> /etc/dnf/dnf.conf
-        fi
-        save_variable GI_NOPROXY_NET "$no_proxy"
-	save_variable GI_NOPROXY_NET_ADDS "$no_proxy_adds"
-        save_variable GI_PROXY_URL "$proxy_ip:$proxy_port"
-}
-
 function get_latest_gi_images () {
 	local input_file
 	local output_file
@@ -650,19 +572,6 @@ function get_px_options() {
         save_variable GI_PX_ID $px_id
 }
 
-function unset_proxy_settings() {
-        msg "Configuring proxy settings" task
-        if [[ -f /etc/profile.gi_no_proxy ]]
-        then
-                mv -f /etc/profile.gi_no_proxy /etc/profile
-        fi
-        if [[ -f /etc/dnf/dnf.conf.gi_no_proxy ]]
-        then
-                mv -f /etc/dnf/dnf.conf.gi_no_proxy /etc/dnf/dnf.conf
-        fi
-        save_variable GI_PROXY_URL "NO_PROXY"
-}
-
 function set_bastion_ntpd_client() {
         msg "Set NTPD configuration" task
         sed -i "s/^pool .*/pool $1 iburst/g" /etc/chrony.conf
@@ -686,36 +595,6 @@ function display_default_ics() {
         done
         save_variable GI_ICS_VERSION "${ics_versions[${bundled_in_gi_ics_versions[$i]}]}"
 }
-
-function select_gi_version() {
-        local nd_ics_install
-        while $(check_input "list" ${gi_version_selected} ${#gi_versions[@]})
-        do
-                get_input "list" "Select GI version: " "${gi_versions[@]}"
-                gi_version_selected="$input_variable"
-        done
-        msg "Guardium Insights installation choice assumes installation of bundled version of ICS" info
-        gi_version_selected=$(($gi_version_selected-1))
-        save_variable GI_VERSION $gi_version_selected
-        ics_version_selected=${bundled_in_gi_ics_versions[$gi_version_selected]}
-        ics_install='Y'
-        if [[ $use_air_gap == 'N' ]]
-        then
-                msg "You can overwrite selection of default ICS ${ics_versions[$ics_version_selected]} version" info
-                msg "In this case you must select supported ICS version by GI ${gi_versions[$gi_version_selected]}" info
-                msg "Check documentation before to avoid GI installation problems" info
-                while $(check_input "yn" ${nd_ics_install})
-                do
-                        get_input "yn" "Would you like to install non-default Cloud Pak Foundational Services for GI? " true
-                        nd_ics_install="${input_variable^^}"
-                done
-                [[ "$nd_ics_install" == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
-        else
-                display_default_ics
-                msg "In case of air-gapped installation you must install the bundled ICS version" info
-        fi
-}
-
 
 # Switch off the dnf sync for offline installation
 function switch_dnf_sync_off() {
