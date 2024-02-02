@@ -76,10 +76,11 @@
     src: gi.j2
     dest: "{{ temp_dir }}/yamls/gi.yaml"
 
+- meta: end_play
+
 - name: Deploy GI
   shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/gi.yaml"
-  when: false
 
 - name: Wait for DB2 deployment
   shell:
@@ -88,7 +89,6 @@
   until: db2_deployment_status.stdout|int == 1
   retries: 150
   delay: 10
-  when: false
 
 - name: Patch deployment (BUG in 3.2.10)
   shell:
