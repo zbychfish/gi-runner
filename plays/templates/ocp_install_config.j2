@@ -1,6 +1,7 @@
 apiVersion: v1
 baseDomain: {{ base_domain }}
 {% if internet_type == 'P' %}
+proxy:
   httpProxy: http://{{ proxy_url }}
   httpsProxy: http://{{ proxy_url }}
 {% endif %}
