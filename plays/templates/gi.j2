@@ -41,7 +41,13 @@ spec:
 {% endif %}
   dependency-s3:
     storageClassName: "{{ db2_sc_block }}"
-
+    noobaa:
+      backingstore:
+        resources:
+          storage: 30Gi
+      dbConfig:
+        resources:
+          storage: 50Gi
   dependency-kafka:
     kafka:
       storage:
