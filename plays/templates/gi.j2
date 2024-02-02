@@ -42,12 +42,18 @@ spec:
   dependency-s3:
     storageClassName: "{{ db2_sc_block }}"
     noobaa:
+{% if gi_noobaa_backing_size|int != 0 %}
       backingstore:
         resources:
-          storage: 30Gi
+          requests:
+            storage: {{ gi_noobaa_backing_size }}Gi
+{% endif %}
+{% if gi_noobaa_core_size|int != 0 %}
       dbConfig:
         resources:
-          storage: 50Gi
+          requests:
+            storage: {{ gi_noobaa_core_size }}Gi
+{% endif %}
   dependency-kafka:
     kafka:
       storage:

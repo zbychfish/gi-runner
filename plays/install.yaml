@@ -274,6 +274,8 @@
         gi_ds_size: "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
         gi_meta_size: "{{ lookup('env','GI_METADATA_STORAGE_SIZE') }}"
         gi_logs_size: "{{ lookup('env','GI_ARCHIVELOGS_STORAGE_SIZE') }}"
+        gi_noobaa_core_size: "{{ lookup('env','GI_NOOBAA_CORE_SIZE') }}"
+        gi_noobaa_backing_size: "{{ lookup('env','GI_NOOBAA_BACKING_SIZE') }}"
         db2_partition_per_node: "{{ lookup('env','GI_DB2_PARTITION_PER_NODE') }}"
         stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
         outliers_demo: "{{ lookup('env', 'GI_OUTLIERS_DEMO') }}"
@@ -302,6 +304,8 @@
         - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
         - { name: "GI_METADATA_STORAGE_SIZE", value: "{{ gi_meta_size }}" }
         - { name: "GI_ARCHIVELOGS_STORAGE_SIZE", value: "{{ gi_logs_size }}" }
+        - { name: "GI_NOOBAA_CORE_SIZE", value: "{{ gi_noobaa_core_size }}" }
+        - { name: "GI_DB2_PARTITION_PER_NODE", value: "{{ gi_noobaa_backing_size }}" }
         - { name: "GI_DB2_PARTITION_PER_NODE", value: "{{ db2_partition_per_node }}" }
         - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
         - { name: "GI_OUTLIERS_DEMO", value: "{{ outliers_demo }}" }

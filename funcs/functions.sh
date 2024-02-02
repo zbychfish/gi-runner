@@ -889,10 +889,10 @@ function get_gi_pvc_size() {
         done
         if [ $custom_pvc == 'Y' ]
         then
-                pvc_arr=("db2-data" "db2-meta" "db2-logs" "db2-temp" "mongo-data" "mongo-logs" "kafka" "zookeeper" "redis" "pgsql")
+                pvc_arr=("db2-data" "db2-meta" "db2-logs" "db2-temp" "mongo-data" "mongo-logs" "kafka" "zookeeper" "redis" "pgsql" "noobaa-core" "noobaa-backing")
                 for pvc in ${pvc_arr[@]};do pvc_sizes $pvc;done
         else
-                local pvc_variables=("GI_DATA_STORAGE_SIZE" "GI_METADATA_STORAGE_SIZE" "GI_ARCHIVELOGS_STORAGE_SIZE" "GI_TEMPTS_STORAGE_SIZE" "GI_MONGO_DATA_STORAGE_SIZE" "GI_MONGO_METADATA_STORAGE_SIZE" "GI_KAFKA_STORAGE_SIZE" "GI_ZOOKEEPER_STORAGE_SIZE" "GI_REDIS_STORAGE_SIZE" "GI_POSTGRES_STORAGE_SIZE")
+                local pvc_variables=("GI_DATA_STORAGE_SIZE" "GI_METADATA_STORAGE_SIZE" "GI_ARCHIVELOGS_STORAGE_SIZE" "GI_TEMPTS_STORAGE_SIZE" "GI_MONGO_DATA_STORAGE_SIZE" "GI_MONGO_METADATA_STORAGE_SIZE" "GI_KAFKA_STORAGE_SIZE" "GI_ZOOKEEPER_STORAGE_SIZE" "GI_REDIS_STORAGE_SIZE" "GI_POSTGRES_STORAGE_SIZE" "GI_NOOBAA_CORE_SIZE" "GI_NOOBAA_BACKING_SIZE")
                 for pvc in ${pvc_variables[@]};do save_variable $pvc 0;done
         fi
 }
@@ -1888,85 +1888,94 @@ function pvc_sizes() {
         local m_desc
         local m_ask
         local v_aux1
+	local msg_red
+	local msg_nored
+	msg_nored="You must provide data redundancy on storage level"
+	msg_red="You must provide data redundancy on application level"
         case $1 in
                 "db2-data")
                         size_min=200
-                        [[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
-                        m_desc="DB2 DATA pvc - stores activity events, installation proces will create $v_aux1 PVC/PVC's, each instance contains different data"
+                        m_desc="DB2 DATA pvc - stores activity events, installation proces will create 1 PVC per partition on each DB2 node, each instance contains different data. $msg_nored"
                         m_ask="DB2 DATA pvc, minium size $size_min GB"
                         global_var="GI_DATA_STORAGE_SIZE"
                         global_var_val="$GI_DATA_STORAGE_SIZE"
                         ;;
                 "db2-meta")
                         size_min=30
-                        m_desc="DB2 METADATA pvc - stores DB2 shared, temporary, tool files, installation proces will create 1 PVC"
+                        m_desc="DB2 METADATA pvc - stores DB2 shared, temporary, tool files, installation proces will create 1 PVC. $msg_nored"
                         m_ask="DB2 METADATA pvc, minimum size $size_min GB"
                         global_var="GI_METADATA_STORAGE_SIZE"
                         global_var_val="$GI_METADATA_STORAGE_SIZE"
                         ;;
                 "db2-logs")
                         size_min=50
-                        [[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
-                        m_desc="DB2 ARCHIVELOG pvc - stores DB2 archive logs, 1 PVC"
+                        m_desc="DB2 ARCHIVELOG pvc - stores DB2 archive logs, installation proces will create 1 PVC. $msg_nored"
                         m_ask="DB2 ARCHIVELOG pvc, minium size $size_min GB"
                         global_var="GI_ARCHIVELOGS_STORAGE_SIZE"
                         global_var_val="$GI_ARCHIVELOGS_STORAGE_SIZE"
                         ;;
                 "db2-temp")
                         size_min=50
-                        [[ "gi_size" != "values-dev" ]] && v_aux1=2 || v_aux=1
-                        m_desc="DB2 TEMPTS pvc - temporary objects space in DB2, installation process will create $v_aux1 PVC/PVC's, each instance contains different data"
+                        m_desc="DB2 TEMPTS pvc - temporary objects space in DB2, installation process will create 1 PVC/PVC per DB2 node. $msg_nored"
                         m_ask="DB2 TEMPTS pvc, minium size $size_min GB"
                         global_var="GI_TEMPTS_STORAGE_SIZE"
                         global_var_val="$GI_TEMPTS_STORAGE_SIZE"
                         ;;
                 "mongo-data")
                         size_min=50
-                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
-                        m_desc="MONGODB DATA pvc - stores MongoDB data related to GI metadata and reports, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_desc="MONGODB DATA pvc - stores MongoDB data related to GI metadata and reports, installation process will create 3 PVC's. $msg_red"
                         m_ask="MONGODB DATA pvc, minium size $size_min GB"
                         global_var="GI_MONGO_DATA_STORAGE_SIZE"
                         global_var_val="$GI_MONGO_DATA_STORAGE_SIZE"
                         ;;
                 "mongo-logs")
                         size_min=10
-                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
-                        m_desc="MONGODB LOG pvc - stores MongoDB logs, installation process will create $v_aux1 PVC/PVC's, each instance contains different data"
+                        m_desc="MONGODB LOG pvc - stores MongoDB logs, installation process will create 3 PVC's. $msg_red"
                         m_ask="MONGODB LOG pvc, minium size $size_min GB"
                         global_var="GI_MONGO_METADATA_STORAGE_SIZE"
                         global_var_val="$GI_MONGO_METADATA_STORAGE_SIZE"
                         ;;
                 "kafka")
                         size_min=50
-                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
-                        m_desc="KAFKA pvc - stores ML and Streaming data for last 7 days, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_desc="KAFKA pvc - stores ML and Streaming data for last 7 days, installation process will create 3 PVC's. $msg_red"
                         m_ask="KAFKA pvc, minium size $size_min GB"
                         global_var="GI_KAFKA_STORAGE_SIZE"
                         global_var_val="$GI_KAFKA_STORAGE_SIZE"
                         ;;
 		"zookeeper")
-                        size_min=2
-                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
-                        m_desc="ZOOKEEPER pvc - stores Kafka configuration and health data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        size_min=5
+                        m_desc="ZOOKEEPER pvc - stores Kafka configuration and health data, installation process will create 3 PVC's. $msg_red"
                         m_ask="ZOOKEEPER pvc, minium size $size_min GB"
                         global_var="GI_ZOOKEEPER_STORAGE_SIZE"
                         global_var_val="$GI_ZOOKEEPER_STORAGE_SIZE"
                         ;;
                 "redis")
                         size_min=5
-                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
-                        m_desc="REDIS pvc - stores Redis configuration and cached session data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_desc="REDIS pvc - stores Redis configuration and cached session data, installation process will create 3 PVC's. $msg_red"
                         m_ask="REDIS pvc, minium size $size_min GB"
                         global_var="GI_REDIS_STORAGE_SIZE"
                         global_var_val="$GI_REDIS_STORAGE_SIZE"
                         ;;
                 "pgsql")
                         size_min=5
-                        [[ "gi_size" != "values-dev" ]] && v_aux1=3 || v_aux=1
-                        m_desc="POSTGRES pvc - stores anomalies and analytics data, installation process will create $v_aux1 PVC/PVC's, each instance contains this same data"
+                        m_desc="POSTGRES pvc - stores anomalies and analytics data, installation process will create 3 PVC's. $msg_red"
                         m_ask="POSTGRES pvc, minium size $size_min GB"
                         global_var="GI_POSTGRES_STORAGE_SIZE"
                         global_var_val="$GI_POSTGRES_STORAGE_SIZE"
+                        ;;
+		"noobaa-core")
+                        size_min=20
+                        m_desc="NOOBAA CORE pvc - object store for datamarts based on noobaa, installation process will create 1 PVC. $msg_nored"
+                        m_ask="NOOOBAA CORE pvc, minium size $size_min GB"
+                        global_var="GI_NOOBAA_CORE_SIZE"
+                        global_var_val="$GI_NOOBAA_CORE_SIZE"
+                        ;;
+		"noobaa-backing")
+                        size_min=50
+			m_desc="NOOBAA BACKING STORE pvc - noobaa database (PGSQL) backend, installation process will create 2 PVC's. $msg_nored"
+                        m_ask="NOOOBAA BACKING STORE pvc, minium size $size_min GB"
+                        global_var="GI_NOOBAA_BACKING_SIZE"
+                        global_var_val="$GI_NOOBAA_BACKING_SIZE"
                         ;;
                 "*")
                         display_error "Wrong PVC type name"
