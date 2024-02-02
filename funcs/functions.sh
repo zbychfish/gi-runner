@@ -1991,33 +1991,16 @@ function save_variable() {
 }
 
 function select_gi_version() {
-        local nd_ics_install
         while $(check_input "list" ${gi_version_selected} ${#gi_versions[@]})
         do
                 get_input "list" "Select GI version: " "${gi_versions[@]}"
                 gi_version_selected="$input_variable"
         done
-        msg "Guardium Insights installation choice assumes installation of bundled version of ICS" info
+	msg "Guardium Insights installation choice assumes installation of bundled version of Cloud Pak Foundational Services (CPFS, former ICS)" info
         gi_version_selected=$(($gi_version_selected-1))
         save_variable GI_VERSION $gi_version_selected
-        ics_version_selected=${bundled_in_gi_ics_versions[$gi_version_selected]}
         ics_install='Y'
-        if [[ $use_air_gap == 'N' ]]
-        then
-                msg "You can overwrite selection of default ICS ${ics_versions[$ics_version_selected]} version" info
-                msg "In this case you must select supported ICS version by GI ${gi_versions[$gi_version_selected]}" info
-                msg "Check documentation before to avoid GI installation problems" info
-                while $(check_input "yn" ${nd_ics_install})
-                do
-                        get_input "yn" "Would you like to install non-default Cloud Pak Foundational Services for GI? " true
-                        nd_ics_install="${input_variable^^}"
-                done
-		[[ $nd_ics_install == 'N' ]] && msg "You decided to deploy default CPFS release for GI" info
-                [[ $nd_ics_install == 'Y' ]] && select_ics_version || save_variable GI_ICS_VERSION $ics_version_selected
-        else
-                display_default_ics
-                msg "In case of air-gapped installation you must install the bundled ICS version" info
-        fi
+        display_default_ics
 }
 
 function select_ics_version() {
