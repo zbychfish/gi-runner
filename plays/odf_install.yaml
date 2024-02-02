@@ -1,0 +1,5 @@
+- name: Configure OCS/ODF nodes on workers
+  ansible.builtin.shell:
+    cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --overwrite=true"
+  with_items: "{{ odf_nodes|list }}"
+  when: is_master_only == 'N' and is_odf_tainted == 'N'
