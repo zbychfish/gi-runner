@@ -94,6 +94,13 @@
   shell:
     cmd: "oc patch guardiuminsights {{ gi_namespace }} -n {{ gi_namespace }} --type json -p '[{\"op\": \"replace\", \"path\": \"/spec/guardiumInsightsGlobal/deploySettings/ensureDb2InstallPlacement\", \"value\": false}]'"
 
+- name: Wait for successful GI deployment (takes 20-60 minutes) - 3.3.0 BUG
+  include_tasks: gi_check_deployment_status.yaml
+  until: gi_deployment_status.stdout == gi_version
+  retries: 200
+  delay: 10
+  when: gi_version == "3.3.0"
+
 - name: Wait for successful GI deployment (takes 20-60 minutes)
   shell:
     cmd: "oc get guardiuminsights -n {{ gi_namespace }} -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
@@ -101,6 +108,12 @@
   until: gi_deployment_status.stdout == gi_version
   retries: 200
   delay: 10
+  when: gi_version != "3.3.0"
+
+- name: Remove errored pods - 3.3.0 BUG
+  shell:
+    cmd: "[ $(oc get pods -n {{ gi_namespace }}|grep Error|wc -l) -ne 0 ] && oc delete pod -n {{ gi_namespace }} $(oc get pods -n {{ gi_namespace }}|grep Error|awk '{print $1}')"
+  when: gi_version == "3.3.0"
 
 - name: Enable STAP streaming and Outliers features for 3.2.x
   block:
@@ -271,3 +284,4 @@
   shell:
     cmd: "bash ../{{ temp_dir }}/scripts/db2_parallelism.sh"
   when: gi_version == '3.2.13'
+
