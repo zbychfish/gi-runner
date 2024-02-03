@@ -1,13 +1,13 @@
 - name: Configure ODF nodes on workers
   ansible.builtin.shell:
-    cmd: "oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --overwrite=true"
+    cmd: "oc label nodes {{ item }}.{{ ocp_domain }} cluster.ocs.openshift.io/openshift-storage='' --overwrite=true"
   with_items: "{{ odf_nodes|list if is_master_only == 'N' else master_name|list }}"
   when: is_odf_tainted == 'N'
 
 - name: Configure ODF nodes for taint
   ansible.builtin.shell: |
-    oc label nodes {{ item }}.{{ domain }} cluster.ocs.openshift.io/openshift-storage='' --overwrite=true
-    oc label nodes {{ item }}.{{ domain }} node-role.kubernetes.io/infra='' --overwrite=true
+    oc label nodes {{ item }}.{{ ocp_domain }} cluster.ocs.openshift.io/openshift-storage='' --overwrite=true
+    oc label nodes {{ item }}.{{ ocp_domain }} node-role.kubernetes.io/infra='' --overwrite=true
   with_items: "{{ odf_name|list }}"
   when: is_odf_tainted == 'Y'
 
