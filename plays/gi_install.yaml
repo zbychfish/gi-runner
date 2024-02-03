@@ -85,18 +85,24 @@
     cmd: "oc get pod -n {{ gi_namespace }} | grep db2-ready | grep Completed | wc -l"
   register: db2_deployment_status
   until: db2_deployment_status.stdout|int == 1
-  retries: 150
+  retries: 200
   delay: 10
 
 - name: Patch deployment (BUG in 3.2.10)
   shell:
     cmd: "oc patch guardiuminsights {{ gi_namespace }} -n {{ gi_namespace }} --type json -p '[{\"op\": \"replace\", \"path\": \"/spec/guardiumInsightsGlobal/deploySettings/ensureDb2InstallPlacement\", \"value\": false}]'"
 
+- name: Get deployment status - 3.3.0 BUG
+  shell:
+    cmd: "oc get guardiuminsights -n {{ gi_namespace }} -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
+  register: gi_deployment_status
+  when: gi_version == "3.3.0"
+
 - name: Wait for successful GI deployment (takes 20-60 minutes) - 3.3.0 BUG
   ansible.builtin.include_tasks: gi_check_deployment_status.yaml
-  loop: "{{ range(0, 100, 1)|list }}"
+  loop: "{{ range(0, 2200, 1)|list }}"
   loop_control:
-    pause: 5
+    loop_var: gi_deployment_status
   when: gi_version == "3.3.0" and gi_deployment_status.stdout != gi_version
 
 - name: Wait for successful GI deployment (takes 20-60 minutes)
