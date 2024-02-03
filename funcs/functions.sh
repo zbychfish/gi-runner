@@ -25,7 +25,8 @@ function ansible_constants() {
         echo "gi_cases: [ ${arr_values%,} ]" >> $afile
 	echo "gi_case_name: $gi_case_name" >> $afile
 	echo "gi_case_inventory_setup: $gi_case_inventory_setup" >> $afile
-
+	echo "px_channel: $px_channel" >> $afile
+	echo "px_version: $px_version" >> $afile
 }
 
 function check_input() {
