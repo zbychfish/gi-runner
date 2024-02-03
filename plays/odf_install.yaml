@@ -69,7 +69,7 @@
 
   - name: Deploy ODF operator
     ansible.builtin.shell:
-      cmd: "oc apply -f {{ temp_dir }}/yamls/odf-op.yaml"
+      cmd: "oc apply -f {{ temp_dir }}/yamls/odf_op.yaml"
 
   - name: Wait for ODF operators appearance
     ansible.builtin.shell:
