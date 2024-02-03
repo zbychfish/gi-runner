@@ -8,6 +8,7 @@ proxy:
 {% if internet_type == 'P' and no_proxy_adds|length != 0 %}
   noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},oauth-openshift.apps.{{ ocp_domain }},{{ no_proxy_list|replace('*','') }},{{ no_proxy_adds }}
 {% elif internet_type == 'P' %}
+  no_proxy_list
   noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},oauth-openshift.apps.{{ ocp_domain }},{{ no_proxy_list|replace('*','') }}
 {% endif %}
 compute:
