@@ -1,8 +1,9 @@
 - name: Create CPFS operator namespace
   ansible.builtin.shell:
-    cmd:
-      - "oc create namespace {{ cpfs_operator_namespace }} || echo 'Namespace exists'"
-      - "oc create namespace ibm-common-services || echo 'Namespace exists'"
+    cmd: "{{ item }}"
+  with_items:
+    - "oc create namespace {{ cpfs_operator_namespace }} || echo 'Namespace exists'"
+    - "oc create namespace ibm-common-services || echo 'Namespace exists'"
 
 - name: Label CPFS nodes
   ansible.builtin.shell:
