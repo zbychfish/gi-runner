@@ -351,7 +351,7 @@ function configure_os_for_proxy() {
         	get_input "txt" "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxied (do not need provide here cluster addresses): " false
                 no_proxy_adds="${input_variable}"
         done
-	no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy_adds"
+	no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain"
 	[[ ${#no_proxy_adds} -ne 0 ]] && no_proxy_final="$no_proxy,$no_proxy_adds" || no_proxy_final=$no_proxy
 	msg "Your proxy settings are:" info
         msg "Proxy URL: http://$proxy_ip:$proxy_port" info
