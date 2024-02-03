@@ -94,10 +94,10 @@
 
 - name: Wait for successful GI deployment (takes 20-60 minutes) - 3.3.0 BUG
   ansible.builtin.include_tasks: gi_check_deployment_status.yaml
-  until: gi_deployment_status.stdout == gi_version
-  retries: 200
-  delay: 10
-  when: gi_version == "3.3.0"
+  loop: "{{ range(0, 100, 1)|list }}"
+  loop_control:
+    pause: 5
+  when: gi_version == "3.3.0" and gi_deployment_status.stdout != gi_version
 
 - name: Wait for successful GI deployment (takes 20-60 minutes)
   shell:
