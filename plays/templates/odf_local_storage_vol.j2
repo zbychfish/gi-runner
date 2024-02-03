@@ -17,7 +17,7 @@ spec:
           operator: In
           values:
 {% for name in temp_nodes %}
-          - {{ name }}.{{ domain }}
+          - {{ name }}.{{ ocp_domain }}
 {% endfor %}
   storageClassDevices:
     - storageClassName: "localblock-sc"
