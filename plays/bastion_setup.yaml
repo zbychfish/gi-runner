@@ -279,8 +279,8 @@
     profile: "worker"
     mac: "{{ item }}"
   with_items:
-    - "{{ ocs_mac|list }}"
-  when: is_ocs_tainted == 'Y'
+    - "{{ odf_mac|list }}"
+  when: is_odf_tainted == 'Y'
 
 - name: Matchbox worker group json
   ansible.builtin.template:
@@ -323,24 +323,24 @@
     echo "ptr-record="`echo "{{ item.0 }}" | awk -F . '{print $4"."$3"."$2"."$1".in-addr.arpa"}'`",{{ item.1 }}.{{ ocp_domain }}"
   register: node_ptr
   with_together:
-    - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
-    - "{{ master_name+worker_name|default([])+ocs_name|default([]) }}"
+    - "{{ master_ip+worker_ip|default([])+odf_ip|default([]) }}"
+    - "{{ master_name+worker_name|default([])+odf_name|default([]) }}"
 
 - name: Prepare DHCP entries for nodes
   ansible.builtin.shell: >
     echo "dhcp-host={{ item.0 }},{{ item.1 }},12h"
   register: node_dhcp
   with_together:
-    - "{{ master_mac+worker_mac|default([])+ocs_mac|default([]) }}"
-    - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+    - "{{ master_mac+worker_mac|default([])+odf_mac|default([]) }}"
+    - "{{ master_ip+worker_ip|default([])+odf_ip|default([]) }}"
 
 - name: Prepare DNS entries for nodes
   ansible.builtin.shell: >
     echo "address=/{{ item.0 }}.{{ ocp_domain }}/{{ item.1 }}"
   register: node_dns
   with_together:
-    - "{{ master_name+worker_name|default([])+ocs_name|default([]) }}"
-    - "{{ master_ip+worker_ip|default([])+ocs_ip|default([]) }}"
+    - "{{ master_name+worker_name|default([])+odf_name|default([]) }}"
+    - "{{ master_ip+worker_ip|default([])+odf_ip|default([]) }}"
 
 - name: Check original dnsmasq config file existence
   ansible.builtin.stat:
@@ -544,7 +544,7 @@
     src: ocp_install_config.j2
     dest: "{{ temp_dir }}/yamls/install-config.yaml"
   vars:
-    n_workers: "{{ worker_ip|default([])|length+ocs_ip|default([])|length }}"
+    n_workers: "{{ worker_ip|default([])|length+odf_ip|default([])|length }}"
     n_masters: "{{ master_ip|length }}"
   when: internet_type != 'A'
 
@@ -603,8 +603,8 @@
     dest: /etc/haproxy/haproxy.cfg
   vars:
     masters: "{{ master_name|zip(master_ip)|list }}"
-    nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
-    ips: "{{ worker_ip|default([])+ocs_ip|default([]) }}"
+    nodes: "{{ worker_name|default([])+odf_name|default([]) }}"
+    ips: "{{ worker_ip|default([])+odf_ip|default([]) }}"
     workers: "{{ nodes|zip(ips)|list }}"
   when: is_master_only == 'N'
 
