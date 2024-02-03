@@ -336,10 +336,10 @@
         gi_license: "{{ 'L-TFWF-ZZ5233' if gi_version_index|int > 0 else 'L-GBLK-CDVHGZ' }}"
         gi_deployment_size: "{{ 'values-xsmall' if gi_size == 'demo' else 'values-small' if gi_size == 'small' else 'values-med' }}"
         db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
-        db2_sc_block: "{{ 'rook-ceph-block' if storage_type == 'R' else '' }}"
-        db2_sc_fs: "{{ 'rook-cephfs' if storage_type == 'R' else '' }}"
-        nodb2_sc_block: "{{ 'rook-ceph-block-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-ceph-block' if storage_type == 'R' else '' }}"
-        nodb2_sc_fs: "{{ 'rook-cephfs-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-cephfs' if storage_type == 'R' else '' }}"
+        db2_sc_block: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else '' }}"
+        db2_sc_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' if storage_type == 'O' else '' }}"
+        nodb2_sc_block: "{{ 'rook-ceph-block-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else '' }}"
+        nodb2_sc_fs: "{{ 'rook-cephfs-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' if storage_type == 'O' else '' }}"
       when: install_gi == 'Y'
 
     - name: Set GI NFS variables
