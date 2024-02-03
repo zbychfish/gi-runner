@@ -316,6 +316,8 @@ function check_linux_distribution_and_release() {
 }
 
 function configure_os_for_proxy() {
+	local no_proxy
+	local no_proxy_final
         msg "Configuring proxy settings" task
         msg "To support installation over Proxy some additional information must be gathered and reconfiguration of some bastion network services" info
         msg "HTTP Proxy IP address" info
@@ -349,10 +351,11 @@ function configure_os_for_proxy() {
         	get_input "txt" "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxied (do not need provide here cluster addresses): " false
                 no_proxy_adds="${input_variable}"
         done
-        no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy_adds"
+	no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy_adds"
+	[[ ${#no_proxy_adds} -ne 0 ]] && no_proxy_final="$no_proxy,$no_proxy_adds" || no_proxy_final=$no_proxy
 	msg "Your proxy settings are:" info
         msg "Proxy URL: http://$proxy_ip:$proxy_port" info
-        msg "System will not use proxy for: $no_proxy" info
+        msg "System will not use proxy for: $no_proxy_final" info
         msg "Setting your HTTP proxy environment on bastion" info
         msg "Modyfying /etc/profile" info
         [[ -f /etc/profile.gi_no_proxy ]] || cp -f /etc/profile /etc/profile.gi_no_proxy
@@ -376,9 +379,9 @@ function configure_os_for_proxy() {
         fi
         if [[ `cat /etc/profile | grep "export no_proxy=" | wc -l` -ne 0 ]]
         then
-                sed -i "s#^export no_proxy=.*#export no_proxy=\"$no_proxy\"#g" /etc/profile
+                sed -i "s#^export no_proxy=.*#export no_proxy=\"$no_proxy_final\"#g" /etc/profile
         else
-                echo "export no_proxy=\"${no_proxy}\"" >> /etc/profile
+                echo "export no_proxy=\"${no_proxy_final}\"" >> /etc/profile
         fi
         msg "Add proxy settings to DNF config file" info
         [[ -f /etc/dnf/dnf.conf ]] || cp -f /etc/dnf/dnf.conf /etc/dnf/dnf.conf.gi_no_proxy
