@@ -44,7 +44,7 @@
       src: "odf_local_storage_vol.j2"
       dest: "{{ temp_dir }}/yamls/odf_local_storage_vol.yaml"
     vars:
-      temp_nodes: "{{ odf_nodes|list is_master_only == 'N' else master_name|list }}"
+      temp_nodes: "{{ odf_nodes|list if is_master_only == 'N' else master_name|list }}"
 
   - name: Deploy local storage
     ansible.builtin.shell:
