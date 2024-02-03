@@ -50,7 +50,7 @@ spec:
 {% endif %}
 {% if gi_noobaa_core_size|int != 0 %}
       dbConfig:
-        resources:
+        volumeResources:
           requests:
             storage: {{ gi_noobaa_core_size }}Gi
 {% endif %}
