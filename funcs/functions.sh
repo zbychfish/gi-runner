@@ -422,14 +422,14 @@ function create_cluster_ssh_key() {
 }
 
 function display_default_ics() {
-        local gi_version
+        local gi_v
         local i=0
-        for gi_version in "${gi_versions[@]}"
+        for gi_v in "${gi_versions[@]}"
         do
-                msg "ICS - ${ics_versions[${bundled_in_gi_ics_versions[$i]}]} for GI $gi_version" info
+                msg "ICS - ${ics_versions[${bundled_in_gi_ics_versions[$i]}]} for GI $gi_v" info
                 i=$((i+1))
         done
-        save_variable GI_ICS_VERSION "${ics_versions[${bundled_in_gi_ics_versions[$i]}]}"
+        save_variable GI_ICS_VERSION "${ics_versions[${bundled_in_gi_ics_versions[$gi_version_selected]}]}"
 }
 
 function display_error() {

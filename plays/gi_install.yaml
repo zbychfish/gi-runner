@@ -118,7 +118,7 @@
 
 - name: Remove errored pods - 3.3.0 BUG
   shell:
-    cmd: "[ $(oc get pods -n {{ gi_namespace }}|grep Error|wc -l) -ne 0 ] && oc delete pod -n {{ gi_namespace }} $(oc get pods -n {{ gi_namespace }}|grep Error|awk '{print $1}')"
+    cmd: "[ $(oc get pods -n {{ gi_namespace }}|grep Error|wc -l) -ne 0 ] && oc delete pod -n {{ gi_namespace }} $(oc get pods -n {{ gi_namespace }}|grep Error|awk '{print $1}') || echo 0"
   when: gi_version == "3.3.0"
 
 - name: Enable STAP streaming and Outliers features for 3.2.x
@@ -186,7 +186,7 @@
       body:
         feature_flag:
           flag_name: "STAP_STREAMING"
-          is_enabled: false
+          is_enabled: true
         tenant_id: "{{ tenants.json.Tenants[0].tenant_id }}"
       status_code: [ 200, 401 ] # BUG in API
       validate_certs: no
