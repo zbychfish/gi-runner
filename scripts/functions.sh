@@ -1,4 +1,4 @@
-function get_latest_edr_images () {
+#function get_latest_edr_images () {
         local input_file
         local output_file
         local temp_list
@@ -553,23 +553,6 @@ function pre_scripts_init_no_jq() {
         rm -rf $GI_TEMP || msg "$GI_TEMP cannot be removed" info
         rm -rf /opt/registry/data
         mkdir -p $GI_TEMP
-}
-
-function get_px_options() {
-        msg "Gather Portworx Essential Parameters" task
-        msg "Portworx will use all disks available on nodes specified by path /dev/${storage_device}" info
-        msg "Please insert your Essential Entitlement ID, it must be unlinked to be usable for deploying new Portwork Storage Server instance (https://central.portworx.com/profile)" info
-        while $(check_input "uuid" ${px_id})
-        do
-                if [[ ! -z "$GI_PX_ID" ]]
-                then
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_PX_ID] or insert Portworx Essential Entitlement ID: " true "$GI_PX_ID"
-                else
-                        get_input "txt" "Insert Portworx Essential Entitlement ID: " false
-                fi
-                px_id=${input_variable}
-        done
-        save_variable GI_PX_ID $px_id
 }
 
 function set_bastion_ntpd_client() {
