@@ -80,13 +80,13 @@
   shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/gi.yaml"
 
-- name: Wait for DB2 deployment
+- name: Wait for DB2 deployment (takes 20-60 minutes)
   shell:
     cmd: "oc get pod -n {{ gi_namespace }} | grep db2-ready | grep Completed | wc -l"
   register: db2_deployment_status
   until: db2_deployment_status.stdout|int == 1
-  retries: 200
-  delay: 10
+  retries: 100
+  delay: 60
 
 - name: Patch deployment (BUG in 3.2.10)
   shell:
@@ -98,22 +98,22 @@
   register: gi_deployment_status
   when: gi_version == "3.3.0"
 
-- name: Wait for successful GI deployment (takes 20-60 minutes) - 3.3.0 BUG
+- name: Wait for successful GI deployment (takes 40-80 minutes) - 3.3.0 BUG
   shell:
     cmd: "../funcs/scripts/check_gi_deployment_success.sh {{ gi_namespace }} {{ gi_version }}"
   register: gi_deployment_status
   until: gi_deployment_status.stdout == '1'
-  retries: 200
-  delay: 10
+  retries: 100
+  delay: 60
   when: gi_version == "3.3.0"
 
-- name: Wait for successful GI deployment (takes 20-60 minutes)
+- name: Wait for successful GI deployment (takes 40-60 minutes)
   shell:
     cmd: "oc get guardiuminsights -n {{ gi_namespace }} -o json|jq .items[0].status.versions.reconciled|tr -d '\"'"
   register: gi_deployment_status
   until: gi_deployment_status.stdout == gi_version
-  retries: 200
-  delay: 10
+  retries: 100
+  delay: 60
   when: gi_version != "3.3.0"
 
 - name: Remove errored pods - 3.3.0 BUG
