@@ -1253,7 +1253,7 @@ function get_nodes_info() {
                 else
                         get_input "txt" "Insert $node_type ${pl_names[1]}: " false
                 fi
-                temp_name=${input_variable}
+                temp_name=${input_variable,,}
         done
         case $2 in
                 "ocs")
@@ -1283,7 +1283,7 @@ function get_nodes_info() {
                         save_variable GI_WORKER_NAME $temp_name
                         ;;
                 "*")
-                        :wdisplay_error "Incorrect parameters get_node function"
+                        display_error "Incorrect parameters get_node function"
         esac
 }
 
