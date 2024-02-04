@@ -65,7 +65,7 @@
       - name: Deploy NFS backup PVC
         ansible.builtin.shell:
           cmd: "oc apply -f {{ temp_dir }}/yamls/nfs_backup_pvc.yaml"
-      when: gi_nfs_backup == 'Y'
+    when: gi_nfs_backup == 'Y'
 
   - name: Stop haproxy
     service:
