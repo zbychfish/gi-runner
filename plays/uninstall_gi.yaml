@@ -3,6 +3,7 @@
     gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
     gi_namespace: "{{ lookup('env', 'GI_NAMESPACE_GI') }}"
     gi_nfs_backup: "{{ lookup('env','GI_NFS_BACKUP') }}"
+    install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
 
   vars_files:
     - constants.yaml
@@ -19,6 +20,7 @@
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
       - { name: "GI_NFS_BACKUP", value: "{{ gi_nfs_backup }}" }
+      - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
 
   - name: Delete GI instance
     shell:
