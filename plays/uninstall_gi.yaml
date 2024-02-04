@@ -44,13 +44,13 @@
     shell:
       cmd: "oc delete $(oc get pvc -n {{ gi_namespace }} -oname) -n {{ gi_namespace }}||true"
 
-  - name: Uninstall GI operators
+  - name: Uninstall GI operators # BUG 3.3.0 error on uninstallation
     shell:
       cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\"||true"
 
   - name: Uninstall GI catalogs
     shell:
-      cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --namespace openshift-marketplace --tolerance 1 --args \"--inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\""
+      cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallCatalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\""
 
   - name: Delete GI namespace
     shell:
