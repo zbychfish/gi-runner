@@ -2,6 +2,7 @@
   vars:
     gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
     gi_namespace: "{{ lookup('env', 'GI_NAMESPACE_GI') }}"
+    gi_nfs_backup: "{{ lookup('env','GI_NFS_BACKUP') }}"
 
   vars_files:
     - constants.yaml
@@ -17,6 +18,7 @@
     loop:
       - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
+      - { name: "GI_NFS_BACKUP", value: "{{ gi_nfs_backup }}" }
 
   - name: Delete GI instance
     shell:
@@ -56,7 +58,14 @@
 
   - name: Recreate NFS backup PVC
     block:
+      - name: Create GI namespace
+        shell:
+          cmd: "oc create namespace {{ gi_namespace }}|| echo 'Namespace exists'"
 
+      - name: Deploy NFS backup PVC
+        ansible.builtin.shell:
+          cmd: "oc apply -f {{ temp_dir }}/yamls/nfs_backup_pvc.yaml"
+      when: gi_nfs_backup == 'Y'
 
   - name: Stop haproxy
     service:
