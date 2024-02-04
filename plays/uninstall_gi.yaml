@@ -35,16 +35,16 @@
       cmd: "oc get pods -n {{ gi_namespace }} --no-headers|grep -v -e Running -e Completed|wc -l"
     register: gi_pods
     until: "gi_pods.stdout == \"0\""
-    retries: 20
-    delay: 60
+    retries: 60
+    delay: 10
 
-  - name: Delete GI pvc's
+  - name: Delete GI PVC's
     shell:
       cmd: "oc delete $(oc get pvc -n {{ gi_namespace }} -oname) -n {{ gi_namespace }}||true"
 
   - name: Uninstall GI operators
     shell:
-      cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\""
+      cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\"||true"
 
   - name: Uninstall GI catalogs
     shell:
@@ -53,6 +53,10 @@
   - name: Delete GI namespace
     shell:
       cmd: "oc delete namespace {{ gi_namespace }}||true "
+
+  - name: Recreate NFS backup PVC
+    block:
+
 
   - name: Stop haproxy
     service:
