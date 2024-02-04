@@ -4,6 +4,8 @@
     gi_namespace: "{{ lookup('env', 'GI_NAMESPACE_GI') }}"
     gi_nfs_backup: "{{ lookup('env','GI_NFS_BACKUP') }}"
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
+    db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
+    db2_tainted: "{{ lookup('env','GI_DB2_TAINTED') }}"
 
   vars_files:
     - constants.yaml
@@ -21,6 +23,8 @@
       - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
       - { name: "GI_NFS_BACKUP", value: "{{ gi_nfs_backup }}" }
       - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
+      - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
+      - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
 
   - name: Delete GI instance
     shell:
