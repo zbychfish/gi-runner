@@ -9,7 +9,7 @@
   tasks:
   - name: Set GI variables
     set_fact:
-      gi_version: "{{ gi_versions[gi_version_index|int] }}"
+      gi_case_version: "{{ gi_cases[gi_version_index|int] }}"
 
   - name: Check other configuration parameters
     fail: msg="Variable {{ item.name }} is not set"
@@ -45,3 +45,35 @@
   - name: Uninstall GI operators
     shell:
       cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\""
+
+  - name: Uninstall GI catalogs
+    shell:
+      cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action uninstallOperator --namespace openshift-marketplace --tolerance 1 --args \"--inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\""
+
+  - name: Delete GI namespace
+    shell:
+      cmd: "oc delete namespace {{ gi_namespace }}||true "
+
+  - name: Stop haproxy
+    service:
+      name: haproxy
+      state: stopped
+
+  - name: Restore initial HA proxy config
+    shell:
+      cmd: cp -f /etc/haproxy/haproxy.cfg.main /etc/haproxy/haproxy.cfg
+
+  - name: Restore ldap HA proxy settings
+    shell:
+      cmd: cat /etc/haproxy/haproxy.cfg.ldap >> /etc/haproxy/haproxy.cfg
+    when: install_ldap == 'Y'
+
+  - name: Start HA proxy
+    service:
+      name: haproxy
+      state: started
+
+  - debug:
+        msg:
+          - "Guardium Insights uninstalled with success."
+
