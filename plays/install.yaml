@@ -173,7 +173,7 @@
         odf_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
       when: storage_type == 'O' and is_odf_tainted == 'Y'
 
-    - name: Check OCS configuration
+    - name: Check ODF configuration
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_OCS_IP", value: "{{ odf_ip }}" }
@@ -191,6 +191,17 @@
       loop:
         - { name: "GI_OCS_NODES", value: "{{ odf_nodes }}" }
       when: storage_type == 'O' and is_odf_tainted == 'N' and item.value == ""
+
+    - name: Set Portworx variables
+      ansible.builtin.set_fact:
+        px_id: "{{ lookup('env', 'GI_PX_ID') }}"
+      when: storage_type == 'P'
+
+    - name: Check Portworx variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_PX_ID", value: "{{ px_id }}" }
+      when: storage_type == 'P' and item.value == ""
 
     - name: Set CPFS installation variables from env
       ansible.builtin.set_fact:

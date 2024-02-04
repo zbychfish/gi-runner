@@ -83,17 +83,6 @@
           #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
       when: install_cp4s == 'Y' and internet_type == 'A' and item.value == ""
 
-    - name: Set Portworx variables
-      ansible.builtin.set_fact:
-        px_id: "{{ lookup('env', 'GI_PX_ID') }}"
-      when: storage_type == 'P'
-
-    - name: Check Portworx variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_PX_ID", value: "{{ px_id }}" }
-      when: storage_type == 'P' and item.value == ""
-
     - name: Set CP4S cert variables
       ansible.builtin.set_fact:
         cp4s_ca: "{{ lookup('env', 'GI_CP4S_CA') }}"
@@ -125,14 +114,6 @@
         offline_inventory: "{{ 'gi_arch' if install_gi == 'Y' else 'ics_arch' }}"
         ics_manifest_dir: "{{ 'gi_offline' if install_gi == 'Y' else 'ics_offline' }}"
       when: install_ics == 'Y'
-
-    - name: Install ODF
-      ansible.builtin.include_tasks: ocs_install.yaml
-      when: skip_phase|int < 3 and storage_type == 'O'
-
-    - name: Install Portworx
-      ansible.builtin.include_tasks: px_install.yaml
-      when: skip_phase|int < 3 and storage_type == 'P'
 
     - name: Install CP4S
       ansible.builtin.include_tasks: cp4s_install.yaml
