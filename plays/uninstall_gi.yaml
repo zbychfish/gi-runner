@@ -69,6 +69,12 @@
           cmd: "oc apply -f {{ temp_dir }}/yamls/nfs_backup_pvc.yaml"
     when: gi_nfs_backup == 'Y'
 
+  - name: Untaint DB2 nodes if needed
+    ansible.builtin.shell:
+      cmd: "oc adm taint nodes {{ item }}.{{ ocp_domain }} icp4data=database-db2wh:NoSchedule-"
+    with_items: "{{ db2_nodes_array|list }}"
+    when: db2_tainted == 'Y'
+      
   - name: Stop haproxy
     service:
       name: haproxy
