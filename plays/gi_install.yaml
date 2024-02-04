@@ -82,9 +82,9 @@
 
 - name: Wait for DB2 deployment (takes 20-60 minutes)
   shell:
-    cmd: "oc get pod -n {{ gi_namespace }} | grep db2-ready | grep Completed | wc -l"
+    cmd: "oc get db2uinstance --no-headers -n {{ gi_namespace }} | awk '{print $2}'"
   register: db2_deployment_status
-  until: db2_deployment_status.stdout|int == 1
+  until: db2_deployment_status.stdout == 'Ready'
   retries: 100
   delay: 60
 
