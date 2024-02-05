@@ -14,11 +14,11 @@
 
   - name: Delete CPFS CSV in ibm-common-services
     shell:
-      cmd: "oc delete $(oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator) -n ibm-common-services||true"
+      cmd: "oc delete $(oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator) -n ibm-common-services --ignore-not-found"
 
   - name: Delete operand requests
     shell:
-      cmd: "oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services||true"
+      cmd: "oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
 
   - name: Wait for cleanup
     pause:
@@ -27,10 +27,14 @@
   - name: Wait for operand requests removal
     shell:
       cmd: "oc get pods -n ibm-common-services --no-headers|grep -v -e Running -e Completed|wc -l"
-    register: gi_pods
-    until: "gi_pods.stdout == \"0\""
+    register: cpfs_pods
+    until: "cpfs_pods.stdout == \"0\""
     retries: 60
     delay: 10
+
+  - name: Relogin to OCP
+    shell:
+      cmd: ../funcs/scripts/login_to_ocp.sh
 
   - name: Delete operand configs
     shell:
