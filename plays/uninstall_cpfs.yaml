@@ -14,7 +14,7 @@
 
   - name: Delete CPFS CSV in ibm-common-services
     shell:
-      cmd: "oc delete $(oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator) -n ibm-common-services --ignore-not-found"
+      cmd: "[[ 'oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator' ]] || oc delete $(oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator) -n ibm-common-services"
 
   - name: Delete operand requests
     shell:
