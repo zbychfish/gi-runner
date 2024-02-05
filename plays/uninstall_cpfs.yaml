@@ -14,11 +14,11 @@
 
   - name: Delete CPFS CSV in ibm-common-services
     shell:
-      cmd: "oc delete $(oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator) -n ibm-common-services"||true
+      cmd: "oc delete $(oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator) -n ibm-common-services||true"
 
   - name: Delete operand requests
     shell:
-      cmd: "oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services"||true
+      cmd: "oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services||true"
 
   - name: Wait for cleanup
     pause:
@@ -34,27 +34,27 @@
 
   - name: Delete operand configs
     shell:
-      cmd: "oc delete $(oc get operandconfig -n ibm-common-services -oname) -n ibm-common-services"||true
+      cmd: "oc delete $(oc get operandconfig -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
 
   - name: Delete operand registries
     shell:
-      cmd: "oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services"||true
+      cmd: "oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
 
   - name: Delete operand registries
     shell:
-      cmd: "oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services"||true
+      cmd: "oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
 
   - name: Delete CSV's
     shell:
-      cmd: "oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services"||true
+      cmd: "oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
 
   - name: Delete subscriptions
     shell:
-      cmd: "oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services"||true
+      cmd: "oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
 
   - name: Delete CSV's in common-service namespace
     shell:
-      cmd: "oc delete $(oc get csv -n common-service -oname) -n common-service"||true
+      cmd: "oc delete $(oc get csv -n common-service -oname) -n common-service --ignore-not-found"
 
   - name: Delete webhooks
     shell:
