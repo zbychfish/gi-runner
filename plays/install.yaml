@@ -183,7 +183,7 @@
 
     - name: Set ODF nodes list
       ansible.builtin.set_fact:
-        odf_nodes: "{{ lookup('env', 'GI_OCS_NODES').split(',') }}"
+        odf_name: "{{ lookup('env', 'GI_OCS_NODES').split(',') }}"
       when: storage_type == 'O' and is_odf_tainted == 'N'
 
     - name: Check ODF nodes list
