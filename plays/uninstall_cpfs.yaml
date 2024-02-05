@@ -42,23 +42,27 @@
 
   - name: Delete operand registries
     shell:
-      cmd: "oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
+      cmd: "[[ 'oc get operandregistry -n ibm-common-services -oname' ]] || oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services"
 
   - name: Delete operand registries
     shell:
-      cmd: "oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
+      cmd: "[[ 'oc get namespacescope -n ibm-common-services -oname' ]] || oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services"
 
   - name: Delete CSV's
     shell:
-      cmd: "oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
+      cmd: "[[ 'oc get csv -n ibm-common-services -oname' ]] || oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services"
 
   - name: Delete subscriptions
     shell:
-      cmd: "oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
+      cmd: "[[ 'oc get sub -n ibm-common-services -oname' ]] || oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services"
 
   - name: Delete CSV's in common-service namespace
     shell:
-      cmd: "oc delete $(oc get csv -n common-service -oname) -n common-service --ignore-not-found"
+      cmd: "[[ 'oc get csv -n common-service -oname' ]] || oc delete $(oc get csv -n common-service -oname) -n common-service"
+
+  - name: Delete CSV's in common-service namespace
+    shell:
+      cmd: "oc -n kube-public delete configmap ibm-common-services-status --ignore-not-found"
 
   - name: Delete webhooks
     shell:
@@ -67,6 +71,16 @@
       - oc delete ValidatingWebhookConfiguration cert-manager-webhook ibm-cs-ns-mapping-webhook-configuration --ignore-not-found
       - oc delete MutatingWebhookConfiguration cert-manager-webhook ibm-common-service-webhook-configuration ibm-operandrequest-webhook-configuration namespace-admission-config --ignore-not-found
 
+  - name: Delete namespaces
+    shell:
+      cmd: "oc delete namespace {{ item }} --ignore-not-found"
+    with_items:
+      - ibm-common-services
+      - common-service
+
+  - debug:
+      msg:
+      - "Cloud Pak Foundational services uninstalled with success."
 
 
 

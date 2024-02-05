@@ -105,6 +105,6 @@
       state: started
 
   - debug:
-        msg:
-          - "Guardium Insights uninstalled with success."
+      msg:
+      - "Guardium Insights uninstalled with success."
 
