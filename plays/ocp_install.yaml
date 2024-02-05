@@ -69,7 +69,7 @@
 - name: Check cluster nodes health and approve CSR's if needed
   ansible.builtin.shell: ../funcs/scripts/check_cluster_health.sh
   vars:
-    node_number: "{{ master_ip|length+worker_ip|default([])|length+ocs_ip|default([])|length }}"
+    node_number: "{{ master_ip|length+worker_ip|default([])|length+cpfs_ip|default([])|length }}"
   register: cluster_health
   until: node_number == cluster_health.stdout
   retries: 150
