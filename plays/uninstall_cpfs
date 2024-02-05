@@ -1,0 +1,68 @@
+- hosts: bastion
+  vars:
+    ocp_domain: "{{ lookup('env','GI_DOMAIN') }}"
+
+  vars_files:
+  - constants.yaml
+
+  tasks:
+  - name: Check configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_DOMAIN", value: "{{ ocp_domain }}" }
+
+  - name: Delete CPFS CSV in ibm-common-services
+    shell:
+      cmd: "oc delete $(oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator) -n ibm-common-services"||true
+
+  - name: Delete operand requests
+    shell:
+      cmd: "oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services"||true
+
+  - name: Wait for cleanup
+    pause:
+      minutes: 2
+
+  - name: Wait for operand requests removal
+    shell:
+      cmd: "oc get pods -n ibm-common-services --no-headers|grep -v -e Running -e Completed|wc -l"
+    register: gi_pods
+    until: "gi_pods.stdout == \"0\""
+    retries: 60
+    delay: 10
+
+  - name: Delete operand configs
+    shell:
+      cmd: "oc delete $(oc get operandconfig -n ibm-common-services -oname) -n ibm-common-services"||true
+
+  - name: Delete operand registries
+    shell:
+      cmd: "oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services"||true
+
+  - name: Delete operand registries
+    shell:
+      cmd: "oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services"||true
+
+  - name: Delete CSV's
+    shell:
+      cmd: "oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services"||true
+
+  - name: Delete subscriptions
+    shell:
+      cmd: "oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services"||true
+
+  - name: Delete CSV's in common-service namespace
+    shell:
+      cmd: "oc delete $(oc get csv -n common-service -oname) -n common-service"||true
+
+  - name: Delete webhooks
+    shell:
+      cmd: "{{ item }}"||true
+    with_items:
+      - oc delete ValidatingWebhookConfiguration cert-manager-webhook ibm-cs-ns-mapping-webhook-configuration --ignore-not-found
+      - oc delete MutatingWebhookConfiguration cert-manager-webhook ibm-common-service-webhook-configuration ibm-operandrequest-webhook-configuration namespace-admission-config --ignore-not-found
+
+
+
+

@@ -16,7 +16,7 @@
     set_fact:
       gi_case_version: "{{ gi_cases[gi_version_index|int] }}"
 
-  - name: Check other configuration parameters
+  - name: Check configuration parameters
     fail: msg="Variable {{ item.name }} is not set"
     when: item.value == ""
     loop:
