@@ -58,7 +58,7 @@
 
   - name: Delete webhooks
     shell:
-      cmd: "{{ item }}"||true
+      cmd: "{{ item }}"
     with_items:
       - oc delete ValidatingWebhookConfiguration cert-manager-webhook ibm-cs-ns-mapping-webhook-configuration --ignore-not-found
       - oc delete MutatingWebhookConfiguration cert-manager-webhook ibm-common-service-webhook-configuration ibm-operandrequest-webhook-configuration namespace-admission-config --ignore-not-found
