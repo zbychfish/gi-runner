@@ -18,7 +18,7 @@
 
   - name: Delete operand requests
     shell:
-      cmd: "oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
+      cmd: "[[ 'oc get operandrequest -n ibm-common-services -oname' ]] || oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services"
 
   - name: Wait for cleanup
     pause:
@@ -38,7 +38,7 @@
 
   - name: Delete operand configs
     shell:
-      cmd: "oc delete $(oc get operandconfig -n ibm-common-services -oname) -n ibm-common-services --ignore-not-found"
+      cmd: "[[ 'oc get operandconfig -n ibm-common-services -oname' ]] || oc delete $(oc get operandconfig -n ibm-common-services -oname) -n ibm-common-services"
 
   - name: Delete operand registries
     shell:
