@@ -9,5 +9,5 @@ spec:
     sourceType: grpc
     image: icr.io/cpopen/ibm-operator-catalog
     updateStrategy:
-        registryPoll:
-            interval: 45m
+      registryPoll:
+        interval: 45m
