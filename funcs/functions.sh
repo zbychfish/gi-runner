@@ -743,6 +743,7 @@ function get_cp4s_options() {
                 done
                 cp4s_opts+=($op_option)
         done
+	save_variable GI_CP4S_OPTS $op_option
 }
 
 function get_credentials() {
