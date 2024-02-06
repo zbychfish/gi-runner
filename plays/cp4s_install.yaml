@@ -32,7 +32,7 @@
 
 - name: Instantiate serverless operator
   shell:
-    cmd: "oc apply -f ../func/scripts/cp4s_serverless_knative.yaml"
+    cmd: "oc apply -f ../func/yamls/cp4s_serverless_knative.yaml"
 
 - name: Wait for knative serving
   shell:
