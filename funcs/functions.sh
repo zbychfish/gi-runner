@@ -615,6 +615,119 @@ function get_cluster_storage_info() {
         [[ "$storage_type" == 'P' ]] && get_px_options
 }
 
+function get_cp4s_options() {
+        msg "Collecting CP4S deployment parameters" task
+        if [ $use_air_gap == 'Y' ]
+        then
+                msg "CP4S requires access to some Internet sites. In case of air-gapped installation access must be provided using proxy" info
+                msg "List of sites is available at: https://www.ibm.com/docs/en/cp-security/1.10?topic=environment-creating-allowlist-air-gapped-installation" info
+                msg "HTTP Proxy server address" info
+                while $(check_input "ip" "${proxy_ip}")
+                do
+                        if [[ ! -z "$GI_PROXY_URL" && "$GI_PROXY_URL" != "NO_PROXY" ]]
+                        then
+                                local saved_proxy_ip=$(echo "$GI_PROXY_URL"|awk -F':' '{print $1}')
+                                get_input "txt" "Push <ENTER> to accept the previous choice [$saved_proxy_ip] or insert IP address of Proxy server: " true "$saved_proxy_ip"
+                        else
+                                get_input "txt" "Insert IP address of Proxy server: " false
+                        fi
+                        proxy_ip="${input_variable}"
+                done
+                msg "HTTP Proxy port" info
+                while $(check_input "int" "${proxy_port}" 1024 65535)
+                do
+                        if [[ ! -z "$GI_PROXY_URL" && "$GI_PROXY_URL" != "NO_PROXY" ]]
+                        then
+                                local saved_proxy_port=$(echo "$GI_PROXY_URL"|awk -F':' '{print $2}')
+                                get_input "txt" "Push <ENTER> to accept the previous choice [$saved_proxy_port] or insert Proxy server port: " true "$saved_proxy_port"
+                        else
+                                get_input "txt" "Insert Proxy server port: " false
+                        fi
+                        proxy_port="${input_variable}"
+                done
+                msg "You can exclude from proxy redirection the access to the intranet subnets" info
+                no_proxy_adds="init_value"
+                while $(check_input "cidr_list" "${no_proxy_adds}" true)
+                do
+                        get_input "txt" "Insert comma separated list of CIDRs (like 192.168.0.0/24) which should not be proxied (do not need provide here cluster addresses): " false
+                        no_proxy_adds="${input_variable}"
+                done
+                no_proxy="127.0.0.1,*.apps.$ocp_domain,*.$ocp_domain,$no_proxy_adds"
+                save_variable GI_NOPROXY_NET "$no_proxy"
+                save_variable GI_NOPROXY_NET_ADDS "$no_proxy_adds"
+                save_variable GI_PROXY_URL "$proxy_ip:$proxy_port"
+        fi
+        msg "Namespace defines the space where most CP4S pods, objects and supporting services will be located" info
+        while $(check_input "txt" "${cp4s_namespace}" "with_limited_length" 10)
+        do
+                if [ ! -z "$GI_CP4S_NS" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_CP4S_NS] or insert GI namespace name (maximum 10 characters)" true "$GI_CP4S_NS"
+                else
+                        get_input "txt" "Insert CP4S namespace name (maximum 10 characters, default cp4s): " true "cp4s"
+                fi
+                cp4s_namespace="${input_variable}"
+        done
+        save_variable GI_CP4S_NS $cp4s_namespace
+	msg "Enter the name of the directory service account to which the role of privilege administrator will be attached?" info
+        [ $install_ldap == 'Y' ] && msg "Because the OpenLDAP will be installed in this procedure the pointed account will be created automatically during LDAP deployment." info
+        while $(check_input "txt" "${cp4s_admin}" "non_empty")
+        do
+                if [ ! -z "$GI_CP4S_ADMIN" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_CP4S_ADMIN] or insert CP4S admin username: " true "$GI_CP4S_ADMIN"
+                else
+                        get_input "txt" "Insert CP4S admin username (default - cp4sadmin): " true "cp4sadmin"
+                fi
+                cp4s_admin="${input_variable}"
+        done
+        save_variable GI_CP4S_ADMIN "$cp4s_admin"
+        msg "Enter default storage class for CP4S." info
+        msg "All CP4S PVC's use RWO access." info
+        [ $storage_type == 'R' ] && sc_list=(${rook_sc[@]}) || sc_list=(${ocs_sc[@]})
+        while $(check_input "list" ${cp4s_sc_selected} ${#sc_list[@]})
+        do
+                get_input "list" "Select storage class: " "${sc_list[@]}"
+                cp4s_sc_selected=$input_variable
+        done
+        cp4s_sc="${sc_list[$((${cp4s_sc_selected} - 1))]}"
+        save_variable GI_CP4S_SC $cp4s_sc
+        msg "Enter default storage class for CP4S backup, it uses RWO access." info
+        while $(check_input "list" ${cp4s_sc_backup_selected} ${#sc_list[@]})
+        do
+                get_input "list" "Select storage class: " "${sc_list[@]}"
+                cp4s_sc_backup_selected=$input_variable
+        done
+        cp4s_sc_backup="${sc_list[$((${cp4s_sc_backup_selected} - 1))]}"
+        save_variable GI_CP4S_SC_BACKUP $cp4s_sc_backup
+        msg "Enter the backup PVC size for CP4S. Minimum and default value 500 GB" info
+        while $(check_input "int" "$cp4s_backup_size" 499 999999)
+        do
+                if [ ! -z "$GI_CP4S_BACKUP_SIZE" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [${GI_CP4S_BACKUP_SIZE}] or insert size of backup PVC (in GB): " true "$GI_CP4S_BACKUP_SIZE"
+                else
+                        get_input "txt" "Insert size of backup PVC or press <ENTER> to set default value [500] (in GB): " true 500
+                fi
+                cp4s_backup_size="${input_variable}"
+        done
+        save_variable GI_CP4S_BACKUP_SIZE $cp4s_backup_size
+        msg "Some CP4S functions can be installed optionally, select desired ones." info
+        local cp4s_features=("Detection_and_Response_Center,Y" "Security_Risk_Manager,Y" "Thread_Investigator,Y")
+        declare -a cp4s_opts
+        for opt in ${cp4s_features[@]}
+        do
+                unset op_option
+                IFS="," read -r -a curr_op <<< $opt
+                while $(check_input "yn" "$op_option")
+                do
+                        get_input "yn"  "Would you like to install ${curr_op[0]//_/ } application: " $([[ "${curr_op[1]}" != 'Y' ]] && echo true || echo false)
+                        op_option=${input_variable^^}
+                done
+                cp4s_opts+=($op_option)
+        done
+}
+
 function get_credentials() {
         local is_ok
         msg "Collecting all required credentials" task

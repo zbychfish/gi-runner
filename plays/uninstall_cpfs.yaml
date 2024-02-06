@@ -12,13 +12,21 @@
     loop:
       - { name: "GI_DOMAIN", value: "{{ ocp_domain }}" }
 
+  - name: Check connection to API
+    shell:
+      cmd: "oc get nodes|wc -l"
+    register: nodes_count
+    failed_when: nodes_count.stdout|int < 1
+
   - name: Delete CPFS CSV in ibm-common-services
     shell:
-      cmd: "[[ 'oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator' ]] || oc delete $(oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator) -n ibm-common-services"
+      cmd: "oc delete $(oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator) -n ibm-common-services"
+    when: "$(oc get csv -n ibm-common-services -oname | grep ibm-common-service-operator | wc -l) != 0"
 
   - name: Delete operand requests
     shell:
-      cmd: "[[ 'oc get operandrequest -n ibm-common-services -oname' ]] || oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services"
+      cmd: "oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services"
+    when: "$(oc get operandrequest -n ibm-common-services -oname | wc -l) != 0"
 
   - name: Wait for cleanup
     pause:
@@ -36,33 +44,46 @@
     shell:
       cmd: ../funcs/scripts/login_to_ocp.sh
 
+  - name: Check connection to API
+    shell:
+      cmd: "oc get nodes|wc -l"
+    register: nodes_count
+    failed_when: nodes_count.stdout|int < 1
+
   - name: Delete operand configs
     shell:
-      cmd: "[[ 'oc get operandconfig -n ibm-common-services -oname' ]] || oc delete $(oc get operandconfig -n ibm-common-services -oname) -n ibm-common-services"
+      cmd: "oc delete $(oc get operandconfig -n ibm-common-services -oname) -n ibm-common-services"
+    when: "$(oc get operandconfig -n ibm-common-services -oname | wc -l) != 0"
 
   - name: Delete operand registries
     shell:
-      cmd: "[[ 'oc get operandregistry -n ibm-common-services -oname' ]] || oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services"
+      cmd: "oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services"
+    when: "$(oc get operandregistry -n ibm-common-services -oname) | wc -l) != 0"
 
   - name: Delete operand registries
     shell:
-      cmd: "[[ 'oc get namespacescope -n ibm-common-services -oname' ]] || oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services"
+      cmd: "oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services"
+    when: "$(oc get namespacescope -n ibm-common-services -oname) | wc -l) != 0"
 
   - name: Delete CSV's
     shell:
-      cmd: "[[ 'oc get csv -n ibm-common-services -oname' ]] || oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services"
+      cmd: "oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services"
+    when: "$(oc get csv -n ibm-common-services -oname) | wc -l) != 0"
 
   - name: Delete subscriptions
     shell:
-      cmd: "[[ 'oc get sub -n ibm-common-services -oname' ]] || oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services"
+      cmd: "oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services"
+    when: "$(oc get sub -n ibm-common-services -oname) | wc -l) != 0"
 
   - name: Delete CSV's in common-service namespace
     shell:
-      cmd: "[[ 'oc get csv -n common-service -oname' ]] || oc delete $(oc get csv -n common-service -oname) -n common-service"
+      cmd: "oc delete $(oc get csv -n common-service -oname) -n common-service"
+    when: "$(oc get csv -n common-service -oname) | wc -l) != 0"
 
-  - name: Delete CSV's in common-service namespace
+  - name: Delete configmap
     shell:
-      cmd: "oc -n kube-public delete configmap ibm-common-services-status --ignore-not-found"
+      cmd: "oc -n kube-public delete configmap ibm-common-services-status"
+    when: "$(oc -n kube-public get configmap ibm-common-services-status) | wc -l) != 0"
 
   - name: Delete webhooks
     shell:
