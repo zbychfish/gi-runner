@@ -1,0 +1,44 @@
+- name: Create all required namespaces
+  shell:
+    cmd: "oc create namespace {{ item }}"
+  with_items:
+    - "openshift-serverless"
+    - "knative-serving"
+    - "knative-eventing"
+    - "cp4s"
+  ignore_errors: true
+
+- name: Configure yaml file serverless operator
+  ansible.builtin.template:
+    src: "cp4s_serveless_sub.j2"
+    dest: "{{ temp_dir }}/yamls/cp4s_serverless_sub.yaml"
+  vars:
+    operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
+
+- name: Deploy serverless operator
+  shell:
+    cmd: "oc apply -f {{ item }}"
+  with_items:
+    - "../func/yamls/cp4s_serverless_og.yaml"
+    - "{{ temp_dir }}/yamls/cp4s_serverless_sub.yaml"
+
+- name: Wait for serverless operator
+  shell:
+    cmd: "oc get `oc get pod -n openshift-serverless -oname |grep knative-operator` -n openshift-serverless -ojson|jq .status.containerStatuses[].ready"
+  register: serverless_op
+  until: "serverless_op.stdout == \"true\""
+  retries: 60
+  delay: 10
+
+- name: Instantiate serverless operator
+  shell:
+    cmd: "oc apply -f ../func/scripts/cp4s_serverless_knative.yaml"
+
+- name: Wait for knative serving
+  shell:
+    cmd: "oc get knativeserving.operator.knative.dev/knative-serving -n knative-serving -ojson |jq -r '.status.conditions[]|select(.type==\"Ready\")'.status"
+  register: serverless_knative
+  until: "serverless_knative.stdout == \"True\""
+  retries: 60
+  delay: 10
+
