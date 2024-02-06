@@ -47,7 +47,7 @@ px_channeli="stable"
 px_version="3.1.0"
 
 cp4s_channel="1.10"
-cp4s_version=s[ "1.10.18" ] # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cp-security/index.yaml
-cp4s_cases=[ "1.0.43" ]
+cp4s_version=("1.10.18") # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cp-security/index.yaml
+cp4s_cases=("1.0.43")
 cp4s_case_name="ibm-cp-security"
 cp4s_case_inventory_setup="ibmSecurityOperatorSetup"
