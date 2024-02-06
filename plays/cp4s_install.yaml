@@ -86,3 +86,75 @@
     - "cp4s_sub"
     - "cp4s_cr"
   when: internet_type != 'A'
+
+- name: Deploy CP4S operator
+  shell:
+    cmd: "oc apply -f {{{ temp_dir }}/yamls/{{{ item }}"
+  with_items:
+    - cp4s_og.yaml"
+    - cp4s_sub.yaml"
+  when: internet_type != 'A'
+
+- name: Wait for CP4S operator
+  shell:
+    cmd: "oc get pod -lname=ibm-cp-security-operator -n cp4s -ojson|jq -r '.items[].status.conditions[] | select(.type==\"Ready\").status'"
+  register: cp4s_operator
+  until: "cp4s_operator.stdout == \"True\""
+  retries: 30
+  delay: 10
+
+- name: Deploy CP4S
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/cp4s_cr.yaml"
+  when: internet_type != 'A'
+
+- name: Wait for CR deployment initiation
+  pause:
+    minutes: 5
+
+- name: Wait for CP4S successful deployment
+  shell:
+    cmd: "oc get CP4SThreatManagement threatmgmt -n cp4s -ojson|jq -r .status.conditions[].type"
+  register: cp4s_deployed
+  until: "cp4s_deployed.stdout == \"Success\""
+  retries: 100
+  delay: 60
+
+- name: Download cloud tool
+  get_url:
+    url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz"
+    dest: "{{ temp_dir }}/cp4s"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  when: internet_type != 'A'
+
+- name: Unpack cloudctl tools
+  shell:
+    cmd: "tar xf {{ temp_dir }}/cp4s/{{ item.src }} -C /usr/local/bin"
+  with_items:
+    - { src: "cloudctl-linux-amd64.tar.gz" }
+  when: internet_type != 'A'
+
+- name: Standarize cloudctl name
+  command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
+
+- name: Set correct rights for RHCOS tools in /usr/local/bin
+  file:
+    path: "/usr/local/bin/{{ item.file }}"
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - { file: "cloudctl" }
+
+- name: Login to ICS
+  shell:
+    cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
+
+- name: Get cp-serviceability pod info
+  shell:
+    cmd: "oc get pod -n {{ cp4s_namespace }} --no-headers -lrun=cp-serviceability | cut -d' ' -f1"
+  register: service_pod
+
+- name: Install cpctl tool
+  shell:
+    cmd: "oc cp {{ service_pod.stdout }}:/opt/bin/linux/cpctl -n {{ cp4s_namespace }} /usr/local/bin/cpctl && chmod +x /usr/local/bin/cpctl"

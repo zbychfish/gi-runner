@@ -7,7 +7,7 @@ spec:
      acceptLicense: true
      basicDeploymentConfiguration:
          adminUser: {{ cp4s_admin }}
-         domain: "cp4s.apps.{{ domain }}"
+         domain: "cp4s.apps.{{ ocp_domain }}"
          storageClass: "{{ cp4s_sc }}"
      extendedDeploymentConfiguration:
          airgapInstall: false

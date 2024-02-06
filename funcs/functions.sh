@@ -712,9 +712,9 @@ function get_cp4s_options() {
         	save_variable GI_CP4S_SC_BACKUP $cp4s_sc_backup
 	elif [ $storage_type == 'O' ]
         then
-                save_variable GI_CP4S_SC "ocs-storagecluster-ceph-rbd"
+                save_variable GI_CP4S_SC_BACKUP "ocs-storagecluster-ceph-rbd"
         else
-                save_variable GI_CP4S_SC "portworx-db2-rwo-sc"
+                save_variable GI_CP4S_SC_BACKUP "portworx-db2-rwo-sc"
         fi
         msg "Enter the backup PVC size for CP4S. Minimum and default value 500 GB" info
         while $(check_input "int" "$cp4s_backup_size" 499 999999)
