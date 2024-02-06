@@ -47,3 +47,8 @@ nfs_provisioner_version=4.0.2 # https://github.com/kubernetes-sigs/nfs-subdir-ex
 
 px_channeli="stable"
 px_version="3.1.0"
+
+cp4s_versions: [ "1.10.18" ] # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cp-security/index.yaml
+cp4s_cases: [ "1.0.43" ]
+cp4s_case_name: "ibm-cp-security"
+cp4s_case_inventory_setup: "ibmSecurityOperatorSetup"

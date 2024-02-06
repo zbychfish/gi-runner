@@ -39,6 +39,7 @@
     storage_class_rw_one: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'px-csi-replicated' }}"
     install_cpfs: "{{ lookup('env','GI_ICS') }}"
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
+    install_cp4s: "{{ lookup('env','GI_CP4S') }}"
 
   vars_files:
     - constants.yaml
@@ -80,6 +81,7 @@
         - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
         - { name: "GI_ICS", value: "{{ install_cpfs }}" }
         - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
+        - { name: "GI_CP4S", value: "{{ install_cp4s }}" }
       when: item.value == ""
 
     - name: Set parameters for installation with proxy
@@ -368,6 +370,34 @@
         - { name: "GI_BACKUP_SIZE", value: "{{ gi_backup_volume_size }}" }
       when: install_gi == 'Y' and gi_nfs_backup == 'Y' and item.value == ""
 
+    - name: Set CP4S installation variables from env
+      ansible.builtin.set_fact:
+        cp4s_namespace: "{{ lookup('env','GI_CP4S_NS') }}"
+        cp4s_ext_ingress: "{{ lookup('env','GI_CP4S_IN') }}"
+      when: install_cp4s == 'Y'
+
+    - name: Check CP4S variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_CP4S_NS", value: "{{ cp4s_namespace }}" }
+        - { name: "GI_CP4S_IN", value: "{{ cp4s_ext_ingress }}" }
+      when: install_cp4s == 'Y' and item.value == ""
+
+    - name: Set CP4S cert variables
+      ansible.builtin.set_fact:
+        cp4s_ca: "{{ lookup('env', 'GI_CP4S_CA') }}"
+        cp4s_cert: "{{ lookup('env', 'GI_CP4S_CERT') }}"
+        cp4s_key: "{{ lookup('env', 'GI_CP4S_KEY') }}"
+      when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y'
+
+    - name: Check CP4S cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_CP4S_CA", value: "{{ cp4s_ca }}" }
+        - { name: "GI_CP4S_CERT", value: "{{ cp4s_cert }}" }
+        - { name: "GI_CP4S_KEY", value: "{{ cp4s_key }}" }
+      when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y' and item.value == ""
+
     - name: Set parameters for non air-gapped installation
       ansible.builtin.set_fact:
         ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
@@ -436,6 +466,10 @@
       ansible.builtin.include_tasks: gi_install.yaml
       when: skip_phase|int < 8 and install_gi == 'Y'
 
+    - name: Install CP4S
+      ansible.builtin.include_tasks: cp4s_install.yaml
+      when: skip_phase|int < 8 and install_cp4s == 'Y'
+
     - name: OCP deployment summary
       ansible.builtin.debug:
         msg:
@@ -470,3 +504,11 @@
           - "Login to GI console as admin - https://insights.apps.{{ ocp_domain }}"
           - "{{ '' if skip_phase|int > 4 else 'SSH port '+ssh_node_port.stdout+' integration with GDP routed and opened on bastion' }}"
       when: install_gi == 'Y'
+
+    - name: CP4S deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "CP4S installation finished"
+          - Update the hosts file on your web browser workstation
+          - "{{ bas_ip }} cp4s.apps.{{ domain }}"
+      when: install_cp4s == 'Y'

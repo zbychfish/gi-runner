@@ -1,14 +1,3 @@
-- hosts: bastion
-  vars:
-    install_cp4s: "{{ lookup('env','GI_CP4S') }}"
-
-  tasks:
-    - name: Check standard configuration parameters
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      when: item.value == ""
-      loop:
-        - { name: "GI_CP4S", value: "{{ install_cp4s }}" }
-
     - name: Set parameters for multiple subnets installation
       ansible.builtin.set_fact:
         gateways_list: "{{ lookup('env','GI_SUBNETS_GATEWAYS').split(',') }}"
@@ -51,7 +40,6 @@
         cp4s_backup_size: "{{ lookup('env','GI_CP4S_BACKUP_SIZE') }}"
         cp4s_options: "{{ lookup('env','GI_CP4S_OPTS').split(',') }}"
         ics_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
-        cp4s_ext_ingress: "{{ lookup('env','GI_CP4S_IN') }}"
         gi_nfs_backup: "N"
       when: install_cp4s == 'Y'
 
@@ -65,7 +53,6 @@
         - { name: "GI_CP4S_BACKUP_SIZE", value: "{{ cp4s_backup_size }}" }
         - { name: "GI_CP4S_OPTS", value: "{{ cp4s_options }}" }
         - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
-        - { name: "GI_CP4S_IN", value: "{{ cp4s_ext_ingress }}" }
       when: install_cp4s == 'Y' and item.value == ""
 
     - name: Set CP4S proxy settings
@@ -83,27 +70,6 @@
           #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
       when: install_cp4s == 'Y' and internet_type == 'A' and item.value == ""
 
-    - name: Set CP4S cert variables
-      ansible.builtin.set_fact:
-        cp4s_ca: "{{ lookup('env', 'GI_CP4S_CA') }}"
-        cp4s_cert: "{{ lookup('env', 'GI_CP4S_CERT') }}"
-        cp4s_key: "{{ lookup('env', 'GI_CP4S_KEY') }}"
-      when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y'
-
-    - name: Check CP4S cert variables
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_CP4S_CA", value: "{{ cp4s_ca }}" }
-        - { name: "GI_CP4S_CERT", value: "{{ cp4s_cert }}" }
-        - { name: "GI_CP4S_KEY", value: "{{ cp4s_key }}" }
-      when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y' and item.value == ""
-
-    - name: Set GI installation variables
-      ansible.builtin.set_fact:
-        db2_class_fs: "{{ 'portworx-db2-rwx-sc' if storage_type == 'P' else storage_class_rw_many }}"
-        db2_class_block: "{{ 'portworx-db2-rwo-sc' if storage_type == 'P' else storage_class_rw_one }}"
-      when: install_gi == 'Y'
-
     - name: Set GI installation variables
       ansible.builtin.set_fact:
         gi_case: "ibm-guardium-insights-{{ gi_case_version }}.tgz"
@@ -114,16 +80,4 @@
         offline_inventory: "{{ 'gi_arch' if install_gi == 'Y' else 'ics_arch' }}"
         ics_manifest_dir: "{{ 'gi_offline' if install_gi == 'Y' else 'ics_offline' }}"
       when: install_ics == 'Y'
-
-    - name: Install CP4S
-      ansible.builtin.include_tasks: cp4s_install.yaml
-      when: skip_phase|int < 7 and install_cp4s == 'Y'
-
-    - name: CP4S info
-      ansible.builtin.debug:
-        msg:
-          - "CP4S installation finished"
-          - Update the hosts file on your web browser workstation
-          - "{{ bas_ip }} cp4s.apps.{{ domain }}"
-      when: install_cp4s == 'Y'
 

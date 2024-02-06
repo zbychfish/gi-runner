@@ -1,19 +1,3 @@
-- name: Add secrets 1
-  shell:
-    cmd: "{{ item }}"
-  with_items:
-    - "oc create secret docker-registry \"ibm-entitlement-key\" -n {{ cp4s_namespace }} \"--docker-server=cp.icr.io\" \"--docker-username=cp\" \"--docker-password={{ ibm_secret }}\""
-  ignore_errors: true
-  when: internet_type != 'A' 
-
-- name: Add secrets 2
-  shell:
-    cmd: "{{ item }}"
-  with_items:
-    - "oc create secret generic -n {{ cp4s_namespace }} isc-ingress-default-secret --type=kubernetes.io/tls  --from-file=ca.crt={{ cp4s_ca }} --from-file=tls.crt={{ cp4s_cert }} --from-file=tls.key={{ cp4s_key }}"
-  when: cp4s_ext_ingress == 'Y' and internet_type != 'A'
-  ignore_errors: true
-
 - name: Prepare image content source policy 
   shell:
     cmd: "sed -i 's#-.*:5000/#- registry.{{ domain }}:5000/#' {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
@@ -27,20 +11,6 @@
   with_items:
     - "image-content-source-policy.yaml"
   when: internet_type == 'A' 
-
-- name: Install IBM operators catalog
-  shell:
-    cmd: "oc apply -f ../scripts/ibm_catalog.yaml"
-  when: internet_type != 'A'
-
-- name: Wait for IBM operators catalog
-  shell:
-    cmd: "oc get catalogsource ibm-operator-catalog -n openshift-marketplace -o json|jq -r .status.connectionState.lastObservedState"
-  register: ibm_catalog_state
-  until: "ibm_catalog_state.stdout == \"READY\""
-  retries: 50
-  delay: 15
-  when: internet_type != 'A'
 
 - name: Setup CP4S deployment files
   template:

@@ -5,7 +5,7 @@
     - "openshift-serverless"
     - "knative-serving"
     - "knative-eventing"
-    - "cp4s"
+    - "{{ cp4s_namespace }}"
   ignore_errors: true
 
 - name: Configure yaml file serverless operator
@@ -42,3 +42,47 @@
   retries: 60
   delay: 10
 
+- name: Add secrets 1
+  shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc create secret docker-registry \"ibm-entitlement-key\" -n {{ cp4s_namespace }} \"--docker-server=cp.icr.io\" \"--docker-username=cp\" \"--docker-password={{ ibm_secret }}\""
+  ignore_errors: true
+  when: internet_type != 'A'
+
+- name: Add secrets 2
+  shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc create secret generic -n {{ cp4s_namespace }} isc-ingress-default-secret --type=kubernetes.io/tls  --from-file=ca.crt={{ cp4s_ca }} --from-file=tls.crt={{ cp4s_cert }} --from-file=tls.key={{ cp4s_key }}"
+  when: cp4s_ext_ingress == 'Y' and internet_type != 'A'
+  ignore_errors: true
+
+- name: Install IBM operators catalog
+  shell:
+    cmd: "oc apply -f ../funcs/yamls/ibm_catalog.yaml"
+  when: internet_type != 'A'
+
+- name: Wait for IBM operators catalog
+  shell:
+    cmd: "oc get catalogsource ibm-operator-catalog -n openshift-marketplace -o json|jq -r .status.connectionState.lastObservedState"
+  register: ibm_catalog_state
+  until: "ibm_catalog_state.stdout == \"READY\""
+  retries: 60
+  delay: 10
+  when: internet_type != 'A'
+
+- name: Setup CP4S deployment files
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ temp_dir }}/cp4s/{{ item }}.yaml"
+  vars:
+    cp4s_backup_size_final: "{{ '' if cp4s_backup_size == '0' else cp4s_backup_size }}"
+    cp4s_option_drc: "{{ 'true' if cp4s_options[0] == 'Y' else false }}"
+    cp4s_option_rm: "{{ 'true' if cp4s_options[1] == 'Y' else false }}"
+    cp4s_option_ti: "{{ 'true' if cp4s_options[2] == 'Y' else false }}"
+  with_items:
+    - "cp4s_og"
+    - "cp4s_sub"
+    - "cp4s_cr"
+  when: internet_type != 'A'
