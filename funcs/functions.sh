@@ -682,24 +682,40 @@ function get_cp4s_options() {
                 cp4s_admin="${input_variable}"
         done
         save_variable GI_CP4S_ADMIN "$cp4s_admin"
-        msg "Enter default storage class for CP4S." info
+        msg "Default storage class for CP4S." info
         msg "All CP4S PVC's use RWO access." info
         [ $storage_type == 'R' ] && sc_list=(${rook_sc[@]}) || sc_list=(${ocs_sc[@]})
-        while $(check_input "list" ${cp4s_sc_selected} ${#sc_list[@]})
-        do
-                get_input "list" "Select storage class: " "${sc_list[@]}"
-                cp4s_sc_selected=$input_variable
-        done
-        cp4s_sc="${sc_list[$((${cp4s_sc_selected} - 1))]}"
-        save_variable GI_CP4S_SC $cp4s_sc
+	if [ $storage_type == 'R' ]
+	then
+        	while $(check_input "list" ${cp4s_sc_selected} ${#sc_list[@]})
+        	do
+                	get_input "list" "Select storage class: " "${sc_list[@]}"
+                	cp4s_sc_selected=$input_variable
+        	done
+        	cp4s_sc="${sc_list[$((${cp4s_sc_selected} - 1))]}"
+        	save_variable GI_CP4S_SC $cp4s_sc
+	elif [ $storage_type == 'O' ]
+	then
+		save_variable GI_CP4S_SC "ocs-storagecluster-ceph-rbd"
+	else
+		save_variable GI_CP4S_SC "portworx-db2-rwo-sc"
+	fi
         msg "Enter default storage class for CP4S backup, it uses RWO access." info
-        while $(check_input "list" ${cp4s_sc_backup_selected} ${#sc_list[@]})
-        do
-                get_input "list" "Select storage class: " "${sc_list[@]}"
-                cp4s_sc_backup_selected=$input_variable
-        done
-        cp4s_sc_backup="${sc_list[$((${cp4s_sc_backup_selected} - 1))]}"
-        save_variable GI_CP4S_SC_BACKUP $cp4s_sc_backup
+	if [ $storage_type == 'R' ]
+        then
+	        while $(check_input "list" ${cp4s_sc_backup_selected} ${#sc_list[@]})
+        	do
+                	get_input "list" "Select storage class: " "${sc_list[@]}"
+                	cp4s_sc_backup_selected=$input_variable
+        	done
+        	cp4s_sc_backup="${sc_list[$((${cp4s_sc_backup_selected} - 1))]}"
+        	save_variable GI_CP4S_SC_BACKUP $cp4s_sc_backup
+	elif [ $storage_type == 'O' ]
+        then
+                save_variable GI_CP4S_SC "ocs-storagecluster-ceph-rbd"
+        else
+                save_variable GI_CP4S_SC "portworx-db2-rwo-sc"
+        fi
         msg "Enter the backup PVC size for CP4S. Minimum and default value 500 GB" info
         while $(check_input "int" "$cp4s_backup_size" 499 999999)
         do
