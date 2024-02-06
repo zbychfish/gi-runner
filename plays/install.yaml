@@ -374,6 +374,12 @@
       ansible.builtin.set_fact:
         cp4s_namespace: "{{ lookup('env','GI_CP4S_NS') }}"
         cp4s_ext_ingress: "{{ lookup('env','GI_CP4S_IN') }}"
+        cp4s_admin: "{{ lookup('env','GI_CP4S_ADMIN') }}"
+        cp4s_sc: "{{ lookup('env','GI_CP4S_SC') }}"
+        cp4s_backup_sc: "{{ lookup('env','GI_CP4S_SC_BACKUP') }}"
+        cp4s_backup_size: "{{ lookup('env','GI_CP4S_BACKUP_SIZE') }}"
+        cp4s_options: "{{ lookup('env','GI_CP4S_OPTS').split(',') }}"
+        cpfs_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
       when: install_cp4s == 'Y'
 
     - name: Check CP4S variables
@@ -381,6 +387,12 @@
       loop:
         - { name: "GI_CP4S_NS", value: "{{ cp4s_namespace }}" }
         - { name: "GI_CP4S_IN", value: "{{ cp4s_ext_ingress }}" }
+        - { name: "GI_CP4S_ADMIN", value: "{{ cp4s_admin }}" }
+        - { name: "GI_CP4S_SC", value: "{{ cp4s_sc }}" }
+        - { name: "GI_CP4S_SC_BACKUP", value: "{{ cp4s_backup_sc }}" }
+        - { name: "GI_CP4S_BACKUP_SIZE", value: "{{ cp4s_backup_size }}" }
+        - { name: "GI_CP4S_OPTS", value: "{{ cp4s_options }}" }
+        - { name: "GI_ICSADMIN_PWD", value: "{{ ics_admin_password }}" }
       when: install_cp4s == 'Y' and item.value == ""
 
     - name: Set CP4S cert variables

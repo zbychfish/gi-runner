@@ -75,7 +75,7 @@
 - name: Setup CP4S deployment files
   template:
     src: "{{ item }}.j2"
-    dest: "{{ temp_dir }}/cp4s/{{ item }}.yaml"
+    dest: "{{ temp_dir }}/yamls/{{ item }}.yaml"
   vars:
     cp4s_backup_size_final: "{{ '' if cp4s_backup_size == '0' else cp4s_backup_size }}"
     cp4s_option_drc: "{{ 'true' if cp4s_options[0] == 'Y' else false }}"
