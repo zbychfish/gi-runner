@@ -91,8 +91,8 @@
   shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/{{ item }}"
   with_items:
-    - cp4s_og.yaml"
-    - cp4s_sub.yaml"
+    - cp4s_og.yaml
+    - cp4s_sub.yaml
   when: internet_type != 'A'
 
 - name: Wait for CP4S operator
