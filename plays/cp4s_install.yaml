@@ -89,7 +89,7 @@
 
 - name: Deploy CP4S operator
   shell:
-    cmd: "oc apply -f {{{ temp_dir }}/yamls/{{{ item }}"
+    cmd: "oc apply -f {{ temp_dir }}/yamls/{{ item }}"
   with_items:
     - cp4s_og.yaml"
     - cp4s_sub.yaml"
