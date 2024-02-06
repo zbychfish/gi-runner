@@ -468,7 +468,7 @@
 
     - name: Install openldap
       ansible.builtin.include_tasks: ldap_install.yaml
-      when: skip_phase|int < 6 and install_ldap == 'Y'
+      when: skip_phase|int < 6 and install_ldap == 'Y' and install_gi == 'Y'
 
     - name: Install NFS client
       ansible.builtin.include_tasks: nfs_client_setup.yaml
@@ -481,6 +481,10 @@
     - name: Install CP4S
       ansible.builtin.include_tasks: cp4s_install.yaml
       when: skip_phase|int < 8 and install_cp4s == 'Y'
+
+    - name: Install openldap
+      ansible.builtin.include_tasks: ldap_install.yaml
+      when: skip_phase|int < 9 and install_ldap == 'Y' and install_cp4s == 'Y'
 
     - name: OCP deployment summary
       ansible.builtin.debug:
