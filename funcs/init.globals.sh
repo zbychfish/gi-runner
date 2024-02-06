@@ -4,7 +4,7 @@ GI_TEMP=$GI_HOME/gitemp # temp directory
 variables_file=$GI_HOME/variables.sh # variables file
 
 declare -a fedora_supp_releases=(38 39) # list supported Fedora releases
-declare -a gi_versions=(3.2.13 3.3.0)
+declare -a gi_versions=(3.2.13 3.3.0) # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-guardium-insights/index.yaml
 declare -a gi_cases=(2.2.13 2.3.0)
 declare -a gi_redis_releases=(1.6.5 1.6.5)
 declare -a ics_versions=(3.19.18 3.19.19 3.19.20) # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cp-common-services/index.yaml
@@ -26,8 +26,6 @@ cpfs_case_name="ibm-cp-common-services"
 cpfs_case_inventory_setup="ibmCommonServiceOperatorSetup"
 cpfs_update_channel="3"
 
-cp4s_channel="1.10"
-
 galaxy_community_general="8.2.0" # https://github.com/ansible-collections/community.general
 galaxy_ansible_utils="3.0.0" # https://github.com/ansible-collections/ansible.utils
 galaxy_community_crypto="2.17.0" # https://github.com/ansible-collections/community.crypto
@@ -48,7 +46,8 @@ nfs_provisioner_version=4.0.2 # https://github.com/kubernetes-sigs/nfs-subdir-ex
 px_channeli="stable"
 px_version="3.1.0"
 
-cp4s_versions: [ "1.10.18" ] # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cp-security/index.yaml
-cp4s_cases: [ "1.0.43" ]
-cp4s_case_name: "ibm-cp-security"
-cp4s_case_inventory_setup: "ibmSecurityOperatorSetup"
+cp4s_channel="1.10"
+cp4s_version=s[ "1.10.18" ] # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-cp-security/index.yaml
+cp4s_cases=[ "1.0.43" ]
+cp4s_case_name="ibm-cp-security"
+cp4s_case_inventory_setup="ibmSecurityOperatorSetup"
