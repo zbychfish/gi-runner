@@ -27,7 +27,7 @@ function ansible_constants() {
 	echo "gi_case_inventory_setup: $gi_case_inventory_setup" >> $afile
 	echo "px_channel: $px_channel" >> $afile
 	echo "px_version: $px_version" >> $afile
-	echo "cp4s_channel: $cp4s_channel" >> $afile
+	echo "cp4s_channel: \"$cp4s_channel\"" >> $afile
 	echo "cp4s_case_name: $cp4s_case_name" >> $afile
 	echo "cp4s_case_inventory_setup: $cp4s_case_inventory_setup" >> $afile
 	printf -v arr_values '"%s",' "${cp4s_cases[@]}"

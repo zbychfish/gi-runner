@@ -123,13 +123,13 @@
 - name: Download cloud tool
   get_url:
     url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz"
-    dest: "{{ temp_dir }}/cp4s"
+    dest: "{{ temp_dir }}/downloads"
     use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
   when: internet_type != 'A'
 
 - name: Unpack cloudctl tools
   shell:
-    cmd: "tar xf {{ temp_dir }}/cp4s/{{ item.src }} -C /usr/local/bin"
+    cmd: "tar xf {{ temp_dir }}/downloads/{{ item.src }} -C /usr/local/bin"
   with_items:
     - { src: "cloudctl-linux-amd64.tar.gz" }
   when: internet_type != 'A'
