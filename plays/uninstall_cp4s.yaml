@@ -43,10 +43,17 @@
       cmd: "oc delete noobaaaccount.noobaa.io/cp4s -n noobaa --ignore-not-found"
     when: false
 
+  - name: Is noobaa service deployed
+    shell:
+      cmd: "oc get noobaa -n {{ cp4s_namespace }} | wc -l"
+    register: is_noobaa
+
   - name: Delete CRD's
     shell:
-      cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ cp4s_case_name }} --version {{ cp4s_case }} --inventory {{ cp4s_case_inventory_setup }} --namespace {{ cp4s_namespace }} --action uninstall --args \"--deleteCrd{{ air_gap_flag }}\""
+      cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ cp4s_case_name }} --version {{ cp4s_case }} --inventory {{ cp4s_case_inventory_setup }} --namespace {{ cp4s_namespace }} --action uninstall --args '--deleteCrd{{ air_gap_flag }}'"
     vars:
       air_gap_flag: "'' if internet_type != 'A' else ' --airgap'"
+    when: is_noobaa.stdout == 1
+
 
 

@@ -148,7 +148,7 @@
 
 - name: Login to ICS
   shell:
-    cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
+    cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} -u {{ ocpadmin }} -p {{ ocpadmin_password }} | base64 -d` -n kube-system"
 
 - name: Get cp-serviceability pod info
   shell:
