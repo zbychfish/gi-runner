@@ -28,7 +28,11 @@
 
   - name: Wait for cleanup
     pause:
-      minutes: 2
+      minutes: 5
+
+  - name: Relogin to OCP
+    shell:
+      cmd: ../funcs/scripts/login_to_ocp.sh
 
   - name: Wait for operand requests removal
     shell:
@@ -38,10 +42,6 @@
     retries: 60
     delay: 10
 
-  - name: Relogin to OCP
-    shell:
-      cmd: ../funcs/scripts/login_to_ocp.sh
-
   - name: Check connection to API
     shell:
       cmd: "oc get nodes|wc -l"
@@ -50,38 +50,31 @@
 
   - name: Delete operand configs
     shell:
-      cmd: "oc delete $(oc get operandconfig -n ibm-common-services -oname) -n ibm-common-services"
-    when: "$(oc get operandconfig -n ibm-common-services -oname | wc -l) != 0"
+      cmd: "[ $(oc get operandconfig -n ibm-common-services -oname | wc -l) != 0 ] && oc delete $(oc get operandconfig -n ibm-common-services -oname) -n ibm-common-services || echo 0"
 
   - name: Delete operand registries
     shell:
-      cmd: "oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services"
-    when: "$(oc get operandregistry -n ibm-common-services -oname) | wc -l) != 0"
+      cmd: "[ $(oc get operandregistry -n ibm-common-services -oname) | wc -l) != 0 ] && oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services || echo 0"
 
   - name: Delete operand registries
     shell:
-      cmd: "oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services"
-    when: "$(oc get namespacescope -n ibm-common-services -oname) | wc -l) != 0"
+      cmd: "[ $(oc get namespacescope -n ibm-common-services -oname) | wc -l) != 0 ] && oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services || echo 0"
 
   - name: Delete CSV's
     shell:
-      cmd: "oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services"
-    when: "$(oc get csv -n ibm-common-services -oname) | wc -l) != 0"
+      cmd: "[ $(oc get csv -n ibm-common-services -oname) | wc -l) != 0 ] && oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services || echo 0"
 
   - name: Delete subscriptions
     shell:
-      cmd: "oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services"
-    when: "$(oc get sub -n ibm-common-services -oname) | wc -l) != 0"
+      cmd: "[ $(oc get sub -n ibm-common-services -oname) | wc -l) != 0 ] && oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services || echo 0"
 
   - name: Delete CSV's in common-service namespace
     shell:
-      cmd: "oc delete $(oc get csv -n common-service -oname) -n common-service"
-    when: "$(oc get csv -n common-service -oname) | wc -l) != 0"
+      cmd: "[ $(oc get csv -n common-service -oname) | wc -l) != 0 ] && oc delete $(oc get csv -n common-service -oname) -n common-service || echo 0"
 
   - name: Delete configmap
     shell:
-      cmd: "oc -n kube-public delete configmap ibm-common-services-status"
-    when: "$(oc -n kube-public get configmap ibm-common-services-status) | wc -l) != 0"
+      cmd: "[ $(oc -n kube-public get configmap ibm-common-services-status) | wc -l) != 0 ] && oc -n kube-public delete configmap ibm-common-services-status || echo 0"
 
   - name: Delete webhooks
     shell:
@@ -89,6 +82,7 @@
     with_items:
       - oc delete ValidatingWebhookConfiguration cert-manager-webhook ibm-cs-ns-mapping-webhook-configuration --ignore-not-found
       - oc delete MutatingWebhookConfiguration cert-manager-webhook ibm-common-service-webhook-configuration ibm-operandrequest-webhook-configuration namespace-admission-config --ignore-not-found
+  - meta: end_play
 
   - name: Delete namespaces
     shell:
