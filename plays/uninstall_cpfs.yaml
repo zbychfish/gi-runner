@@ -24,8 +24,7 @@
 
   - name: Delete operand requests
     shell:
-      cmd: "oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services"
-    when: "$(oc get operandrequest -n ibm-common-services -oname | wc -l) != 0"
+      cmd: "[ $(oc get operandrequest -n ibm-common-services -oname | wc -l) != 0 ] && oc delete $(oc get operandrequest -n ibm-common-services -oname) -n ibm-common-services || echo 0"
 
   - name: Wait for cleanup
     pause:
