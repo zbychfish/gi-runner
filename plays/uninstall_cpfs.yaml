@@ -54,27 +54,27 @@
 
   - name: Delete operand registries
     shell:
-      cmd: "[ $(oc get operandregistry -n ibm-common-services -oname) | wc -l) -ne 0 ] && oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services || echo 0"
+      cmd: "[ $(oc get operandregistry -n ibm-common-services -oname | wc -l) -ne 0 ] && oc delete $(oc get operandregistry -n ibm-common-services -oname) -n ibm-common-services || echo 0"
 
   - name: Delete operand registries
     shell:
-      cmd: "[ $(oc get namespacescope -n ibm-common-services -oname) | wc -l) -ne 0 ] && oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services || echo 0"
+      cmd: "[ $(oc get namespacescope -n ibm-common-services -oname | wc -l) -ne 0 ] && oc delete $(oc get namespacescope -n ibm-common-services -oname) -n ibm-common-services || echo 0"
 
   - name: Delete CSV's
     shell:
-      cmd: "[ $(oc get csv -n ibm-common-services -oname) | wc -l) -ne 0 ] && oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services || echo 0"
+      cmd: "[ $(oc get csv -n ibm-common-services -oname | wc -l) -ne 0 ] && oc delete $(oc get csv -n ibm-common-services -oname) -n ibm-common-services || echo 0"
 
   - name: Delete subscriptions
     shell:
-      cmd: "[ $(oc get sub -n ibm-common-services -oname) | wc -l) -ne 0 ] && oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services || echo 0"
+      cmd: "[ $(oc get sub -n ibm-common-services -oname | wc -l) -ne 0 ] && oc delete $(oc get sub -n ibm-common-services -oname) -n ibm-common-services || echo 0"
 
   - name: Delete CSV's in common-service namespace
     shell:
-      cmd: "[ $(oc get csv -n common-service -oname) | wc -l) -ne 0 ] && oc delete $(oc get csv -n common-service -oname) -n common-service || echo 0"
+      cmd: "[ $(oc get csv -n common-service -oname | wc -l) -ne 0 ] && oc delete $(oc get csv -n common-service -oname) -n common-service || echo 0"
 
   - name: Delete configmap
     shell:
-      cmd: "[ $(oc -n kube-public get configmap ibm-common-services-status) | wc -l) -ne 0 ] && oc -n kube-public delete configmap ibm-common-services-status || echo 0"
+      cmd: "[ $(oc -n kube-public get configmap ibm-common-services-status | wc -l) -ne 0 ] && oc -n kube-public delete configmap ibm-common-services-status || echo 0"
 
   - name: Delete webhooks
     shell:
