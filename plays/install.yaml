@@ -526,5 +526,5 @@
         msg:
           - "CP4S installation finished"
           - Update the hosts file on your web browser workstation
-          - "{{ bas_ip }} cp4s.apps.{{ domain }}"
+          - "{{ bas_ip }} cp4s.apps.{{ ocp_domain }}"
       when: install_cp4s == 'Y'
