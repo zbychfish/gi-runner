@@ -8,7 +8,7 @@
     - constants.yaml
 
   tasks:
-  - name: Set GI variables
+  - name: Set CP4S variables
     set_fact:
       cp4s_case: "{{ cp4s_cases[0] }}"
 
@@ -35,6 +35,7 @@
   - name: Delete noobaa account
     shell:
       cmd: "oc delete noobaaaccount.noobaa.io/cp4s -n noobaa --ignore-not-found"
+    when: false
 
   - name: Delete CRD's
     shell:
