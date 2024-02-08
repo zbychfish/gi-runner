@@ -26,7 +26,7 @@
 
   - name: Delete SYSAUTH
     shell:
-      cmd: "oc delete sysauth.isc.ibm.com/qproxy -n {{ cp4s_namespace }} --ignore-not-found"
+      cmd: "oc delete sysauth.isc.ibm.com/qproxy -n {{ cp4s_namespace }} --ignore-not-found || echo 0"
 
   - name: Is CP4S instance available
     shell:
