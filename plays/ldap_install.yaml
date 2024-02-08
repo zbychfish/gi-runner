@@ -56,7 +56,12 @@
 - name: Login to CPFS
   shell:
     cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} --skip-ssl-validation -u {{ ocpadmin }} -p {{ ocpadmin_password }} -n ibm-common-services"
-  when: install_cpfs == 'Y' or install_cp4s == 'Y'
+  when: install_cpfs == 'Y' and install_cp4s == 'Y'
+
+- name: Login to CPFS
+  shell:
+    cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
+  when: install_cpfs == 'Y' and install_cp4s != 'Y'
 
 - name: Extract CPFS Access Token
   shell:
