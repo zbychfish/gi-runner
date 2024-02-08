@@ -55,5 +55,20 @@
       air_gap_flag: "{{ \"\" if internet_type != 'A' else \" --airgap\" }}"
     when: is_noobaa.stdout|int == 1
 
+  - name: Delete knative
+    shell:
+      cmd: "oc delete -f {{ item }}"
+    with_items:
+      - ../funcs/yamls/cp4s_serverless_knative.yaml
+      - "{{ temp_dir }}/yamls/cp4s_serverless_sub.yaml"
+      - ../funcs/yamls/cp4s_serverless_og.yaml
+
+  - name: Create all required namespaces
+    shell:
+      cmd: "oc create namespace {{ item }}"
+    with_items:
+      - "openshift-serverless"
+      - "knative-serving"
+      - "knative-eventing"
 
 

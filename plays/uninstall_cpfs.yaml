@@ -89,13 +89,6 @@
     with_items:
       - ibm-common-services
       - common-service
-  - name: Delete knative
-    shell:
-      cmd: "oc delete -f {{ item }}"
-    with_items:
-      - ../funcs/yamls/cp4s_serverless_knative.yaml
-      - "{{ temp_dir }}/yamls/cp4s_serverless_sub.yaml"
-      - ../funcs/yamls/cp4s_serverless_og.yaml
         
   - debug:
       msg:
