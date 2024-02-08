@@ -64,9 +64,9 @@
       - ../funcs/yamls/cp4s_serverless_og.yaml
     ignore_errors: True
 
-  - name: Create all required namespaces
+  - name: Delete namespaces
     shell:
-      cmd: "oc create namespace {{ item }}"
+      cmd: "oc delete namespace {{ item }} --ignore-not-found"
     with_items:
       - "openshift-serverless"
       - "knative-serving"
