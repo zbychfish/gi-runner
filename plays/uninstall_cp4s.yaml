@@ -36,7 +36,7 @@
   - name: Delete CP4S
     shell:
       cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ cp4s_case_name }} --version {{ cp4s_case }} --inventory {{ cp4s_case_inventory_setup }} --namespace {{ cp4s_namespace }} --action uninstall"
-    when: is_cp4instance.stdout == 1
+    when: is_cp4instance.stdout|int == 1
 
   - name: Delete noobaa account
     shell:
@@ -53,7 +53,7 @@
       cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ cp4s_case_name }} --version {{ cp4s_case }} --inventory {{ cp4s_case_inventory_setup }} --namespace {{ cp4s_namespace }} --action uninstall --args '--deleteCrd{{ air_gap_flag }}'"
     vars:
       air_gap_flag: "\"\" if internet_type != 'A' else \" --airgap\""
-    when: is_noobaa.stdout == 1
+    when: is_noobaa.stdout|int == 1
 
 
 
