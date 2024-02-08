@@ -30,7 +30,7 @@
 
   - name: Is CP4S instance available
     shell:
-      cmd: "oc get CP4SThreatManagement -n {{ cp4s_namespace }} | wc -l"
+      cmd: "oc get CP4SThreatManagement -n {{ cp4s_namespace }} --no-headers| wc -l"
     register: is_cp4instance
 
   - name: Delete CP4S
@@ -45,7 +45,7 @@
 
   - name: Is noobaa service deployed
     shell:
-      cmd: "oc get noobaa -n {{ cp4s_namespace }} | wc -l"
+      cmd: "oc get noobaa -n noobaa --no-headers| wc -l"
     register: is_noobaa
 
   - name: Delete CRD's
