@@ -57,7 +57,7 @@
 
   - name: Delete knative
     shell:
-      cmd: "oc delete -f {{ item }}"
+      cmd: "oc delete -f {{ item }}||echo 0"
     with_items:
       - ../funcs/yamls/cp4s_serverless_knative.yaml
       - "{{ temp_dir }}/yamls/cp4s_serverless_sub.yaml"
