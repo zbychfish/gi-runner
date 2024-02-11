@@ -40,6 +40,7 @@
     install_cpfs: "{{ lookup('env','GI_ICS') }}"
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
     install_cp4s: "{{ lookup('env','GI_CP4S') }}"
+    install_edr: "{{ lookup('env','GI_EDR') }}"
 
   vars_files:
     - constants.yaml
@@ -82,6 +83,7 @@
         - { name: "GI_ICS", value: "{{ install_cpfs }}" }
         - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
         - { name: "GI_CP4S", value: "{{ install_cp4s }}" }
+        - { name: "GI_EDR", value: "{{ install_edr }}" }
       when: item.value == ""
 
     - name: Set parameters for installation with proxy
@@ -409,6 +411,17 @@
         - { name: "GI_CP4S_CERT", value: "{{ cp4s_cert }}" }
         - { name: "GI_CP4S_KEY", value: "{{ cp4s_key }}" }
       when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y' and item.value == ""
+
+    - name: Set EDR installation variables from env
+      ansible.builtin.set_fact:
+        edr_namespace: "{{ lookup('env','GI_EDR_NS') }}"
+      when: install_edr == 'Y'
+
+    - name: Check EDR variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_EDR_NS", value: "{{ edr_namespace }}" }
+      when: install_edr == 'Y' and item.value == ""
 
     - name: Set parameters for non air-gapped installation
       ansible.builtin.set_fact:

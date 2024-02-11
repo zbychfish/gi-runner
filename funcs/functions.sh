@@ -849,6 +849,22 @@ function get_credentials() {
         fi
 }
 
+function get_edr_options {
+	msg "Collecting EDR information" task
+	msg "Namespace defines the space where most EDR pods, objects and supporting services will be located" info
+        while $(check_input "txt" "${edr_namespace}" "with_limited_length" 10)
+        do
+                if [ ! -z "$GI_EDR_NS" ]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_EDR_NS] or insert GI namespace name (maximum 10 characters)" true "$GI_EDR_NS"
+                else
+                        get_input "txt" "Insert EDR namespace name (maximum 10 characters, default edr): " true "edr"
+                fi
+                edr_namespace="${input_variable}"
+        done
+        save_variable GI_EDR_NS $edr_namespace
+}
+
 function get_gi_options() {
         local change_ssh_host
 	local gi_backup_active
