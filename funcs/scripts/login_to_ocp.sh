@@ -1,1 +1,6 @@
-oc login --token=`python3 ../funcs/scripts/get_ocp_token.py $GI_OCADMIN $GI_OCADMIN_PWD $GI_DOMAIN` --server=https://api.${GI_DOMAIN}:6443
+if [[ $(basename `pwd`) == 'plays' ]]
+then
+	oc login --token=`python3 ../funcs/scripts/get_ocp_token.py $GI_OCADMIN $GI_OCADMIN_PWD $GI_DOMAIN` --server=https://api.${GI_DOMAIN}:6443
+else
+	oc login --token=`python3 funcs/scripts/get_ocp_token.py $GI_OCADMIN $GI_OCADMIN_PWD $GI_DOMAIN` --server=https://api.${GI_DOMAIN}:6443
+fi
