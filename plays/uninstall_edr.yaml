@@ -42,6 +42,7 @@
     shell:
       cmd: "oc delete $(oc get sub,csv -oname -n openshift-operators | grep edr)"
     with_items:
-      - oc delete $(oc get sub,csv -oname -n openshift-operators | grep edr)
-      - oc delete $(oc get sub,csv -oname -n openshift-operators | grep ibm-common-service)
+      - oc delete $(oc get sub,csv -oname -n openshift-operators | grep edr) -n openshift-operators
+      - oc delete $(oc get sub,csv -oname -n openshift-operators | grep ibm-common-service) -n openshift-operators
+    ignore_errors: true
 
