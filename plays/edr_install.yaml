@@ -8,3 +8,8 @@
 - name: Download EDR case file
   shell:
     cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ edr_case_name }} --version {{ edr_cases[0] }} --disable-top-level-images-mode"
+
+- name: Unpack EDR case
+  shell:
+    cmd: "tar -xf {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/ibm-security-*.tgz -C {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}"
+
