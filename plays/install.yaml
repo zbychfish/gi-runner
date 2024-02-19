@@ -415,17 +415,34 @@
     - name: Set EDR installation variables from env
       ansible.builtin.set_fact:
         edr_namespace: "{{ lookup('env','GI_EDR_NS') }}"
+        edr_ext_ingress: "{{ lookup('env','GI_EDR_IN') }}"
       when: install_edr == 'Y'
 
     - name: Check EDR variables
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_EDR_NS", value: "{{ edr_namespace }}" }
+        - { name: "GI_EDR_IN", value: "{{ edr_ext_ingress }}" }
       when: install_edr == 'Y' and item.value == ""
 
     - name: Set EDR installation variables
       ansible.builtin.set_fact:
         noha_storage_class: "{{ 'rook-ceph-block-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'portworx-db2-rwo-sc' if storage_type == 'P' else '' }}"
+
+    - name: Set EDR cert variables
+      ansible.builtin.set_fact:
+        edr_ca: "{{ lookup('env', 'GI_EDR_CA') }}"
+        edr_cert: "{{ lookup('env', 'GI_EDR_CERT') }}"
+        edr_key: "{{ lookup('env', 'GI_EDR_KEY') }}"
+      when: install_edr == 'Y' and edr_ext_ingress == 'Y'
+
+    - name: Check EDR cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_EDR_CA", value: "{{ edr_ca }}" }
+        - { name: "GI_EDR_CERT", value: "{{ edr_cert }}" }
+        - { name: "GI_EDR_KEY", value: "{{ edr_key }}" }
+      when: install_edr == 'Y' and edr_ext_ingress == 'Y' and item.value == ""
 
     - name: Set parameters for non air-gapped installation
       ansible.builtin.set_fact:
