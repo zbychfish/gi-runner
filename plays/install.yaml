@@ -495,6 +495,10 @@
       ansible.builtin.include_tasks: cp4s_install.yaml
       when: skip_phase|int < 8 and install_cp4s == 'Y'
 
+    - name: Install EDR
+      ansible.builtin.include_tasks: cp4s_install.yaml
+      when: skip_phase|int < 8 and install_edr == 'Y'
+
     - name: Install openldap
       ansible.builtin.include_tasks: ldap_install.yaml
       when: skip_phase|int < 9 and install_ldap == 'Y' and install_cp4s == 'Y'
@@ -540,4 +544,12 @@
           - "CP4S installation finished"
           - Update the hosts file on your web browser workstation
           - "{{ bas_ip }} cp4s.apps.{{ ocp_domain }}"
+      when: install_cp4s == 'Y'
+
+    - name: EDR deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "EDR installation finished"
+          - Update the hosts file on your web browser workstation
+          - "{{ bas_ip }} edr.apps.{{ ocp_domain }}"
       when: install_cp4s == 'Y'

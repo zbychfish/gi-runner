@@ -1,0 +1,10 @@
+- name: Create all required namespaces
+  shell:
+    cmd: "oc create namespace {{ item }}"
+  with_items:
+    - "{{ edr_namespace }}"
+  ignore_errors: true
+
+- name: Download EDR case file
+  shell:
+    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ edr_case_name }} --version {{ edr_case_version }} --disable-top-level-images-mode"
