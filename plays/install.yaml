@@ -416,6 +416,7 @@
       ansible.builtin.set_fact:
         edr_namespace: "{{ lookup('env','GI_EDR_NS') }}"
         edr_ext_ingress: "{{ lookup('env','GI_EDR_IN') }}"
+        edr_license_short: "{{ lookup('env','GI_EDR_LICENSE') }}"
       when: install_edr == 'Y'
 
     - name: Check EDR variables
@@ -423,11 +424,13 @@
       loop:
         - { name: "GI_EDR_NS", value: "{{ edr_namespace }}" }
         - { name: "GI_EDR_IN", value: "{{ edr_ext_ingress }}" }
+        - { name: "GI_EDR_LICENSE", value: "{{ edr_license_short }}" }
       when: install_edr == 'Y' and item.value == ""
 
     - name: Set EDR installation variables
       ansible.builtin.set_fact:
         noha_storage_class: "{{ 'rook-ceph-block-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'portworx-db2-rwo-sc' if storage_type == 'P' else '' }}"
+        edr_license: "{{ 'Enterprise' if edr_license_short == 'E' else 'Pro' }}"
 
     - name: Set EDR cert variables
       ansible.builtin.set_fact:
