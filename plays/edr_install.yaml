@@ -24,6 +24,6 @@
 
 - name: Start EDR deployment
   shell:
-    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak -t 1 {{ edr_case_name }} --version {{ edr_cases[0] }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action install --args \"--acceptLicense true\""
+    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_cases[0] }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action install --args \"--acceptLicense true\""
 
 
