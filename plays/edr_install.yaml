@@ -7,4 +7,4 @@
 
 - name: Download EDR case file
   shell:
-    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ edr_case_name }} --version {{ edr_case_version }} --disable-top-level-images-mode"
+    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ edr_case_name }} --version {{ edr_cases[0] }} --disable-top-level-images-mode"
