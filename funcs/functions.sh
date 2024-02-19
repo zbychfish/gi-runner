@@ -34,6 +34,9 @@ function ansible_constants() {
 	echo "cp4s_cases: [ ${arr_values%,} ]" >> $afile
 	printf -v arr_values '"%s",' "${cp4s_versions[@]}"
 	echo "cp4s_versions: [ ${arr_values%,} ]" >> $afile
+	echo "edr_case_name: $edr_case_name" >> $afile
+	printf -v arr_values '"%s",' "${edr_cases[@]}"
+	echo "edr_cases: [ ${arr_values%,} ]" >> $afile
 }
 
 function check_input() {
