@@ -30,7 +30,7 @@
   shell:
     cmd: "oc get commonservice -n ibm-common-services -o json|jq -r .items[0].status.phase"
   register: cpfs_depl_status
-  until: "cpfs_depl_status.stdout != \"Succeeded\""
+  until: "cpfs_depl_status.stdout == \"Succeeded\""
   retries: 50
   delay: 10
   
@@ -38,6 +38,6 @@
   shell:
     cmd: "oc get IBMSecurityEDR -n {{ edr_namespace }} -o json|jq -r .items[0].status.conditions[0].type"
   register: edr_depl_status
-  until: "edr_depl_status.stdout != \"Succeeded\""
+  until: "edr_depl_status.stdout == \"Succeeded\""
   retries: 100
   delay: 10
