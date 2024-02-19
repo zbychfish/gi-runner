@@ -423,6 +423,10 @@
         - { name: "GI_EDR_NS", value: "{{ edr_namespace }}" }
       when: install_edr == 'Y' and item.value == ""
 
+    - name: Set EDR installation variables
+      ansible.builtin.set_fact:
+        noha_storage_class: "{{ 'rook-ceph-block-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'portworx-db2-rwo-sc' if storage_type == 'P' else '' }}"
+
     - name: Set parameters for non air-gapped installation
       ansible.builtin.set_fact:
         ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
