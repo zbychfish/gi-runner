@@ -9,15 +9,15 @@ domain=""
 
 # (Optional) Path to the domain TLS certificate file e.g <path-to-certs>/cert.crt. Leave blank if you are installing IBM Security EDR without specifying a domain.
 # See more details at https://ibm.biz/BdSM4c.
-domainCertificatePath=""
+domainCertificatePath="{{ edr_cert }}"
 
 # (Optional) Path to the domain TLS key file e.g <path-to-certs>/cert.key. Leave blank if you are installing IBM Security EDR without specifying a domain.
 # See more details at https://ibm.biz/BdSM4c.
-domainCertificateKeyPath=""
+domainCertificateKeyPath="{{ edr_key }}"
 
 # (Optional) Path to the custom CA cert file e.g <path-to-certs>/ca.crt. Only required if using custom or self signed certificates. Leave blank if you are installing IBM Security EDR without specifying a domain.
 # See more details at https://ibm.biz/BdSM4c.
-customCaFilePath=""
+customCaFilePath="{{ edr_ca }}"
 
 
 # (Optional) Override the default backup and restore storage PVC size. Must be 500Gi or higher.
