@@ -795,10 +795,10 @@ function get_credentials() {
                         fi
                 done
                 save_variable GI_RHN_SECRET "'${input_variable}'"
-                if [[ $gi_install == 'Y' || $cp4s_install == 'Y' ]]
+                if [[ $gi_install == 'Y' || $cp4s_install == 'Y' || $edr_install == 'Y' ]]
                 then
-                        msg "GI and CP4S require access to restricted IBM image registries" info
-                        msg "You need provide the IBM Cloud containers key located at URL - https://myibm.ibm.com/products-services/containerlibrary" info
+                        msg "GI, CP4S and EDR require access to restricted IBM image registries" info
+                        msg "You need to insert the IBM Cloud containers key located at URL - https://myibm.ibm.com/products-services/containerlibrary" info
                         msg "Your account must be entitled to install Cloud Pak like Guardium Insights, Cloud Pak for Security, Qradar EDR" info
                         while $(check_input "jwt" "${ibm_secret}")
                         do
