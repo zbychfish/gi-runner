@@ -72,4 +72,9 @@
       - "knative-serving"
       - "knative-eventing"
 
+  - debug:
+      msg:
+      - "CP4S uninstalled with success"
+      - "Uninstall CPFS, execute 'ansible-playbook plays/uninstall_cpfs.yaml'"
+
 

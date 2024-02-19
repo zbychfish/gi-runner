@@ -38,9 +38,6 @@
     shell:
       cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_case }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action uninstall --args \"--deleteCrd --force\""
 
-  - name: Uninstall CPFS
-    ansible.builtin.include_tasks: uninstall_cpfs.yaml
-
   - name: Delete operators and subscriptions
     shell:
       cmd: "{{ item }}"
@@ -49,3 +46,7 @@
       - oc delete $(oc get sub,csv -oname -n openshift-operators | grep ibm-common-service) -n openshift-operators
     ignore_errors: true
 
+  - debug:
+      msg:
+      - "EDR uninstalled with success"
+      - "Uninstall CPFS, execute 'ansible-playbook plays/uninstall_cpfs.yaml'"
