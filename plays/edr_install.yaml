@@ -13,3 +13,12 @@
   shell:
     cmd: "tar -xf {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/ibm-security-*.tgz -C {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}"
 
+- name: Generate EDR values file
+  template:
+    src: edr_values.j2
+    dest: "{{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ edr_case_name }}/inventory/ibmSecurityEdrOperatorSetup/files/values.conf"
+  vars:
+    air_gap_install: "false"
+    is_proxy: "false"
+    repo_password: "{{ ibm_secret }}"
+

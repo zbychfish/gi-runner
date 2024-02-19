@@ -426,13 +426,13 @@
     - name: Set parameters for non air-gapped installation
       ansible.builtin.set_fact:
         ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
-      when: (install_gi == 'Y' or install_cp4s == 'Y') and internet_type != 'A'
+      when: (install_gi == 'Y' or install_cp4s == 'Y' or install_edr == 'Y') and internet_type != 'A'
 
     - name: Check configuration parameters for non air-gapped installation
       ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
       loop:
         - { name: "GI_IBM_SECRET", value: "{{ ibm_secret }}" }
-      when: internet_type != 'A' and (install_gi == 'Y' or install_cp4s == 'Y') and item.value == ""
+      when: internet_type != 'A' and (install_gi == 'Y' or install_cp4s == 'Y' or install_edr == 'Y') and item.value == ""
 
     - name: Clean downloads directory
       ansible.builtin.file:
