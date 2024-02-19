@@ -1,0 +1,50 @@
+# Set to "true" if deploying IBM Security EDR in an offline or disconnected environment. Set to "false" if deploying IBM Security EDR in an online environment.
+airgapInstall="{{ air_gap_install }}"
+
+# Set to "true" if deploying IBM Security EDR with a proxy. Must be set to "false" when installing in an offline or disconnected environment.
+clusterProxy="{{ is_proxy }}"
+
+# (Optional) The Fully Qualified Domain Name (FQDN) created for IBM Security EDR. When the domain is not specified, it will be generated as edr.<cluster_ingress_subdomain>.
+domain=""
+
+# (Optional) Path to the domain TLS certificate file e.g <path-to-certs>/cert.crt. Leave blank if you are installing IBM Security EDR without specifying a domain.
+# See more details at https://ibm.biz/BdSM4c.
+domainCertificatePath=""
+
+# (Optional) Path to the domain TLS key file e.g <path-to-certs>/cert.key. Leave blank if you are installing IBM Security EDR without specifying a domain.
+# See more details at https://ibm.biz/BdSM4c.
+domainCertificateKeyPath=""
+
+# (Optional) Path to the custom CA cert file e.g <path-to-certs>/ca.crt. Only required if using custom or self signed certificates. Leave blank if you are installing IBM Security EDR without specifying a domain.
+# See more details at https://ibm.biz/BdSM4c.
+customCaFilePath=""
+
+
+# (Optional) Override the default backup and restore storage PVC size. Must be 500Gi or higher.
+backupStorageSize=""
+
+# (Optional) Set the pull policy for the images. When OpenShift creates containers, it uses the imagePullPolicy to determine if the image should be pulled prior to starting the container.
+# Options are "Always", "IfNotPresent", or "Never".
+imagePullPolicy="IfNotPresent"
+
+# Set the repository in which the images will be pulled from. Must be set to "cp.icr.io/cp/cp4s" if you are installing IBM Security EDR in an online environment.
+# If you are installing IBM Security EDR in an air-gapped environment, specify the URL and port for the local Docker registry with the "/cp/cp4s" namespace appended. For example, example-registry:5000/cp/cp4s.
+repository="cp.icr.io/cp/cp4s"
+
+# Set the username for the repository in which the images will be pulled from. Must be set to "cp" if you are installing IBM Security EDR in an online environment.
+# If you are installing IBM Security EDR in an air-gapped environment, specify a user with access to the local Docker registry.
+repositoryUsername="cp"
+
+# Set the password for the repository in which the images will be pulled from.
+# If you are installing IBM Security EDR in an air-gapped environment, specify the password for the user with access to the local Docker registry.
+repositoryPassword="{{ repo_password }}"
+
+# Namespace where Foundational Services will be installed. This should be updated to the namespace where Foundational Services is currently installed if you are doing an upgrade.
+CSNamespace="ibm-common-services"
+
+# Set the license type received from IBM Security EDR
+licenseType="Pro"
+
+# Set the deployment size from IBM Security EDR
+deploymentSize="small"
+
