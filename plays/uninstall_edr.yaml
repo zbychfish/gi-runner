@@ -29,7 +29,11 @@
       cmd: "oc get IBMSecurityEDR -n {{ edr_namespace }} --no-headers| wc -l"
     register: is_edrinstance
 
-  - name: Delete CP4S
+  - name: Delete EDR instance
     shell:
       cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_case }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action uninstall"
     when: is_edrinstance.stdout|int == 1
+
+  - name: Delete EDR CRD's and operators
+    shell:
+      cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_case }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action uninstall --args \"--deleteCrd --operators true\""
