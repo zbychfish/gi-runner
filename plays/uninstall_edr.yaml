@@ -32,4 +32,4 @@
   - name: Delete CP4S
     shell:
       cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_case }} --inventory {{ edr_case_inventory_setup }} --namespace {{ cp4s_namespace }} --action uninstall"
-    when: is_cp4instance.stdout|int == 1
+    when: is_edrinstance.stdout|int == 1
