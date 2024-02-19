@@ -496,7 +496,7 @@
       when: skip_phase|int < 8 and install_cp4s == 'Y'
 
     - name: Install EDR
-      ansible.builtin.include_tasks: cp4s_install.yaml
+      ansible.builtin.include_tasks: edr_install.yaml
       when: skip_phase|int < 8 and install_edr == 'Y'
 
     - name: Install openldap
