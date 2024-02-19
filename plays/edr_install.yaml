@@ -16,9 +16,12 @@
 - name: Generate EDR values file
   template:
     src: edr_values.j2
-    dest: "{{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ edr_case_name }}/inventory/ibmSecurityEdrOperatorSetup/files/values.conf"
+    dest: "{{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ edr_case_name }}/inventory/{{ edr_case_inventory_setup }}/files/values.conf"
   vars:
     air_gap_install: "false"
     is_proxy: "false"
     repo_password: "{{ ibm_secret }}"
 
+- name: Start EDR deployment
+  shell:
+    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak -t 1 {{ edr_case_name }} --version {{ edr_cases[0] }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action dupainstall --args \"--acceptLicense true\""

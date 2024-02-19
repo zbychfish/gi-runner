@@ -54,3 +54,4 @@ cp4s_case_inventory_setup="ibmSecurityOperatorSetup"
 
 edr_case_name="ibm-security-edr"
 edr_cases=("1.0.1")
+edr_case_inventory_setup="ibmSecurityEdrOperatorSetup"
