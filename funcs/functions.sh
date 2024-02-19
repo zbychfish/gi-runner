@@ -225,6 +225,9 @@ function check_input() {
                                 echo true
                         fi
                         ;;
+		"dp")
+                        [[ $2 == 'P' || $2 == 'E' ]] && echo false || echo true
+			;;
                 "sk")
                         [[ $2 == 'S' || $2 == 'K' ]] && echo false || echo true
                         ;;
@@ -875,13 +878,26 @@ function get_edr_options {
         do
                 if [ ! -z "$GI_EDR_NS" ]
                 then
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_EDR_NS] or insert GI namespace name (maximum 10 characters)" true "$GI_EDR_NS"
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_EDR_NS] or insert EDR namespace name (maximum 10 characters)" true "$GI_EDR_NS"
                 else
                         get_input "txt" "Insert EDR namespace name (maximum 10 characters, default edr): " true "edr"
                 fi
                 edr_namespace="${input_variable}"
         done
         save_variable GI_EDR_NS $edr_namespace
+	msg "License types: Pro and Enterprise, the second one includes EDR API and Detection Strategies functionality" info
+	while $(check_input "pe" "${edr_license}")
+        do
+                if [ ! -z "$GI_EDR_LICENCE" ]
+                then
+			get_input "txt" "Push <ENTER> to accept the previous choice [$GI_EDR_LICENSE] or select license type (P)ro or (E)enteprise: " true "$GI_EDR_LICENSE"
+                else
+			get_input "txt" "Select license type (P)ro or (\e[3mE\e[0m)terprise: " true "E"
+                fi
+                edr_license="${input_variable^^}"
+        done
+        save_variable GI_EDR_LICENSE $edr_license
+
 }
 
 function get_gi_options() {
