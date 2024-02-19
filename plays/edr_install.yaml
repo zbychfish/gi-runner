@@ -26,4 +26,18 @@
   shell:
     cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_cases[0] }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action install --args \"--acceptLicense true\""
 
-
+- name: Wait for CPFS deployment
+  shell:
+    cmd: "oc get commonservice -n ibm-common-services -o json|jq -r .items[0].status.phase"
+  register: cpfs_depl_status
+  until: "cpfs_depl_status.stdout != \"Succeeded\""
+  retries: 50
+  delay: 10
+  
+- name: Wait for EDR deployment
+  shell:
+    cmd: "oc get IBMSecurityEDR -n {{ edr_namespace }} -o json|jq -r .items[0].status.conditions[0].type"
+  register: edr_depl_status
+  until: "edr_depl_status.stdout != \"Succeeded\""
+  retries: 100
+  delay: 10
