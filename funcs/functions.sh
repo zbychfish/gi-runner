@@ -225,7 +225,7 @@ function check_input() {
                                 echo true
                         fi
                         ;;
-		"dp")
+		"pe")
                         [[ $2 == 'P' || $2 == 'E' ]] && echo false || echo true
 			;;
                 "sk")
