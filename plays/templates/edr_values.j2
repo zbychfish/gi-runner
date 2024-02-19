@@ -6,7 +6,7 @@ clusterProxy="{{ is_proxy }}"
 
 # (Optional) The Fully Qualified Domain Name (FQDN) created for IBM Security EDR. When the domain is not specified, it will be generated as edr.<cluster_ingress_subdomain>.
 {% if edr_ext_ingress == 'Y' %}
-domain="apps.{{ ocp_domain }}"
+domain="edr.apps.{{ ocp_domain }}"
 {% else %}
 domain=""
 {% endif %}
