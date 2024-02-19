@@ -39,5 +39,5 @@
     cmd: "oc get IBMSecurityEDR -n {{ edr_namespace }} -o json|jq -r .items[0].status.conditions[0].type"
   register: edr_depl_status
   until: "edr_depl_status.stdout == \"Success\""
-  retries: 100
+  retries: 150
   delay: 10
