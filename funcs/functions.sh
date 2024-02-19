@@ -584,6 +584,21 @@ function get_certificates() {
                 save_variable GI_CP4S_IN $cp4s_ext_ingress
                 [ $cp4s_ext_ingress == 'Y' ] && validate_certs "cp4s"
         fi
+	if [[ "$edr_install" == 'Y' ]]
+        then
+                while $(check_input "yn" "$edr_ext_ingress" false)
+                do
+                        if [[ ! -z "$GI_EDR_IN" ]]
+                        then
+                                get_input "yn" "Would you like to install own certificates for EDR (or press ENTER to select the previous choice [$GI_EDR_IN]) " false $GI_EDR_IN
+                        else
+                                get_input "yn" "Would you like to install own certificates for EDR?: " true
+                        fi
+                        edr_ext_ingress=${input_variable^^}
+                done
+                save_variable GI_EDR_IN $edr_ext_ingress
+                [ $edr_ext_ingress == 'Y' ] && validate_certs "edr"
+        fi
 }
 
 function get_cluster_storage_info() {
@@ -2383,7 +2398,13 @@ function validate_certs() {
                         pre_value_app="$GI_CP4S_CERT"
                         pre_value_key="$GI_CP4S_KEY"
                         ;;
-
+		"edr")
+                        label="EDR"
+                        cert_info="$label certificate must have ASN (Alternate Subject Name) set to \"edr.apps.${ocp_domain}\""
+                        pre_value_ca="$GI_EDR_CA"
+                        pre_value_app="$GI_EDR_CERT"
+                        pre_value_key="$GI_EDR_KEY"
+                        ;;
                 "*")
                         display_error "Unknown cert information"
                         ;;
@@ -2440,6 +2461,11 @@ function validate_certs() {
                         save_variable GI_CP4S_CA "$ca_cert"
                         save_variable GI_CP4S_CERT "$app_cert"
                         save_variable GI_CP4S_KEY "$app_key"
+                        ;;
+		"edr")
+                        save_variable GI_EDR_CA "$ca_cert"
+                        save_variable GI_EDR_CERT "$app_cert"
+                        save_variable GI_EDR_KEY "$app_key"
                         ;;
                 "*")
                         display_error "Unknown cert information"
