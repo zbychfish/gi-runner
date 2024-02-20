@@ -26,6 +26,8 @@ cpfs_case_name="ibm-cp-common-services"
 cpfs_case_inventory_setup="ibmCommonServiceOperatorSetup"
 cpfs_update_channel="3"
 
+registry_version=2.8.3
+
 galaxy_community_general="8.2.0" # https://github.com/ansible-collections/community.general
 galaxy_ansible_utils="3.0.0" # https://github.com/ansible-collections/ansible.utils
 galaxy_community_crypto="2.17.0" # https://github.com/ansible-collections/community.crypto

@@ -479,6 +479,12 @@ function display_list () {
         done
 }
 
+function download_file() {
+        msg "Downloading $1 ..." info
+        wget "$1" &>/dev/null
+        test $(check_exit_code $?) || (msg "Cannot download $file" true; exit 1)
+}
+
 function get_bastion_info() {
 	local bastion_nic
         msg "Collecting data about bastion" task
@@ -2195,6 +2201,29 @@ function prepare_ocp() {
 	msg "It is suggested to install a release from stable repository" info
 	get_ocp_version_prescript
 	get_pull_secret
+	msg "Installing podman, httpd-tools jq openssl policycoreutils-python-utils wget ..." task
+	dnf -qy install podman httpd-tools openssl jq policycoreutils-python-utils wget
+	test $(check_exit_code $?) || (msg "Cannot install httpd-tools" info; exit 1)
+	msg "Download a mirror image registry ..." task
+	podman pull docker.io/library/registry:${registry_version} &>/dev/null
+	test $(check_exit_code $?) || (msg "Cannot download image registry" true; exit 1)
+	msg "Save image registry image ..." task
+	podman save -o $GI_TEMP/airgap/oc-registry.tar docker.io/library/registry:${registry_version} &>/dev/null
+	podman rmi --all --force &>/dev/null
+	msg "Download OCP, support tools and CoreOS images ..." task
+	cd $GI_TEMP/airgap
+	declare -a ocp_files=("https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-client-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/openshift-install-linux.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-initramfs.x86_64.img" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-kernel-x86_64" "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/${ocp_major_release}/latest/rhcos-live-rootfs.x86_64.img" "https://github.com/poseidon/matchbox/releases/download/v${matchbox_version}/matchbox-v${matchbox_version}-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/oc-mirror.tar.gz")
+	for file in ${ocp_files[@]}
+	do
+        	download_file $file
+	done
+        msg "Installing OCP tools ..." task
+        tar xf $GI_TEMP/airgap/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
+        tar xf $GI_TEMP/airgap/oc-mirror.tar.gz -C /usr/local/bin &>/dev/null
+        chmod +x /usr/local/bin/oc-mirror
+	mkdir -p /run/user/0/containers #if podman was not initiated yet
+	echo $rhn_secret | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
+
 }
 
 function pvc_sizes() {
