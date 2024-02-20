@@ -25,3 +25,5 @@ then
 	msg "- OCP and OLM images, OLM includes ODF and Serverless operators - OCP-${ocp_release}/ocp-images-data.tar" info
 	msg "- Image Content Source Policy and Catalog Source for OLM - OCP-${ocp_release}/ocp-images-yamls.tar" info
 	msg "- OCP tools and CoreOS installation files - OCP-${ocp_release}/ocp-tools.tar" info
+	msg "- Docker registry ${registry_version} image - OCP-${ocp_release}/oc-registry.tar" info
+fi
