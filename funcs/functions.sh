@@ -40,6 +40,17 @@ function ansible_constants() {
 	echo "edr_case_inventory_setup: $edr_case_inventory_setup" >> $afile
 }
 
+function check_exit_code() {
+        if [[ $1 -ne 0 ]]
+        then
+                msg $2 true
+                msg "Please check the reason of problem and restart script" true
+                echo false
+        else
+                echo true
+        fi
+}
+
 function check_input() {
         case $1 in
                 "cert")
