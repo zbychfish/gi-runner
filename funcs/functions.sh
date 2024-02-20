@@ -2237,8 +2237,26 @@ function prepare_ocp() {
 	TMPDIR=$GI_TEMP/images oc mirror --config $GI_TEMP/ocp-images.yaml docker://${LOCAL_REGISTRY} --dest-skip-tls
 	test $(check_exit_code $?) && msg "OCP images mirrored" info || msg "Cannot mirror OCP images" info
 	msg "Mirroring finished succesfully" info
+	podman stop bastion-registry &>/dev/null
+	mkdir -p $GI_TEMP/downloads/OCP-${ocp_release}
+	mv $GI_TEMP/airgap/oc-registry.tar $GI_TEMP/downloads/OCP-${ocp_release}
+	cd /opt/registry
+	msg "Archiving OCP images ..." info
+	tar cf $GI_TEMP/downloads/OCP-${ocp_release}/ocp-images-data.tar data
+	cd $GI_TEMP/airgap/oc-mirror-workspace/results-*
+	msg "Archiving OCP operator index and source policy ..." info
+	tar cf $GI_TEMP/downloads/OCP-${ocp_release}/ocp-images-yamls.tar catalogSource-redhat-operator-index.yaml imageContentSourcePolicy.yaml
+	cd $GI_TEMP/airgap
+	msg "Archiving OCP tools ..." info
+	tar cf $GI_TEMP/downloads/OCP-${ocp_release}/ocp-tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img "matchbox-v${matchbox_version}-linux-amd64.tar.gz" oc-mirror.tar.gz oc-registry.tar
+	msg "Cleaning registry ..." info
+	podman rm bastion-registry &>/dev/null
+	podman rmi --all &>/dev/null
+	rm -rf /opt/registry/data
+}
 
-
+function prepare_rook() {
+	msg "Gathering Rook-Ceph version details ..." task
 }
 
 function pvc_sizes() {
