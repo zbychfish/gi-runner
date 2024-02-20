@@ -10,8 +10,6 @@
 
 msg "This script collects all images and tools to deploy IBM Cloud Pak's in air-gapped environment" info
 mkdir -p $GI_TEMP/airgap
-echo $script_argument
-exit 0
 [[ $script_argument -lt 1 ]] && prepare_bastion
 [[ $script_argument -lt 2 ]] && prepare_ocp
 msg "Airgap prescript summary" task
