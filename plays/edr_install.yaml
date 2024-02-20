@@ -19,7 +19,7 @@
     dest: "{{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ edr_case_name }}/inventory/{{ edr_case_inventory_setup }}/files/values.conf"
   vars:
     air_gap_install: "false"
-    is_proxy: "false"
+    is_proxy: "{{ 'true' if internet_type == 'P' else 'false' }}"
     repo_password: "{{ ibm_secret }}"
 
 - name: Start EDR deployment
