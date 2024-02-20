@@ -2257,6 +2257,26 @@ function prepare_ocp() {
 
 function prepare_rook() {
 	msg "Gathering Rook-Ceph version details ..." task
+	ceph_path="deploy/examples"
+	images="docker.io/rook/ceph:${rook_version}"
+	cd $GI_TEMP
+	echo "ROOK_CEPH_OPER,docker.io/rook/ceph:${rook_version}" > $GI_TEMP/rook_images
+	dnf -qy install git
+	check_exit_code $? "Cannot install required OS packages"
+	git clone https://github.com/rook/rook.git
+	cd rook
+	git checkout ${rook_version}
+	image=`grep -e "image:.*ceph\/ceph:.*" ${ceph_path}/cluster.yaml|awk '{print $NF}'`
+	images+=" "$image
+	echo "ROOK_CEPH_IMAGE,$image" >> $GI_TEMP/rook_images
+	declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RESIZER_IMAGE" "ROOK_CSI_PROVISIONER_IMAGE" "ROOK_CSI_SNAPSHOTTER_IMAGE" "ROOK_CSI_ATTACHER_IMAGE" "CSI_VOLUME_REPLICATION_IMAGE")
+	for label in "${labels[@]}"
+	do
+        	image=`cat ${ceph_path}/operator-openshift.yaml|grep $label|awk -F ":" '{print $(NF-1)":"$NF}'|tr -d '"'|tr -d " "`
+        	echo "$label,$image" >> $GI_TEMP/rook_images
+        	images+=" "$image
+	done
+
 }
 
 function pvc_sizes() {
