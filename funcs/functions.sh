@@ -2081,7 +2081,7 @@ function msg() {
 function prepare_bastion() {
 	msg "Prepare bastion" task
 	check_linux_distribution_and_release
-	msg "This machine should be on this same patch level as	target bastion to avoid libraries incompatibility between software packages" info
+	msg "This machine should be on this same patch leve as target bastion to avoid libraries incompatibility between software packages" info
 	while $(check_input "yn" ${update_bastion})
         do
 		get_input "yn" "Should be target bastion updated (Y) or only necessary software packages added (N) " false
