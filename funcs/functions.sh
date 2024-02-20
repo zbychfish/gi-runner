@@ -2139,7 +2139,7 @@ function prepare_bastion() {
 	msg "Downloading Ansible Galaxy extensions ..." task
 	for galaxy_package in ${galaxy_soft[@]}
 	do
-        	wget -P galaxy https://galaxy.ansible.com/download/${galaxy_package}.tar.gz /dev/null 2>&1
+        	wget -P galaxy https://galaxy.ansible.com/download/${galaxy_package}.tar.gz > /dev/null 2>&1
 	        test $(check_exit_code $?) || (msg "Cannot download Ansible galaxy package ${galaxy_package}" info; exit 1)
         	msg "Downloaded: $galaxy_package" info
 	done
