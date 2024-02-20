@@ -2153,6 +2153,11 @@ function prepare_bastion() {
 	rm -rf $GI_TEMP/airgap/*
 }
 
+function prepare_ocp() {
+	msg "You must provide the exact version of OpenShift for its images mirror process" info
+	msg "It is suggested to install a release from stable repository" info
+}
+
 function pvc_sizes() {
         local global_var
         local global_var_val
