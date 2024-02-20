@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #author: zibi - zszmigiero@gmail.com
+echo $1
 [[ $# -eq 0 ]] && script_argument=0 && script_argument=$1
 ! [ -f ./prepare_offline.sh ] && { printf "This script must be executed from gi-runner home directoryi\n"; exit 1; }
 # load functions
