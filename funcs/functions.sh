@@ -2269,7 +2269,7 @@ function prepare_rook() {
 	image=`grep -e "image:.*ceph\/ceph:.*" ${ceph_path}/cluster.yaml|awk '{print $NF}'`
 	images+=" "$image
 	echo "ROOK_CEPH_IMAGE,$image" >> $GI_TEMP/rook_images
-	declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RESIZER_IMAGE" "ROOK_CSI_PROVISIONER_IMAGE" "ROOK_CSI_SNAPSHOTTER_IMAGE" "ROOK_CSI_ATTACHER_IMAGE" "CSI_VOLUME_REPLICATION_IMAGE")
+	declare -a labels=("ROOK_CSI_CEPH_IMAGE" "ROOK_CSI_REGISTRAR_IMAGE" "ROOK_CSI_RESIZER_IMAGE" "ROOK_CSI_PROVISIONER_IMAGE" "ROOK_CSI_SNAPSHOTTER_IMAGE" "ROOK_CSI_ATTACHER_IMAGE" "ROOK_CSIADDONS_IMAGE")
 	for label in "${labels[@]}"
 	do
         	image=`cat ${ceph_path}/operator-openshift.yaml|grep $label|awk -F ":" '{print $(NF-1)":"$NF}'|tr -d '"'|tr -d " "`
