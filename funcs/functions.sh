@@ -2258,7 +2258,7 @@ function prepare_ocp() {
 function prepare_rook() {
 	msg "Gathering Rook-Ceph version details ..." task
 	ceph_path="deploy/examples"
-	images="docker.io/rook/ceph:${rook_version}"
+	images="docker.io/rook/ceph:${rook_operator_version}"
 	cd $GI_TEMP
 	echo "ROOK_CEPH_OPER,docker.io/rook/ceph:v${rook_operator_version}" > $GI_TEMP/rook_images
 	dnf -qy install git
