@@ -2132,7 +2132,10 @@ function prepare_bastion() {
 	        test $(check_exit_code $?) || (msg "Cannot download Ansible galaxy package ${galaxy_package}" info; exit 1)
         	msg "Downloaded: $galaxy_package" info
 	done
-
+	tar cf $GI_TEMP/downloads/os-`cat /etc/system-release|sed -e "s/ /_/g"`-`date +%Y-%m-%d`.tar os-updates os-packages ansible galaxy os_release.txt kernel.txt
+	wget -P $GI_TEMP/downloads https://github.com/zbychfish/gi-runner/archive/refs/heads/main.zip
+	test $(check_exit_code $?) || (msg "Cannot download gi-runner archive from github" info; exit 1)
+	mv $GI_TEMP/downloads/main.zip $GI_TEMP/downloads/gi-runner.zip
 }
 
 function pvc_sizes() {
