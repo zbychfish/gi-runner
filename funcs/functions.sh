@@ -2263,9 +2263,10 @@ function prepare_rook() {
 	echo "ROOK_CEPH_OPER,docker.io/rook/ceph:v${rook_operator_version}" > $GI_TEMP/rook_images
 	dnf -qy install git
 	check_exit_code $? "Cannot install required OS packages"
-	git clone https://github.com/rook/rook.git
+	msg "Clone rook-ceph ..." info
+	git clone https://github.com/rook/rook.git > /dev/null 2>&1
 	cd rook
-	git checkout v${rook_operator_version}
+	git checkout v${rook_operator_version} > /dev/null 2>&1
 	image=`grep -e "image:.*ceph\/ceph:.*" ${ceph_path}/cluster.yaml|awk '{print $NF}'`
 	images+=" "$image
 	echo "ROOK_CEPH_IMAGE,$image" >> $GI_TEMP/rook_images
@@ -2276,19 +2277,18 @@ function prepare_rook() {
         	echo "$label,$image" >> $GI_TEMP/rook_images
         	images+=" "$image
 	done
-	echo ${images}
 	cd $GI_TEMP
 	setup_local_registry
 	msg "Mirroring open source rook-ceph ${rook_version} ..." info
 	for image in $images
 	do
         	msg "$image" info
-	        podman pull $image
+	        podman pull $image > /dev/null 2>&1
 	        check_exit_code $? "Cannot pull image $image"
 	        tag=`echo "$image" | awk -F '/' '{print $NF}'`
 	        msg "TAG: $tag" info
-		podman push --creds ${temp_registry_user}:${temp_registry_password} $image $(hostname --long):${temp_registry_port}/rook/$tag
-	        podman rmi $image
+		podman push --creds ${temp_registry_user}:${temp_registry_password} $image $(hostname --long):${temp_registry_port}/rook/$tag > /dev/null 2>&1
+	        podman rmi $image > /dev/null 2>&1
 	done
 	labels+=("ROOK_CEPH_OPER")
 	labels+=("ROOK_CEPH_IMAGE")
