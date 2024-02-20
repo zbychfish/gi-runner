@@ -2078,6 +2078,63 @@ function msg() {
         esac
 }
 
+function prepare_bastion() {
+	msg "Prepare bastion" task
+	check_linux_distribution_and_release
+	msg "This machine should be on this same patch level as	target bastion to avoid libraries incompatibility between software packages" info
+	while $(check_input "yn" ${update_bastion})
+        do
+		get_input "yn" "Should be target bastion updated (Y) or only necessary software packages added (N) " false
+                update_bastion=${input_variable^^}
+        done
+	msg "Gathering OS release and kernel version" task
+	echo `cat /etc/system-release|sed -e "s/ /_/g"` > $GI_TEMP/airgap/os_release.txt
+	echo `uname -r` > $GI_TEMP/airgap/kernel.txt
+	if [[ $update_bastion == 'Y' ]]
+	then
+		msg "Get the latest system patches ..." task
+		mkdir -p $GI_TEMP/airgap/os-updates
+		cd $GI_TEMP/airgap
+		dnf update -qy --downloadonly --downloaddir os-updates
+		test $(check_exit_code $?) || (msg "Cannot download update packages" info; exit 1)
+		msg "Update system ..." task
+		cd os-updates
+		dnf -qy localinstall * --allowerasing || msg "System is up to date" info
+		test $(check_exit_code $?) || (msg "Cannot update system" info; exit 1)
+	fi
+	cd $GI_TEMP/airgap
+	mkdir -p $GI_TEMP/airgap/os-packages
+	msg "Downloading additional OS packages ..." task
+	for package in ${linux_soft[@]}
+	do
+        	dnf download -qy --downloaddir os-packages $package --resolve
+        	test $(check_exit_code $?) || (msg "Cannot download $package package" info; exit 1)
+        	msg "Downloaded: $package" info
+	done
+	msg "Installing missing packages ..." task
+	dnf -qy install python3 podman wget python3-pip
+	test $(check_exit_code $?) || (msg "Cannot install support tools" info; exit 1)
+	cd $GI_TEMP/airgap
+        mkdir -p $GI_TEMP/airgap/ansible
+	msg "Downloading python packages for Ansible extensions ..." task
+	for package in ${python_soft[@]}
+	do
+        	python3 -m pip download --only-binary=:all: $package -d ansible > /dev/null 2>&1
+	        test $(check_exit_code $?) || (msg "Cannot download Python module - $package" info; exit 1)
+        	msg "Downloaded: $package" info
+	done
+	cd $GI_TEMP/airgap
+        mkdir -p $GI_TEMP/airgap/galaxy
+	msg "Downloading Ansible Galaxy extensions ..." task
+	for galaxy_package in ${galaxy_soft[@]}
+	do
+        	wget -P galaxy https://galaxy.ansible.com/download/${galaxy_package}.tar.gz
+	        test $(check_exit_code $?) || (msg "Cannot download Ansible galaxy package ${galaxy_package}" info; exit 1)
+        	msg "Downloaded: $galaxy_package" info
+	done
+
+}
+
 function pvc_sizes() {
         local global_var
         local global_var_val
