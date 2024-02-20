@@ -888,11 +888,11 @@ function get_edr_options {
 	msg "License types: Pro and Enterprise, the second one includes EDR API and Detection Strategies functionality" info
 	while $(check_input "pe" "${edr_license}")
         do
-                if [ ! -z "$GI_EDR_LICENCE" ]
+                if [ ! -z "$GI_EDR_LICENSE" ]
                 then
 			get_input "txt" "Push <ENTER> to accept the previous choice [$GI_EDR_LICENSE] or select license type (P)ro or (E)nteprise: " true "$GI_EDR_LICENSE"
                 else
-			get_input "txt" "Select license type (P)ro or (\e[4mE\e[0m))nterprise: " true "E"
+			get_input "txt" "Select license type (P)ro or (\e[4mE\e[0m)nterprise: " true "E"
                 fi
                 edr_license="${input_variable^^}"
         done
