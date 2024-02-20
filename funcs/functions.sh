@@ -2260,12 +2260,12 @@ function prepare_rook() {
 	ceph_path="deploy/examples"
 	images="docker.io/rook/ceph:${rook_version}"
 	cd $GI_TEMP
-	echo "ROOK_CEPH_OPER,docker.io/rook/ceph:${rook_version}" > $GI_TEMP/rook_images
+	echo "ROOK_CEPH_OPER,docker.io/rook/ceph:v${rook_operator_version}" > $GI_TEMP/rook_images
 	dnf -qy install git
 	check_exit_code $? "Cannot install required OS packages"
 	git clone https://github.com/rook/rook.git
 	cd rook
-	git checkout ${rook_version}
+	git checkout v${rook_operator_version}
 	image=`grep -e "image:.*ceph\/ceph:.*" ${ceph_path}/cluster.yaml|awk '{print $NF}'`
 	images+=" "$image
 	echo "ROOK_CEPH_IMAGE,$image" >> $GI_TEMP/rook_images

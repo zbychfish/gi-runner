@@ -13,7 +13,7 @@ mkdir -p $GI_TEMP/airgap
 [[ $script_argument -lt 1 ]] && prepare_bastion
 rm -rf $GI_TEMP/airgap/*
 [[ $script_argument -lt 2 ]] && prepare_ocp
-rm -rf $GI_TEMP/airgap/*
+rm -rf $GI_TEMP/airgap/* $GI_TEMP/images $GI_TEMP/ocp-images.yaml
 [[ $script_argument -lt 3 ]] && prepare_rook
 msg "Airgap prescript summary" task
 msg "In $GI_TEMP/download directory you have:" info
