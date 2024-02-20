@@ -373,54 +373,6 @@ function get_mail() {
         done
 }
 
-function get_pull_secret() {
-        msg "You must provide the RedHat account pullSecret to get access to image registries" info
-        local is_ok=true
-        while $is_ok
-        do
-                get_input "txt" "Insert RedHat pull secret: " false
-                if [ "${input_variable}" ]
-                then
-                        jq .auths <<< ${input_variable} && is_ok=false || is_ok=true
-                        rhn_secret="${input_variable}"
-                fi
-        done
-}
-
-function get_ocp_version_prescript() {
-        while $(check_input "list" ${ocp_major_version} ${#ocp_major_versions[@]})
-        do
-                get_input "list" "Select OCP major version: " "${ocp_major_versions[@]}"
-                ocp_major_version=$input_variable
-        done
-        ocp_major_version=$(($ocp_major_version-1))
-        ocp_major_release="${ocp_major_versions[${ocp_major_version}]}"
-        if [[ "$1" != "major" ]]
-        then
-                msg "Insert minor version of OpenShift ${ocp_major_versions[${ocp_major_version}]}.x" info
-                msg "The latest stable version can be identified using this URL: https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable-${ocp_major_versions[${ocp_major_version}]}" info
-                msg "The latest version can be identified using this URL: https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/candidate-${ocp_major_versions[${ocp_major_version}]}" info
-                ocp_release_minor=${ocp_release_minor:-Z}
-                while $(check_input "int" ${ocp_release_minor} 0 1000)
-                do
-                        get_input "int" "Insert minor version of OCP ${ocp_major_versions[${ocp_major_version}]} to install (must be existing one): " false
-                        ocp_release_minor=${input_variable}
-                done
-                ocp_release="${ocp_major_versions[${ocp_major_version}]}.${ocp_release_minor}"
-        fi
-}
-
-function check_exit_code() {
-        if [[ $1 -ne 0 ]]
-        then
-                msg $2 info
-                msg "Please check the reason of problem and restart script" info
-                echo false
-        else
-                echo true
-        fi
-}
-
 function get_pre_scripts_variables() {
         air_dir=$GI_HOME/air-gap
         host_fqdn=$( hostname --long )
