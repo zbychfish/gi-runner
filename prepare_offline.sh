@@ -15,6 +15,8 @@ rm -rf $GI_TEMP/airgap/*
 [[ $script_argument -lt 2 ]] && prepare_ocp
 rm -rf $GI_TEMP/airgap/* $GI_TEMP/images $GI_TEMP/ocp-images.yaml
 [[ $script_argument -lt 3 ]] && prepare_rook
+rm -rf $GI_TEMP/airgap/*
+
 msg "Airgap prescript summary" task
 msg "In $GI_TEMP/download directory you have:" info
 msg "- the latest gi-runner version (main branch) - gi-runner.zip" info
@@ -27,3 +29,8 @@ then
 	msg "- OCP tools and CoreOS installation files - OCP-${ocp_release}/ocp-tools.tar" info
 	msg "- Docker registry ${registry_version} image - OCP-${ocp_release}/oc-registry.tar" info
 fi
+if [[ $script_argument -lt 3 ]]
+then
+        msg "- rook-ceph images and SHA's - rook-registry-${rook_operator_version}.tar" info
+fi
+

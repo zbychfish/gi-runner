@@ -2262,7 +2262,6 @@ function prepare_rook() {
 	cd $GI_TEMP
 	echo "ROOK_CEPH_OPER,docker.io/rook/ceph:v${rook_operator_version}" > $GI_TEMP/rook_images
 	dnf -qy install git
-	check_exit_code $? "Cannot install required OS packages"
 	msg "Clone rook-ceph ..." info
 	git clone https://github.com/rook/rook.git > /dev/null 2>&1
 	cd rook
@@ -2284,7 +2283,6 @@ function prepare_rook() {
 	do
         	msg "$image" info
 	        podman pull $image > /dev/null 2>&1
-	        check_exit_code $? "Cannot pull image $image"
 	        tag=`echo "$image" | awk -F '/' '{print $NF}'`
 	        msg "TAG: $tag" info
 		podman push --creds ${temp_registry_user}:${temp_registry_password} $image $(hostname --long):${temp_registry_port}/rook/$tag > /dev/null 2>&1
@@ -2298,7 +2296,14 @@ function prepare_rook() {
         	IFS=":" read -r -a image_spec <<< `grep $label $GI_TEMP/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
 	        echo `grep $label $GI_TEMP/rook_images`","`cat /opt/registry/data/docker/registry/v2/repositories/rook/${image_spec[0]}/_manifests/tags/${image_spec[1]}/current/link` >> $GI_TEMP/rook_images_sha
 	done
-
+	podman stop bastion-registry
+	cd /opt/registry
+	tar cf $GI_TEMP/downloads/rook-registry-v${rook_operator_version}.tar data
+	cd $GI_TEMP
+	tar -rf $GI_TEMP/downloads/rook-registry-v${rook_operator_version}.tar rook_images_sha
+	podman rm bastion-registry
+	podman rmi --all
+	rm -rf /opt/registry/data
 }
 
 function pvc_sizes() {
