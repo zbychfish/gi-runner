@@ -1362,6 +1362,14 @@ function get_network_installation_type() {
         done
         if [ $use_air_gap == 'Y' ]
         then
+		msg "Air-gapped installation requires some preparation steps." info
+		msg "You should download images and tools first and then start deployment." info
+	 	while $(check_input "yn" "$is_air_prepared")
+		do
+			get_input "yn" "Did you collect images and tools using prepare_offline.sh script: " false "Y"
+			is_air_prepared=${input_variable^^}
+		done
+		[[ $is_air_prepared == 'N' ]] && { msg "Collect images and tools before, execute prepare_offline.sh script" info; exit 0; }
                 switch_dnf_sync_off
                 save_variable GI_INTERNET_ACCESS "A"
         else
