@@ -27,6 +27,9 @@ cpfs_case_inventory_setup="ibmCommonServiceOperatorSetup"
 cpfs_update_channel="3"
 
 registry_version=2.8.3
+temp_registry_user=admin
+temp_registry_password=guardium
+temp_registry_port=5000
 
 galaxy_community_general="8.2.0" # https://github.com/ansible-collections/community.general
 galaxy_ansible_utils="3.0.0" # https://github.com/ansible-collections/ansible.utils

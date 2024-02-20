@@ -11,6 +11,7 @@
 msg "This script collects all images and tools to deploy IBM Cloud Pak's in air-gapped environment" info
 mkdir -p $GI_TEMP/airgap
 [[ $script_argument -lt 1 ]] && prepare_bastion
+rm -rf $GI_TEMP/airgap/*
 [[ $script_argument -lt 2 ]] && prepare_ocp
 msg "Airgap prescript summary" task
 msg "In $GI_TEMP/download directory you have:" info

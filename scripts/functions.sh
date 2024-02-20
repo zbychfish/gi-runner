@@ -324,45 +324,6 @@ function prepare_offline_bastion() {
 	fi
 }
 
-function install_ocp_tools() {
-        msg "Installing OCP tools ..." task
-        tar xf $GI_TEMP/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
-        tar xf $GI_TEMP/oc-mirror.tar.gz -C /usr/local/bin &>/dev/null
-	chmod +x /usr/local/bin/oc-mirror
-}
-
-function download_file() {
-        msg "Downloading $1 ..." info
-        wget "$1" &>/dev/null
-        test $(check_exit_code $?) || (msg "Cannot download $file" true; exit 1)
-}
-
-function setup_local_registry() {
-        msg "*** Setup Image Registry ***" task
-        msg "Installing podman, httpd-tools, openssl, jq, policycoreutils-python-utils, wget ..." task
-        dnf -qy install podman httpd-tools openssl jq policycoreutils-python-utils wget
-        test $(check_exit_code $?) || (msg "Cannot install httpd-tools" info; exit 1)
-        msg "Setup mirror image registry ..." task
-        podman stop bastion-registry -i
-        podman container prune <<< 'Y' &>/dev/null
-        podman pull docker.io/library/registry:${registry_version} &>/dev/null
-        test $(check_exit_code $?) || (msg "Cannot download image registry" true; exit 1)
-        mkdir -p /opt/registry/{auth,certs,data}
-        openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 365 -out /opt/registry/certs/bastion.repo.crt -subj "/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=`hostname --long`" -addext "subjectAltName = DNS:`hostname --long`" &>/dev/null
-        test $(check_exit_code $?) || (msg "Cannot create certificate for temporary image registry" info; exit 1)
-        cp /opt/registry/certs/bastion.repo.crt /etc/pki/ca-trust/source/anchors/
-        update-ca-trust extract &>/dev/null
-        htpasswd -bBc /opt/registry/auth/htpasswd admin guardium &>/dev/null
-        systemctl enable firewalld
-        systemctl start firewalld
-        firewall-cmd --zone=public --add-port=5000/tcp --permanent &>/dev/null
-        firewall-cmd --zone=public --add-service=http --permanent &>/dev/null
-        firewall-cmd --reload &>/dev/null
-        semanage permissive -a NetworkManager_t &>/dev/null
-        msg "Starting image registry ..." task
-        podman run -d --name bastion-registry -p 5000:5000 -v /opt/registry/data:/var/lib/registry:z -v /opt/registry/auth:/auth:z -e "REGISTRY_AUTH=htpasswd" -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry" -e "REGISTRY_HTTP_SECRET=ALongRandomSecretForRegistry" -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd -v /opt/registry/certs:/certs:z -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/bastion.repo.crt -e REGISTRY_HTTP_TLS_KEY=/certs/bastion.repo.pem docker.io/library/registry:${registry_version} &>/dev/null
-        test $(check_exit_code $?) || (msg "Cannot start temporary image registry" info; exit 1)
-}
 
 function get_mail() {
         curr_value=""
@@ -415,16 +376,6 @@ function display_default_ics() {
                 i=$((i+1))
         done
         save_variable GI_ICS_VERSION "${ics_versions[${bundled_in_gi_ics_versions[$i]}]}"
-}
-
-# Switch off the dnf sync for offline installation
-function switch_dnf_sync_off() {
-        if [[ `grep "metadata_timer_sync=" /etc/dnf/dnf.conf|wc -l` -eq 0 ]]
-        then
-                echo "metadata_timer_sync=0" >> /etc/dnf/dnf.conf
-        else
-                sed -i 's/.*metadata_timer_sync=.*/metadata_timer_sync=0/' /etc/dnf/dnf.conf
-        fi
 }
 
 function display_list () {
