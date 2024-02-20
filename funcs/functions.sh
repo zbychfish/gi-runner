@@ -2223,7 +2223,7 @@ function prepare_ocp() {
 	mkdir -p /run/user/0/containers #if podman was not initiated yet
 	echo $rhn_secret | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
 	setup_local_registry
-	LOCAL_REGISTRY="$host_fqdn:${temp_registry_port}"
+	LOCAL_REGISTRY="$(hostname --long):${temp_registry_port}"
 	msg "Login to local registry ${LOCAL_REGISTRY}" info
 	podman login -u $temp_registry_user -p $temp_registry_password ${LOCAL_REGISTRY}
 	msg "Prepare imageset file" info

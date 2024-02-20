@@ -276,52 +276,7 @@ function process_offline_archives() {
         done
 }
 
-function prepare_offline_bastion() {
-        local curr_password=""
-        msg "Bastion preparation to managed installation offline (air-gapped)" task
-        msg "Offline installation requires setup the local image repository on bastion" info
-        while $(check_input "txt" "${repo_admin}" "non_empty")
-        do
-                if [[ ! -z "$GI_REPO_USER" ]]
-                then
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_REPO_USER] or insert local registry username: " true "$GI_REPO_USER"
-                else
-                        get_input "txt" "Insert local registry username (default - repoadmin): " true "repoadmin"
-                fi
-                        repo_admin="${input_variable}"
-        done
-        save_variable GI_REPO_USER $repo_admin
-        input_variable=true
-        while $input_variable
-        do
-                if [ ! -z "$GI_REPO_USER_PWD" ]
-                then
-                        get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_REPO_USER_PWD] or insert new password for $repo_admin user: " true "$GI_REPO_USER_PWD"
-                else
-                        get_input "pwd" "Insert new password for $repo_admin user: " false
-                fi
-        done
-        save_variable GI_REPO_USER_PWD "'$curr_password'"
-        msg "Offline installation requires installation archives preparation using preinstall scripts" info
-        msg "Archives must be copied to bastion before installation" info
-        while $(check_input "dir" "${gi_archives}")
-        do
-                if [[ ! -z "$GI_ARCHIVES_DIR" ]]
-                then
-                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ARCHIVES_DIR] or insert the full path to installation archives: " true "$GI_ARCHIVES_DIR"
-                else
-                        get_input "txt" "Insert full path to installation archives (default location - $GI_HOME/download): " true "$GI_HOME/download"
-                fi
-                        gi_archives="${input_variable}"
-        done
-        save_variable GI_ARCHIVES_DIR "'$gi_archives'"
-	if [ ${script_argument} != 'skip_archives' ]
-	then
-        	process_offline_archives
-        	software_installation_on_offline
-	else
-		msg "Archives processing skipped" info
-	fi
+function 
 }
 
 
@@ -332,11 +287,6 @@ function get_mail() {
                 get_input "txt" "$1: " false
                 curr_value="$input_variable"
         done
-}
-
-function get_pre_scripts_variables() {
-        air_dir=$GI_HOME/air-gap
-        host_fqdn=$( hostname --long )
 }
 
 function pre_scripts_init() {
