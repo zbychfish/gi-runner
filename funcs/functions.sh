@@ -2276,6 +2276,27 @@ function prepare_rook() {
         	echo "$label,$image" >> $GI_TEMP/rook_images
         	images+=" "$image
 	done
+	cd $GI_TEMP
+	setup_local_registry
+	msg "Mirroring open source rook-ceph ${rook_version} ..." info
+	for image in $images
+	do
+        	msg "$image" info
+	        podman pull $image
+	        check_exit_code $? "Cannot pull image $image"
+	        tag=`echo "$image" | awk -F '/' '{print $NF}'`
+	        msg "TAG: $tag" info
+		podman push --creds ${temp_registry_user}:${temp_registry_password} $image $(hostname --long):${temp_registry_port}/rook/$tag
+	        podman rmi $image
+	done
+	labels+=("ROOK_CEPH_OPER")
+	labels+=("ROOK_CEPH_IMAGE")
+	echo "#List of rook-ceph images" > $GI_TEMP/rook_images_sha
+	for label in "${labels[@]}"
+	do
+        	IFS=":" read -r -a image_spec <<< `grep $label $GI_TEMP/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
+	        echo `grep $label $GI_TEMP/rook_images`","`cat /opt/registry/data/docker/registry/v2/repositories/rook/${image_spec[0]}/_manifests/tags/${image_spec[1]}/current/link` >> $GI_TEMP/rook_images_sha
+	done
 
 }
 
