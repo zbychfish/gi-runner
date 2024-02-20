@@ -28,6 +28,7 @@ do
         echo "$label,$image" >> $GI_TEMP/rook_images
         images+=" "$image
 done
+echo ${images}
 cd $GI_HOME
 setup_local_registry
 msg "Mirroring open source rook-ceph ${rook_version} ..." info
