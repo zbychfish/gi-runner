@@ -2306,7 +2306,8 @@ function prepare_rook() {
 }
 
 function prepare_addons() {
-	msg "Mirroring openldap, nfs client provisione containers" task
+	msg "Mirroring openldap, nfs client provisioner containers" task
+	setup_local_registry
 	images="docker.io/bitnami/openldap:latest registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v${nfs_provisioner_version}"
 	for image in $images
 	do
