@@ -2278,33 +2278,33 @@ function prepare_tools() {
 function prepare_gi() {
 	get_gi_version_prescript
 	gi_version=$(($gi_version-1))
-	#get_ibm_cloud_key
+	get_ibm_cloud_key
 	prepare_tools
-	#setup_local_registry
+	setup_local_registry
 	msg "Downloading case file" info
-        #IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $gi_case_name --version ${gi_cases[${gi_version}]} --skip-verify > /dev/null 2>&1
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $gi_case_name --version ${gi_cases[${gi_version}]} --skip-verify > /dev/null 2>&1
         msg "Mirroring manifests" task
-        #IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $gi_case_name $(hostname --long):${temp_registry_port} --version ${gi_cases[${gi_version}]} > /dev/null 2>&1
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $gi_case_name $(hostname --long):${temp_registry_port} --version ${gi_cases[${gi_version}]} > /dev/null 2>&1
         msg "Authenticate in cp.icr.io" info
-        #REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
         msg "Authenticate in local repo" info
-	#REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
-        #get_latest_gi_images
+	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
+        get_latest_gi_images
 	msg "Starting mirroring images, can takes hours" info
-	#oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$gi_case_name/${gi_cases[${gi_version}]}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
-	#podman stop bastion-registry > /dev/null 2>&1
+	oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$gi_case_name/${gi_cases[${gi_version}]}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
+	podman stop bastion-registry > /dev/null 2>&1
 	msg "Creating archive with GI images" info
-	#mkdir -p ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}
+	mkdir -p ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}
 	cd $GI_TEMP
 	tar cf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/config.tar .ibm-pak/*
 	cd $GI_TEMP/airgap
 	tar cf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/tools.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
-	#cd /opt/registry
-	#tar cf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/registry.tar data
-	#rm -rf /opt/registry
-	#rm -rf $GI_TEMP/* $GI_TEMP/.*
-	#podman rm bastion-registry > /dev/null 2>&1
-	#podman rmi --all &>/dev/null
+	cd /opt/registry
+	tar cf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/registry.tar data
+	rm -rf /opt/registry
+	rm -rf $GI_TEMP/airgap $GI_TEMP/.ibm-pak
+	podman rm bastion-registry > /dev/null 2>&1
+	podman rmi --all &>/dev/null
 }
 
 function prepare_ocp() {
