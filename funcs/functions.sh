@@ -2371,7 +2371,7 @@ function prepare_offline_bastion() {
         local curr_password=""
         msg "Bastion preparation to managed installation offline (air-gapped)" task
         msg "Offline installation requires setup the local image repository on bastion" info
-        while $(check_input "txt" "${repo_admin}" 1)
+        while $(check_input "txt" "${repo_admin}" "non_empty")
         do
                 if [[ ! -z "$GI_REPO_USER" ]]
                 then
