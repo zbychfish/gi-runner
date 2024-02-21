@@ -2407,6 +2407,7 @@ function prepare_offline_bastion() {
         done
         save_variable GI_ARCHIVES_DIR "'$gi_archives'"
         process_offline_archives
+	exit 1
         software_installation_on_offline
 }
 
@@ -2467,7 +2468,7 @@ function process_offline_archives() {
 	local archives=("os-*_*" "addons-registry-*" "OCP-${ocp_release}/ocp-images-data.tar")
         local descs=('OS files' 'Additional software images' 'OpenShift archives')
         [ $storage_type == 'R' ] && { archives+=("rook-registry-v${rook_operator_version}.tar");descs+=("Rook-Ceph v${rook_operator_version} images");}
-        [ $gi_install == 'Y' ] && { archives+=("gi_registry-${gi_versions[$gi_version_selected]}.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
+        [ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/registry.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
         [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
         local i=0
         for archive in ${archives[@]}
@@ -2506,13 +2507,16 @@ function process_offline_archives() {
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
                                                 msg "Extracting Rook-Ceph container SHA digests" info
                                                 tar -C $GI_TEMP/archives -xf $gi_archives/$archive rook_images_sha
-                                        elif [ "$archive" == gi_registry-${gi_versions[$gi_version_selected]}.tar ]
+                                        elif [ "$archive" == GI-${gi_versions[$gi_version_selected]}/registry.tar ]
                                         then
-                                                msg "Extracting Guardium Insights container images" 8
-                                                mkdir -p $GI_TEMP/gi_arch
-                                                tar -C $GI_TEMP/gi_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz gi_offline/*
+                                                msg "Extracting Guardium Insights container images" info
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                                [ $? -ne 0 ] && display_error "Cannot extract content of Guardium Insights archive"
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of GI archive"
+                                                msg "Extracting Guardium Insights case files" info
+                                                tar -C $GI_TEMP -xf $gi_archives/GI-${gi_versions[$gi_version_selected]}/config.tar
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of GI case archive"
+                                                tar -C $GI_TEMP/archvives -xf $gi_archives/GI-${gi_versions[$gi_version_selected]}/tools.tar
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Guardium Insights tools"
                                         elif [ "$archive" == ics_registry-${ics_versions[$ics_version_selected]}.tar ]
                                         then
                                                 msg "Extracting Common Services container images" 8
