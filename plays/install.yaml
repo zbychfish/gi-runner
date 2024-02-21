@@ -28,7 +28,6 @@
     cluster_network_subnet:  "{{ lookup('env','GI_OCP_CIDR_MASK') }}"
     ocp_cni: "{{ lookup('env','GI_OCP_CNI') }}"
     ssh_key: "{{ lookup('env','GI_SSH_KEY') }}"
-    rhn_secret: "{{ lookup('env','GI_RHN_SECRET') }}"
     ocpadmin: "{{ lookup('env','GI_OCADMIN') }}"
     ocpadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
     ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
@@ -73,7 +72,6 @@
         - { name: "GI_OCP_CIDR_MASK", value: "{{ cluster_network_subnet }}" }
         - { name: "GI_OCP_CNI", value: "{{ ocp_cni }}" }
         - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
-        - { name: "GI_RHN_SECRET", value: "{{ rhn_secret }}" }
         - { name: "GI_OCADMIN", value: "{{ ocpadmin }}" }
         - { name: "GI_OCADMIN_PWD", value: "{{ ocpadmin_password }}" }
         - { name: "GI_OCP_IN", value: "{{ ocp_ext_ingress }}" }
@@ -85,6 +83,17 @@
         - { name: "GI_CP4S", value: "{{ install_cp4s }}" }
         - { name: "GI_EDR", value: "{{ install_edr }}" }
       when: item.value == ""
+
+    - name: Set parameters for non air-gapped installation
+      ansible.builtin.set_fact:
+        rhn_secret: "{{ lookup('env','GI_RHN_SECRET') }}"
+      when: internet_type != 'A'
+
+    - name: Check configuration parameters for non air-gapped installation
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      when: internet_type != 'A' and item.value == ""
+      loop:
+        - { name: "GI_RHN_SECRET", value: "{{ rhn_secret }}" }
 
     - name: Set parameters for installation with proxy
       ansible.builtin.set_fact:
