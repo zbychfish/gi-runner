@@ -2466,7 +2466,7 @@ function process_offline_archives() {
         local archive
 	local archives=("os-*_*" "addons-registry-*" "OCP-${ocp_release}/ocp-images-data.tar")
         local descs=('OS files' 'Additional software images' 'OpenShift archives')
-        [ $storage_type == 'R' ] && { archives+=("rook-registry-${rook_version}.tar");descs+=("Rook-Ceph ${rook_version} images");}
+        [ $storage_type == 'R' ] && { archives+=("rook-registry-v${rook_operator_version}.tar");descs+=("Rook-Ceph v${rook_operator_version} images");}
         [ $gi_install == 'Y' ] && { archives+=("gi_registry-${gi_versions[$gi_version_selected]}.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
         [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
         local i=0
@@ -2497,23 +2497,15 @@ function process_offline_archives() {
                                         [ $? -ne 0 ] && display_error "Cannot extract OCP tools"
                                         msg "Extracting OpenShift yamls" info
 					tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_release}/ocp-images-yamls.tar
-					exit 1
                                         ;;
-                                3)
-                                        msg "Extracting additional container images, for instance openldap" 8
-                                        mkdir -p $GI_TEMP/adds
-                                        tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
-                                        tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                        [ $? -ne 0 ] && display_error "Cannot extract content of archive with additional images"
-                                        ;;
-                                4|5|6)
-                                        if [ "$archive" == rook-registry-${rook_version}.tar ]
+                                3|4|5|6)
+                                        if [ "$archive" == rook-registry-v${rook_operator_version}.tar ]
                                         then
-                                                msg "Extracting Rook-Ceph container images" 8
-                                                mkdir -p $GI_TEMP/rook
-                                                tar -C $GI_TEMP/rook -xf $gi_archives/$archive rook_images_sha
+                                                msg "Extracting Rook-Ceph container images" info
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
+                                                msg "Extracting Rook-Ceph container SHA digests" info
+                                                tar -C $GI_TEMP/archives -xf $gi_archives/$archive rook_images_sha
                                         elif [ "$archive" == gi_registry-${gi_versions[$gi_version_selected]}.tar ]
                                         then
                                                 msg "Extracting Guardium Insights container images" 8
