@@ -2464,7 +2464,7 @@ function process_offline_archives() {
         msg "Extracting archives - this process can take several minutes and even hours, be patient ..." task
         mkdir -p $GI_TEMP/archives /opt/registry/data
         local archive
-	local archives=("os-*_*" "addons-registry-*" "OCP-${ocp_version}/ocp-images-data.tar")
+	local archives=("os-*_*" "addons-registry-*" "OCP-${ocp_release}/ocp-images-data.tar")
         local descs=('OS files' 'Additional software images' 'OpenShift archives')
         [ $storage_type == 'R' ] && { archives+=("rook-registry-${rook_version}.tar");descs+=("Rook-Ceph ${rook_version} images");}
         [ $gi_install == 'Y' ] && { archives+=("gi_registry-${gi_versions[$gi_version_selected]}.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
@@ -2484,6 +2484,7 @@ function process_offline_archives() {
                                         msg "Extracting NFS client and openldap images" info
                                         tar -C /opt/registry -xf $gi_archives/$archive data/*
                                         [ $? -ne 0 ] && display_error "Cannot extract addons images"
+                                        msg "Extracting NFS client and openldap SHA digests" info
 					tar -C $GI_TEMP/archives -xf $gi_archives/$archive digests.txt
                                         [ $? -ne 0 ] && display_error "Cannot extract addons images SHA digests"
                                         ;;
@@ -2495,9 +2496,7 @@ function process_offline_archives() {
                                         tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_version}/ocp-tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v${matchbox_version}-linux-amd64.tar.gz oc-mirror.tar.gz
                                         [ $? -ne 0 ] && display_error "Cannot extract OCP tools"
                                         msg "Extracting OpenShift yamls" info
-                                        tar -C $GI_TEMP/olm -xf $gi_archives/$archive manifests-*
-                                        tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                        [ $? -ne 0 ] && display_error "Cannot extract content of OLM archive"
+					exit 1
                                         ;;
                                 3)
                                         msg "Extracting additional container images, for instance openldap" 8
