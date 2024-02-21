@@ -2280,6 +2280,15 @@ function prepare_gi() {
 	gi_version=$(($gi_version-1))
 	get_ibm_cloud_key
 	prepare_tools
+	msg "Downloading case file" info
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $gi_case_name --version ${gi_cases[${gi_version}]} --skip-verify
+        msg "Mirroring manifests" task
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $gi_case_name $(hostname --long):${temp_registry_port} --version ${gi_cases[${gi_version}]}
+        msg "Authenticate in cp.icr.io" info
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd
+        msg "Authenticate in local repo" info
+	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p -u $temp_registry_password
+        #get_latest_gi_images
 }
 
 function prepare_ocp() {
