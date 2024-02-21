@@ -1405,7 +1405,7 @@ function get_network_installation_type() {
 		msg "You should download images and tools first and then start deployment." info
 	 	while $(check_input "yn" "$is_air_prepared")
 		do
-			get_input "yn" "Did you collect images and tools using prepare_offline.sh script: " true 
+			get_input "yn" "Did you collect images and tools using prepare_offline.sh script: " false 
 			is_air_prepared=${input_variable^^}
 		done
 		[[ $is_air_prepared == 'N' ]] && { msg "Collect images and tools before, execute prepare_offline.sh script" info; exit 0; }
