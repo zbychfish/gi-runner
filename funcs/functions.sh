@@ -2406,7 +2406,7 @@ function prepare_offline_bastion() {
                         gi_archives="${input_variable}"
         done
         save_variable GI_ARCHIVES_DIR "'$gi_archives'"
-        process_offline_archives
+        #process_offline_archives
 	software_installation_on_offline
 }
 
@@ -2490,7 +2490,7 @@ function process_offline_archives() {
                                         ;;
                                 2)
                                         msg "Extracting OpenShift archives" info
-                                        #tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        tar -C /opt/registry -xf $gi_archives/$archive data/*
                                         [ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         msg "Extracting OpenShift tools" info
                                         tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_release}/ocp-tools.tar
@@ -2509,7 +2509,7 @@ function process_offline_archives() {
                                         elif [ "$archive" == GI-${gi_versions[$gi_version_selected]}/registry.tar ]
                                         then
                                                 msg "Extracting Guardium Insights container images" info
-                                                #tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of GI archive"
                                                 msg "Extracting Guardium Insights case files" info
                                                 tar -C $GI_TEMP -xf $gi_archives/GI-${gi_versions[$gi_version_selected]}/config.tar
@@ -2859,7 +2859,7 @@ function software_installation_on_online() {
 function software_installation_on_offline() {
         local is_updated
         msg "Update and installation of software packaged" task
-        if [[ `uname -r` != `cat $GI_TEMP/os/kernel.txt` ]]
+        if [[ `uname -r` != `cat $GI_TEMP/archive/kernel.txt` ]]
         then
                 msg "Kernel of air-gap bastion differs from air-gap file generator!" info
                 msg "In most cases the independent kernel update will lead to problems with system libraries" info
@@ -2873,19 +2873,17 @@ function software_installation_on_offline() {
                         display_error "Upload air-gap files corresponding to bastion kernel or generate files for bastion environment"
                 fi
         fi
-	exit 1
-        msg "Installing OS updates" task
-        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os/os-updates/*rpm --allowerasing
+	[[ -d $GI_TEMP/archive/os-updates ]] && { msg "Installing OS updates" task; dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os/os-updates/*rpm --allowerasing; }
         msg "Installing OS packages" task
-        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os/os-packages/*rpm --allowerasing
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/archive/os-packages/*rpm --allowerasing
         msg "Installing Ansible and python modules" task
-        cd ${GI_TEMP}/os/ansible
+        cd ${GI_TEMP}/archive/ansible
         pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install beautifulsoup4-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install argparse-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install jmespath-* --no-index --find-links '.' > /dev/null 2>&1
-        cd $GI_TEMP/os/galaxy
+        cd $GI_TEMP/archive/galaxy
         ansible-galaxy collection install community-general-${galaxy_community_general}.tar.gz
         ansible-galaxy collection install ansible-utils-${galaxy_ansible_utils}.tar.gz
         ansible-galaxy collection install community-crypto-${galaxy_community_crypto}.tar.gz
