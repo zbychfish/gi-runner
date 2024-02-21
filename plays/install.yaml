@@ -455,6 +455,7 @@
       ansible.builtin.set_fact:
         noha_storage_class: "{{ 'rook-ceph-block-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'portworx-db2-rwo-sc' if storage_type == 'P' else '' }}"
         edr_license: "{{ 'Enterprise' if edr_license_short == 'E' else 'Pro' }}"
+      when: install_edr == 'Y'
 
     - name: Set EDR cert variables
       ansible.builtin.set_fact:
