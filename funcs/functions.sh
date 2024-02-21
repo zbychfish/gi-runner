@@ -38,6 +38,7 @@ function ansible_constants() {
 	printf -v arr_values '"%s",' "${edr_cases[@]}"
 	echo "edr_cases: [ ${arr_values%,} ]" >> $afile
 	echo "edr_case_inventory_setup: $edr_case_inventory_setup" >> $afile
+	echo "registry_version: $registry_version" >> $afile
 }
 
 function check_exit_code() {
