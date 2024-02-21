@@ -2854,9 +2854,9 @@ function get_latest_gi_images () {
         local temp_list
         local image_name_redis
         declare -a image_types
-        input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt
-        output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping-latest.txt
-        msg "Set list of images for download" task
+        input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${gi_cases[${gi_version}]}/images-mapping.txt
+        output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${gi_cases[${gi_version}]}/images-mapping-latest.txt
+        msg "Set list of images for download" info
         echo "#list of images to mirror" > $output_file
         while read -r line
         do
