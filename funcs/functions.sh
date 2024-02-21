@@ -2268,7 +2268,6 @@ function prepare_tools() {
         do
                 download_file $file
         done
-	function install_app_tools() {
         tar xf $GI_TEMP/airgap/cloudctl-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
         mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
         tar xf $GI_TEMP/airgap/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
