@@ -76,9 +76,11 @@
           - /opt/registry/data:/var/lib/registry:z
           - /opt/registry/auth:/auth:z
           - /opt/registry/certs:/certs:z
-  when: internet_type == 'A'
 
-- meta: end_play
+    - name: Set SELINUX permissive access for NetworkManager
+      ansible.builtin.shell:
+        cmd: semanage permissive -a NetworkManager_t
+  when: internet_type == 'A'
 
 - name: Cleanup configuration files
   ansible.builtin.file:
@@ -222,7 +224,9 @@
 
 - name: Unzip matchbox
   ansible.builtin.command:
-    cmd: "tar zxf {{ temp_dir }}/downloads/matchbox-v{{ matchbox_version }}-linux-amd64.tar.gz -C {{ temp_dir }}"
+    cmd: "tar zxf {{ temp_dir }}/{{ t_path }}/matchbox-v{{ matchbox_version }}-linux-amd64.tar.gz -C {{ temp_dir }}"
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
 
 - name: Copy matchbox to bin
   ansible.builtin.copy:
@@ -285,6 +289,8 @@
     state: restarted
     enabled: yes
   when: ntp_server == bas_ip
+
+- meta: end_play
 
 - name: Check presence of RHCOS images
   ansible.builtin.stat:
