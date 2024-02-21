@@ -2279,7 +2279,7 @@ function prepare_gi() {
 	get_gi_version_prescript
 	gi_version=$(($gi_version-1))
 	#get_ibm_cloud_key
-	#prepare_tools
+	prepare_tools
 	#setup_local_registry
 	msg "Downloading case file" info
         #IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $gi_case_name --version ${gi_cases[${gi_version}]} --skip-verify > /dev/null 2>&1
