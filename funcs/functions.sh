@@ -2516,7 +2516,7 @@ function process_offline_archives() {
                                                 tar -C $GI_TEMP -xf $gi_archives/GI-${gi_versions[$gi_version_selected]}/config.tar
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of GI case archive"
                                                 msg "Extracting Guardium Insights tools" info
-                                                tar -C $GI_TEMP/archvies -xf $gi_archives/GI-${gi_versions[$gi_version_selected]}/tools.tar
+                                                tar -C $GI_TEMP/archives -xf $gi_archives/GI-${gi_versions[$gi_version_selected]}/tools.tar
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Guardium Insights tools"
                                         elif [ "$archive" == ics_registry-${ics_versions[$ics_version_selected]}.tar ]
                                         then
