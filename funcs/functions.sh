@@ -2407,8 +2407,7 @@ function prepare_offline_bastion() {
         done
         save_variable GI_ARCHIVES_DIR "'$gi_archives'"
         process_offline_archives
-	exit 1
-        software_installation_on_offline
+	software_installation_on_offline
 }
 
 function prepare_rook() {
@@ -2520,7 +2519,7 @@ function process_offline_archives() {
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Guardium Insights tools"
                                         elif [ "$archive" == ics_registry-${ics_versions[$ics_version_selected]}.tar ]
                                         then
-                                                msg "Extracting Common Services container images" 8
+                                                msg "Extracting Common Services container images" info
                                                 mkdir -p $GI_TEMP/ics_arch
                                                 tar -C $GI_TEMP/ics_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz ics_offline/*
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
