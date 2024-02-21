@@ -2281,9 +2281,8 @@ function prepare_gi() {
 	gi_version=$(($gi_version-1))
 	get_ibm_cloud_key
 	prepare_tools
-
-
 }
+
 function prepare_ocp() {
 	msg "You must provide the exact version of OpenShift for its images mirror process" info
 	msg "It is suggested to install a release from stable repository" info
