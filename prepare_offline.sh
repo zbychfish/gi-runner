@@ -40,3 +40,10 @@ if [[ $script_argument -lt 4 ]]
 then
 	msg "- images with additonal services NFS client, openldap - addons-registry-`date +%Y-%m-%d`.tar" info
 fi
+if [[ $script_argument -lt 5 ]]
+then
+	if [[ $cloudpak == 'G' ]]
+	then
+		msg "- GI ${gi_versions[${gi_version}]} files prepared - GI-${gi_versions[${gi_version}]} directory" info
+	fi
+fi

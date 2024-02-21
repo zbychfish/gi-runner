@@ -2292,8 +2292,19 @@ function prepare_gi() {
         get_latest_gi_images
 	msg "Starting mirroring images, can takes hours" info
 	oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$gi_case_name/${gi_cases[${gi_version}]}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
-
-
+	podman stop bastion-registry > /dev/null 2>&1
+	msg "Creating archive with GI images" info
+	mkdir -p ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}
+	cd $GI_TEMP
+	tar cf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/config.tar .ibm-pak/*
+	cd $GI_TEMP/downloads
+	tar -rf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/config.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
+	cd /opt/registry
+	tar cf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/registry.tar data
+	#rm -rf /opt/registry
+	#rm -rf $GI_TEMP/* $GI_TEMP/.*
+	podman rm bastion-registry > /dev/null 2>&1
+	podman rmi --all &>/dev/null
 }
 
 function prepare_ocp() {
