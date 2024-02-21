@@ -2288,7 +2288,7 @@ function prepare_gi() {
         msg "Authenticate in cp.icr.io" info
         REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
         msg "Authenticate in local repo" info
-	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p -u $temp_registry_password > /dev/null 2>&1
+	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
         get_latest_gi_images
 	msg "Starting mirroring images, can takes hours" info
 	oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$gi_case_name/${gi_cases[${gi_version}]}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
