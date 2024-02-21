@@ -11,7 +11,7 @@
 
     - name: Create certificate for registry
       shell:
-        cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 3650 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ domain }}\" -addext \"subjectAltName = DNS:registry.{{ ocp_domain }}\""
+        cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 3650 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ ocp_domain }}\" -addext \"subjectAltName = DNS:registry.{{ ocp_domain }}\""
 
     - name: Copy CA cert to Centos PKI
       ansible.builtin.copy:
