@@ -2280,15 +2280,20 @@ function prepare_gi() {
 	gi_version=$(($gi_version-1))
 	get_ibm_cloud_key
 	prepare_tools
+	setup_local_registry
 	msg "Downloading case file" info
-        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $gi_case_name --version ${gi_cases[${gi_version}]} --skip-verify
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $gi_case_name --version ${gi_cases[${gi_version}]} --skip-verify > /dev/null 2>&1
         msg "Mirroring manifests" task
-        IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $gi_case_name $(hostname --long):${temp_registry_port} --version ${gi_cases[${gi_version}]}
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $gi_case_name $(hostname --long):${temp_registry_port} --version ${gi_cases[${gi_version}]} > /dev/null 2>&1
         msg "Authenticate in cp.icr.io" info
-        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
         msg "Authenticate in local repo" info
-	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p -u $temp_registry_password
-        #get_latest_gi_images
+	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p -u $temp_registry_password > /dev/null 2>&1
+        get_latest_gi_images
+	msg "Starting mirroring images, can takes hours" info
+	oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$gi_case_name/${gi_cases[${gi_version}]}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
+
+
 }
 
 function prepare_ocp() {
@@ -2841,5 +2846,54 @@ function validate_certs() {
                         display_error "Unknown cert information"
                         ;;
         esac
+}
+
+function get_latest_gi_images () {
+        local input_file
+        local output_file
+        local temp_list
+        local image_name_redis
+        declare -a image_types
+        input_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping.txt
+        output_file=${GI_TEMP}/.ibm-pak/data/mirror/ibm-guardium-insights/${CASE_VERSION}/images-mapping-latest.txt
+        msg "Set list of images for download" task
+        echo "#list of images to mirror" > $output_file
+        while read -r line
+        do
+                image_name_redis=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $NF}'`
+                if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF-1)}') == 'ibm-guardium-insights' ]
+                then
+                        declare -a temp_list
+                        image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'`
+                        image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'`
+                        temp_list+=(${image_release:1})
+                        if [ `grep "${image_name}:release" $output_file | wc -l` -eq 0 ]
+                        then
+                                echo "$line" >> $output_file
+                        else
+                                saved_image_release=`grep "${image_name}:release" $output_file | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'`
+                                temp_list+=(${saved_image_release:1})
+                                newest_image=`printf '%s\n' "${temp_list[@]}" | sort -V | tail -n 1`
+                                unset temp_list
+                                if [ $newest_image != ${saved_image_release:1} ]
+                                then
+                                        sed -i "/.*${image_name}:release-${saved_image_release}.*/d" $output_file
+                                        echo "$line" >> $output_file
+                                fi
+                        fi
+                elif [[ $image_name_redis =~ 'redis-db'.* || $image_name_redis =~ 'redis-mgmt'.* || $image_name_redis =~ 'redis-proxy'.* || $image_name_redis =~ 'redis-proxylog'.* || $image_name_redis == 'ibm-cloud-databases-redis-operator-bundle' || $image_name_redis == 'ibm-cloud-databases-redis-operator' ]]
+                then
+                        image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
+                        if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${gi_redis_releases[${gi_version}]} && (`echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${gi_redis_releases[${gi_version}]} || `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == "amd64") ]]
+                        then
+                                echo "$line" >> $output_file
+                        fi
+                else
+                        if [ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]
+                        then
+                                echo "$line" >> $output_file
+                        fi
+                fi
+        done < "$input_file"
 }
 
