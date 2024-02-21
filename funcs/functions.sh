@@ -2281,10 +2281,9 @@ function prepare_rook() {
 	msg "Mirroring open source rook-ceph ${rook_version} ..." info
 	for image in $images
 	do
-        	msg "$image" info
+        	msg "Downlading $image ..." info
 	        podman pull $image > /dev/null 2>&1
 	        tag=`echo "$image" | awk -F '/' '{print $NF}'`
-	        msg "TAG: $tag" info
 		podman push --creds ${temp_registry_user}:${temp_registry_password} $image $(hostname --long):${temp_registry_port}/rook/$tag > /dev/null 2>&1
 	        podman rmi $image > /dev/null 2>&1
 	done
@@ -2296,13 +2295,39 @@ function prepare_rook() {
         	IFS=":" read -r -a image_spec <<< `grep $label $GI_TEMP/rook_images|awk -F "," '{print $NF}'|awk -F "/" '{print $NF}'`
 	        echo `grep $label $GI_TEMP/rook_images`","`cat /opt/registry/data/docker/registry/v2/repositories/rook/${image_spec[0]}/_manifests/tags/${image_spec[1]}/current/link` >> $GI_TEMP/rook_images_sha
 	done
-	podman stop bastion-registry
+	podman stop bastion-registry > /dev/null 2>&1
 	cd /opt/registry
 	tar cf $GI_TEMP/downloads/rook-registry-v${rook_operator_version}.tar data
 	cd $GI_TEMP
 	tar -rf $GI_TEMP/downloads/rook-registry-v${rook_operator_version}.tar rook_images_sha
-	podman rm bastion-registry
-	podman rmi --all
+	podman rm bastion-registry > /dev/null 2>&1
+	podman rmi --all > /dev/null 2>&1
+	rm -rf /opt/registry/data
+}
+
+function prepare_addons() {
+	msg "Mirroring openldap, nfs client provisione containers" task
+	images="docker.io/bitnami/openldap:latest registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v${nfs_provisioner_version}"
+	for image in $images
+	do
+        	msg "Mirroring $image" info
+        	podman pull $image > /dev/null 2>&1
+        	tag=`echo "$image" | awk -F '/' '{print $NF}'`
+        	podman push --creds ${temp_registry_user}:${temp_registry_password} $image $(hostname --long):${temp_registry_port}/adds/$tag > /dev/null 2>&1
+	        podman rmi $image > /dev/null 2>&1
+	done
+	msg "Extracting image digests ..." info
+	echo "openldap:latest,"`cat /opt/registry/data/docker/registry/v2/repositories/adds/openldap/_manifests/tags/latest/current/link` > $GI_TEMP/digests.txt
+	echo "nfs-subdir-external-provisioner:v${nfs_provisioner_version},"`cat /opt/registry/data/docker/registry/v2/repositories/adds/nfs-subdir-external-provisioner/_manifests/tags/v${nfs_provisioner_version}/current/link` >> $GI_TEMP/digests.txt
+	msg "Archiving mirrored registry ..." info
+	podman stop bastion-registry > /dev/null 2>&1
+	cd /opt/registry
+	tar cf $GI_TEMP/downloads/addons-registry-`date +%Y-%m-%d`.tar data
+	cd $GI_TEMP
+	tar -rf $GI_TEMP/downloads/addons-registry-`date +%Y-%m-%d`.tar digests.txt
+	rm -f digests.txt
+	podman rm bastion-registry > /dev/null 2>&1
+	podman rmi --all > /dev/null 2>&1
 	rm -rf /opt/registry/data
 }
 

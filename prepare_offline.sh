@@ -16,6 +16,8 @@ rm -rf $GI_TEMP/airgap/*
 rm -rf $GI_TEMP/airgap/* $GI_TEMP/images $GI_TEMP/ocp-images.yaml
 [[ $script_argument -lt 3 ]] && prepare_rook
 rm -rf $GI_TEMP/airgap/*
+[[ $script_argument -lt 4 ]] && prepare_addons
+rm -rf $GI_TEMP/airgap/*
 
 msg "Airgap prescript summary" task
 msg "In $GI_TEMP/download directory you have:" info
@@ -33,4 +35,7 @@ if [[ $script_argument -lt 3 ]]
 then
         msg "- rook-ceph images and SHA's - rook-registry-${rook_operator_version}.tar" info
 fi
-
+if [[ $script_argument -lt 4 ]]
+then
+	msg "- mages with additonal services NFS client, openldap - addons-registry-`date +%Y-%m-%d`.tar" info
+fi
