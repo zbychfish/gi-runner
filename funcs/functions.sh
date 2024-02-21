@@ -2510,12 +2510,13 @@ function process_offline_archives() {
                                         elif [ "$archive" == GI-${gi_versions[$gi_version_selected]}/registry.tar ]
                                         then
                                                 msg "Extracting Guardium Insights container images" info
-                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                #tar -C /opt/registry -xf $gi_archives/$archive data/*
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of GI archive"
                                                 msg "Extracting Guardium Insights case files" info
                                                 tar -C $GI_TEMP -xf $gi_archives/GI-${gi_versions[$gi_version_selected]}/config.tar
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of GI case archive"
-                                                tar -C $GI_TEMP/archvives -xf $gi_archives/GI-${gi_versions[$gi_version_selected]}/tools.tar
+                                                msg "Extracting Guardium Insights tools" info
+                                                tar -C $GI_TEMP/archvies -xf $gi_archives/GI-${gi_versions[$gi_version_selected]}/tools.tar
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Guardium Insights tools"
                                         elif [ "$archive" == ics_registry-${ics_versions[$ics_version_selected]}.tar ]
                                         then
@@ -2854,6 +2855,46 @@ function software_installation_on_online() {
         done
         #mkdir -p ${GI_TEMP}/os
         #echo "pullSecret: '$rhn_secret'" > ${GI_TEMP}/os/pull_secret.tmp
+}
+
+function software_installation_on_offline() {
+        local is_updated
+        msg "Update and installation of software packaged" task
+        if [[ `uname -r` != `cat $GI_TEMP/os/kernel.txt` ]]
+        then
+                msg "Kernel of air-gap bastion differs from air-gap file generator!" info
+                msg "In most cases the independent kernel update will lead to problems with system libraries" info
+                while $(check_input "yn" ${is_updated})
+                do
+                        get_input "yn" "Have you updated system before, would you like to continue? " true
+                        is_updated=${input_variable^^}
+                done
+                if [ $is_updated != 'N' ]
+                then
+                        display_error "Upload air-gap files corresponding to bastion kernel or generate files for bastion environment"
+                fi
+        fi
+	exit 1
+        msg "Installing OS updates" task
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os/os-updates/*rpm --allowerasing
+        msg "Installing OS packages" task
+        dnf -qy --disablerepo=* localinstall ${GI_TEMP}/os/os-packages/*rpm --allowerasing
+        msg "Installing Ansible and python modules" task
+        cd ${GI_TEMP}/os/ansible
+        pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install beautifulsoup4-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install argparse-* --no-index --find-links '.' > /dev/null 2>&1
+        pip3 install jmespath-* --no-index --find-links '.' > /dev/null 2>&1
+        cd $GI_TEMP/os/galaxy
+        ansible-galaxy collection install community-general-${galaxy_community_general}.tar.gz
+        ansible-galaxy collection install ansible-utils-${galaxy_ansible_utils}.tar.gz
+        ansible-galaxy collection install community-crypto-${galaxy_community_crypto}.tar.gz
+        ansible-galaxy collection install containers-podman-${galaxy_containers_podman}.tar.gz
+        cd $GI_HOME
+        mkdir -p /etc/ansible
+        echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
+        msg "OS software update and installation successfully finished" info
 }
 
 function unset_proxy_settings() {
