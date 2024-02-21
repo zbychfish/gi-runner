@@ -2278,33 +2278,33 @@ function prepare_tools() {
 function prepare_gi() {
 	get_gi_version_prescript
 	gi_version=$(($gi_version-1))
-	get_ibm_cloud_key
-	prepare_tools
-	setup_local_registry
+	#get_ibm_cloud_key
+	#prepare_tools
+	#setup_local_registry
 	msg "Downloading case file" info
-        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $gi_case_name --version ${gi_cases[${gi_version}]} --skip-verify > /dev/null 2>&1
+        #IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $gi_case_name --version ${gi_cases[${gi_version}]} --skip-verify > /dev/null 2>&1
         msg "Mirroring manifests" task
-        IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $gi_case_name $(hostname --long):${temp_registry_port} --version ${gi_cases[${gi_version}]} > /dev/null 2>&1
+        #IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $gi_case_name $(hostname --long):${temp_registry_port} --version ${gi_cases[${gi_version}]} > /dev/null 2>&1
         msg "Authenticate in cp.icr.io" info
-        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
+        #REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
         msg "Authenticate in local repo" info
-	REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
-        get_latest_gi_images
+	#REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
+        #get_latest_gi_images
 	msg "Starting mirroring images, can takes hours" info
-	oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$gi_case_name/${gi_cases[${gi_version}]}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
-	podman stop bastion-registry > /dev/null 2>&1
+	#oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$gi_case_name/${gi_cases[${gi_version}]}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
+	#podman stop bastion-registry > /dev/null 2>&1
 	msg "Creating archive with GI images" info
-	mkdir -p ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}
+	#mkdir -p ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}
 	cd $GI_TEMP
 	tar cf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/config.tar .ibm-pak/*
-	cd $GI_TEMP/downloads
-	tar -rf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/config.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
-	cd /opt/registry
-	tar cf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/registry.tar data
+	cd $GI_TEMP/airgap
+	tar cf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/tools.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
+	#cd /opt/registry
+	#tar cf ${GI_TEMP}/downloads/GI-${gi_versions[${gi_version}]}/registry.tar data
 	#rm -rf /opt/registry
 	#rm -rf $GI_TEMP/* $GI_TEMP/.*
-	podman rm bastion-registry > /dev/null 2>&1
-	podman rmi --all &>/dev/null
+	#podman rm bastion-registry > /dev/null 2>&1
+	#podman rmi --all &>/dev/null
 }
 
 function prepare_ocp() {
@@ -2367,6 +2367,49 @@ function prepare_ocp() {
 	rm -rf /opt/registry/data
 }
 
+function prepare_offline_bastion() {
+        local curr_password=""
+        msg "Bastion preparation to managed installation offline (air-gapped)" task
+        msg "Offline installation requires setup the local image repository on bastion" info
+        while $(check_input "txt" "${repo_admin}" 1)
+        do
+                if [[ ! -z "$GI_REPO_USER" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_REPO_USER] or insert local registry username: " true "$GI_REPO_USER"
+                else
+                        get_input "txt" "Insert local registry username (default - repoadmin): " true "repoadmin"
+                fi
+                        repo_admin="${input_variable}"
+        done
+        save_variable GI_REPO_USER $repo_admin
+        input_variable=true
+        while $input_variable
+        do
+                if [ ! -z "$GI_REPO_USER_PWD" ]
+                then
+                        get_input "pwd" "Push <ENTER> to accept the previous choice [$GI_REPO_USER_PWD] or insert new password for $repo_admin user: " true "$GI_REPO_USER_PWD"
+                else
+                        get_input "pwd" "Insert new password for $repo_admin user: " false
+                fi
+        done
+        save_variable GI_REPO_USER_PWD "'$curr_password'"
+        msg "Offline installation requires installation archives preparation using prepare_offline.sh script on machine with access to the internet" info
+        msg "Archives must be copied to bastion before installation" info
+        while $(check_input "dir" "${gi_archives}")
+        do
+                if [[ ! -z "$GI_ARCHIVES_DIR" ]]
+                then
+                        get_input "txt" "Push <ENTER> to accept the previous choice [$GI_ARCHIVES_DIR] or insert the full path to installation archives: " true "$GI_ARCHIVES_DIR"
+                else
+                        get_input "txt" "Insert full path to installation archives (default location - $GI_HOME/downloads): " true "$GI_HOME/downloads"
+                fi
+                        gi_archives="${input_variable}"
+        done
+        save_variable GI_ARCHIVES_DIR "'$gi_archives'"
+        process_offline_archives
+        software_installation_on_offline
+}
+
 function prepare_rook() {
 	msg "Gathering Rook-Ceph version details ..." task
 	ceph_path="deploy/examples"
@@ -2415,6 +2458,90 @@ function prepare_rook() {
 	podman rm bastion-registry > /dev/null 2>&1
 	podman rmi --all > /dev/null 2>&1
 	rm -rf /opt/registry/data $GI_TEMP/rook $GI_TEMP/rook_images $GI_TEMP/rook_images_sha
+}
+
+function process_offline_archives() {
+        msg "Extracting archives - this process can take several minutes and even hours, be patient ..." task
+        mkdir -p $GI_TEMP/archives /opt/registry/data
+        local archive
+	local archives=("os-*_*" "addons-registry-*" "OCP-${ocp_version}/ocp-images-data.tar")
+        local descs=('OS files' 'Additional software images' 'OpenShift archives')
+        [ $storage_type == 'R' ] && { archives+=("rook-registry-${rook_version}.tar");descs+=("Rook-Ceph ${rook_version} images");}
+        [ $gi_install == 'Y' ] && { archives+=("gi_registry-${gi_versions[$gi_version_selected]}.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
+        [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
+        local i=0
+        for archive in ${archives[@]}
+        do
+                if [ -e ${gi_archives}/${archive} ] && [ $(ls ${gi_archives}/${archive}|wc -l) -eq 1 ]
+                then
+                        case $i in
+                                0)
+                                        msg "Extracting OS software packages" info
+                                        tar -C $GI_TEMP/archives -xf ${gi_archives}/$archive os_release.txt kernel.txt ansible/* galaxy/* os-packages/* os-updates/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract content of operating system packages"
+                                        ;;
+                                1)
+                                        msg "Extracting NFS client and openldap images" info
+                                        tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract addons images"
+					tar -C $GI_TEMP/archives -xf $gi_archives/$archive digests.txt
+                                        [ $? -ne 0 ] && display_error "Cannot extract addons images SHA digests"
+                                        ;;
+                                2)
+                                        msg "Extracting OpenShift archives" info
+                                        tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract OCP images"
+                                        msg "Extracting OpenShift tools" info
+                                        tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_version}/ocp-tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v${matchbox_version}-linux-amd64.tar.gz oc-mirror.tar.gz
+                                        [ $? -ne 0 ] && display_error "Cannot extract OCP tools"
+                                        msg "Extracting OpenShift yamls" info
+                                        tar -C $GI_TEMP/olm -xf $gi_archives/$archive manifests-*
+                                        tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract content of OLM archive"
+                                        ;;
+                                3)
+                                        msg "Extracting additional container images, for instance openldap" 8
+                                        mkdir -p $GI_TEMP/adds
+                                        tar -C $GI_TEMP/adds -xf $gi_archives/$archive digests.txt
+                                        tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract content of archive with additional images"
+                                        ;;
+                                4|5|6)
+                                        if [ "$archive" == rook-registry-${rook_version}.tar ]
+                                        then
+                                                msg "Extracting Rook-Ceph container images" 8
+                                                mkdir -p $GI_TEMP/rook
+                                                tar -C $GI_TEMP/rook -xf $gi_archives/$archive rook_images_sha
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Rook-Ceph archive"
+                                        elif [ "$archive" == gi_registry-${gi_versions[$gi_version_selected]}.tar ]
+                                        then
+                                                msg "Extracting Guardium Insights container images" 8
+                                                mkdir -p $GI_TEMP/gi_arch
+                                                tar -C $GI_TEMP/gi_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz gi_offline/*
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Guardium Insights archive"
+                                        elif [ "$archive" == ics_registry-${ics_versions[$ics_version_selected]}.tar ]
+                                        then
+                                                msg "Extracting Common Services container images" 8
+                                                mkdir -p $GI_TEMP/ics_arch
+                                                tar -C $GI_TEMP/ics_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz ics_offline/*
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of Common Services archive"
+                                        else
+                                                display_error "Problem with extraction of archives, unknown archive type"
+                                        fi
+                                        ;;
+				*)
+                                        display_error "Problem with extraction of archives, check their consitency"
+                                        ;;
+                        esac
+
+                else
+                        display_error "Cannot find the ${descs[$i]} archive, please copy to archive to ${gi_archives} directory and restart init.sh"
+                fi
+                i=$(($i+1))
+        done
 }
 
 function pvc_sizes() {
