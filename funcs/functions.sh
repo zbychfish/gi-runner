@@ -1109,6 +1109,14 @@ function get_gi_pvc_size() {
         fi
 }
 
+function get_gi_version_prescript() {
+        while $(check_input "list" ${gi_version} ${#gi_versions[@]})
+        do
+                get_input "list" "Select GI version: " "${gi_versions[@]}"
+                gi_version=$input_variable
+        done
+}
+
 function get_hardware_info() {
         msg "Collecting hardware information" task
         msg "Automatic CoreOS and storage deployment requires information about NIC and storage devices" info
@@ -1141,6 +1149,17 @@ function get_hardware_info() {
         done
         save_variable GI_BOOT_DEVICE "$machine_disk"
 	msg "All your nodes have the NIC ${machine_nic} attached to cluster subnet/subnets. All your nodes use /dev/${machine_disk} as a boot disk." info
+}
+
+function get_ibm_cloud_key() {
+	msg "Access to Cloud Pak's containers require IBM Cloud registry access and correct entitlement" info
+	curr_value=""
+	while $(check_input "txt" "${curr_value}" "non_empty")
+	do
+        	get_input "txt" "Insert your IBM Cloud Key: " false
+	        curr_value="$input_variable"
+	done
+	ibm_account_pwd=$curr_value
 }
 
 function get_ics_options() {
@@ -2177,6 +2196,7 @@ function prepare_apps() {
 	                cloudpak=${input_variable^^}
         	done
 	fi
+	[[ $cloudpak == 'G' ]] && prepare_gi
 }
 function prepare_bastion() {
 	msg "Prepare bastion" task
@@ -2241,6 +2261,29 @@ function prepare_bastion() {
 	dnf download -qy --downloaddir $GI_TEMP/downloads unzip --resolve
 }
 
+function prepare_tools() {
+	cd $GI_TEMP/airgap
+        declare -a ocp_files=("https://github.com/IBM/ibm-pak/releases/download/v${ibm_pak_version}/oc-ibm_pak-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz" "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz")
+        for file in ${ocp_files[@]}
+        do
+                download_file $file
+        done
+	function install_app_tools() {
+        tar xf $GI_TEMP/airgap/cloudctl-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
+        mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
+        tar xf $GI_TEMP/airgap/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
+        tar xf $GI_TEMP/airgap/oc-ibm_pak-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
+        mv /usr/local/bin/oc-ibm_pak-linux-amd64 /usr/local/bin/oc-ibm_pak
+}
+
+function prepare_gi() {
+	get_gi_version_prescript
+	gi_version=$(($gi_version-1))
+	get_ibm_cloud_key
+	prepare_tools
+
+
+}
 function prepare_ocp() {
 	msg "You must provide the exact version of OpenShift for its images mirror process" info
 	msg "It is suggested to install a release from stable repository" info

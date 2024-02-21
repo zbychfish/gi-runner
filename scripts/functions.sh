@@ -105,14 +105,6 @@ function get_latest_gi_images () {
 	done < "$input_file"
 }
 
-function get_gi_version_prescript() {
-        while $(check_input "list" ${gi_version} ${#gi_versions[@]})
-        do
-                get_input "list" "Select GI version: " "${gi_versions[@]}"
-                gi_version=$input_variable
-        done
-}
-
 function install_app_tools() {
         if [[ $files_type == "ICS" ]]
         then
