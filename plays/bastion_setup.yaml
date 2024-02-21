@@ -1,3 +1,85 @@
+- name: Set local image registry for airgapped installation
+  block:
+    - name: Create portable registry directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+      with_items:
+        - { path: "/opt/registry/data" }
+        - { path: "/opt/registry/auth" }
+        - { path: "/opt/registry/certs" }
+
+    - name: Create certificate for registry
+      shell:
+        cmd: "openssl req -newkey rsa:4096 -nodes -sha256 -keyout /opt/registry/certs/bastion.repo.pem -x509 -days 3650 -out /opt/registry/certs/bastion.repo.crt -subj \"/C=PL/ST=Miedzyrzecz/L=/O=Test /OU=Test/CN=registry.{{ domain }}\" -addext \"subjectAltName = DNS:registry.{{ domain }}\""
+
+    - name: Copy CA cert to Centos PKI
+      ansible.builtin.copy:
+        src: /opt/registry/certs/bastion.repo.crt
+        dest: /etc/pki/ca-trust/source/anchors/
+
+    - name: Register self-signed CA
+      ansible.builtin.shell:
+        cmd: update-ca-trust extract
+
+    - name: Cleanup httpasswd file
+      ansible.builtin.file:
+        path: /opt/registry/auth/bastion.repo.htpasswd
+        state: absent
+
+    - name: Create htpasswd file
+      community.general.htpasswd:
+        path: /opt/registry/auth/bastion.repo.htpasswd
+        name: "{{ repo_user }}"
+        crypt_scheme: bcrypt
+        password: "{{ repo_user_password }}"
+
+    - name: Open ports on bastion for offline installation
+      ansible.builtin.firewalld:
+        port: "{{ item.port }}/{{ item.type }}"
+        permanent: yes
+        immediate: yes
+        state: enabled
+      with_items:
+        - { port: "5000", type: "tcp" }
+
+    - name: Load image registry into local repository
+      containers.podman.podman_load:
+        input: "{{ archives_dir }}/OCP-{{ ocp_release }}/oc-registry.tar"
+
+    - name: Check image repository existence
+      containers.podman.podman_container_info:
+        name: bastion-registry
+      register: is_repo_available
+
+    - name: Remove existing bastion image registry container
+      containers.podman.podman_container:
+        name: bastion-registry
+        state: absent
+      when: is_repo_available.containers | length == '1'
+
+    - name: Setup image registry
+      containers.podman.podman_container:
+        name: bastion-registry
+        state: started
+        image: "docker.io/library/registry:{{ registry_version }}"
+        ports: 5000:5000
+        env: {
+          "REGISTRY_HTTP_TLS_CERTIFICATE": "/certs/bastion.repo.crt",
+          "REGISTRY_HTTP_TLS_KEY": "/certs/bastion.repo.pem",
+          "REGISTRY_AUTH_HTPASSWD_PATH": "/auth/bastion.repo.htpasswd",
+          "REGISTRY_AUTH": "htpasswd",
+          "REGISTRY_AUTH_HTPASSWD_REALM": "Registry",
+          "REGISTRY_HTTP_SECRET": "ALongRandomSecretForRegistry",
+        }
+        volume:
+          - /opt/registry/data:/var/lib/registry:z
+          - /opt/registry/auth:/auth:z
+          - /opt/registry/certs:/certs:z
+  when: internet_type == 'A'
+
+- meta: end_play
+
 - name: Cleanup configuration files
   ansible.builtin.file:
     path: "{{ item.path }}"

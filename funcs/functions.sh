@@ -2884,10 +2884,10 @@ function software_installation_on_offline() {
         pip3 install argparse-* --no-index --find-links '.' > /dev/null 2>&1
         pip3 install jmespath-* --no-index --find-links '.' > /dev/null 2>&1
         cd $GI_TEMP/archives/galaxy
-        ansible-galaxy collection install community-general-${galaxy_community_general}.tar.gz
-        ansible-galaxy collection install ansible-utils-${galaxy_ansible_utils}.tar.gz
-        ansible-galaxy collection install community-crypto-${galaxy_community_crypto}.tar.gz
-        ansible-galaxy collection install containers-podman-${galaxy_containers_podman}.tar.gz
+        ansible-galaxy collection install community-general-${galaxy_community_general}.tar.gz > /dev/null 2>&1
+        ansible-galaxy collection install ansible-utils-${galaxy_ansible_utils}.tar.gz > /dev/null 2>&1
+        ansible-galaxy collection install community-crypto-${galaxy_community_crypto}.tar.gz > /dev/null 2>&1
+        ansible-galaxy collection install containers-podman-${galaxy_containers_podman}.tar.gz > /dev/null 2>&1
         cd $GI_HOME
         mkdir -p /etc/ansible
         echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts

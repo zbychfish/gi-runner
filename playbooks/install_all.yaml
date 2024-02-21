@@ -11,21 +11,6 @@
         - { name: "GI_SUBNETS_IP_RANGES", value: "{{ dhcp_ranges_list }}" }
       when: one_subnet == 'N' and item.value == ""
 
-    - name: Set parameters for air-gapped installation
-      ansible.builtin.set_fact:
-        archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
-        repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
-        repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
-      when: internet_type == 'A'
-
-    - name: Check configuration parameters for air-gapped installation
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      when: internet_type == 'A' and item.value == ""
-      loop:
-        - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
-        - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
-        - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
-
     - name: Iterates all workers in one array
       ansible.builtin.set_fact:
         nodes: "{{ worker_name|default([])+ocs_name|default([]) }}"
