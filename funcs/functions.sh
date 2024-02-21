@@ -2490,10 +2490,10 @@ function process_offline_archives() {
                                         ;;
                                 2)
                                         msg "Extracting OpenShift archives" info
-                                        tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        #tar -C /opt/registry -xf $gi_archives/$archive data/*
                                         [ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         msg "Extracting OpenShift tools" info
-                                        tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_release}/ocp-tools.tar openshift-client-linux.tar.gz openshift-install-linux.tar.gz rhcos-live-initramfs.x86_64.img rhcos-live-kernel-x86_64 rhcos-live-rootfs.x86_64.img opm-linux.tar.gz matchbox-v${matchbox_version}-linux-amd64.tar.gz oc-mirror.tar.gz
+                                        tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_release}/ocp-tools.tar
                                         [ $? -ne 0 ] && display_error "Cannot extract OCP tools"
                                         msg "Extracting OpenShift yamls" info
 					tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_release}/ocp-images-yamls.tar
