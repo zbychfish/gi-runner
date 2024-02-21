@@ -111,6 +111,9 @@ function check_input() {
                                 fi
                         fi
                         ;;
+		"cloudpak")
+                        [[ $2 == 'G' || $2 == '4' || $2 == 'E' || $2 == 'F' ]] && echo false || echo true
+                        ;;
 		"dir")
                         [ -d "$2" ] && echo false || echo true
                         ;;
@@ -2132,6 +2135,49 @@ function msg() {
         esac
 }
 
+function prepare_addons() {
+        msg "Mirroring openldap, nfs client provisioner containers" task
+        setup_local_registry
+        images="docker.io/bitnami/openldap:latest registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v${nfs_provisioner_version}"
+        for image in $images
+        do
+                msg "Mirroring $image" info
+                podman pull $image > /dev/null 2>&1
+                tag=`echo "$image" | awk -F '/' '{print $NF}'`
+                podman push --creds ${temp_registry_user}:${temp_registry_password} $image $(hostname --long):${temp_registry_port}/adds/$tag > /dev/null 2>&1
+                podman rmi $image > /dev/null 2>&1
+        done
+        msg "Extracting image digests ..." info
+        echo "openldap:latest,"`cat /opt/registry/data/docker/registry/v2/repositories/adds/openldap/_manifests/tags/latest/current/link` > $GI_TEMP/digests.txt
+        echo "nfs-subdir-external-provisioner:v${nfs_provisioner_version},"`cat /opt/registry/data/docker/registry/v2/repositories/adds/nfs-subdir-external-provisioner/_manifests/tags/v${nfs_provisioner_version}/current/link` >> $GI_TEMP/digests.txt
+        msg "Archiving mirrored registry ..." info
+        podman stop bastion-registry > /dev/null 2>&1
+        cd /opt/registry
+        tar cf $GI_TEMP/downloads/addons-registry-`date +%Y-%m-%d`.tar data
+        cd $GI_TEMP
+        tar -rf $GI_TEMP/downloads/addons-registry-`date +%Y-%m-%d`.tar digests.txt
+        podman rm bastion-registry > /dev/null 2>&1
+        podman rmi --all > /dev/null 2>&1
+        rm -rf /opt/registry/data $GI_TEMP/digests.txt
+}
+
+function prepare_apps() {
+	local is_cp_mirrored
+	msg "Decide what kind of Cloud Pak should be mirrored" info
+	while $(check_input "yn" ${is_cp_mirrored})
+        do
+                get_input "yn" "Would you like to mirror Cloud Pak containers " false
+                is_cp_mirrored=${input_variable^^}
+        done
+	if [[ $is_cp_mirrored == 'Y' ]]
+	then
+		while $(check_input "cloudpak" ${cloudpak})
+        	do
+			get_input "txt" "Select Cloud Pak to mirror: (G)uardium Insights, Cloud Pak for Security - CP(4)S, Qradar (E)DR or Cloud Pak (F)oundational Services only - G/4/E/F: " false
+	                cloudpak=${input_variable^^}
+        	done
+	fi
+}
 function prepare_bastion() {
 	msg "Prepare bastion" task
 	check_linux_distribution_and_release
@@ -2302,34 +2348,7 @@ function prepare_rook() {
 	tar -rf $GI_TEMP/downloads/rook-registry-v${rook_operator_version}.tar rook_images_sha
 	podman rm bastion-registry > /dev/null 2>&1
 	podman rmi --all > /dev/null 2>&1
-	rm -rf /opt/registry/data
-}
-
-function prepare_addons() {
-	msg "Mirroring openldap, nfs client provisioner containers" task
-	setup_local_registry
-	images="docker.io/bitnami/openldap:latest registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v${nfs_provisioner_version}"
-	for image in $images
-	do
-        	msg "Mirroring $image" info
-        	podman pull $image > /dev/null 2>&1
-        	tag=`echo "$image" | awk -F '/' '{print $NF}'`
-        	podman push --creds ${temp_registry_user}:${temp_registry_password} $image $(hostname --long):${temp_registry_port}/adds/$tag > /dev/null 2>&1
-	        podman rmi $image > /dev/null 2>&1
-	done
-	msg "Extracting image digests ..." info
-	echo "openldap:latest,"`cat /opt/registry/data/docker/registry/v2/repositories/adds/openldap/_manifests/tags/latest/current/link` > $GI_TEMP/digests.txt
-	echo "nfs-subdir-external-provisioner:v${nfs_provisioner_version},"`cat /opt/registry/data/docker/registry/v2/repositories/adds/nfs-subdir-external-provisioner/_manifests/tags/v${nfs_provisioner_version}/current/link` >> $GI_TEMP/digests.txt
-	msg "Archiving mirrored registry ..." info
-	podman stop bastion-registry > /dev/null 2>&1
-	cd /opt/registry
-	tar cf $GI_TEMP/downloads/addons-registry-`date +%Y-%m-%d`.tar data
-	cd $GI_TEMP
-	tar -rf $GI_TEMP/downloads/addons-registry-`date +%Y-%m-%d`.tar digests.txt
-	rm -f digests.txt
-	podman rm bastion-registry > /dev/null 2>&1
-	podman rmi --all > /dev/null 2>&1
-	rm -rf /opt/registry/data
+	rm -rf /opt/registry/data $GI_TEMP/rook $GI_TEMP/rook_images $GI_TEMP/rook_images_sha
 }
 
 function pvc_sizes() {

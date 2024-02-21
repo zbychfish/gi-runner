@@ -18,6 +18,7 @@ rm -rf $GI_TEMP/airgap/* $GI_TEMP/images $GI_TEMP/ocp-images.yaml
 rm -rf $GI_TEMP/airgap/*
 [[ $script_argument -lt 4 ]] && prepare_addons
 rm -rf $GI_TEMP/airgap/*
+[[ $script_argument -lt 5 ]] && prepare_apps
 
 msg "Airgap prescript summary" task
 msg "In $GI_TEMP/download directory you have:" info
@@ -37,5 +38,5 @@ then
 fi
 if [[ $script_argument -lt 4 ]]
 then
-	msg "- mages with additonal services NFS client, openldap - addons-registry-`date +%Y-%m-%d`.tar" info
+	msg "- images with additonal services NFS client, openldap - addons-registry-`date +%Y-%m-%d`.tar" info
 fi
