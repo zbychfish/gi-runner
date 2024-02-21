@@ -290,16 +290,16 @@
     enabled: yes
   when: ntp_server == bas_ip
 
-- meta: end_play
-
 - name: Check presence of RHCOS images
   ansible.builtin.stat:
-    path: "{{ temp_dir }}/downloads/{{ item.file }}"
+    path: "{{ temp_dir }}/{{ t_path }}/{{ item.file }}"
   register: rhcos_images
   with_items:
     - { file: "rhcos-live-initramfs.x86_64.img" }
     - { file: "rhcos-live-kernel-x86_64" }
     - { file: "rhcos-live-rootfs.x86_64.img" }
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
   ignore_errors: true
 
 - name: Download RHCOS images {{ ocp_major_release }}
@@ -312,7 +312,7 @@
 
 - name: Copy RHCOS images to matchbox assets for online
   ansible.builtin.copy:
-    src: "{{ temp_dir }}/downloads/{{ item.name }}"
+    src: "{{ temp_dir }}/{{ t_path }}/{{ item.name }}"
     dest: "/var/lib/matchbox/assets/{{ item.name }}"
     owner: matchbox
     group: matchbox
@@ -320,6 +320,8 @@
     - { name: "rhcos-live-initramfs.x86_64.img" }
     - { name: "rhcos-live-kernel-x86_64" }
     - { name: "rhcos-live-rootfs.x86_64.img" }
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
 
 - name: prepare TFTP for iPXE
   ansible.builtin.copy:
@@ -571,6 +573,8 @@
 - name: Set SELINUX for dnsmasq
   shell:
     cmd: semanage permissive -a dnsmasq_t
+
+- meta: end_play
 
 - name: Check presence of RHCOS tools
   ansible.builtin.stat:
