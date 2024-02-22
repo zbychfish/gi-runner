@@ -123,7 +123,29 @@
     minutes: 3
   when: is_htpasswd_secret.stdout|int == 0
 
+- name: Configure imagecontentsourcepolicy file
+  ansible.builtin.command:
+    cmd: "sed -i 's/-.*:5000/- registry.{{ ocp_domain }}:5000/g' {{ temp_dir }}/archives/{{ item }}"
+  with_items:
+    - imageContentSourcePolicy.yaml
+  when: internet_type == 'A'
+
+- name: Configure catalogsource file
+  ansible.builtin.command:
+    cmd: "sed -i 's/image:.*:5000/image: registry.{{ ocp_domain }}:5000/g' {{ temp_dir }}/archives/{{ item }}"
+  with_items:
+    - catalogSource-redhat-operator-index.yaml
+  when: internet_type == 'A'
+
 - meta: end_play
+
+- name: Set OLM operators catalog and OLM image content source policy"
+  ansible.builtin.command:
+    cmd: "oc apply -f {{ temp_dir }}/archives/{{ item }}"
+  with_items:
+    - imageContentSourcePolicy.yaml
+    - catalogSource-redhat-operator-index.yaml
+  when: internet_type == 'A'
 
 - name: Add CM with new CA cert
   ansible.builtin.shell:
