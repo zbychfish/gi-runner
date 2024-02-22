@@ -4,8 +4,6 @@
     dest: /usr/bin/python
     state: link
 
-- meta: end_play
-
 - name: Label GI nodes
   shell:
     cmd: "oc label node {{ item }}.{{ ocp_domain }} gi_node=yes --overwrite=true"
@@ -31,12 +29,10 @@
 - name: GI preinstall task
   shell:
     cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action preInstall --namespace {{ gi_namespace }} --tolerance 1 --args \"-n {{ gi_namespace }} -h {{ db2_nodes_list }} -l true{{ gi_add_options1 }}{{ gi_add_options2 }}\""
-  when: internet_type != 'A'
 
 - name: Install GI catalog
   shell:
     cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installCatalog --namespace openshift-marketplace --tolerance 1 --args \"--inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\""
-  when: internet_type != 'A'
 
 - name: Wait for GI catalog (part1)
   shell:
@@ -54,9 +50,15 @@
   retries: 30
   delay: 10
 
+- meta: end_play
+
 - name: Install GI operators online
   shell:
-    cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry cp.icr.io --user cp --pass {{ ibm_secret }} --secret ibm-entitlement-key --inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\""
+    cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ gi_case_name }} --version {{ gi_case_version }} --inventory {{ gi_case_inventory_setup }} --action installOperator --namespace {{ gi_namespace }} --tolerance 1 --args \"--registry {{ r_url }} --user {{ r_user }} --pass {{ r_passwd }} --secret ibm-entitlement-key --inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}\""
+  vars:
+    r_user: "{{ 'cp' if internet_type != 'A' else repo_user }}"
+    r_passwd: "{{ ibm_secret if internet_type != 'A' else repo_user_password }}"
+    r_url: "{{ 'cp.icr.io' if internet_type != 'A' else 'registry.'+ocp_domain+':5000' }}"
   when: internet_type != 'A'
 
 - name: Wait for GI operators

@@ -1,9 +1,1 @@
-- name: Get nfs-provisioner digest
-  shell:
-    cmd: "cat {{ temp_dir}}/adds/digests.txt|grep nfs-subdir-external-provisioner:v{{ nfs_provisioner_version }}|awk -F ',' '{print $2}'"
-  register: nfs_digest
-
-- name: Set correct tag or digest
-  set_fact:
-    nfs_version: "{{ ':v'+nfs_provisioner_version if internet_type != 'A' else '@'+nfs_digest.stdout }}"
 
