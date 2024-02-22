@@ -1,3 +1,5 @@
+- meta: end_play
+
 - name: Set rook-registry URL
   ansible.builtin.set_fact:
     rook_registry: "{{ 'quay.io/ceph/ceph:v'+rook_ceph_version if internet_type != 'A' else 'registry.'+ocp_domain+':5000/rook/ceph:v'+rook_ceph_version }}"
