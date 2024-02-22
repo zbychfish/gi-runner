@@ -590,7 +590,7 @@ data:
   ROOK_WATCH_FOR_NODE_FAILURE: "true"
   # ROOK_CSIADDONS_IMAGE: "quay.io/csiaddons/k8s-sidecar:v0.5.0"
 {% if internet_type == 'A' %}
-  ROOK_CSIADDONS_IMAGE: quay.io/csiaddons/{{ rook_digests.results[9].stdout }}
+  ROOK_CSIADDONS_IMAGE: quay.io/csiaddons/{{ rook_digests.results[8].stdout }}
 {% endif %}
   # The GCSI RPC timeout value (in seconds). It should be >= 120. If this variable is not set or is an invalid value, it's default to 150.
   CSI_GRPC_TIMEOUT_SECONDS: "150"
