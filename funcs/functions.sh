@@ -3036,6 +3036,10 @@ function get_latest_gi_images () {
                 image_name_redis=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $NF}'`
                 if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF-1)}') == 'ibm-guardium-insights' ]
                 then
+			if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}') == 'cp-serviceability' ]
+			then
+				exit 1
+			fi
                         declare -a temp_list
                         image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'`
                         image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'`
