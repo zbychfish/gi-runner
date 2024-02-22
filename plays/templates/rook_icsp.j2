@@ -5,29 +5,29 @@ metadata:
 spec:
   repositoryDigestMirrors:
   - mirrors:
-    - registry.{{ domain }}:5000/rook/ceph
+    - registry.{{ ocp_domain }}:5000/rook/ceph
     source: docker.io/rook/ceph
   - mirrors:
-    - registry.{{ domain }}:5000/rook/ceph
+    - registry.{{ ocp_domain }}:5000/rook/ceph
     source: quay.io/ceph/ceph
   - mirrors:
-    - registry.{{ domain }}:5000/rook/cephcsi
+    - registry.{{ ocp_domain }}:5000/rook/cephcsi
     source: quay.io/cephcsi/cephcsi
   - mirrors:
-    - registry.{{ domain }}:5000/rook/csi-node-driver-registrar
+    - registry.{{ ocp_domain }}:5000/rook/csi-node-driver-registrar
     source: k8s.gcr.io/sig-storage/csi-node-driver-registrar
   - mirrors:
-    - registry.{{ domain }}:5000/rook/csi-resizer
+    - registry.{{ ocp_domain }}:5000/rook/csi-resizer
     source: k8s.gcr.io/sig-storage/csi-resizer
   - mirrors:
-    - registry.{{ domain }}:5000/rook/csi-provisioner
+    - registry.{{ ocp_domain }}:5000/rook/csi-provisioner
     source: k8s.gcr.io/sig-storage/csi-provisioner
   - mirrors:
-    - registry.{{ domain }}:5000/rook/csi-snapshotter
+    - registry.{{ ocp_domain }}:5000/rook/csi-snapshotter
     source: k8s.gcr.io/sig-storage/csi-snapshotter
   - mirrors:
-    - registry.{{ domain }}:5000/rook/csi-attacher
+    - registry.{{ ocp_domain }}:5000/rook/csi-attacher
     source: k8s.gcr.io/sig-storage/csi-attacher
   - mirrors:
-    - registry.{{ domain }}:5000/rook/volumereplication-operator
-    source: quay.io/csiaddons/volumereplication-operator
+    - registry.{{ ocp_domain }}:5000/rook/k8s-sidecar
+    source: quay.io/csiaddons/k8s-sidecar

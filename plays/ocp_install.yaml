@@ -137,14 +137,74 @@
     - catalogSource-redhat-operator-index.yaml
   when: internet_type == 'A'
 
-- meta: end_play
-
 - name: Set OLM operators catalog and OLM image content source policy"
   ansible.builtin.command:
     cmd: "oc apply -f {{ temp_dir }}/archives/{{ item }}"
   with_items:
     - imageContentSourcePolicy.yaml
     - catalogSource-redhat-operator-index.yaml
+  when: internet_type == 'A'
+
+- name: Configure rook-ceph imagecontentsourcepolicy files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "rook_icsp.j2", dest: "{{ temp_dir }}/yamls/rook_icsp.yaml" }
+  when: internet_type == 'A' and storage_type == 'R'
+
+- name: Configure imageContentSourcePolicy for rook-ceph
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/{{ item }}"
+  with_items:
+    - rook_icsp.yaml
+  when: internet_type == 'A' and storage_type == 'R'
+
+- name: Configure openldap imagecontentsourcepolicy files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "openldap_icsp.j2", dest: "{{ temp_dir }}/yamls/openldap_icsp.yaml" }
+  when: internet_type == 'A' and install_ldap == 'Y'
+
+- name: Apply imageContentSourcePolicy for openldap
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/{{ item }}"
+  with_items:
+    - openldap_icsp.yaml
+  when: internet_type == 'A' and install_ldap == 'Y'
+
+- name: Configure nfs-provisioner imagecontentsourcepolicy files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "nfs_provisioner_icsp.j2", dest: "{{ temp_dir }}/yamls/nfs_provisioner_icsp.yaml" }
+  when: internet_type == 'A' and gi_nfs_backup == 'Y'
+
+- name: Apply imageContentSourcePolicy for nfs-provisioner
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/{{ item }}"
+  with_items:
+    - nfs_provisioner_icsp.yaml
+  when: internet_type == 'A' and gi_nfs_backup == 'Y'
+
+- name: Check cluster nodes health after Content Source Policy change
+  ansible.builtin.shell: ../funcs/scripts/check_cluster_health_operators.sh
+  register: cluster_health_operators
+  until: cluster_health_operators.stdout == "0"
+  retries: 200
+  delay: 10
+  when: internet_type == 'A'
+
+- name: Wait for cluster operators after mirrored operator images setup (can take 20-40 minutes)
+  ansible.builtin.shell:
+      cmd: "oc get co --no-headers|awk '{ print $3$4$5 }'|grep -v TrueFalseFalse|wc -l"
+  register: co_status
+  until: "co_status.stdout == \"0\""
+  retries: 150
+  delay: 10
   when: internet_type == 'A'
 
 - name: Add CM with new CA cert
