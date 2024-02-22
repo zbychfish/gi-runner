@@ -1,4 +1,18 @@
-- meta: end_play
+- name: Set digests for images in order
+  ansible.builtin.shell:
+    cmd: "IFS=',' read -r -a rook_v_oper <<< `cat {{ temp_dir }}/archives/rook_images_sha|grep {{ item }}`;echo \"`echo ${rook_v_oper[1]}|awk -F '/' '{print $NF}'|awk -F':' '{print $1}'`@${rook_v_oper[2]}\""
+  register: rook_digests
+  with_items:
+    - ROOK_CEPH_OPER
+    - ROOK_CEPH_IMAGE
+    - ROOK_CSI_CEPH_IMAGE
+    - ROOK_CSI_REGISTRAR_IMAGE
+    - ROOK_CSI_RESIZER_IMAGE
+    - ROOK_CSI_PROVISIONER_IMAGE
+    - ROOK_CSI_SNAPSHOTTER_IMAGE
+    - ROOK_CSI_ATTACHER_IMAGE
+    - ROOK_CSIADDONS_IMAGE
+  when: internet_type == 'A'
 
 - name: Set rook-registry URL
   ansible.builtin.set_fact:
@@ -57,6 +71,8 @@
   ansible.builtin.template:
     src: "{{ 'rook-operator.j2' if internet_type != 'A' else 'rook-operator-offline.j2' }}"
     dest: "{{ temp_dir }}/yamls/rook-operator.yaml"
+
+- meta: end_play
 
 - name: Deploy rook toolbox
   ansible.builtin.shell:

@@ -22,7 +22,11 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: rook-ceph-tools
+{% if internet_type == 'A' %}
+          image: docker.io/rook/{{ rook_digests.results[0].stdout }}
+{% else %}
           image: quay.io/ceph/ceph:v{{ rook_ceph_version }}
+{% endif %}
           command:
             - /bin/bash
             - -c

@@ -191,6 +191,14 @@ data:
   # The default version of CSI supported by Rook will be started. To change the version
   # of the CSI driver to something other than what is officially supported, change
   # these images to the desired release of the CSI driver.
+{% if internet_type == 'A' %}
+  ROOK_CSI_CEPH_IMAGE: "quay.io/cephcsi/{{ rook_digests.results[2].stdout }}"
+  ROOK_CSI_REGISTRAR_IMAGE: "k8s.gcr.io/sig-storage/{{ rook_digests.results[3].stdout }}"
+  ROOK_CSI_RESIZER_IMAGE: "k8s.gcr.io/sig-storage/{{ rook_digests.results[4].stdout }}"
+  ROOK_CSI_PROVISIONER_IMAGE: "k8s.gcr.io/sig-storage/{{ rook_digests.results[5].stdout }}"
+  ROOK_CSI_SNAPSHOTTER_IMAGE: "k8s.gcr.io/sig-storage/{{ rook_digests.results[6].stdout }}"
+  ROOK_CSI_ATTACHER_IMAGE: "k8s.gcr.io/sig-storage/{{ rook_digests.results[7].stdout }}"
+{% endif %}
   # ROOK_CSI_CEPH_IMAGE: "quay.io/cephcsi/cephcsi:v3.9.0"
   # ROOK_CSI_REGISTRAR_IMAGE: "registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0"
   # ROOK_CSI_RESIZER_IMAGE: "registry.k8s.io/sig-storage/csi-resizer:v1.8.0"
@@ -581,6 +589,9 @@ data:
   # Enable watch for faster recovery from rbd rwo node loss
   ROOK_WATCH_FOR_NODE_FAILURE: "true"
   # ROOK_CSIADDONS_IMAGE: "quay.io/csiaddons/k8s-sidecar:v0.5.0"
+{% if internet_type == 'A' %}
+  ROOK_CSIADDONS_IMAGE: quay.io/csiaddons/k8s-sidecar/{{ rook_digests.results[6].stdout }}
+{% endif %}
   # The GCSI RPC timeout value (in seconds). It should be >= 120. If this variable is not set or is an invalid value, it's default to 150.
   CSI_GRPC_TIMEOUT_SECONDS: "150"
 
@@ -683,7 +694,11 @@ spec:
       serviceAccountName: rook-ceph-system
       containers:
         - name: rook-ceph-operator
+{% if internet_type == 'A' %}
+          image: docker.io/rook/{{ rook_digests.results[0].stdout }}
+{% else %}
           image: rook/ceph:v{{ rook_operator_version }}
+{% endif %}
           args: ["ceph", "operator"]
           securityContext:
             runAsNonRoot: true
