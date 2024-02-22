@@ -5,6 +5,16 @@
     - oc create namespace nfs-provisioner || echo "Namespace exists"
     - "oc create namespace {{ gi_namespace }} || echo \"Namespace exists\""
 
+- name: Get nfs-provisioner digest
+  shell:
+    cmd: "cat {{ temp_dir}}/archives/digests.txt|grep nfs-subdir-external-provisioner:v{{ nfs_provisioner_version }}|awk -F ',' '{print $2}'"
+  register: nfs_digest
+  when: internet_type == 'A'
+
+- name: Set correct tag or digest
+  set_fact:
+    nfs_version: "{{ ':v'+nfs_provisioner_version if internet_type != 'A' else '@'+nfs_digest.stdout }}"
+
 - name: Set RBAC for NFS client
   ansible.builtin.shell:
     cmd: oc apply -f ../funcs/yamls/nfs_client_rbac.yaml
@@ -17,8 +27,6 @@
   template:
     src: "nfs_client_deployment.j2"
     dest: "{{ temp_dir }}/yamls/nfs_client_deployment.yaml"
-  vars:
-    nfs_version: "{{ ':v'+nfs_provisioner_version if internet_type != 'A' }}"
 
 - name: Deploy NFS client
   ansible.builtin.shell:

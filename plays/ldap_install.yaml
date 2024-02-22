@@ -2,7 +2,15 @@
   shell:
     cmd: oc create namespace openldap || echo "Namespace exists"
 
-- meta: end_play
+- name: Get openldap digest
+  shell:
+    cmd: "cat {{ temp_dir}}/archives/digests.txt|grep openldap:latest|awk -F ',' '{print $2}'"
+  register: ldap_digest
+  when: internet_type == 'A'
+
+- name: Set correct tag or digest
+  set_fact:
+    ldap_version: "{{ ':latest' if internet_type != 'A' else '@'+ldap_digest.stdout }}"
 
 - name: Create password list
   shell:
@@ -19,8 +27,6 @@
   template:
     src: "openldap_depl.j2"
     dest: "{{ temp_dir }}/yamls/openldap_depl.yaml"
-  vars:
-    ldap_version: "{{ ':latest' if internet_type != 'A' }}"
 
 - name: Deploy bitnami.openldap
   shell:

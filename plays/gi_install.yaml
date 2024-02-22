@@ -4,6 +4,8 @@
     dest: /usr/bin/python
     state: link
 
+- meta: end_play
+
 - name: Label GI nodes
   shell:
     cmd: "oc label node {{ item }}.{{ ocp_domain }} gi_node=yes --overwrite=true"
