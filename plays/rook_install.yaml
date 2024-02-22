@@ -43,7 +43,7 @@
 
 - name: Setup rook toolbox file
   ansible.builtin.template:
-    src: "{{ 'rook-toolbox.j2' if internet_type != 'A' else 'rook-toolbox-offline.j2' }}"
+    src: "rook-toolbox.j2"
     dest: "{{ temp_dir }}/yamls/rook-toolbox.yaml"
 
 - name: Setup redundant rook filesystem file
@@ -69,7 +69,7 @@
 
 - name: Setup rook operator file
   ansible.builtin.template:
-    src: "{{ 'rook-operator.j2' if internet_type != 'A' else 'rook-operator-offline.j2' }}"
+    src: "rook-operator.j2"
     dest: "{{ temp_dir }}/yamls/rook-operator.yaml"
 
 - meta: end_play
