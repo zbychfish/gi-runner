@@ -57,7 +57,6 @@
     r_user: "{{ 'cp' if internet_type != 'A' else repo_user }}"
     r_passwd: "{{ ibm_secret if internet_type != 'A' else repo_user_password }}"
     r_url: "{{ 'cp.icr.io' if internet_type != 'A' else 'registry.'+ocp_domain+':5000' }}"
-  when: internet_type != 'A'
 
 - name: Wait for GI operators
   shell:
