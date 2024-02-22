@@ -35,9 +35,11 @@
 
 - name: Unpack cloudctl tools
   ansible.builtin.shell:
-    cmd: "tar xf {{ temp_dir }}/downloads/{{ item.src }} -C /usr/local/bin"
+    cmd: "tar xf {{ temp_dir }}/{{ t_path }}/{{ item.src }} -C /usr/local/bin"
   with_items:
     - { src: "cloudctl-linux-amd64.tar.gz" }
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
 
 - name: Standarize cloudctl name
   ansible.builtin.command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
@@ -61,6 +63,18 @@
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/cpfs_catalog.yaml"
   when: internet_type != 'A'
+
+- name: Set IBM OLM catalog reference (offline)
+  ansible.builtin.shell:
+    cmd: "sed -i \"s/image:.*:5000/image: registry.{{ ocp_domain }}:5000/\" {{ temp_dir }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/catalog-sources.yaml"
+  when: internet_type == 'A' and install_gi == 'Y'
+
+- name: Set imagecontentsourcepolicy (offline)
+  ansible.builtin.shell:
+    cmd: "sed -i \"s/- .*:5000/- registry.{{ ocp_domain }}:5000/\" {{ temp_dir }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/image-content-source-policy.yaml"
+  when: internet_type == 'A' and install_gi == 'Y'
+
+- meta: end_play
 
 - name: Wait for CPFS catalog
   ansible.builtin.shell:
