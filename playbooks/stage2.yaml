@@ -1,8 +1,3 @@
-- name: Disable default image sources
-  ansible.builtin.shell:
-    cmd: "oc patch OperatorHub cluster --type json -p '[{\"op\": \"add\", \"path\": \"/spec/disableAllDefaultSources\", \"value\": true}]'"
-  when: internet_type == 'A'
-
 - name: Set registry for manifests 1
   ansible.builtin.command:
     cmd: "sed -i 's/-.*:5000/- registry.{{ domain }}:5000/g' {{ temp_dir }}/coreos/{{ item }}"
