@@ -574,16 +574,16 @@
   shell:
     cmd: semanage permissive -a dnsmasq_t
 
-- meta: end_play
-
 - name: Check presence of RHCOS tools
   ansible.builtin.stat:
-    path: "{{ temp_dir }}/downloads/{{ item.file }}"
+    path: "{{ temp_dir }}/{{ t_path }}/{{ item.file }}"
   register: rhcos_tools
   with_items:
     - { file: "openshift-client-linux.tar.gz" }
     - { file: "openshift-install-linux.tar.gz" }
   ignore_errors: true
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
 
 - name: "Download RHCOS tools {{ ocp_release }}"
   ansible.builtin.get_url:
@@ -595,11 +595,13 @@
 
 - name: Check presence of oc ibm-pak
   ansible.builtin.stat:
-    path: "{{ temp_dir }}/downloads/{{ item.file }}"
+    path: "{{ temp_dir }}/{{ t_path }}/{{ item.file }}"
   register: ibm_pak_tool
   with_items:
     - { file: "oc-ibm_pak-linux-amd64.tar.gz" }
   ignore_errors: true
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
 
 - name: Download oc ibm-pak
   ansible.builtin.get_url:
@@ -611,16 +613,20 @@
 
 - name: Unpack OCP tools
   ansible.builtin.shell:
-    cmd: "tar xf {{ temp_dir }}/downloads/{{ item.src }} -C /usr/local/bin"
+    cmd: "tar xf {{ temp_dir }}/{{ t_path }}/{{ item.src }} -C /usr/local/bin"
   with_items:
     - { src: "openshift-client-linux.tar.gz" }
     - { src: "openshift-install-linux.tar.gz" }
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
 
 - name: Unpack oc ibm-pak
   ansible.builtin.shell:
-    cmd: "tar xf {{ temp_dir }}/downloads/{{ item.src }} -C /usr/local/bin"
+    cmd: "tar xf {{ temp_dir }}/{{ t_path }}/{{ item.src }} -C /usr/local/bin"
   with_items:
     - { src: "oc-ibm_pak-linux-amd64.tar.gz" }
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
 
 - name: Rename oc ibm-pak file
   ansible.builtin.shell:
@@ -630,6 +636,8 @@
   ansible.builtin.shell: >
     cat "{{ ssh_key }}.pub"
   register: ssh_pub_key
+
+- meta: end_play
 
 - name: Create OCP config for standard deployment
   ansible.builtin.template:
