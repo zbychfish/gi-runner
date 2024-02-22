@@ -656,7 +656,6 @@
   vars:
     n_workers: "{{ worker_ip|default([])|length+odf_ip|default([])|length }}"
     n_masters: "{{ master_ip|length }}"
-  when: internet_type != 'A'
 
 - name: Adding RHN pull secret to install_config
   shell:
