@@ -1,10 +1,3 @@
-
-- name: Stop if RHCOS images are not uploaded for air-gapped installation
-  ansible.builtin.fail:
-    msg: "Please upload RHCOS images to download directory"
-  with_items: "{{ rhcos_images.results }}"
-  when: item.stat.exists == False and internet_type == 'A'
-
 - name: Add gateways to dnsmasq.conf for multiple subnets installation
   ansible.builtin.lineinfile:
     path: /etc/dnsmasq.conf
@@ -30,33 +23,6 @@
   failed_when:   "'5000/tcp' not in repo_status.containers[0].HostConfig.PortBindings"
   when: internet_type == 'A'
   
-- name: Unpack OCP tools for offline
-  ansible.builtin.shell:
-    cmd: "tar xf {{ temp_dir }}/coreos/{{ item.src }} -C /usr/local/bin"
-  with_items:
-    - { src: "oc-mirror.tar.gz" }
-  when: internet_type == 'A'
-
-- name: Correct file settings for oc-mirror
-  ansible.builtin.file:
-    path: /usr/local/bin/oc-mirror
-    mode: 0755
-    owner: root
-    group: root
-  when: internet_type == 'A'
-
-- name: Create local repo authentication string
-  ansible.builtin.shell:
-    cmd: "echo -n '{{ repo_user }}:{{ repo_user_password }}' | base64 -w0"
-  register: repo_cred_base64
-  when: internet_type == 'A'
-
-- name: Copy local image repository certificate into variable
-  ansible.builtin.shell:
-    cmd: "cat /opt/registry/certs/bastion.repo.crt | awk '{print \"  \"$0}'"
-  register: repo_cert
-  when: internet_type == 'A'
-
 - name: Create OCP config file in air-gapped env
   ansible.builtin.template:
     src: install-config-air-gapped.j2

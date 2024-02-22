@@ -637,7 +637,17 @@
     cat "{{ ssh_key }}.pub"
   register: ssh_pub_key
 
-- meta: end_play
+- name: Create local repo authentication string
+  ansible.builtin.shell:
+    cmd: "echo -n '{{ repo_user }}:{{ repo_user_password }}' | base64 -w0"
+  register: repo_cred_base64
+  when: internet_type == 'A'
+
+- name: Copy local image repository certificate into variable
+  ansible.builtin.shell:
+    cmd: "cat /opt/registry/certs/bastion.repo.crt | awk '{print \"  \"$0}'"
+  register: repo_cert
+  when: internet_type == 'A'
 
 - name: Create OCP config for standard deployment
   ansible.builtin.template:
@@ -669,6 +679,8 @@
     cmd: "{{ item.cmd }}"
   with_items:
     - { cmd: "openshift-install create ignition-configs --dir=../ocp" }
+
+- meta: end_play
 
 - name: Copy ignition files to matchbox
   ansible.builtin.copy:
