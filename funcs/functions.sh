@@ -3036,28 +3036,29 @@ function get_latest_gi_images () {
                 image_name_redis=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $NF}'`
                 if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF-1)}') == 'ibm-guardium-insights' ]
                 then
-			if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}') == 'cp-serviceability' ]
+			if [ $(echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}') == 'cp-serviceability' ] # BUG 3.3.0 cp-serviceability two times on list
 			then
-				exit 1
+		        	echo "$line" >> $output_file		
+			else
+                        	declare -a temp_list
+	                        image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'`
+        	                image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'`
+                	        temp_list+=(${image_release:1})
+                        	if [ `grep "${image_name}:release" $output_file | wc -l` -eq 0 ]
+                        	then
+                                	echo "$line" >> $output_file
+                        	else
+                                	saved_image_release=`grep "${image_name}:release" $output_file | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'`
+                                	temp_list+=(${saved_image_release:1})
+                                	newest_image=`printf '%s\n' "${temp_list[@]}" | sort -V | tail -n 1`
+                                	unset temp_list
+                                	if [ $newest_image != ${saved_image_release:1} ]
+                                	then
+                                        	sed -i "/.*${image_name}:release-${saved_image_release}.*/d" $output_file
+                                        	echo "$line" >> $output_file
+                                	fi
+                        	fi
 			fi
-                        declare -a temp_list
-                        image_name=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $(NF)}'`
-                        image_release=`echo "$line" | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'`
-                        temp_list+=(${image_release:1})
-                        if [ `grep "${image_name}:release" $output_file | wc -l` -eq 0 ]
-                        then
-                                echo "$line" >> $output_file
-                        else
-                                saved_image_release=`grep "${image_name}:release" $output_file | awk -F ':' '{print $4}' | awk -F '-' '{print $2}'`
-                                temp_list+=(${saved_image_release:1})
-                                newest_image=`printf '%s\n' "${temp_list[@]}" | sort -V | tail -n 1`
-                                unset temp_list
-                                if [ $newest_image != ${saved_image_release:1} ]
-                                then
-                                        sed -i "/.*${image_name}:release-${saved_image_release}.*/d" $output_file
-                                        echo "$line" >> $output_file
-                                fi
-                        fi
                 elif [[ $image_name_redis =~ 'redis-db'.* || $image_name_redis =~ 'redis-mgmt'.* || $image_name_redis =~ 'redis-proxy'.* || $image_name_redis =~ 'redis-proxylog'.* || $image_name_redis == 'ibm-cloud-databases-redis-operator-bundle' || $image_name_redis == 'ibm-cloud-databases-redis-operator' ]]
                 then
                         image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
