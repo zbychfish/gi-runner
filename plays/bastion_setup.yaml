@@ -80,6 +80,16 @@
     - name: Set SELINUX permissive access for NetworkManager
       ansible.builtin.shell:
         cmd: semanage permissive -a NetworkManager_t
+
+    - name: Stop bastion registry
+      containers.podman.podman_container:
+        name: bastion-registry
+        state: stopped
+
+    - name: Start bastion registry
+      containers.podman.podman_container:
+        name: bastion-registry
+        state: started
   when: internet_type == 'A'
 
 - name: Cleanup configuration files
@@ -649,7 +659,7 @@
   register: repo_cert
   when: internet_type == 'A'
 
-- name: Create OCP config for standard deployment
+- name: Create OCP config
   ansible.builtin.template:
     src: ocp_install_config.j2
     dest: "{{ temp_dir }}/yamls/install-config.yaml"
@@ -678,8 +688,6 @@
     cmd: "{{ item.cmd }}"
   with_items:
     - { cmd: "openshift-install create ignition-configs --dir=../ocp" }
-
-- meta: end_play
 
 - name: Copy ignition files to matchbox
   ansible.builtin.copy:

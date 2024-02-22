@@ -36,7 +36,7 @@ platform:
 fips: false
 sshKey: {{ ssh_pub_key.stdout }}
 {% if internet_type == 'A' %}
-pullSecret: '{"auths":{"registry.{{ domain }}:5000": {"auth": "{{ repo_cred_base64.stdout}}","email": "noemail@localhost"}}}'
+pullSecret: '{"auths":{"registry.{{ ocp_domain }}:5000": {"auth": "{{ repo_cred_base64.stdout}}","email": "noemail@localhost"}}}'
 additionalTrustBundle: |
 {{ repo_cert.stdout }}
 imageContentSources:
