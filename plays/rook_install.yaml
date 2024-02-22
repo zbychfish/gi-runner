@@ -72,8 +72,6 @@
     src: "rook-operator.j2"
     dest: "{{ temp_dir }}/yamls/rook-operator.yaml"
 
-- meta: end_play
-
 - name: Deploy rook toolbox
   ansible.builtin.shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/rook-toolbox.yaml"
@@ -85,7 +83,7 @@
     - "oc apply -f {{ temp_dir }}/yamls/rook-operator.yaml"
     - "oc apply -f {{ temp_dir }}/yamls/rook_red_filesystem.yaml"
 
-- name: Deploy rook operator and filesystem
+- name: Deploy rook filesystem without redundancy
   ansible.builtin.shell:
     cmd: "{{ item }}"
   loop:
@@ -99,6 +97,8 @@
   until: "rook_operator_status.stdout == \"0\""
   retries: 30
   delay: 10
+  
+- meta: end_play
 
 - name: Deploy rook-ceph cluster
   ansible.builtin.shell:
