@@ -2,6 +2,8 @@
   shell:
     cmd: oc create namespace openldap || echo "Namespace exists"
 
+- meta: end_play
+
 - name: Create password list
   shell:
     cmd: "USER_PWD_LIST=\"\";IFS=',' read -r -a USER_ARR <<< {{ ldap_users_raw }};for user in ${USER_ARR[@]}; do USER_PWD_LIST+=\"{{ ldap_password }},\";done;echo $USER_PWD_LIST"
