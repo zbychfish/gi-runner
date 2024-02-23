@@ -789,6 +789,14 @@ function get_cp4s_options() {
 	save_variable GI_CP4S_OPTS $(printf "%s,${cp4s_opts[@]}")
 }
 
+function get_cpfs_version_prescript() {
+	while $(check_input ${cpfs_version} "list" ${#ics_versions[@]})
+        do
+                get_input "list" "Select CPFS version: " "${ics_versions[@]}"
+                cpfs_version=$input_variable
+        done
+}
+
 function get_credentials() {
         local is_ok
         msg "Collecting all required credentials" task
@@ -2297,6 +2305,15 @@ function prepare_cp4s() {
         podman rmi --all &>/dev/null
 }
 
+function prepare_cpfs() {
+	get_cpfs_version_prescript
+	cpfs_version=$(($ics_version-1))
+	get_ibm_cloud_key
+	prepare_tools
+	msg "Mirroring CPFS ${ics_versions[${cpfs_version}]}" task
+	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${cpfs_case_name}/${ics_cases[${cpfs_version}]}/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --outputdir $GI_TEMP/cpfs_offline
+}
+
 function prepare_edr() {
         get_ibm_cloud_key
         prepare_tools
@@ -2322,10 +2339,10 @@ function prepare_edr() {
         tar cf ${GI_TEMP}/downloads/EDR-${edr_versions[0]}/tools.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
         cd /opt/registry
         tar cf ${GI_TEMP}/downloads/EDR-${edr_versions[0]}/registry.tar data
-        #rm -rf /opt/registry
-        #rm -rf $GI_TEMP/airgap $GI_TEMP/.ibm-pak
-        #podman rm bastion-registry > /dev/null 2>&1
-        #podman rmi --all &>/dev/null
+        rm -rf /opt/registry
+        rm -rf $GI_TEMP/airgap $GI_TEMP/.ibm-pak
+        podman rm bastion-registry > /dev/null 2>&1
+        podman rmi --all &>/dev/null
 }
 function prepare_gi() {
 	get_gi_version_prescript
