@@ -2276,7 +2276,21 @@ function prepare_cp4s() {
         msg "Authenticate in local repo" info
         REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
 	get_latest_cp4s_images
-
+	msg "Starting mirroring images, can takes hours" info
+        oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$cp4s_case_name/${cp4s_cases[0]}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
+        podman stop bastion-registry > /dev/null 2>&1
+        msg "Creating archive with CP4S images" info
+        mkdir -p ${GI_TEMP}/downloads/CP4S-${cp4s_versions[0]}
+        cd $GI_TEMP
+        tar cf ${GI_TEMP}/downloads/GI-${cp4s_versions[0]}/config.tar .ibm-pak/*
+        cd $GI_TEMP/airgap
+        tar cf ${GI_TEMP}/downloads/GI-${cp4s_versions[0]}/tools.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
+        cd /opt/registry
+        tar cf ${GI_TEMP}/downloads/GI-${cp4s_versions[0]}/registry.tar data
+        rm -rf /opt/registry
+        rm -rf $GI_TEMP/airgap $GI_TEMP/.ibm-pak
+        podman rm bastion-registry > /dev/null 2>&1
+        podman rmi --all &>/dev/null
 }
 
 function prepare_gi() {
