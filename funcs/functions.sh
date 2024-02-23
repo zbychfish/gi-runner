@@ -2311,15 +2311,25 @@ function prepare_cpfs() {
 	cpfs_version=$(($ics_version-1))
 	get_ibm_cloud_key
 	prepare_tools
+	rm -rf /opt/registry/{auth,certs,data}
 	setup_local_registry
 	msg "Mirroring CPFS ${ics_versions[${cpfs_version}]}" task
-	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${cpfs_case_name}/${ics_cases[${cpfs_version}]}/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --outputdir $GI_TEMP/cpfs_offline
-	LOCAL_REGISTRY="$(hostname --long):${temp_registry_port}"
+	#cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${cpfs_case_name}/${ics_cases[${cpfs_version}]}/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --outputdir $GI_TEMP/cpfs_offline
+	#LOCAL_REGISTRY="$(hostname --long):${temp_registry_port}"
 	#podman login -u $temp_registry_user -p $temp_registry_password ${LOCAL_REGISTRY}
-	cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action configure-creds-airgap --args "--registry cp.icr.io --user cp --pass $ibm_account_pwd"
-	cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action configure-creds-airgap --args "--registry  $LOCAL_REGISTRY--user $temp_registry_user --pass $temp_registry_password"
-	cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action mirror-images --args "--registry $LOCAL_REGISTRY --inputDir $GI_TEMP/cpfs_offline"
-	test $(check_exit_code $?) || (msg "Cannot mirror CPFS images" info; exit 1)
+	#cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action configure-creds-airgap --args "--registry cp.icr.io --user cp --pass $ibm_account_pwd"
+	#cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action configure-creds-airgap --args "--registry  $LOCAL_REGISTRY--user $temp_registry_user --pass $temp_registry_password"
+	#cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action mirror-images --args "--registry $LOCAL_REGISTRY --inputDir $GI_TEMP/cpfs_offline"
+	#test $(check_exit_code $?) || (msg "Cannot mirror CPFS images" info; exit 1)
+	msg "Downloading case file" info
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $cpfs_case_name --version ${ics_cases[${cpfs_version}]}--skip-verify > /dev/null 2>&1
+        msg "Mirroring manifests" task
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $cpfs_case_name $(hostname --long):${temp_registry_port} --version ${ics_cases[${cpfs_version}]} > /dev/null 2>&1
+        msg "Authenticate in cp.icr.io" info
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
+        msg "Authenticate in local repo" info
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
+	exit 1
 	podman stop bastion-registry > /dev/null 2>&1
 	msg "Creating archive with CPFS images" info
 	cd /opt/registry
