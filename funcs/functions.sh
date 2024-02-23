@@ -3063,7 +3063,7 @@ function get_latest_cp4s_images () {
                                 echo "$line" >> $output_file
                         fi
                 fi
-	done
+	done < "$input_file"
 }
 
 function get_latest_gi_images () {
