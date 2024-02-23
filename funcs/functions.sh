@@ -2310,8 +2310,13 @@ function prepare_cpfs() {
 	cpfs_version=$(($ics_version-1))
 	get_ibm_cloud_key
 	prepare_tools
+	setup_local_registry
 	msg "Mirroring CPFS ${ics_versions[${cpfs_version}]}" task
 	cloudctl case save --case https://github.com/IBM/cloud-pak/raw/master/repo/case/${cpfs_case_name}/${ics_cases[${cpfs_version}]}/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --outputdir $GI_TEMP/cpfs_offline
+	LOCAL_REGISTRY="$(hostname --long):${temp_registry_port}"
+	podman login -u $temp_registry_user -p $temp_registry_password ${LOCAL_REGISTRY}
+	cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action configure-creds-airgap --args "--registry cp.icr.io --user cp --pass $ibm_account_pwd"
+	cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action mirror-images --args "--registry $LOCAL_REGISTRY --inputDir $GI_TEMP/cpfs_offline"
 }
 
 function prepare_edr() {
