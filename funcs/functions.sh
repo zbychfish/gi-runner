@@ -2157,6 +2157,7 @@ function msg() {
 
 function prepare_addons() {
         msg "Mirroring openldap, nfs client provisioner containers" task
+	rm -rf /opt/registry/{auth,certs,data}
         setup_local_registry
         images="docker.io/bitnami/openldap:latest registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v${nfs_provisioner_version}"
         for image in $images
@@ -2266,6 +2267,7 @@ function prepare_bastion() {
 function prepare_cp4s() {
 	get_ibm_cloud_key
 	prepare_tools
+	rm -rf /opt/registry/{auth,certs,data}
 	setup_local_registry
 	msg "Downloading case file" info
 	IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $cp4s_case_name --version ${cp4s_cases[0]} --skip-verify > /dev/null 2>&1
@@ -2298,6 +2300,7 @@ function prepare_gi() {
 	gi_version=$(($gi_version-1))
 	get_ibm_cloud_key
 	prepare_tools
+	rm -rf /opt/registry/{auth,certs,data}
 	setup_local_registry
 	msg "Downloading case file" info
         IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $gi_case_name --version ${gi_cases[${gi_version}]} --skip-verify > /dev/null 2>&1
@@ -2352,6 +2355,7 @@ function prepare_ocp() {
         chmod +x /usr/local/bin/oc-mirror
 	mkdir -p /run/user/0/containers #if podman was not initiated yet
 	echo $rhn_secret | jq . > ${XDG_RUNTIME_DIR}/containers/auth.json
+	rm -rf /opt/registry/{auth,certs,data}
 	setup_local_registry
 	LOCAL_REGISTRY="$(hostname --long):${temp_registry_port}"
 	msg "Login to local registry ${LOCAL_REGISTRY}" info
@@ -2450,6 +2454,7 @@ function prepare_rook() {
         	images+=" "$image
 	done
 	cd $GI_TEMP
+	rm -rf /opt/registry/{auth,certs,data}
 	setup_local_registry
 	msg "Mirroring open source rook-ceph ${rook_version} ..." info
 	for image in $images
