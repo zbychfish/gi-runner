@@ -790,7 +790,7 @@ function get_cp4s_options() {
 }
 
 function get_cpfs_version_prescript() {
-	while $(check_input ${cpfs_version} "list" ${#ics_versions[@]})
+	while $(check_input "list" ${cpfs_version} ${#ics_versions[@]})
         do
                 get_input "list" "Select CPFS version: " "${ics_versions[@]}"
                 cpfs_version=$input_variable
