@@ -2275,6 +2275,7 @@ function prepare_cp4s() {
         REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
         msg "Authenticate in local repo" info
         REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
+	get_latest_cp4s_images
 
 }
 
@@ -3037,6 +3038,34 @@ function validate_certs() {
         esac
 }
 
+function get_latest_cp4s_images () {
+	local input_file
+        local output_file
+        local temp_list
+        local image_name_redis
+	input_file=${GI_TEMP}/.ibm-pak/data/mirror/${cp4s_case_name}/${cp4s_cases[0]}/images-mapping.txt
+        output_file=${GI_TEMP}/.ibm-pak/data/mirror/${cp4s_case_name}/${cp4s_cases[0]}/images-mapping-latest.txt
+	msg "Set list of images for download" info
+        echo "#list of images to mirror" > $output_file
+        while read -r line
+        do
+		image_name_redis=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $NF}'`
+		if [[ $image_name_redis =~ 'redis-db'.* || $image_name_redis =~ 'redis-mgmt'.* || $image_name_redis =~ 'redis-proxy'.* || $image_name_redis =~ 'redis-proxylog'.* || $image_name_redis == 'ibm-cloud-databases-redis-operator-bundle' || $image_name_redis == 'ibm-cloud-databases-redis-operator' ]]
+                then
+                        image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
+                        if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${cp4s_redis_release} && ( `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${cp4s_redis_release} || `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == "amd64" ) ]]
+                        then
+                                echo "$line" >> $output_file
+                        fi
+                else
+                        if [ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]
+                        then
+                                echo "$line" >> $output_file
+                        fi
+                fi
+	done
+}
+
 function get_latest_gi_images () {
         local input_file
         local output_file
@@ -3078,7 +3107,7 @@ function get_latest_gi_images () {
                 elif [[ $image_name_redis =~ 'redis-db'.* || $image_name_redis =~ 'redis-mgmt'.* || $image_name_redis =~ 'redis-proxy'.* || $image_name_redis =~ 'redis-proxylog'.* || $image_name_redis == 'ibm-cloud-databases-redis-operator-bundle' || $image_name_redis == 'ibm-cloud-databases-redis-operator' ]]
                 then
                         image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
-                        if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${gi_redis_releases[${gi_version}]} && (`echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${gi_redis_releases[${gi_version}]} || `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == "amd64") ]]
+                        if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${gi_redis_releases[${gi_version}]} && ( `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${gi_redis_releases[${gi_version}]} || `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == "amd64" ) ]]
                         then
                                 echo "$line" >> $output_file
                         fi
