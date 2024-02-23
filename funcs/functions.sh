@@ -2308,22 +2308,22 @@ function prepare_cp4s() {
 function prepare_cpfs() {
 	get_cpfs_version_prescript
 	cpfs_version=$(($ics_version-1))
-	#get_ibm_cloud_key
-	#prepare_tools
-	#rm -rf /opt/registry/{auth,certs,data}
-	#setup_local_registry
+	get_ibm_cloud_key
+	prepare_tools
+	rm -rf /opt/registry/{auth,certs,data}
+	setup_local_registry
 	msg "Mirroring CPFS ${ics_versions[${cpfs_version}]}" task
 	msg "Downloading case file" info
-        #IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $cpfs_case_name --version ${ics_cases[${cpfs_version}]} --skip-verify > /dev/null 2>&1
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $cpfs_case_name --version ${ics_cases[${cpfs_version}]} --skip-verify > /dev/null 2>&1
         msg "Mirroring manifests" task
-        #IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $cpfs_case_name $(hostname --long):${temp_registry_port} --version ${ics_cases[${cpfs_version}]} > /dev/null 2>&1
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $cpfs_case_name $(hostname --long):${temp_registry_port} --version ${ics_cases[${cpfs_version}]} > /dev/null 2>&1
         msg "Authenticate in cp.icr.io" info
-        #REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
         msg "Authenticate in local repo" info
-        #REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
 	msg "Starting mirroring images, can takes hours" info
-        #oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$cpfs_case_name/${ics_cases[${cpfs_version}]}/images-mapping.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
-	#podman stop bastion-registry > /dev/null 2>&1
+        oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$cpfs_case_name/${ics_cases[${cpfs_version}]}/images-mapping.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
+	podman stop bastion-registry > /dev/null 2>&1
 	msg "Creating archive with CPFS images" info
 	mkdir -p ${GI_TEMP}/downloads/CPFS-${ics_versions[${cpfs_version}]}
 	cd /opt/registry
