@@ -2291,10 +2291,10 @@ function prepare_cp4s() {
         tar cf ${GI_TEMP}/downloads/CP4S-${cp4s_versions[0]}/tools.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
         cd /opt/registry
         tar cf ${GI_TEMP}/downloads/CP4S-${cp4s_versions[0]}/registry.tar data
-        #rm -rf /opt/registry
-        #rm -rf $GI_TEMP/airgap $GI_TEMP/.ibm-pak
-        #podman rm bastion-registry > /dev/null 2>&1
-        #podman rmi --all &>/dev/null
+        rm -rf /opt/registry
+        rm -rf $GI_TEMP/airgap $GI_TEMP/.ibm-pak
+        podman rm bastion-registry > /dev/null 2>&1
+        podman rmi --all &>/dev/null
 }
 
 function prepare_edr() {
