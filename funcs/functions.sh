@@ -2200,6 +2200,8 @@ function prepare_apps() {
 	fi
 	[[ $cloudpak == 'G' ]] && prepare_gi
 	[[ $cloudpak == '4' ]] && prepare_cp4s
+	[[ $cloudpak == 'E' ]] && prepare_edr
+	[[ $cloudpak == 'F' ]] && prepare_cpfs
 }
 function prepare_bastion() {
 	msg "Prepare bastion" task
@@ -2295,6 +2297,36 @@ function prepare_cp4s() {
         #podman rmi --all &>/dev/null
 }
 
+function prepare_edr() {
+        get_ibm_cloud_key
+        prepare_tools
+        rm -rf /opt/registry/{auth,certs,data}
+        setup_local_registry
+        msg "Downloading case file" info
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $edr_case_name --version ${edr_cases[0]} --skip-verify > /dev/null 2>&1
+        msg "Mirroring manifests" task
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $edr_case_name $(hostname --long):${temp_registry_port} --version ${edr_cases[0]} > /dev/null 2>&1
+        msg "Authenticate in cp.icr.io" info
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
+        msg "Authenticate in local repo" info
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
+        get_latest_edr_images
+        msg "Starting mirroring images, can takes hours" info
+        oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$edr_case_name/${edr_cases[0]}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
+        podman stop bastion-registry > /dev/null 2>&1
+        msg "Creating archive with EDR images" info
+        mkdir -p ${GI_TEMP}/downloads/EDR-${edr_versions[0]}
+        cd $GI_TEMP
+        tar cf ${GI_TEMP}/downloads/EDR-${edr_versions[0]}/config.tar .ibm-pak/*
+        cd $GI_TEMP/airgap
+        tar cf ${GI_TEMP}/downloads/EDR-${edr_versions[0]}/tools.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
+        cd /opt/registry
+        tar cf ${GI_TEMP}/downloads/EDR-${edr_versions[0]}/registry.tar data
+        #rm -rf /opt/registry
+        #rm -rf $GI_TEMP/airgap $GI_TEMP/.ibm-pak
+        #podman rm bastion-registry > /dev/null 2>&1
+        #podman rmi --all &>/dev/null
+}
 function prepare_gi() {
 	get_gi_version_prescript
 	gi_version=$(($gi_version-1))
@@ -3083,6 +3115,34 @@ function get_latest_cp4s_images () {
                         fi
                 fi
 	done < "$input_file"
+}
+
+function get_latest_edr_images () {
+        local input_file
+        local output_file
+        local temp_list
+        local image_name_redis
+        input_file=${GI_TEMP}/.ibm-pak/data/mirror/${edr_case_name}/${edr_cases[0]}/images-mapping.txt
+        output_file=${GI_TEMP}/.ibm-pak/data/mirror/${edr_case_name}/${edr_cases[0]}/images-mapping-latest.txt
+        msg "Set list of images for download" info
+        echo "#list of images to mirror" > $output_file
+        while read -r line
+        do
+                image_name_redis=`echo "$line" | awk -F '@' '{print $1}' | awk -F '/' '{print $NF}'`
+                if [[ $image_name_redis =~ 'redis-db'.* || $image_name_redis =~ 'redis-mgmt'.* || $image_name_redis =~ 'redis-proxy'.* || $image_name_redis =~ 'redis-proxylog'.* || $image_name_redis == 'ibm-cloud-databases-redis-operator-bundle' || $image_name_redis == 'ibm-cloud-databases-redis-operator' ]]
+                then
+                        image_tag=`echo "$line" | awk -F ':' '{print $NF}'`
+                        if [[ `echo "$image_tag" | awk -F '-' '{print $(NF-1)}'` == ${edr_redis_release} && ( `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == ${edr_redis_release} || `echo "$image_tag" | awk -F '-' '{print $(NF)}'` == "amd64" ) ]]
+                        then
+                                echo "$line" >> $output_file
+                        fi
+                else
+                        if [ `grep -e "s390x" -e "ppc64le" <<< "$line" | wc -l` -eq 0 ]
+                        then
+                                echo "$line" >> $output_file
+                        fi
+                fi
+        done < "$input_file"
 }
 
 function get_latest_gi_images () {
