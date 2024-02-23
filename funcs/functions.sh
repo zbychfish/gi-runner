@@ -2317,6 +2317,19 @@ function prepare_cpfs() {
 	podman login -u $temp_registry_user -p $temp_registry_password ${LOCAL_REGISTRY}
 	cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action configure-creds-airgap --args "--registry cp.icr.io --user cp --pass $ibm_account_pwd"
 	cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action mirror-images --args "--registry $LOCAL_REGISTRY --inputDir $GI_TEMP/cpfs_offline"
+	test $(check_exit_code $?) || (msg "Cannot mirror CPFS images" info; exit 1)
+	podman stop bastion-registry > /dev/null 2>&1
+	msg "Creating archive with CPFS images" info
+	cd /opt/registry
+	tar cf ${GI_TEMP}/downloads/CPFS-${ics_versions[${cpfs_version}]}/registry.tar data
+	cd $GI_TEMP/airgap
+        tar cf ${GI_TEMP}/downloads/CPFS-${ics_versions[${cpfs_version}]}/tools.tar oc-ibm_pak-linux-amd64.tar.gz cloudctl-linux-amd64.tar.gz
+	cd $GI_TEMP
+	tar cf ${GI_TEMP}/downloads/CPFS-${ics_versions[${cpfs_version}]}/config.tar cpfs_offline
+	#rm -rf /opt/registry
+        #rm -rf $GI_TEMP/airgap $GI_TEMP/cpfs_offline
+	#podman rm bastion-registry > /dev/null 2>&1
+        #podman rmi --all &>/dev/null
 }
 
 function prepare_edr() {
