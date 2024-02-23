@@ -46,4 +46,12 @@ then
 	then
 		msg "- GI ${gi_versions[${gi_version}]} files prepared - GI-${gi_versions[${gi_version}]} directory" info
 	fi
+	if [[ $cloudpak == '4' ]]
+        then
+                msg "- CP4S ${cp4s_versions[0]} files prepared - CP4S-${cp4s_versions[0]} directory" info
+        fi
+	if [[ $cloudpak == 'E' ]]
+        then
+                msg "- EDR ${edr_versions[0]} files prepared - EDR-${edr_versions[0]} directory" info
+        fi
 fi

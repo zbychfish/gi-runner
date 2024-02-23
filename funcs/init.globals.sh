@@ -60,5 +60,6 @@ cp4s_redis_release="1.6.5"
 
 edr_case_name="ibm-security-edr"
 edr_cases=("1.0.1") # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-security-edr/index.yaml
+edr_versions=("1.0.1") 
 edr_case_inventory_setup="ibmSecurityEdrOperatorSetup"
 edr_redis_release="1.6.5"
