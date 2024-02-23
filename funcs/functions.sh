@@ -2322,7 +2322,7 @@ function prepare_cpfs() {
 	#cloudctl case launch --case $GI_TEMP/cpfs_offline/${cpfs_case_name}-${ics_cases[${cpfs_version}]}.tgz --inventory ${cpfs_case_inventory_setup} --action mirror-images --args "--registry $LOCAL_REGISTRY --inputDir $GI_TEMP/cpfs_offline"
 	#test $(check_exit_code $?) || (msg "Cannot mirror CPFS images" info; exit 1)
 	msg "Downloading case file" info
-        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $cpfs_case_name --version ${ics_cases[${cpfs_version}]}--skip-verify > /dev/null 2>&1
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $cpfs_case_name --version ${ics_cases[${cpfs_version}]} --skip-verify > /dev/null 2>&1
         msg "Mirroring manifests" task
         IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $cpfs_case_name $(hostname --long):${temp_registry_port} --version ${ics_cases[${cpfs_version}]} > /dev/null 2>&1
         msg "Authenticate in cp.icr.io" info
