@@ -2198,6 +2198,7 @@ function prepare_apps() {
         	done
 	fi
 	[[ $cloudpak == 'G' ]] && prepare_gi
+	[[ $cloudpak == '4' ]] && prepare_cp4s
 }
 function prepare_bastion() {
 	msg "Prepare bastion" task
@@ -2262,18 +2263,19 @@ function prepare_bastion() {
 	dnf download -qy --downloaddir $GI_TEMP/downloads unzip --resolve
 }
 
-function prepare_tools() {
-	cd $GI_TEMP/airgap
-        declare -a ocp_files=("https://github.com/IBM/ibm-pak/releases/download/v${ibm_pak_version}/oc-ibm_pak-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz" "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz")
-        for file in ${ocp_files[@]}
-        do
-                download_file $file
-        done
-        tar xf $GI_TEMP/airgap/cloudctl-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
-        mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
-        tar xf $GI_TEMP/airgap/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
-        tar xf $GI_TEMP/airgap/oc-ibm_pak-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
-        mv /usr/local/bin/oc-ibm_pak-linux-amd64 /usr/local/bin/oc-ibm_pak
+function prepare_cp4s() {
+	get_ibm_cloud_key
+	prepare_tools
+	setup_local_registry
+	msg "Downloading case file" info
+	IBMPAK_HOME=${GI_TEMP} oc ibm-pak get $cp4s_case_name --version ${cp4s_cases[0]} --skip-verify > /dev/null 2>&1
+        msg "Mirroring manifests" task
+        IBMPAK_HOME=${GI_TEMP} oc ibm-pak generate mirror-manifests $cp4s_case_name $(hostname --long):${temp_registry_port} --version ${cp4s_cases[0]} > /dev/null 2>&1
+	msg "Authenticate in cp.icr.io" info
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login cp.icr.io -u cp -p $ibm_account_pwd > /dev/null 2>&1
+        msg "Authenticate in local repo" info
+        REGISTRY_AUTH_FILE=${GI_TEMP}/.ibm-pak/auth.json podman login $(hostname --long):${temp_registry_port} -u $temp_registry_user -p $temp_registry_password > /dev/null 2>&1
+
 }
 
 function prepare_gi() {
@@ -2459,6 +2461,20 @@ function prepare_rook() {
 	podman rm bastion-registry > /dev/null 2>&1
 	podman rmi --all > /dev/null 2>&1
 	rm -rf /opt/registry/data $GI_TEMP/rook $GI_TEMP/rook_images $GI_TEMP/rook_images_sha
+}
+
+function prepare_tools() {
+        cd $GI_TEMP/airgap
+        declare -a ocp_files=("https://github.com/IBM/ibm-pak/releases/download/v${ibm_pak_version}/oc-ibm_pak-linux-amd64.tar.gz" "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz" "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz")
+        for file in ${ocp_files[@]}
+        do
+                download_file $file
+        done
+        tar xf $GI_TEMP/airgap/cloudctl-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
+        mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
+        tar xf $GI_TEMP/airgap/openshift-client-linux.tar.gz -C /usr/local/bin &>/dev/null
+        tar xf $GI_TEMP/airgap/oc-ibm_pak-linux-amd64.tar.gz -C /usr/local/bin &>/dev/null
+        mv /usr/local/bin/oc-ibm_pak-linux-amd64 /usr/local/bin/oc-ibm_pak
 }
 
 function process_offline_archives() {
