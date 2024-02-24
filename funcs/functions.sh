@@ -2579,6 +2579,7 @@ function process_offline_archives() {
         [ $storage_type == 'R' ] && { archives+=("rook-registry-v${rook_operator_version}.tar");descs+=("Rook-Ceph v${rook_operator_version} images");}
         [ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/registry.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
         [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("CPFS-${ics_versions[$ics_version_selected]}/registry.tar");descs+=("Cloud Pak Foundational Services ${ics_versions[$ics_version_selected]} images");}
+	[ $cp4s_install == 'Y' ] && { archives+=("CP4S-${cp4s_versions[0]}/registry.tar");descs+=("Cloud Pak for Security ${cp4s_versions[0]}} images");}
         local i=0
         for archive in ${archives[@]}
         do
@@ -2639,6 +2640,17 @@ function process_offline_archives() {
                                                 msg "Extracting Cloud Pak Foundational Services tools" info
                                                 tar -C $GI_TEMP/archives -xf $gi_archives/CPFS-${ics_versions[$ics_version_selected]}/tools.tar
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of CPFS tools"
+					elif [ "$archive" == CP4S-${cp4s_versions[0]}/registry.tar ]
+                                        then
+                                                msg "Extracting Cloud Pak for Security container images" info
+                                                tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of CP4S archive"
+                                                msg "Extracting Cloud Pak for Security case files" info
+                                                tar -C $GI_TEMP -xf $gi_archives/CP4S-${cp4s_versions[0]}/config.tar
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of CP4S case archive"
+                                                msg "Extracting Cloud Pak for Security tools" info
+                                                tar -C $GI_TEMP/archives -xf $gi_archives/CP4S-${cp4s_versions[0]}/tools.tar
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of CP4S tools"
                                         else
                                                 display_error "Problem with extraction of archives, unknown archive type"
                                         fi
