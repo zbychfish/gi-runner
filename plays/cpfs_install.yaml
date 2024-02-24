@@ -53,8 +53,6 @@
   with_items:
     - { file: "cloudctl" }
 
-- meta: end_play
-
 - name: Create CPFS catalog file
   ansible.builtin.template:
     src: cpfs_catalog.j2
@@ -68,13 +66,21 @@
 
 - name: Set IBM OLM catalog reference (offline) for CPFS and GI
   ansible.builtin.shell:
-    cmd: "sed -i \"s/image:.*:5000/image: registry.{{ ocp_domain }}:5000/\" {{ temp_dir }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/catalog-sources.yaml"
-  when: internet_type == 'A' and install_gi == 'Y'
+    cmd: "sed -i \"s/image:.*:5000/image: registry.{{ ocp_domain }}:5000/\" {{ temp_dir }}/.ibm-pak/data/mirror/{{ case_name }}/{{ case_version }}/catalog-sources.yaml"
+  vars:
+    case_name: "{{ gi_case_name if install_gi == 'Y' else cpfs_case_name }}"
+    case_version: "{{ gi_case_version if install_gi == 'Y' else cpfs_case }}"
+  when: internet_type == 'A'
 
 - name: Set imagecontentsourcepolicy (offline) for CPFS and GI
   ansible.builtin.shell:
-    cmd: "sed -i \"s/- .*:5000/- registry.{{ ocp_domain }}:5000/\" {{ temp_dir }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/image-content-source-policy.yaml"
-  when: internet_type == 'A' and install_gi == 'Y'
+    cmd: "sed -i \"s/- .*:5000/- registry.{{ ocp_domain }}:5000/\" {{ temp_dir }}/.ibm-pak/data/mirror/{{ case_name }}/{{ case_version }}/image-content-source-policy.yaml"
+  vars:
+    case_name: "{{ gi_case_name if install_gi == 'Y' else cpfs_case_name }}"
+    case_version: "{{ gi_case_version if install_gi == 'Y' else cpfs_case }}"
+  when: internet_type == 'A'
+
+- meta: end_play
 
 - name: Install catalog and imagecontentsourcepolicy for CPFS and GI (offline)
   ansible.builtin.shell:
