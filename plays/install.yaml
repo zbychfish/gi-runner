@@ -258,6 +258,7 @@
         cpfs_case: "{{ cpfs_cases[cpfs_version_hint|int] }}"
         cpfs_size: "{{ 'small' if cpfs_size_hint == 'S' else 'medium' if cpfs_size_hint == 'M' else 'large' if cpfs_size_hint == 'L' else 'starterset' }}"
         cpfs_registry: 'icr.io/cpopen'
+        gi_nfs_backup: 'N'
       when: install_cpfs == 'Y'
 
     - name: Set CPFS endpoint cert variables
@@ -406,6 +407,7 @@
         cp4s_backup_size: "{{ lookup('env','GI_CP4S_BACKUP_SIZE') }}"
         cp4s_options: "{{ lookup('env','GI_CP4S_OPTS').split(',') }}"
         cpfs_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+        gi_nfs_backup: 'N'
       when: install_cp4s == 'Y'
 
     - name: Check CP4S variables
@@ -455,6 +457,7 @@
       ansible.builtin.set_fact:
         noha_storage_class: "{{ 'rook-ceph-block-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'portworx-db2-rwo-sc' if storage_type == 'P' else '' }}"
         edr_license: "{{ 'Enterprise' if edr_license_short == 'E' else 'Pro' }}"
+        gi_nfs_backup: 'N'
       when: install_edr == 'Y'
 
     - name: Set EDR cert variables
