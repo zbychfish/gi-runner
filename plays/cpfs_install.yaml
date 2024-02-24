@@ -53,6 +53,8 @@
   with_items:
     - { file: "cloudctl" }
 
+- meta: end_play
+
 - name: Create CPFS catalog file
   ansible.builtin.template:
     src: cpfs_catalog.j2

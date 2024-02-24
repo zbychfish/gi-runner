@@ -2576,8 +2576,8 @@ function process_offline_archives() {
         local archive
 	local archives=("os-*_*" "addons-registry-*" "OCP-${ocp_release}/ocp-images-data.tar")
         local descs=('OS files' 'Additional software images' 'OpenShift archives')
-        #[ $storage_type == 'R' ] && { archives+=("rook-registry-v${rook_operator_version}.tar");descs+=("Rook-Ceph v${rook_operator_version} images");}
-        #[ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/registry.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
+        [ $storage_type == 'R' ] && { archives+=("rook-registry-v${rook_operator_version}.tar");descs+=("Rook-Ceph v${rook_operator_version} images");}
+        [ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/registry.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
         [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("CPFS-${ics_versions[$ics_version_selected]}/registry.tar");descs+=("Cloud Pak Foundational Services ${ics_versions[$ics_version_selected]} images");}
         local i=0
         for archive in ${archives[@]}
@@ -2600,14 +2600,14 @@ function process_offline_archives() {
                                         ;;
                                 2)
                                         msg "Extracting OpenShift archives" info
-                                        #tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                        #[ $? -ne 0 ] && display_error "Cannot extract OCP images"
+                                        tar -C /opt/registry -xf $gi_archives/$archive data/*
+                                        [ $? -ne 0 ] && display_error "Cannot extract OCP images"
                                         msg "Extracting OpenShift tools" info
-                                        #tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_release}/ocp-tools.tar
-                                        #[ $? -ne 0 ] && display_error "Cannot extract OCP tools"
+                                        tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_release}/ocp-tools.tar
+                                        [ $? -ne 0 ] && display_error "Cannot extract OCP tools"
                                         msg "Extracting OpenShift yamls" info
-					#tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_release}/ocp-images-yamls.tar
-                                        #[ $? -ne 0 ] && display_error "Cannot extract OCP airgap related yamls"
+					tar -C $GI_TEMP/archives -xf $gi_archives/OCP-${ocp_release}/ocp-images-yamls.tar
+                                        [ $? -ne 0 ] && display_error "Cannot extract OCP airgap related yamls"
                                         ;;
                                 3|4|5|6)
                                         if [ "$archive" == rook-registry-v${rook_operator_version}.tar ]
@@ -2634,10 +2634,10 @@ function process_offline_archives() {
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of CPFS archive"
                                                 msg "Extracting Cloud Pak Foundational Services case files" info
-                                                tar -C /opt/registry -xf $gi_archives/CPFS-${ics_versions[$ics_version_selected]}/config.tar
+                                                tar -C $GI_TEMP -xf $gi_archives/CPFS-${ics_versions[$ics_version_selected]}/config.tar
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of CPFS case archive"
                                                 msg "Extracting Cloud Pak Foundational Services tools" info
-                                                tar -C /opt/registry -xf $gi_archives/CPFS-${ics_versions[$ics_version_selected]}/tools.tar
+                                                tar -C $GI_TEMP/archives -xf $gi_archives/CPFS-${ics_versions[$ics_version_selected]}/tools.tar
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of CPFS tools"
                                         else
                                                 display_error "Problem with extraction of archives, unknown archive type"
