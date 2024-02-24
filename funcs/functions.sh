@@ -2578,7 +2578,7 @@ function process_offline_archives() {
         local descs=('OS files' 'Additional software images' 'OpenShift archives')
         [ $storage_type == 'R' ] && { archives+=("rook-registry-v${rook_operator_version}.tar");descs+=("Rook-Ceph v${rook_operator_version} images");}
         [ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/registry.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
-        [[ $ics_install == 'Y' && $gi_install == 'N' ]] && { archives+=("ics_registry-${ics_versions[$ics_version_selected]}.tar");descs+=("Common Services ${ics_versions[$ics_version_selected]} images");}
+        [[ $cpfs_install == 'Y' && $gi_install == 'N' ]] && { archives+=("CPFS-${ics_versions[$ics_version_selected]}/registry.tar");descs+=("Cloud Pak Foundational Services ${ics_versions[$ics_version_selected]} images");}
         local i=0
         for archive in ${archives[@]}
         do
@@ -2627,13 +2627,17 @@ function process_offline_archives() {
                                                 msg "Extracting Guardium Insights tools" info
                                                 tar -C $GI_TEMP/archives -xf $gi_archives/GI-${gi_versions[$gi_version_selected]}/tools.tar
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of Guardium Insights tools"
-                                        elif [ "$archive" == ics_registry-${ics_versions[$ics_version_selected]}.tar ]
+                                        elif [ "$archive" == CPFS-${ics_versions[$ics_version_selected]}/registry.tar ]
                                         then
-                                                msg "Extracting Common Services container images" info
-                                                mkdir -p $GI_TEMP/ics_arch
-                                                tar -C $GI_TEMP/ics_arch -xf $gi_archives/$archive cloudctl-linux-amd64.tar.gz ics_offline/*
+                                                msg "Extracting Cloud Pak Foundational Services container images" info
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
-                                                [ $? -ne 0 ] && display_error "Cannot extract content of Common Services archive"
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of CPFS archive"
+                                                msg "Extracting Cloud Pak Foundational Services case files" info
+                                                tar -C /opt/registry -xf $gi_archives/CPFS-${ics_versions[$ics_version_selected]}/config.tar
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of CPFS case archive"
+                                                msg "Extracting Cloud Pak Foundational Services tools" info
+                                                tar -C /opt/registry -xf $gi_archives/CPFS-${ics_versions[$ics_version_selected]}/tools.tar
+                                                [ $? -ne 0 ] && display_error "Cannot extract content of CPFS tools"
                                         else
                                                 display_error "Problem with extraction of archives, unknown archive type"
                                         fi
