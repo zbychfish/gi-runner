@@ -2579,6 +2579,7 @@ function process_offline_archives() {
         [ $storage_type == 'R' ] && { archives+=("rook-registry-v${rook_operator_version}.tar");descs+=("Rook-Ceph v${rook_operator_version} images");}
         [ $gi_install == 'Y' ] && { archives+=("GI-${gi_versions[$gi_version_selected]}/registry.tar");descs+=("Guardium Insights ${gi_versions[$gi_version_selected]}} images");}
         [[ $cpfs_install == 'Y' && $gi_install == 'N' ]] && { archives+=("CPFS-${ics_versions[$ics_version_selected]}/registry.tar");descs+=("Cloud Pak Foundational Services ${ics_versions[$ics_version_selected]} images");}
+	echo $cpfs_install $gi_install
 	echo ${archives[@]}
 	exit 1
         local i=0
