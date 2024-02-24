@@ -80,15 +80,16 @@
     case_version: "{{ gi_case_version if install_gi == 'Y' else cpfs_case }}"
   when: internet_type == 'A'
 
-- meta: end_play
-
 - name: Install catalog and imagecontentsourcepolicy for CPFS and GI (offline)
   ansible.builtin.shell:
-    cmd: "oc apply -f {{ temp_dir }}/.ibm-pak/data/mirror/ibm-guardium-insights/{{ gi_case_version }}/{{ item }}"
+    cmd: "oc apply -f {{ temp_dir }}/.ibm-pak/data/mirror/{{ case_name }}/{{ case_version }}/{{ item }}"
   with_items:
     - catalog-sources.yaml
     - image-content-source-policy.yaml
-  when: internet_type == 'A' and install_gi == 'Y'
+  vars:
+    case_name: "{{ gi_case_name if install_gi == 'Y' else cpfs_case_name }}"
+    case_version: "{{ gi_case_version if install_gi == 'Y' else cpfs_case }}"
+  when: internet_type == 'A'
 
 - name: Wait for CPFS catalog
   ansible.builtin.shell:
@@ -105,6 +106,8 @@
   until: "cpfs_catalog_source_status.stdout == \"1\""
   retries: 30
   delay: 10
+
+- meta: end_play
 
 - name: Create CPFS operator subscription file
   ansible.builtin.template:
