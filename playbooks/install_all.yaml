@@ -21,29 +21,3 @@
         gi_nfs_backup: "N"
       when: install_cp4s == 'Y'
 
-    - name: Set CP4S proxy settings
-      ansible.builtin.set_fact:
-        proxy_url: "{{ lookup('env','GI_PROXY_URL') }}"
-        no_proxy_list: "{{ lookup('env','GI_NOPROXY_NET') }}"
-        no_proxy_adds: "{{ lookup('env','GI_NOPROXY_NET_ADDS') }}"
-      when: install_cp4s == 'Y' and internet_type == 'A'
-
-    - name: Check CP4S variables for proxy settings
-      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
-      loop:
-        - { name: "GI_PROXY_URL", value: "{{ proxy_url }}" }
-        - { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
-          #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
-      when: install_cp4s == 'Y' and internet_type == 'A' and item.value == ""
-
-    - name: Set GI installation variables
-      ansible.builtin.set_fact:
-        gi_case: "ibm-guardium-insights-{{ gi_case_version }}.tgz"
-      when: install_gi == 'Y'
-
-    - name: Set parameters for air-gapped installation
-      ansible.builtin.set_fact:
-        offline_inventory: "{{ 'gi_arch' if install_gi == 'Y' else 'ics_arch' }}"
-        ics_manifest_dir: "{{ 'gi_offline' if install_gi == 'Y' else 'ics_offline' }}"
-      when: install_ics == 'Y'
-

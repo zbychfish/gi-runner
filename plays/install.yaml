@@ -475,6 +475,21 @@
         - { name: "GI_EDR_KEY", value: "{{ edr_key }}" }
       when: install_edr == 'Y' and edr_ext_ingress == 'Y' and item.value == ""
 
+    - name: Set CP4S and EDR proxy settings
+      ansible.builtin.set_fact:
+        proxy_url: "{{ lookup('env','GI_PROXY_URL') }}"
+        no_proxy_list: "{{ lookup('env','GI_NOPROXY_NET') }}"
+        no_proxy_adds: "{{ lookup('env','GI_NOPROXY_NET_ADDS') }}"
+      when: (install_cp4s == 'Y' or install_edr == 'Y') and internet_type == 'A'
+
+    - name: Check CP4S and EDR variables for proxy settings
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_PROXY_URL", value: "{{ proxy_url }}" }
+        - { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
+          #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
+      when: (install_cp4s == 'Y' or install_edr == 'Y') and internet_type == 'A' and item.value == ""
+
     - name: Set parameters for non air-gapped installation
       ansible.builtin.set_fact:
         ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
