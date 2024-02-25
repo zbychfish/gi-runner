@@ -2501,8 +2501,8 @@ function prepare_offline_bastion() {
                         gi_archives="${input_variable}"
         done
         save_variable GI_ARCHIVES_DIR "'$gi_archives'"
-	[[ $script_argument != 'ommit_offline' ]] && process_offline_archives
-	[[ $script_argument != 'ommit_offline' ]] && software_installation_on_offline
+	[[ $script_argument != 'skip_offline' ]] && process_offline_archives
+	[[ $script_argument != 'skip_offline' ]] && software_installation_on_offline
 }
 
 function prepare_rook() {
