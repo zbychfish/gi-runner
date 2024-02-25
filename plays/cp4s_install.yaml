@@ -65,13 +65,6 @@
     - "image-content-source-policy.yaml"
   when: internet_type == 'A'
 
-- name: Install CP4S image content source policy
-  shell:
-    cmd: "oc apply -f {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
-  with_items:
-    - "image-content-source-policy.yaml"
-  when: internet_type == 'A'
-
 - name: Prepare IBM OLM catalog
   shell:
     cmd: "sed -i \"s/image:.*:5000/image: registry.{{ ocp_domain }}:5000/#\" {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
@@ -79,7 +72,13 @@
     - "catalog-sources.yaml"
   when: internet_type == 'A'
 
-- meta: end_play
+- name: Install CP4S image content source policy and OLM catalog
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+    - "catalog-sources.yaml"
+  when: internet_type == 'A'
 
 - name: Install IBM operators catalog
   shell:
@@ -88,12 +87,13 @@
 
 - name: Wait for IBM operators catalog
   shell:
-    cmd: "oc get catalogsource ibm-operator-catalog -n openshift-marketplace -o json|jq -r .status.connectionState.lastObservedState"
+    cmd: "oc get catalogsource {{ t_catalog }} -n openshift-marketplace -o json|jq -r .status.connectionState.lastObservedState"
   register: ibm_catalog_state
   until: "ibm_catalog_state.stdout == \"READY\""
   retries: 60
   delay: 10
-  when: internet_type != 'A'
+  vars:
+    t_catalog: "{{ 'ibm-operator-catalog' if internet_type != 'A' else 'ibm-cp-security-catalog' }}"
 
 - name: Unpack case
   shell:
@@ -147,6 +147,8 @@
   shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/cp4s_cr.yaml"
   when: internet_type != 'A'
+
+- meta: end_play
 
 - name: Deploy CP4S offline
   shell:
