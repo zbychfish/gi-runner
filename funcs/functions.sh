@@ -728,7 +728,8 @@ function get_cp4s_options() {
         save_variable GI_CP4S_ADMIN "$cp4s_admin"
         msg "Default storage class for CP4S." info
         msg "All CP4S PVC's use RWO access." info
-        [ $storage_type == 'R' ] && sc_list=(${rook_sc[@]}) || sc_list=(${ocs_sc[@]})
+	[[ $storage_type == 'R' && $rook_deployment_type == 3 ]] && sc_list=("rook-ceph-block" "rook-ceph-block-nr") || sc_list=("rook-ceph-block")
+        [ $storage_type == 'R' ] && sc_list=(${rook_sc[@]}) #|| sc_list=(${ocs_sc[@]})
 	if [ $storage_type == 'R' ]
 	then
         	while $(check_input "list" ${cp4s_sc_selected} ${#sc_list[@]})
@@ -1602,7 +1603,6 @@ function get_px_options() {
 }
 
 function get_rook_settings() {
-	local rook_deployment_type
 	local deployment_types
 	deployment_types=("Standard" "Simple" "Cloud_Pak")
 	msg "Rook-Ceph configuration:" task
@@ -2501,8 +2501,8 @@ function prepare_offline_bastion() {
                         gi_archives="${input_variable}"
         done
         save_variable GI_ARCHIVES_DIR "'$gi_archives'"
-        process_offline_archives
-	software_installation_on_offline
+	[[ $script_argument != 'ommit_offline' ]] && process_offline_archives
+	[[ $script_argument != 'ommit_offline' ]] && software_installation_on_offline
 }
 
 function prepare_rook() {
