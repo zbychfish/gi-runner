@@ -3031,8 +3031,8 @@ function unset_proxy_settings() {
         then
                 mv -f /etc/dnf/dnf.conf.gi_no_proxy /etc/dnf/dnf.conf
         fi
-	msg "$install_cp4s $install_edr" info
-	[[ $install_cp4s != 'Y' && $install_edr != 'Y' ]] && save_variable GI_PROXY_URL "NO_PROXY"
+	msg "$cp4s_install $edr_install" info
+	[[ $cp4s_install != 'Y' && $edr_install != 'Y' ]] && save_variable GI_PROXY_URL "NO_PROXY"
 }
 
 function validate_certs() {
