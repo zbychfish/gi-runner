@@ -1,22 +1,3 @@
-- name: Prepare image content source policy 
-  shell:
-    cmd: "sed -i 's#-.*:5000/#- registry.{{ domain }}:5000/#' {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
-  with_items:
-    - "image-content-source-policy.yaml"
-  when: internet_type == 'A'
-
-- name: Install CP4S image content source policy
-  shell:
-    cmd: "oc apply -f {{ temp_dir }}/cp4s_arch/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
-  with_items:
-    - "image-content-source-policy.yaml"
-  when: internet_type == 'A' 
-
-- name: Download case file
-  shell:
-    cmd: "IBMPAK_HOME={{ temp_dir }}/gi_arch oc ibm-pak get {{ cp4s_case_name }} --version {{ cp4s_cases[0] }}"
-  when: internet_type != 'A' and false
-
 - name: Unpack case
   shell:
     cmd: "tar -xf {{ temp_dir }}/cp4s_arch/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/ibm-cp-security-{{ cp4s_cases[0] }}.tgz -C {{ temp_dir }}/cp4s_arch/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}"

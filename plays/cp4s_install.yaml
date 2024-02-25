@@ -42,8 +42,6 @@
   retries: 60
   delay: 10
 
-- meta: end_play
-
 - name: Add secrets 1
   shell:
     cmd: "{{ item }}"
@@ -60,6 +58,27 @@
   when: cp4s_ext_ingress == 'Y' and internet_type != 'A'
   ignore_errors: true
 
+- name: Prepare image content source policy
+  shell:
+    cmd: "sed -i 's#-.*:5000/#- registry.{{ ocp_domain }}:5000/#' {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+  when: internet_type == 'A'
+
+- name: Install CP4S image content source policy
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+  when: internet_type == 'A'
+
+    #- name: Prepare IBM OLM catalog
+    #shell:
+    #cmd: "sed -i 's#-.*:5000/#- registry.{{ ocp_domain }}:5000/#' {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
+    #with_items:
+    #- "catalog-sources.yaml"
+    #when: internet_type == 'A'
+
 - name: Install IBM operators catalog
   shell:
     cmd: "oc apply -f ../funcs/yamls/ibm_catalog.yaml"
@@ -73,6 +92,24 @@
   retries: 60
   delay: 10
   when: internet_type != 'A'
+
+- name: Unpack case
+  shell:
+    cmd: "tar -xf {{ temp_dir }}/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/ibm-cp-security-{{ cp4s_cases[0] }}.tgz -C {{ temp_dir }}/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}"
+  when: internet_type == 'A'
+
+- name: Configure defaults file
+  ansible.builtin.template:
+    src: "cp4s_values.j2"
+    dest: "{{ temp_dir }}/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ cp4s_case_name }}/inventory/{{ ibmSecurityOperatorSetup }}/files/values.conf"
+  vars:
+    cp4s_backup_size_final: "{{ '' if cp4s_backup_size == '0' else cp4s_backup_size }}"
+    cp4s_option_drc: "{{ 'true' if cp4s_options[0] == 'Y' else false }}"
+    cp4s_option_rm: "{{ 'true' if cp4s_options[1] == 'Y' else false }}"
+    cp4s_option_ti: "{{ 'true' if cp4s_options[2] == 'Y' else false }}"
+  when: internet_type == 'A'
+
+- meta: end_play
 
 - name: Setup CP4S deployment files
   template:
