@@ -75,9 +75,9 @@
 - name: Prepare IBM OLM catalog
   shell:
     cmd: "sed -i \"s/image:.*:5000/image: registry.{{ ocp_domain }}:5000/#\" {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
-    with_items:
+  with_items:
     - "catalog-sources.yaml"
-    when: internet_type == 'A'
+  when: internet_type == 'A'
 
 - meta: end_play
 
