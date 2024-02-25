@@ -728,11 +728,9 @@ function get_cp4s_options() {
         save_variable GI_CP4S_ADMIN "$cp4s_admin"
         msg "Default storage class for CP4S." info
         msg "All CP4S PVC's use RWO access." info
-        msg "$storage_type $rook_deployment_type" info
-	[[ $storage_type == 'R' && $rook_deployment_type == '3' ]] && sc_list=("rook-ceph-block" "rook-ceph-block-nr") || sc_list=("rook-ceph-block")
-        [ $storage_type == 'R' ] && sc_list=(${rook_sc[@]}) #|| sc_list=(${ocs_sc[@]})
 	if [ $storage_type == 'R' ]
 	then
+		[ $rook_deployment_type == '3' ] && sci_list=("rook-ceph-block" "rook-ceph-block-nr") || sc_list=("rook-ceph-block")
         	while $(check_input "list" ${cp4s_sc_selected} ${#sc_list[@]})
         	do
                 	get_input "list" "Select storage class: " "${sc_list[@]}"
