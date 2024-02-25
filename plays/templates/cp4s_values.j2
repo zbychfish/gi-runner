@@ -40,7 +40,7 @@ domainCertificateKeyPath=""
 
 # (Optional) Path to the custom CA cert file e.g <path-to-certs>/ca.crt. Only required if using custom or self signed certificates. Leave blank if you are installing Cloud Pak for Security without specifying a domain.
 # See more details at https://www.ibm.com/docs/en/SSTDPP_1.10/docs/security-pak/tls_certs.html.
-{% if internet_type == 'A' %}
+{% if cp4s_ext_ingress == 'Y' %}
 customCaFilePath="{{ cp4s_ca }}"
 {% else %}
 customCaFilePath=""
@@ -63,7 +63,7 @@ imagePullPolicy="IfNotPresent"
 # Set the repository in which the images will be pulled from. Must be set to "cp.icr.io/cp/cp4s" if you are installing Cloud Pak for Security in an online environment.
 # If you are installing Cloud Pak for Security in an air-gapped environment, specify the URL and port for the local Docker registry with the "/cp/cp4s" namespace appended. For example, example-registry:5000/cp/cp4s.
 {% if internet_type == 'A' %}
-repository="registry.{{ domain }}:5000/cp/cp4s"
+repository="registry.{{ ocp_domain }}:5000/cp/cp4s"
 {% else %}
 repository="cp.icr.io/cp/cp4s"
 {% endif %}
