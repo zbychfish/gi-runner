@@ -730,7 +730,7 @@ function get_cp4s_options() {
         msg "All CP4S PVC's use RWO access." info
 	if [ $storage_type == 'R' ]
 	then
-		[ $rook_deployment_type == '3' ] && sci_list=("rook-ceph-block" "rook-ceph-block-nr") || sc_list=("rook-ceph-block")
+		[ $rook_deployment_type == '3' ] && sc_list=("rook-ceph-block" "rook-ceph-block-nr") || sc_list=("rook-ceph-block")
         	while $(check_input "list" ${cp4s_sc_selected} ${#sc_list[@]})
         	do
                 	get_input "list" "Select storage class: " "${sc_list[@]}"
