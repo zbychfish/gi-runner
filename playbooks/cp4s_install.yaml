@@ -1,16 +1,3 @@
-- name: Check presence of cloudctl tool
-  stat:
-    path: "{{ temp_dir }}/cp4s_arch/cloudctl-linux-amd64.tar.gz"
-  register: cloudctl_tool
-  ignore_errors: true
-  when: internet_type == 'A'
-
-- name: Stop if cloudct tool is not uploaded for air-gapped installation
-  fail:
-    msg: "Please upload cloud tool to download directory"
-  with_items: "{{ cloudctl_tool.results }}"
-  when: internet_type == 'A' and not cloudctl_tool.stat.exists
-
 - name: Unpack cloudctl tools
   shell:
     cmd: "tar xf {{ temp_dir }}/cp4s_arch/{{ item.src }} -C /usr/local/bin"
@@ -21,11 +8,6 @@
 - name: Set ICS admin password
   shell:
     cmd: "cloudctl pm update-secret ibm-common-services platform-auth-idp-credentials -f -d admin_password='{{ ics_admin_password }}'"
-  when: false
-
-- name: Wait for authentication changes
-  pause:
-    minutes: 3
   when: false
 
 - name: Wait for successful password change

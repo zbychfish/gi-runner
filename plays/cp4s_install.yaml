@@ -109,8 +109,6 @@
     cp4s_option_ti: "{{ 'true' if cp4s_options[2] == 'Y' else false }}"
   when: internet_type == 'A'
 
-- meta: end_play
-
 - name: Setup CP4S deployment files
   template:
     src: "{{ item }}.j2"
@@ -173,10 +171,11 @@
 
 - name: Unpack cloudctl tools
   shell:
-    cmd: "tar xf {{ temp_dir }}/downloads/{{ item.src }} -C /usr/local/bin"
+    cmd: "tar xf {{ temp_dir }}/{{ t_path }}/{{ item.src }} -C /usr/local/bin"
   with_items:
     - { src: "cloudctl-linux-amd64.tar.gz" }
-  when: internet_type != 'A'
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
 
 - name: Standarize cloudctl name
   command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
