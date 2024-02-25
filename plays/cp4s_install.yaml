@@ -139,6 +139,7 @@
   until: "cp4s_operator.stdout == \"True\""
   retries: 30
   delay: 10
+  when: internet_type != 'A'
 
 - name: Deploy CP4S online
   shell:
