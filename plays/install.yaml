@@ -558,6 +558,7 @@
       ansible.builtin.include_tasks: gi_install.yaml
       when: skip_phase|int < 8 and install_gi == 'Y'
 
+    - meta: end_play
     - name: Install CP4S
       ansible.builtin.include_tasks: cp4s_install.yaml
       when: skip_phase|int < 8 and install_cp4s == 'Y'
