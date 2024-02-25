@@ -30,8 +30,6 @@
   retries: 60
   delay: 10
 
-- meta: end_play
-
 - name: Instantiate serverless operator
   shell:
     cmd: "oc apply -f ../funcs/yamls/cp4s_serverless_knative.yaml"
@@ -43,6 +41,8 @@
   until: "serverless_knative.stdout == \"True\""
   retries: 60
   delay: 10
+
+- meta: end_play
 
 - name: Add secrets 1
   shell:
