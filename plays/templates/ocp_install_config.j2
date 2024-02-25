@@ -7,6 +7,7 @@ proxy:
 {% endif %}
 {% if internet_type == 'A' %}
 {% if install_cp4s == 'Y' or install_edr == 'Y' %}
+proxy:
   httpProxy: http://{{ proxy_url }}
   httpsProxy: http://{{ proxy_url }}
 {% endif %}
