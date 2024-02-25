@@ -677,8 +677,6 @@
     dest: "../ocp/install-config.yaml"
     src: "{{ temp_dir }}/yamls/install-config.yaml"
 
-- meta: end_play
-
 - name: Create manifests files
   ansible.builtin.command:
     cmd: "{{ item.cmd }}"

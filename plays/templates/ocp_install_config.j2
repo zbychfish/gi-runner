@@ -19,11 +19,7 @@ proxy:
 {% endif %}
 {% if internet_type == 'A' %}
 {% if install_cp4s == 'Y' or install_edr == 'Y' %}
-{% if no_proxy_adds|length != 0 %}
-  noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},oauth-openshift.apps.{{ ocp_domain }},{{ no_proxy_list|replace('*','') }},{{ no_proxy_adds }}
-{% else %}
   noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},oauth-openshift.apps.{{ ocp_domain }},{{ no_proxy_list|replace('*','') }}
-{% endif %}
 {% endif %}
 {% endif %}
 compute:
