@@ -25,7 +25,8 @@ get_software_selection
 get_software_architecture
 get_ocp_domain
 [[ "$use_air_gap" == 'N' && "$use_proxy" == 'P' ]] && configure_os_for_proxy || unset_proxy_settings
-[[ "$use_air_gap" == 'Y' ]] && prepare_offline_bastion || software_installation_on_online
+[[ "$use_air_gap" == 'Y' ]] && prepare_offline_bastion
+[[ "$use_air_gap" == 'N' ]] && software_installation_on_online
 msg "Installing tools for init.sh" task
 [[ "$use_air_gap" == 'N' ]] && { dnf -qy install jq;[[ $? -ne 0 ]] && display_error "Cannot install jq"; }
 get_network_architecture
