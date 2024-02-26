@@ -8,23 +8,27 @@
 - name: Download EDR case file
   shell:
     cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ edr_case_name }} --version {{ edr_cases[0] }} --disable-top-level-images-mode"
+  when: internet_type != 'A'
 
 - name: Unpack EDR case
   shell:
     cmd: "tar -xf {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/ibm-security-*.tgz -C {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}"
+  when: internet_type != 'A'
 
 - name: Generate EDR values file
   template:
     src: edr_values.j2
     dest: "{{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ edr_case_name }}/inventory/{{ edr_case_inventory_setup }}/files/values.conf"
   vars:
-    air_gap_install: "false"
+    air_gap_install: "{{ 'false' if internet_type == 'A' else 'true' }}"
     is_proxy: "{{ 'true' if internet_type == 'P' else 'false' }}"
-    repo_password: "{{ ibm_secret }}"
+    repo_url: "{{ 'cp.icr.io/cp/cp4s' if internet_type != 'A' else 'registry.'+ocp_domain+':5000/cp/cp4s' }}"
+    repo_user: "{{ 'cp' if internet_type != 'A' else repo_admin }}"
+    repo_password: "{{ ibm_secret if internet_type != 'A' else repo_admin_password }}"
 
 - name: Start EDR deployment
   shell:
-    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_cases[0] }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action install --args \"--acceptLicense true\""
+    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_cases[0] }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action install --args \"--acceptLicense true --inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }} --cp4sCatalogSourceTag latest\""
 
 - name: Wait for CPFS deployment
   shell:
