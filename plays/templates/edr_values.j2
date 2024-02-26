@@ -41,15 +41,15 @@ imagePullPolicy="IfNotPresent"
 
 # Set the repository in which the images will be pulled from. Must be set to "cp.icr.io/cp/cp4s" if you are installing IBM Security EDR in an online environment.
 # If you are installing IBM Security EDR in an air-gapped environment, specify the URL and port for the local Docker registry with the "/cp/cp4s" namespace appended. For example, example-registry:5000/cp/cp4s.
-repository="{{ repo_url }}""
+repository="{{ r_url }}""
 
 # Set the username for the repository in which the images will be pulled from. Must be set to "cp" if you are installing IBM Security EDR in an online environment.
 # If you are installing IBM Security EDR in an air-gapped environment, specify a user with access to the local Docker registry.
-repositoryUsername="{{ repo_user }}"
+repositoryUsername="{{ r_user }}"
 
 # Set the password for the repository in which the images will be pulled from.
 # If you are installing IBM Security EDR in an air-gapped environment, specify the password for the user with access to the local Docker registry.
-repositoryPassword="{{ repo_password }}"
+repositoryPassword="{{ r_password }}"
 
 # Namespace where Foundational Services will be installed. This should be updated to the namespace where Foundational Services is currently installed if you are doing an upgrade.
 CSNamespace="ibm-common-services"

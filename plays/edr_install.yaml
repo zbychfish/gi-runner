@@ -22,9 +22,9 @@
   vars:
     air_gap_install: "{{ 'false' if internet_type == 'A' else 'true' }}"
     is_proxy: "{{ 'true' if internet_type == 'P' else 'false' }}"
-    repo_url: "{{ 'cp.icr.io/cp/cp4s' if internet_type != 'A' else 'registry.'+ocp_domain+':5000/cp/cp4s' }}"
-    repo_user: "{{ 'cp' if internet_type != 'A' else repo_admin }}"
-    repo_password: "{{ ibm_secret if internet_type != 'A' else repo_admin_password }}"
+    r_url: "{{ 'cp.icr.io/cp/cp4s' if internet_type != 'A' else 'registry.'+ocp_domain+':5000/cp/cp4s' }}"
+    r_user: "{{ 'cp' if internet_type != 'A' else repo_user }}"
+    r_password: "{{ ibm_secret if internet_type != 'A' else repo_user_password }}"
 
 - name: Start EDR deployment
   shell:
