@@ -19,7 +19,7 @@
     src: edr_values.j2
     dest: "{{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ edr_case_name }}/inventory/{{ edr_case_inventory_setup }}/files/values.conf"
   vars:
-    air_gap_install: "{{ 'false' if internet_type == 'A' else 'true' }}"
+    air_gap_install: "{{ 'false' if internet_type != 'A' else 'true' }}"
     is_proxy: "{{ 'true' if internet_type == 'P' else 'false' }}"
     r_url: "{{ 'cp.icr.io/cp/cp4s' if internet_type != 'A' else 'registry.'+ocp_domain+':5000/cp/cp4s' }}"
     r_user: "{{ 'cp' if internet_type != 'A' else repo_user }}"
