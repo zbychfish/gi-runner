@@ -13,7 +13,6 @@
 - name: Unpack EDR case
   shell:
     cmd: "tar -xf {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/ibm-security-*.tgz -C {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}"
-  when: internet_type != 'A'
 
 - name: Generate EDR values file
   template:
