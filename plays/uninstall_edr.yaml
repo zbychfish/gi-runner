@@ -23,6 +23,7 @@
   - name: Download CASE file
     shell:
       cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ edr_case_name }} --version {{ edr_case }}"
+    when: internet_type != 'A'
 
   - name: Is EDR instance available
     shell:

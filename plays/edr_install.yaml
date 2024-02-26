@@ -14,6 +14,20 @@
   shell:
     cmd: "tar -xf {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/ibm-security-*.tgz -C {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}"
 
+- name: Prepare image content source policy
+  shell:
+    cmd: "sed -i 's#-.*:5000/#- registry.{{ ocp_domain }}:5000/#' {{ temp_dir }}/.ibm-pak/data/mirror/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+  when: internet_type == 'A'
+
+- name: Install image content source policy
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/.ibm-pak/data/mirror/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+  when: internet_type == 'A'
+
 - name: Generate EDR values file
   template:
     src: edr_values.j2
@@ -24,6 +38,11 @@
     r_url: "{{ 'cp.icr.io/cp/cp4s' if internet_type != 'A' else 'registry.'+ocp_domain+':5000/cp/cp4s' }}"
     r_user: "{{ 'cp' if internet_type != 'A' else repo_user }}"
     r_password: "{{ ibm_secret if internet_type != 'A' else repo_user_password }}"
+
+- name: Add lacking tag for EDR catalog source # BUG in 1.0.1, check for each new version
+  shell:
+    cmd: "docker push registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:3.12.2.0 registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:3.12.2.0-amd64"
+  when: internet_type == 'A'
 
 - name: Start EDR deployment
   shell:
