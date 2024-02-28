@@ -3214,6 +3214,9 @@ function get_latest_cp4s_images () {
         local image_name_redis
 	input_file=${GI_TEMP}/.ibm-pak/data/mirror/${cp4s_case_name}/${cp4s_cases[0]}/images-mapping.txt
         output_file=${GI_TEMP}/.ibm-pak/data/mirror/${cp4s_case_name}/${cp4s_cases[0]}/images-mapping-latest.txt
+	cp4s_redis_release2=`for i in $(cat ${GI_TEMP}/.ibm-pak/data/cases/${cp4s_case_name}/${cp4s_cases[0]}/caseDependencyMapping.csv | grep cp4s | awk -F ',' '{print $NF}'| sed "s/;/ /g"); do [[ $i == ibm-cloud-databases-redis* ]] && echo $i; done|awk -F ':' '{print $NF}'`
+	echo $cp4s_redis_release2
+	exit 1
 	msg "Set list of images for download" info
         echo "#list of images to mirror" > $output_file
         while read -r line
