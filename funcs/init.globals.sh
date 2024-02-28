@@ -56,10 +56,10 @@ cp4s_versions=("1.10.18") # https://github.com/IBM/cloud-pak/blob/master/repo/ca
 cp4s_cases=("1.0.43")
 cp4s_case_name="ibm-cp-security"
 cp4s_case_inventory_setup="ibmSecurityOperatorSetup"
-cp4s_redis_release="1.6.5"
+cp4s_redis_release="1.6.11" # .ibm-pak/data/cases/ibm-cp-security/$CASE_VERSION/caseDependencyMapping.csv
 
 edr_case_name="ibm-security-edr"
 edr_cases=("1.0.1") # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-security-edr/index.yaml
 edr_versions=("1.0.1") 
 edr_case_inventory_setup="ibmSecurityEdrOperatorSetup"
-edr_redis_release="1.6.5"
+edr_redis_release="1.6.11" # .ibm-pak/data/cases/ibm-security-edr/$CASE_VERSION/caseDependencyMapping.csv
