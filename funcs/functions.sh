@@ -3243,7 +3243,7 @@ function get_latest_edr_images () {
         local image_name_redis
         input_file=${GI_TEMP}/.ibm-pak/data/mirror/${edr_case_name}/${edr_cases[0]}/images-mapping.txt
         output_file=${GI_TEMP}/.ibm-pak/data/mirror/${edr_case_name}/${edr_cases[0]}/images-mapping-latest.txt
-	edr_redis_release=`for i in $(cat ${GI_TEMP}/.ibm-pak/data/cases/${cp4s_case_name}/${cp4s_cases[0]}/caseDependencyMapping.csv | grep ibm-security-edr | awk -F ',' '{print $NF}'| sed "s/;/ /g"); do [[ $i == ibm-cloud-databases-redis* ]] && echo $i; done|awk -F ':' '{print $NF}'`
+	edr_redis_release=`for i in $(cat ${GI_TEMP}/.ibm-pak/data/cases/${edr_case_name}/${edr_cases[0]}/caseDependencyMapping.csv | grep ibm-security-edr | awk -F ',' '{print $NF}'| sed "s/;/ /g"); do [[ $i == ibm-cloud-databases-redis* ]] && echo $i; done|awk -F ':' '{print $NF}'`
         msg "Set list of images for download" info
         echo "#list of images to mirror" > $output_file
         while read -r line
