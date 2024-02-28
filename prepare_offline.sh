@@ -17,7 +17,7 @@ rm -rf $GI_TEMP/airgap/* $GI_TEMP/images $GI_TEMP/ocp-images.yaml
 [[ $script_argument -lt 3 ]] && prepare_rook
 rm -rf $GI_TEMP/airgap/*
 [[ $script_argument -lt 4 ]] && prepare_addons
-rm -rf $GI_TEMP/airgap/*
+rm -rf $GI_TEMP/airgap/* $GI_TEMP/.ibm-pak
 [[ $script_argument -lt 5 ]] && prepare_apps
 
 msg "Airgap prescript summary" task
