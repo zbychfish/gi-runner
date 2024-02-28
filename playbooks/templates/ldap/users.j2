@@ -1,9 +1,0 @@
-{% for user in ldap_users.msg %}
-dn: cn={{ user }},ou=users,{{ ldap_domain }}
-cn: {{ user }}
-sn: {{ user }}
-objectClass: inetOrgPerson
-userPassword: {{ ldap_password }}
-uid: {{ user }}
-
-{% endfor %}

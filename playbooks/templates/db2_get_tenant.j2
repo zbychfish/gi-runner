@@ -1,5 +1,0 @@
-oc exec c-{{ gi_namespace }}-db2-db2u-0 -n {{ gi_namespace }} -it su - db2inst1 << EOF
-/mnt/blumeta0/home/db2inst1/sqllib/bin/db2 -x connect to bludb
-/mnt/blumeta0/home/db2inst1/sqllib/bin/db2 -x "select schemaname from syscat.schemata where schemaname like 'TNT_%' and schemaname not like 'TNT_%CUSTOM'and schemaname not like 'TNT_%REPORT_RESULT'"
-EOF
-

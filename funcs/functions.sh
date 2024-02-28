@@ -3058,16 +3058,23 @@ function software_installation_on_offline() {
         dnf -qy --disablerepo=* localinstall ${GI_TEMP}/archives/os-packages/*rpm --allowerasing
         msg "Installing Ansible and python modules" task
         cd ${GI_TEMP}/archives/ansible
-        pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
-        pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
-        pip3 install beautifulsoup4-* --no-index --find-links '.' > /dev/null 2>&1
-        pip3 install argparse-* --no-index --find-links '.' > /dev/null 2>&1
-        pip3 install jmespath-* --no-index --find-links '.' > /dev/null 2>&1
+	for package in "${python_soft[@]}"
+        do
+		pip3 install ${package}-* --no-index --find-links '.' > /dev/null 2>&1
+	done
+        #pip3 install passlib-* --no-index --find-links '.' > /dev/null 2>&1
+        #pip3 install dnspython-* --no-index --find-links '.' > /dev/null 2>&1
+        #pip3 install beautifulsoup4-* --no-index --find-links '.' > /dev/null 2>&1
+        #pip3 install argparse-* --no-index --find-links '.' > /dev/null 2>&1
+        #pip3 install jmespath-* --no-index --find-links '.' > /dev/null 2>&1
         cd $GI_TEMP/archives/galaxy
-        ansible-galaxy collection install community-general-${galaxy_community_general}.tar.gz > /dev/null 2>&1
-        ansible-galaxy collection install ansible-utils-${galaxy_ansible_utils}.tar.gz > /dev/null 2>&1
-        ansible-galaxy collection install community-crypto-${galaxy_community_crypto}.tar.gz > /dev/null 2>&1
-        ansible-galaxy collection install containers-podman-${galaxy_containers_podman}.tar.gz > /dev/null 2>&1
+	for package in "${galaxy_soft[@]}"
+        do
+        	ansible-galaxy collection install ${package}.tar.gz > /dev/null 2>&1
+	done
+        #ansible-galaxy collection install ansible-utils-${galaxy_ansible_utils}.tar.gz > /dev/null 2>&1
+        #ansible-galaxy collection install community-crypto-${galaxy_community_crypto}.tar.gz > /dev/null 2>&1
+        #ansible-galaxy collection install containers-podman-${galaxy_containers_podman}.tar.gz > /dev/null 2>&1
         cd $GI_HOME
         mkdir -p /etc/ansible
         echo -e "[bastion]\n127.0.0.1 ansible_connection=local" > /etc/ansible/hosts
