@@ -154,8 +154,6 @@
     cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ cp4s_case_name }} --version {{ cp4s_cases[0] }} --inventory {{ cp4s_case_inventory_setup }} --action install --namespace {{ cp4s_namespace }} --tolerance 1 --args \"--acceptLicense true --inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}\""
   when: internet_type == 'A'
 
-- meta: end_play
-
 - name: Wait for CR deployment initiation
   pause:
     minutes: 5
