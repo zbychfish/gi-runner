@@ -41,7 +41,7 @@
   until: "serverless_knative.stdout == \"True\""
   retries: 60
   delay: 10
-
+- meta: end_play
 - name: Add secrets 1
   shell:
     cmd: "{{ item }}"
