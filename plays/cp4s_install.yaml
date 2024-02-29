@@ -41,7 +41,7 @@
   until: "serverless_knative.stdout == \"True\""
   retries: 60
   delay: 10
-- meta: end_play
+
 - name: Add secrets 1
   shell:
     cmd: "{{ item }}"
@@ -70,14 +70,14 @@
     cmd: "sed -i \"s/image:.*:5000/image: registry.{{ ocp_domain }}:5000/#\" {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
   with_items:
     - "catalog-sources.yaml"
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
 
 - name: Install CP4S image content source policy and OLM catalog
   shell:
     cmd: "oc apply -f {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
   with_items:
     - "image-content-source-policy.yaml"
-    - "catalog-sources.yaml"
+      #- "catalog-sources.yaml"
   when: internet_type == 'A'
 
 - name: Install IBM operators catalog
@@ -94,6 +94,7 @@
   delay: 10
   vars:
     t_catalog: "{{ 'ibm-operator-catalog' if internet_type != 'A' else 'ibm-cp-security-catalog' }}"
+  when: internet_type != 'A'
 
 - name: Unpack case
   shell:
@@ -147,6 +148,8 @@
   shell:
     cmd: "oc apply -f {{ temp_dir }}/yamls/cp4s_cr.yaml"
   when: internet_type != 'A'
+
+- meta: end_play
 
 - name: Deploy CP4S offline
   shell:
