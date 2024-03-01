@@ -2332,7 +2332,6 @@ function prepare_cp4s() {
         oc image mirror -f ${GI_TEMP}/.ibm-pak/data/mirror/$cp4s_case_name/${cp4s_cases[0]}/images-mapping-latest.txt -a ${GI_TEMP}/.ibm-pak/auth.json --filter-by-os '.*' --insecure --skip-multiple-scopes --max-per-registry=1 --continue-on-error=false
         podman stop bastion-registry > /dev/null 2>&1
         msg "Creating archive with CP4S images" info
-	exit 1
         mkdir -p ${GI_TEMP}/downloads/CP4S-${cp4s_versions[0]}
         cd $GI_TEMP
         tar cf ${GI_TEMP}/downloads/CP4S-${cp4s_versions[0]}/config.tar .ibm-pak/*
