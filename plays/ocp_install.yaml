@@ -137,8 +137,6 @@
     - catalogSource-redhat-operator-index.yaml
   when: internet_type == 'A'
 
-- meta: end_play
-
 - name: Set OLM operators catalog and OLM image content source policy"
   ansible.builtin.command:
     cmd: "oc apply -f {{ temp_dir }}/archives/{{ item }}"
