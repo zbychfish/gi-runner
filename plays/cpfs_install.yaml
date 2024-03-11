@@ -55,7 +55,7 @@
 
 - name: Set CPFS version in case of GI deployment
   shell:
-    cmd: "`for i in $(cat {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_version }}/caseDependencyMapping.csv | grep ibm-guardium-insights | awk -F ',' '{print $NF}'| sed \"s/;/ /g\"); do [[ $i == ibm-cp-common-services* ]] && echo $i; done|awk -F ':' '{print $NF}'`"
+    cmd: "`for i in $(cat {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}/caseDependencyMapping.csv | grep ibm-guardium-insights | awk -F ',' '{print $NF}'| sed \"s/;/ /g\"); do [[ $i == ibm-cp-common-services* ]] && echo $i; done|awk -F ':' '{print $NF}'`"
   register: cpfs_version
   when: install_gi == 'Y'
 
