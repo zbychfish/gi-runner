@@ -11,12 +11,16 @@
 msg "This script collects all images and tools to deploy IBM Cloud Pak's in air-gapped environment" info
 mkdir -p $GI_TEMP/airgap
 [[ $script_argument -lt 1 ]] && prepare_bastion
+read -n 1 -s -r -p "Press any key to continue"
 rm -rf $GI_TEMP/airgap/*
 [[ $script_argument -lt 2 ]] && prepare_ocp
+read -n 1 -s -r -p "Press any key to continue"
 rm -rf $GI_TEMP/airgap/* $GI_TEMP/images $GI_TEMP/ocp-images.yaml
 [[ $script_argument -lt 3 ]] && prepare_rook
+read -n 1 -s -r -p "Press any key to continue"
 rm -rf $GI_TEMP/airgap/*
 [[ $script_argument -lt 4 ]] && prepare_addons
+read -n 1 -s -r -p "Press any key to continue"
 rm -rf $GI_TEMP/airgap/* $GI_TEMP/.ibm-pak
 [[ $script_argument -lt 5 ]] && prepare_apps
 

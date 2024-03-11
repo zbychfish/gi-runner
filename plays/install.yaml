@@ -40,6 +40,7 @@
     install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
     install_cp4s: "{{ lookup('env','GI_CP4S') }}"
     install_edr: "{{ lookup('env','GI_EDR') }}"
+    gi_nfs_backup: 'N' # default value
 
   vars_files:
     - constants.yaml
@@ -258,7 +259,6 @@
         cpfs_case: "{{ cpfs_cases[cpfs_version_hint|int] }}"
         cpfs_size: "{{ 'small' if cpfs_size_hint == 'S' else 'medium' if cpfs_size_hint == 'M' else 'large' if cpfs_size_hint == 'L' else 'starterset' }}"
         cpfs_registry: 'icr.io/cpopen'
-        gi_nfs_backup: 'N'
       when: install_cpfs == 'Y'
 
     - name: Set CPFS endpoint cert variables
