@@ -115,8 +115,6 @@
   retries: 30
   delay: 10
 
-- meta: end_play
-
 - name: Create CPFS operator subscription file
   ansible.builtin.template:
     src: cpfs_subscription.j2
@@ -154,6 +152,8 @@
   until: "cpfs_commonservice_status.stdout == \"Succeeded\""
   retries: 30
   delay: 10
+
+- meta: end_play
 
 - name: Generate operands file
   ansible.builtin.template:
