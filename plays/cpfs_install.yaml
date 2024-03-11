@@ -53,6 +53,11 @@
   with_items:
     - { file: "cloudctl" }
 
+- name: GI download case file
+  shell:
+    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ gi_case_name }} --version {{ gi_case_version }}"
+  when: install_gi == 'Y' and internet_type != 'A'
+
 - name: Set CPFS version in case of GI deployment
   shell:
     cmd: "for i in $(cat {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}/caseDependencyMapping.csv | grep ibm-guardium-insights | awk -F ',' '{print $NF}'| sed \"s/;/ /g\"); do [[ $i == ibm-cp-common-services* ]] && echo $i; done|awk -F ':' '{print $NF}'"

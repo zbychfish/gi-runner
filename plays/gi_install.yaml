@@ -24,7 +24,7 @@
 - name: GI download case file
   shell:
     cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ gi_case_name }} --version {{ gi_case_version }}"
-  when: internet_type != 'A'
+  when: internet_type != 'A' and false # moved to CPFS installation to define dependencies
 
 - name: GI preinstall task
   shell:
