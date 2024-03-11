@@ -57,15 +57,14 @@
   shell:
     cmd: "for i in $(cat {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}/caseDependencyMapping.csv | grep ibm-guardium-insights | awk -F ',' '{print $NF}'| sed \"s/;/ /g\"); do [[ $i == ibm-cp-common-services* ]] && echo $i; done|awk -F ':' '{print $NF}'"
   register: cpfs_version
-  ignore_errors: true
   when: install_gi == 'Y'
-
-- meta: end_play
 
 - name: Create CPFS catalog file
   ansible.builtin.template:
     src: cpfs_catalog.j2
     dest: "{{ temp_dir }}/yamls/cpfs_catalog.yaml"
+  vars:
+    cpfs_version: "{{ cpfs_version.stdout if install_gi == 'Y' else cpfs_version }}"
   when: internet_type != 'A'
 
 - name: Publish CPFS catalog
@@ -115,6 +114,8 @@
   until: "cpfs_catalog_source_status.stdout == \"1\""
   retries: 30
   delay: 10
+
+- meta: end_play
 
 - name: Create CPFS operator subscription file
   ansible.builtin.template:
