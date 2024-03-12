@@ -39,9 +39,12 @@
     r_user: "{{ 'cp' if internet_type != 'A' else repo_user }}"
     r_password: "{{ ibm_secret if internet_type != 'A' else repo_user_password }}"
 
-- name: Add lacking tag for EDR catalog source # BUG in 1.0.1, check for each new version
+- name: Add lacking tag for EDR catalog source # BUG in 1.0.2, check for each new version
   shell:
-    cmd: "skopeo copy docker://registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:latest_uat docker://registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:3.12.2.0-amd64"
+    cmd: "{{ item }}"
+  with_items:
+    - "skopeo login registry.{{ ocp_domain }}:5000"
+    - "skopeo copy docker://registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:latest_uat docker://registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:3.12.2.0-amd64"
   when: internet_type == 'A'
 
 - name: Start EDR deployment

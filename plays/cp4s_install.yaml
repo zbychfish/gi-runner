@@ -1,3 +1,11 @@
+- name: Add catalog source for noobaa # BUG in 1.0.2
+  shell:
+    cmd:
+  with_items:
+    - "cp {{ temp_dir }}/archives/catalogSource-redhat-operator-index.yaml {{ temp_dir }}/archives/catalogSource-redhat-operators.yaml"
+    - "sed -i 's/redhat-operator-index/redhat-operators/' {{ temp_dir }}/archives/catalogSource-redhat-operators.yaml"
+    - "oc apply -f {{ temp_dir }}/archives/catalogSource-redhat-operators.yaml"
+
 - name: Create all required namespaces
   shell:
     cmd: "oc create namespace {{ item }}"
