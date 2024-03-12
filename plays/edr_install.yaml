@@ -41,7 +41,7 @@
 
 - name: Add lacking tag for EDR catalog source # BUG in 1.0.1, check for each new version
   shell:
-    cmd: "docker push registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:latest_uat registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:3.12.2.0-amd64"
+    cmd: "skopeo copy docker://registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:latest_uat docker://registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:3.12.2.0-amd64"
   when: internet_type == 'A'
 
 - name: Start EDR deployment
