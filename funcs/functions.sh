@@ -2697,7 +2697,7 @@ function process_offline_archives() {
                                                 msg "Extracting QRadar EDR container images" info
                                                 tar -C /opt/registry -xf $gi_archives/$archive data/*
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of EDR archive"
-						tar -C /opt/registry -xf $gi_archives/CP4S-${cp4s_versions[0]}/registry.tar #BUG missing images in images.txt, CP4S unpack to cover this problem
+						# tar -C /opt/registry -xf $gi_archives/CP4S-${cp4s_versions[0]}/registry.tar #BUG missing images in images.txt, CP4S unpack to cover this problem
                                                 msg "Extracting QRadar EDR case files" info
                                                 tar -C $GI_TEMP -xf $gi_archives/EDR-${edr_versions[0]}/config.tar
                                                 [ $? -ne 0 ] && display_error "Cannot extract content of EDR case archive"
