@@ -1,2 +1,26 @@
 New features and changes:
-- prescript to gather GI images did not collect cloudctl tool
+- all function put into funcs/functions.sh (alphabetical order)
+- all supporting scripts put into funcs/scripts
+- all static yamls put into funcs/yamls
+- all dynamic yamls will be created in gitemp/yamls
+- all ansible plays in plays directory
+- all ansible templates in plays/templates directory
+
+init.sh script supports parameter skip_offline - it skip archives extraction and bastion offline preparation in case of restart the init.sh for air-gapped installation (avoid to untar GB's of data again)
+
+the play install.yaml accepts skip_phase  parameter, must be specified with -e flag (like ansible-playbook plays/install -e skip_phase=<phase>):
+  skip_phase allows restart install.yaml play from defined point (to avoid full restart of deployment), possible values:
+    - 1 ignores bastion setup preparation, play waiting for OCP bootstrap phase finish
+    - 2 moves to storage deployment, OCP must be deployed fully
+    - 3 moves to image registry setup, assumes that storage option is correctly deployed
+    - 4 moves to CPFS deployment
+    - 5 moves to openldap deployment, assumes that CPFS has been installed (GI and standalone CPFS deployment)
+    - 6 moves to nfs client deployment, assumes that CPFS and openldap has been installed
+    - 7 moves to Cloud Pak deployment, all other phase must be finished with success
+
+All archives for air-gapped installation are now managed by one script - prepare_offline.sh
+prepare_offline.sh accepts parameter for skip some prepared before archives:
+  1 - skips phase to gather OS, Python and Ansible packages
+  2 - skips phase 1 and OCP archives preparation
+  3 - skips 1, 2 and rook archives preparation
+  4 - skips 1, 2, 3 and collection openldap and nfs-client images, move to task to collect Cloud Pak's images 

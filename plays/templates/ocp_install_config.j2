@@ -1,0 +1,61 @@
+apiVersion: v1
+baseDomain: {{ base_domain }}
+{% if internet_type == 'P' %}
+proxy:
+  httpProxy: http://{{ proxy_url }}
+  httpsProxy: http://{{ proxy_url }}
+{% endif %}
+{% if internet_type == 'A' %}
+{% if install_cp4s == 'Y' or install_edr == 'Y' %}
+proxy:
+  httpProxy: http://{{ proxy_url }}
+  httpsProxy: http://{{ proxy_url }}
+{% endif %}
+{% endif %}
+{% if internet_type == 'P' and no_proxy_adds|length != 0 %}
+  noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},oauth-openshift.apps.{{ ocp_domain }},{{ no_proxy_list|replace('*','') }},{{ no_proxy_adds }}
+{% elif internet_type == 'P' %}
+  noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},oauth-openshift.apps.{{ ocp_domain }},{{ no_proxy_list|replace('*','') }}
+{% endif %}
+{% if internet_type == 'A' %}
+{% if install_cp4s == 'Y' or install_edr == 'Y' %}
+  noProxy: .{{ base_domain }},172.30.0.0/16,{{ cluster_network }},oauth-openshift.apps.{{ ocp_domain }},{{ no_proxy_list|replace('*','') }}
+{% endif %}
+{% endif %}
+compute:
+- hyperthreading: Enabled
+  name: worker
+  replicas: {{ n_workers }}
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  replicas: {{ n_masters }}
+metadata:
+  name: {{ cluster_domain }}
+networking:
+  clusterNetwork:
+  - cidr: {{ cluster_network }}
+    hostPrefix: {{ cluster_network_subnet }}
+{% if ocp_cni == 'S' %}
+  networkType: OpenShiftSDN
+{% else %}
+  networkType: OVNKubernetes
+{% endif %}
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+ none: {}
+fips: false
+sshKey: {{ ssh_pub_key.stdout }}
+{% if internet_type == 'A' %}
+pullSecret: '{"auths":{"registry.{{ ocp_domain }}:5000": {"auth": "{{ repo_cred_base64.stdout}}","email": "noemail@localhost"}}}'
+additionalTrustBundle: |
+{{ repo_cert.stdout }}
+imageContentSources:
+- mirrors:
+  - registry.{{ ocp_domain }}:5000/openshift/release-images
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - registry.{{ ocp_domain }}:5000/openshift/release
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+{% endif %}

@@ -1,0 +1,247 @@
+- name: Create CPFS operator namespace
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc create namespace {{ cpfs_operator_namespace }} || echo 'Namespace exists'"
+    - "oc create namespace ibm-common-services || echo 'Namespace exists'"
+
+- name: Label CPFS nodes
+  ansible.builtin.shell:
+    cmd: "oc label node {{ item }}.{{ ocp_domain }} cpfs_node=yes --overwrite=true"
+  with_items: "{{ cpfs_dedicated_nodes|list }}"
+  when: cpfs_dedicated_nodes|length > 2
+
+- name: Create CPFS namespace with node selector
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc patch namespace ibm-common-services -p '{\"metadata\":{\"annotations\": {\"scheduler.alpha.kubernetes.io/node-selector\": \"cpfs_node=yes\"}}}'"
+  when: cpfs_dedicated_nodes|length > 2
+
+- name: Check presence of cloudctl tool
+  ansible.builtin.stat:
+    path: "{{ temp_dir }}/downloads/{{ item.file }}"
+  register: cloudctl_tool
+  with_items:
+    - { file: "cloudctl-linux-amd64.tar.gz" }
+  ignore_errors: true
+
+- name: "Download cloud tool"
+  ansible.builtin.get_url:
+    url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz"
+    dest: "{{ temp_dir }}/downloads"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  when: internet_type != 'A'
+
+- name: Unpack cloudctl tools
+  ansible.builtin.shell:
+    cmd: "tar xf {{ temp_dir }}/{{ t_path }}/{{ item.src }} -C /usr/local/bin"
+  with_items:
+    - { src: "cloudctl-linux-amd64.tar.gz" }
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
+
+- name: Standarize cloudctl name
+  ansible.builtin.command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
+
+- name: Set correct rights for RHCOS tools in /usr/local/bin
+  ansible.builtin.file:
+    path: "/usr/local/bin/{{ item.file }}"
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - { file: "cloudctl" }
+
+- name: GI download case file
+  shell:
+    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ gi_case_name }} --version {{ gi_case_version }}"
+  when: install_gi == 'Y' and internet_type != 'A'
+
+- name: Set CPFS version in case of GI deployment
+  shell:
+    cmd: "for i in $(cat {{ temp_dir }}/.ibm-pak/data/cases/{{ gi_case_name }}/{{ gi_case_version }}/caseDependencyMapping.csv | grep ibm-guardium-insights | awk -F ',' '{print $NF}'| sed \"s/;/ /g\"); do [[ $i == ibm-cp-common-services* ]] && echo $i; done|awk -F ':' '{print $NF}'"
+  register: cpfs_version_from_case
+  when: install_gi == 'Y' and internet_type != 'A'
+
+- name: Create CPFS catalog file
+  ansible.builtin.template:
+    src: cpfs_catalog.j2
+    dest: "{{ temp_dir }}/yamls/cpfs_catalog.yaml"
+  vars:
+    cpfs_version: "{{ cpfs_version_from_case.stdout if install_gi == 'Y' else cpfs_version }}"
+  when: internet_type != 'A'
+
+- name: Publish CPFS catalog
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/cpfs_catalog.yaml"
+  when: internet_type != 'A'
+
+- name: Set IBM OLM catalog reference (offline) for CPFS and GI
+  ansible.builtin.shell:
+    cmd: "sed -i \"s/image:.*:5000/image: registry.{{ ocp_domain }}:5000/\" {{ temp_dir }}/.ibm-pak/data/mirror/{{ case_name }}/{{ case_version }}/catalog-sources.yaml"
+  vars:
+    case_name: "{{ gi_case_name if install_gi == 'Y' else cpfs_case_name }}"
+    case_version: "{{ gi_case_version if install_gi == 'Y' else cpfs_case }}"
+  when: internet_type == 'A'
+
+- name: Set imagecontentsourcepolicy (offline) for CPFS and GI
+  ansible.builtin.shell:
+    cmd: "sed -i \"s/- .*:5000/- registry.{{ ocp_domain }}:5000/\" {{ temp_dir }}/.ibm-pak/data/mirror/{{ case_name }}/{{ case_version }}/image-content-source-policy.yaml"
+  vars:
+    case_name: "{{ gi_case_name if install_gi == 'Y' else cpfs_case_name }}"
+    case_version: "{{ gi_case_version if install_gi == 'Y' else cpfs_case }}"
+  when: internet_type == 'A'
+
+- name: Install catalog and imagecontentsourcepolicy for CPFS and GI (offline)
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/.ibm-pak/data/mirror/{{ case_name }}/{{ case_version }}/{{ item }}"
+  with_items:
+    - catalog-sources.yaml
+    - image-content-source-policy.yaml
+  vars:
+    case_name: "{{ gi_case_name if install_gi == 'Y' else cpfs_case_name }}"
+    case_version: "{{ gi_case_version if install_gi == 'Y' else cpfs_case }}"
+  when: internet_type == 'A'
+
+- name: Wait for CPFS catalog
+  ansible.builtin.shell:
+    cmd: "oc get pods -n openshift-marketplace|grep opencloud-operators|grep 1/1|grep Running|wc -l"
+  register: cpfs_catalog_status
+  until: "cpfs_catalog_status.stdout == \"1\""
+  retries: 30
+  delay: 10
+
+- name: Wait for CPFS catalog source
+  ansible.builtin.shell:
+    cmd: "oc get catalogsource -n openshift-marketplace|grep opencloud-operators|wc -l"
+  register: cpfs_catalog_source_status
+  until: "cpfs_catalog_source_status.stdout == \"1\""
+  retries: 30
+  delay: 10
+
+- name: Create CPFS operator subscription file
+  ansible.builtin.template:
+    src: cpfs_subscription.j2
+    dest: "{{ temp_dir }}/yamls/cpfs_subscription.yaml"
+
+- name: Subscribe CPFS operator
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/cpfs_subscription.yaml"
+
+- name: Wait for CPFS csv
+  ansible.builtin.shell:
+    cmd: "oc -n common-service get csv|grep ibm-common-service-operator|grep Succeeded|wc -l"
+  register: cpfs_csv_status
+  until: "cpfs_csv_status.stdout == \"1\""
+  retries: 30
+  delay: 10
+
+- name: Wait for CPFS crd's
+  ansible.builtin.shell:
+    cmd: "oc get crd | grep operandrequest|wc -l"
+  register: cpfs_crd_status
+  until: "cpfs_crd_status.stdout == \"1\""
+  retries: 30
+  delay: 10
+
+- name: Set CPFS deployment size
+  ansible.builtin.shell:
+    cmd: "oc patch commonservice common-service -n ibm-common-services --type=\"json\" -p='[{\"op\": \"replace\", \"path\": \"/spec/size\", \"value\": \"{{ cpfs_size }}\"}]'"
+  when: cpfs_size != 'T'
+
+- name: Wait for deployment size change
+  ansible.builtin.shell:
+    cmd: "oc get commonservice common-service -n ibm-common-services -o json|jq -r .status.phase"
+  register: cpfs_commonservice_status
+  until: "cpfs_commonservice_status.stdout == \"Succeeded\""
+  retries: 30
+  delay: 10
+
+- name: Generate operands file
+  ansible.builtin.template:
+    src: "cpfs_operands.j2"
+    dest: "{{ temp_dir }}/yamls/cpfs_operands.yaml"
+
+- name: Deploy CPFS
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/cpfs_operands.yaml"
+
+- name: Wait for operands deployment initiation
+  ansible.builtin.pause:
+    minutes: 3
+
+- name: Wait for successful CPFS deployment (takes 20-60 minutes)
+  ansible.builtin.shell:
+    cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+  register: cpfs_pods_status
+  until: "cpfs_pods_status.stdout == \"0\""
+  retries: 150
+  delay: 10
+
+- name: Check pod's containers status
+  ansible.builtin.shell:
+    cmd: "oc get pods -n ibm-common-services|grep Running|awk '{print $2}'|awk -F'/' '$1!=$2'|wc -l"
+  register: cpfs_containers_status
+  until: "cpfs_containers_status.stdout == \"0\""
+  retries: 100
+  delay: 10
+
+- name: Login to CPFS
+  ansible.builtin.shell:
+    cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
+
+- name: Set CPFS admin password
+  ansible.builtin.shell:
+    cmd: "cloudctl pm update-secret ibm-common-services platform-auth-idp-credentials -f -d admin_password='{{ cpfs_admin_password }}'"
+
+- name: Wait for authentication changes
+  ansible.builtin.pause:
+    minutes: 3
+
+- name: Wait for successful password change
+  ansible.builtin.shell:
+    cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+  register: cpfs_pods_status
+  until: "cpfs_pods_status.stdout == \"0\""
+  retries: 80
+  delay: 10
+
+- name: Switch off automatic endpoint certificate recreation
+  ansible.builtin.shell:
+    cmd: oc -n ibm-common-services patch managementingress default --type merge --patch '{"spec":{"ignoreRouteCert":true}}'
+  when: cpfs_ext_ingress == 'Y'
+
+- name: Wait for endpoint configuration change
+  ansible.builtin.shell:
+    cmd: "oc logs `oc get pods -n ibm-common-services | grep ibm-management-ingress-operator|awk '{print $1}'` -n ibm-common-services|grep 'IgnoreRouteCert is true'|wc -l"
+  register: cpfs_pod_status
+  until: "cpfs_pods_status.stdout != \"1\""
+  retries: 20
+  delay: 10
+  when: cpfs_ext_ingress == 'Y'
+
+- name: Change endpoint cert
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc -n ibm-common-services delete certificates.v1alpha1.certmanager.k8s.io route-cert || echo 'cert deleted'"
+    - "oc -n ibm-common-services delete secret route-tls-secret"
+    - "oc -n ibm-common-services create secret generic route-tls-secret --from-file=ca.crt={{ cpfs_ca }}  --from-file=tls.crt={{ cpfs_cert }}  --from-file=tls.key={{ cpfs_key }}"
+    - "oc -n ibm-common-services delete secret ibmcloud-cluster-ca-cert"
+    - "oc -n ibm-common-services delete pod -l app=auth-idp"
+  when: cpfs_ext_ingress == 'Y'
+
+- name: Wait for certificate changes
+  ansible.builtin.pause:
+    minutes: 3
+  when: cpfs_ext_ingress == 'Y'
+
+- name: Wait for successful cert replacement
+  ansible.builtin.shell:
+    cmd: "oc get pods --no-headers -n ibm-common-services|grep -v Completed|grep -v Running|wc -l"
+  register: cpfs_pods_status
+  until: "cpfs_pods_status.stdout == \"0\""
+  retries: 50
+  delay: 20
+  when: cpfs_ext_ingress == 'Y'

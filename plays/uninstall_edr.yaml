@@ -1,0 +1,53 @@
+- hosts: bastion
+  vars:
+    ocp_domain: "{{ lookup('env','GI_DOMAIN') }}"
+    edr_namespace: "{{ lookup('env','GI_EDR_NS') }}"
+    internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+
+  vars_files:
+    - constants.yaml
+
+  tasks:
+  - name: Set CP4S variables
+    set_fact:
+      edr_case: "{{ edr_cases[0] }}"
+
+  - name: Check configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_DOMAIN", value: "{{ ocp_domain }}" }
+      - { name: "GI_EDR_NS", value: "{{ edr_namespace }}" }
+      - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
+
+  - name: Download CASE file
+    shell:
+      cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ edr_case_name }} --version {{ edr_case }}"
+    when: internet_type != 'A'
+
+  - name: Is EDR instance available
+    shell:
+      cmd: "oc get IBMSecurityEDR -n {{ edr_namespace }} --no-headers| wc -l"
+    register: is_edrinstance
+
+  - name: Delete EDR instance
+    shell:
+      cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_case }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action uninstall"
+    when: is_edrinstance.stdout|int == 1
+
+  - name: Delete EDR CRD's
+    shell:
+      cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_case }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action uninstall --args \"--deleteCrd --force\""
+
+  - name: Delete operators and subscriptions
+    shell:
+      cmd: "{{ item }}"
+    with_items:
+      - oc delete $(oc get sub,csv -oname -n openshift-operators | grep edr) -n openshift-operators
+      - oc delete $(oc get sub,csv -oname -n openshift-operators | grep ibm-common-service) -n openshift-operators
+    ignore_errors: true
+
+  - debug:
+      msg:
+      - "EDR uninstalled with success"
+      - "Uninstall CPFS, execute 'ansible-playbook plays/uninstall_cpfs.yaml'"

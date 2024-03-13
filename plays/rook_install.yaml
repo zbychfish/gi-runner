@@ -1,0 +1,172 @@
+- name: Set digests for images in order
+  ansible.builtin.shell:
+    cmd: "IFS=',' read -r -a rook_v_oper <<< `cat {{ temp_dir }}/archives/rook_images_sha|grep {{ item }}`;echo \"`echo ${rook_v_oper[1]}|awk -F '/' '{print $NF}'|awk -F':' '{print $1}'`@${rook_v_oper[2]}\""
+  register: rook_digests
+  with_items:
+    - ROOK_CEPH_OPER
+    - ROOK_CEPH_IMAGE
+    - ROOK_CSI_CEPH_IMAGE
+    - ROOK_CSI_REGISTRAR_IMAGE
+    - ROOK_CSI_RESIZER_IMAGE
+    - ROOK_CSI_PROVISIONER_IMAGE
+    - ROOK_CSI_SNAPSHOTTER_IMAGE
+    - ROOK_CSI_ATTACHER_IMAGE
+    - ROOK_CSIADDONS_IMAGE
+  when: internet_type == 'A'
+
+- name: Set rook-registry URL
+  ansible.builtin.set_fact:
+    rook_registry: "{{ 'quay.io/ceph/ceph:v'+rook_ceph_version if internet_type != 'A' else 'registry.'+ocp_domain+':5000/rook/ceph:v'+rook_ceph_version }}"
+    rook_ceph_image: "{{ 'ceph:v'+rook_ceph_version if internet_type != 'A' else rook_digests.results[1].stdout }}"
+
+- name: Label rook storage nodes for dedicated node space
+  ansible.builtin.shell:
+    cmd: "oc label node {{ item }}.{{ ocp_domain }} role=storage-node --overwrite=true;oc label node {{ item }}.{{ ocp_domain }} storage=rook --overwrite=true"
+  with_items: "{{ rook_dedicated_nodes|list }}"
+  when: rook_dedicated_nodes|length > 2
+
+- name: Configure rook-ceph CRD's
+  ansible.builtin.shell:
+    cmd: "oc apply -f ../funcs/yamls/rook-crds.yaml"
+
+- name: Configure common rook settings
+  ansible.builtin.shell:
+    cmd: "oc apply -f ../funcs/yamls/rook-common.yaml"
+
+- name: Setup rook-ceph cluster file
+  ansible.builtin.template:
+    src: "rook-cluster.j2"
+    dest: "{{ temp_dir }}/yamls/rook-cluster.yaml"
+  vars:
+    multiple_per_node: "true"
+    use_all_devices: "false"
+
+- name: Setup rook toolbox file
+  ansible.builtin.template:
+    src: "rook-toolbox.j2"
+    dest: "{{ temp_dir }}/yamls/rook-toolbox.yaml"
+
+- name: Setup redundant rook filesystem file
+  ansible.builtin.template:
+    src: "{{ 'rook_filesystem.j2' }}"
+    dest: "{{ temp_dir }}/yamls/rook_red_filesystem.yaml"
+  vars:
+    data_chunks: "{{ '3' if rook_depl_type == '1' else '2' }}"
+    data_chunks_meta: "{{ '3' if rook_depl_type == '1' else '2' }}"
+    is_replica: "true"
+    cf_name: "myfs"
+
+- name: Setup non-reduntant rook filesystem file
+  ansible.builtin.template:
+    src: "{{ 'rook_filesystem.j2' }}"
+    dest: "{{ temp_dir }}/yamls/rook_nored_filesystem.yaml"
+  vars:
+    data_chunks: "1"
+    data_chunks_meta: "2"
+    is_replica: "false"
+    cf_name: "myfsnr"
+  when: rook_depl_type == '3'
+
+- name: Setup rook operator file
+  ansible.builtin.template:
+    src: "rook-operator.j2"
+    dest: "{{ temp_dir }}/yamls/rook-operator.yaml"
+
+- name: Deploy rook toolbox
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/rook-toolbox.yaml"
+
+- name: Deploy rook operator and filesystem
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+  loop:
+    - "oc apply -f {{ temp_dir }}/yamls/rook-operator.yaml"
+    - "oc apply -f {{ temp_dir }}/yamls/rook_red_filesystem.yaml"
+
+- name: Deploy rook filesystem without redundancy
+  ansible.builtin.shell:
+    cmd: "{{ item }}"
+  loop:
+    - "oc apply -f {{ temp_dir }}/yamls/rook_nored_filesystem.yaml"
+  when: rook_depl_type == '3'
+
+- name: Wait for Rook operator
+  ansible.builtin.shell:
+    cmd: "oc get pods -n rook-ceph --selector app=rook-ceph-operator --no-headers -o custom-columns=STATUS:.status.phase|grep -v Running|wc -l"
+  register: rook_operator_status
+  until: "rook_operator_status.stdout == \"0\""
+  retries: 30
+  delay: 10
+  
+- name: Deploy rook-ceph cluster
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc apply -f {{ temp_dir }}/yamls/'rook-cluster.yaml'" }
+
+- name: Wait for correct Rook Ceph cluster deployment
+  ansible.builtin.shell:
+    cmd: "oc get cephcluster -n rook-ceph --no-headers -o custom-columns=HEALTH:.status.ceph.health"
+  register: ceph_installation_status
+  until: "ceph_installation_status.stdout == \"HEALTH_OK\" or ceph_installation_status.stdout == \"HEALTH_WARN\""
+  retries: 60
+  delay: 15
+
+- name: Setup RBD storage class
+  ansible.builtin.template:
+    src: "rook_storage_class_rbd.j2"
+    dest: "{{ temp_dir }}/yamls/rook_storage_class_rbd.yaml"
+  vars:
+    replica_size: "{{ '3' if rook_depl_type == '1' else '2' }}"
+    requires_replica: "true"
+    rp_name: "replicapool"
+    class_name: "rook-ceph-block"
+
+- name: Setup RBD storage class without redundancy
+  ansible.builtin.template:
+    src: "rook_storage_class_rbd.j2"
+    dest: "{{ temp_dir }}/yamls/rook_storage_class_rbd_nr.yaml"
+  vars:
+    replica_size: "1"
+    requires_replica: "false"
+    rp_name: "replicapoolnr"
+    class_name: "rook-ceph-block-nr"
+  when: rook_depl_type == '3'
+
+- name: Setup FS storage class
+  ansible.builtin.template:
+    src: "rook_storage_class_fs.j2"
+    dest: "{{ temp_dir }}/yamls/rook_storage_class_fs.yaml"
+  vars:
+    cf_name: "myfs"
+    class_name: "rook-cephfs"
+
+- name: Setup FS storage class without redundancy
+  ansible.builtin.template:
+    src: "rook_storage_class_fs.j2"
+    dest: "{{ temp_dir }}/yamls/rook_storage_class_fs_nr.yaml"
+  vars:
+    cf_name: "myfsnr"
+    class_name: "rook-cephfs-nr"
+  when: rook_depl_type == '3'
+
+- name: Configure storage classes
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc apply -f {{ temp_dir }}/yamls/rook_storage_class_rbd.yaml" }
+    - { cmd: "oc apply -f {{ temp_dir }}/yamls/rook_storage_class_fs.yaml" }
+
+- name: Configure storage classes without redundancy
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc apply -f {{ temp_dir }}/yamls/rook_storage_class_rbd_nr.yaml" }
+    - { cmd: "oc apply -f {{ temp_dir }}/yamls/rook_storage_class_fs_nr.yaml" }
+  when: rook_depl_type == '3'
+
+- name: Set default storage class
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc patch storageclass rook-ceph-block -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }

@@ -1,0 +1,21 @@
+{
+ "id": "{{ id }}",
+ "name": "{{ name }}",
+ "ignition_id": "{{ ign_file }}",
+ "boot": {
+  "kernel": "/assets/rhcos-live-kernel-x86_64",
+  "initrd": [
+   "--name main /assets/rhcos-live-initramfs.x86_64.img"
+   ],
+   "args": [
+    "initrd=main",
+    "ip=dhcp",
+    "rd.neednet=1",
+    "console=tty0",
+    "coreos.inst=yes",
+    "coreos.inst.install_dev={{ boot_disk }}",
+    "coreos.live.rootfs_url=http://matchbox.{{ ocp_domain }}:8080/assets/rhcos-live-rootfs.x86_64.img",
+    "coreos.inst.ignition_url=http://matchbox.{{ ocp_domain }}:8080/ignition?mac=${mac:hexhyp}"
+   ]
+ }
+}

@@ -1,0 +1,80 @@
+- hosts: bastion
+  vars:
+    ocp_domain: "{{ lookup('env','GI_DOMAIN') }}"
+    cp4s_namespace: "{{ lookup('env','GI_CP4S_NS') }}"
+    internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+
+  vars_files:
+    - constants.yaml
+
+  tasks:
+  - name: Set CP4S variables
+    set_fact:
+      cp4s_case: "{{ cp4s_cases[0] }}"
+
+  - name: Check configuration parameters
+    fail: msg="Variable {{ item.name }} is not set"
+    when: item.value == ""
+    loop:
+      - { name: "GI_DOMAIN", value: "{{ ocp_domain }}" }
+      - { name: "GI_CP4S_NS", value: "{{ cp4s_namespace }}" }
+      - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
+
+  - name: Download CASE file
+    shell:
+      cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ cp4s_case_name }} --version {{ cp4s_case }}"
+
+  - name: Delete SYSAUTH
+    shell:
+      cmd: "oc delete sysauth.isc.ibm.com/qproxy -n {{ cp4s_namespace }} --ignore-not-found || echo 0"
+
+  - name: Is CP4S instance available
+    shell:
+      cmd: "oc get CP4SThreatManagement -n {{ cp4s_namespace }} --no-headers| wc -l"
+    register: is_cp4instance
+
+  - name: Delete CP4S
+    shell:
+      cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ cp4s_case_name }} --version {{ cp4s_case }} --inventory {{ cp4s_case_inventory_setup }} --namespace {{ cp4s_namespace }} --action uninstall"
+    when: is_cp4instance.stdout|int == 1
+
+  - name: Delete noobaa account
+    shell:
+      cmd: "oc delete noobaaaccount.noobaa.io/cp4s -n noobaa --ignore-not-found"
+    when: false
+
+  - name: Is noobaa service deployed
+    shell:
+      cmd: "oc get noobaa -n noobaa --no-headers| wc -l"
+    register: is_noobaa
+
+  - name: Delete CRD's
+    shell:
+      cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ cp4s_case_name }} --version {{ cp4s_case }} --inventory {{ cp4s_case_inventory_setup }} --namespace {{ cp4s_namespace }} --action uninstall --args '--deleteCrd{{ air_gap_flag }}'"
+    vars:
+      air_gap_flag: "{{ \"\" if internet_type != 'A' else \" --airgap\" }}"
+    when: is_noobaa.stdout|int == 1
+
+  - name: Delete knative
+    shell:
+      cmd: "oc delete -f {{ item }}"
+    with_items:
+      - ../funcs/yamls/cp4s_serverless_knative.yaml
+      - "{{ temp_dir }}/yamls/cp4s_serverless_sub.yaml"
+      - ../funcs/yamls/cp4s_serverless_og.yaml
+    ignore_errors: True
+
+  - name: Delete namespaces
+    shell:
+      cmd: "oc delete namespace {{ item }} --ignore-not-found"
+    with_items:
+      - "openshift-serverless"
+      - "knative-serving"
+      - "knative-eventing"
+
+  - debug:
+      msg:
+      - "CP4S uninstalled with success"
+      - "Uninstall CPFS, execute 'ansible-playbook plays/uninstall_cpfs.yaml'"
+
+

@@ -1,0 +1,9 @@
+apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  name: openldap
+spec:
+  repositoryDigestMirrors:
+  - mirrors:
+    - registry.{{ ocp_domain }}:5000/adds/openldap
+    source: docker.io/bitnami/openldap

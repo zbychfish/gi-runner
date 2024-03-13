@@ -1,0 +1,159 @@
+- name: Add openldap namespace
+  shell:
+    cmd: oc create namespace openldap || echo "Namespace exists"
+
+- name: Get openldap digest
+  shell:
+    cmd: "cat {{ temp_dir}}/archives/digests.txt|grep openldap:latest|awk -F ',' '{print $2}'"
+  register: ldap_digest
+  when: internet_type == 'A'
+
+- name: Set correct tag or digest
+  set_fact:
+    ldap_version: "{{ ':latest' if internet_type != 'A' else '@'+ldap_digest.stdout }}"
+
+- name: Create password list
+  shell:
+    cmd: "USER_PWD_LIST=\"\";IFS=',' read -r -a USER_ARR <<< {{ ldap_users_raw }};for user in ${USER_ARR[@]}; do USER_PWD_LIST+=\"{{ ldap_password }},\";done;echo $USER_PWD_LIST"
+  register: ldap_user_pwds
+
+- name: Add openldap secret
+  shell:
+    cmd: "oc create secret generic openldap --from-literal=adminpassword={{ ldap_password }} --from-literal=users={{ ldap_users_raw }} --from-literal=passwords={{ ldap_user_pwds.stdout }} -n openldap"
+  register: result
+  failed_when: result.rc != 0 and "already exists" not in result.stderr
+
+- name: Configure openldap deployment plan
+  template:
+    src: "openldap_depl.j2"
+    dest: "{{ temp_dir }}/yamls/openldap_depl.yaml"
+
+- name: Deploy bitnami.openldap
+  shell:
+    cmd: "oc create -f {{ item }} -n openldap"
+  register: result
+  with_items:
+    - "{{ temp_dir }}/yamls/openldap_depl.yaml"
+    - ../funcs/yamls/openldap_svc.yaml
+  failed_when: result.rc != 0 and "already exists" not in result.stderr and "already allocated" not in result.stderr
+
+- name: Wait for openldap successful deployment
+  shell:
+    cmd: "oc get pods -n openldap|grep 1/1|wc -l"
+  register: openldap_status
+  until: "openldap_status.stdout == \"1\""
+  retries: 20
+  delay: 10
+
+- name: Add route for openldap
+  shell:
+    cmd: "oc expose service/openldap -n openldap"
+  register: result
+  failed_when: result.rc != 0 and "already exists" not in result.stderr
+
+- name: Get openldap route name
+  shell:
+    cmd: "oc get routes -n openldap -o json|jq .items[0].spec.host|tr -d '\"'"
+  register: openldap_route
+
+- name: Encode Base64 ldap admin password
+  shell:
+    cmd: "echo -n {{ ldap_password }} | base64"
+  register: ldap_password_base64
+
+- name: Login to CPFS
+  shell:
+    cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} --skip-ssl-validation -u {{ ocpadmin }} -p {{ ocpadmin_password }} -n ibm-common-services"
+  when: install_cpfs == 'Y' and install_cp4s == 'Y'
+
+- name: Login to CPFS
+  shell:
+    cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
+  when: install_cpfs == 'Y' and install_cp4s != 'Y'
+
+- name: Extract CPFS Access Token
+  shell:
+    cmd: "cloudctl tokens|grep Access|awk -F ':' '{ print $2 }'|awk -F ' ' '{ print $2}'"
+  register: access_token
+  when: install_cpfs == 'Y' or install_cp4s == 'Y'
+
+- name: Set LDAP URL for container
+  set_fact:
+    ldap_url: "{{ openldap_route.stdout }}:1389"
+
+- name: Check HA proxy with OpenLDAP
+  shell:
+    cmd: cat /etc/haproxy/haproxy.cfg|grep "frontend openldap"|wc -l
+  register: is_openldap_in_haproxy
+
+- name: Create HA Proxy config file with openldap
+  template:
+    src: haproxy_with_ldap.j2
+    dest: /etc/haproxy/haproxy.cfg.ldap
+  vars:
+    masters: "{{ master_name|zip(master_ip)|list }}"
+    nodes: "{{ worker_name|default([])+ocs_name|default([]) if is_master_only == 'N' else '' }}"
+    ips: "{{ worker_ip|default([])+ocs_ip|default([]) if is_master_only == 'N' else '' }}"
+    workers: "{{ nodes|zip(ips)|list if is_master_only == 'N' else '' }}"
+    nodes_list: "{{ workers if is_master_only == 'N' else masters }}"
+  when: is_openldap_in_haproxy.stdout == "0"
+
+- name: Update HA proxy config
+  shell:
+    cmd: cat /etc/haproxy/haproxy.cfg.ldap >> /etc/haproxy/haproxy.cfg
+  when: is_openldap_in_haproxy.stdout == "0"
+
+- name: Open openldap port on load balancer
+  firewalld:
+    port: "1389/tcp"
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- name: Restart HA Proxy
+  service:
+    name: haproxy
+    state: restarted
+  when: is_openldap_in_haproxy.stdout == "0"
+
+- name: Add email address to users
+  community.general.ldap_attrs:
+    dn: "cn={{ item }},ou=users,{{ ldap_domain }}"
+    attributes:
+        mail: "{{ item }}@{{ ocp_domain }}"
+        cn: "{{ item }}"
+        sn: "{{ item }}"
+    state: exact
+    server_uri: "ldap://{{ ldap_url }}"
+    bind_dn: "cn=admin,{{ ldap_domain }}"
+    bind_pw: "{{ ldap_password }}"
+  with_items:
+    - "{{ ldap_users | list }}"
+
+- name: Remove openldap registration from CPFS if exists
+  uri:
+    url: "https://cp-console.apps.{{ ocp_domain }}/idmgmt/identity/api/v1/directory/ldap/offboardDirectory"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ access_token.stdout }}"
+    validate_certs: no
+    use_proxy: no
+  environment:
+    no_proxy: cp-console.apps.{{ ocp_domain }}
+  ignore_errors: yes
+  when: install_cpfs == 'Y' or install_cp4s == 'Y'
+
+- name: Register openldap in CPFS
+  uri:
+    url: 'https://cp-console.apps.{{ ocp_domain }}/idmgmt/identity/api/v1/directory/ldap/onboardDirectory'
+    method: POST
+    body: "{\"LDAP_ID\": \"openldap\", \"LDAP_URL\": \"ldap://{{ ldap_url }}\", \"LDAP_BASEDN\": \"{{ ldap_domain }}\", \"LDAP_BINDDN\": \"cn=admin,{{ ldap_domain }}\", \"LDAP_BINDPASSWORD\": \"{{ ldap_password_base64.stdout }}\", \"LDAP_TYPE\": \"Custom\", \"LDAP_USERFILTER\": \"(&(uid=%v)(objectclass=inetOrgPerson))\", \"LDAP_GROUPFILTER\": \"(&(cn=%v)(objectclass=groupOfNames))\", \"LDAP_USERIDMAP\": \"*:uid\",\"LDAP_GROUPIDMAP\":\"*:cn\", \"LDAP_GROUPMEMBERIDMAP\": \"groupOfNames:member\"}"
+    body_format: json
+    headers:
+      Authorization: 'bearer {{ access_token.stdout }}'
+      Content-Type: 'application/json'
+    validate_certs: no
+    use_proxy: no
+  environment:
+    no_proxy: cp-console.apps.{{ ocp_domain }}
+  when: install_cpfs == 'Y' or install_cp4s == 'Y'

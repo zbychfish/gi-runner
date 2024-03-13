@@ -1,0 +1,50 @@
+- name: Configure PX operator file
+  template:
+    src: "px_op.j2"
+    dest: "{{ temp_dir }}/yamls/px_op.yaml"
+
+- name: Deploy PX operator
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/px_op.yaml"
+
+- name: Wait for PX operator
+  ansible.builtin.shell:
+    cmd: "oc get csv -n kube-system --no-headers -o custom-columns=STATUS:.status.phase"
+  register: px_operator_status
+  until: "px_operator_status.stdout == \"Succeeded\""
+  retries: 30
+  delay: 10
+
+- name: Configure PX cluster deployment file
+  template:
+    src: "px_cluster.j2"
+    dest: "{{ temp_dir }}/yamls/px_cluster.yaml"
+
+- name: PX user credential
+  ansible.builtin.shell:
+    cmd: "kubectl -n kube-system create secret generic px-essential --from-literal=px-essen-user-id={{ px_id }} --from-literal=px-osb-endpoint='https://pxessentials.portworx.com/osb/billing/v1/register' || true"
+
+- name: Deploy PX cluster
+  ansible.builtin.shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/px_cluster.yaml"
+
+- name: Wait for PX cluster deployment
+  ansible.builtin.shell:
+    cmd: "echo $(oc exec `oc get pods -l name=portworx -n kube-system -o jsonpath='{.items[0].metadata.name}'` -c portworx -n kube-system -- /opt/pwx/bin/pxctl cluster list -j )|jq .cluster.Status"
+  register: px_status
+  until: "px_status.stdout|int == 2"
+  retries: 100
+  delay: 10
+
+- name: Configure PX default storage class
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc patch storageclass px-csi-replicated -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
+
+- name: Add storage classes for DB2
+  ansible.builtin.shell:
+    cmd: "oc apply -f ../funcs/yamls/{{ item }}"
+  with_items:
+    - px_sc_db2_fs.yaml
+    - px_sc_db2_block.yaml

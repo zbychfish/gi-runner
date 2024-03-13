@@ -1,0 +1,11 @@
+frontend openldap
+ bind *:1389
+ default_backend openldap
+ mode tcp
+ option tcplog
+backend openldap
+ balance source
+ mode tcp
+{% for name, ip in nodes_list %}
+ server {{ name }} {{ ip }}:31389 check
+{% endfor %}

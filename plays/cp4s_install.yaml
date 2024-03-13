@@ -1,0 +1,216 @@
+- name: Add catalog source for noobaa # BUG in 1.0.2
+  shell:
+    cmd:
+  with_items:
+    - "cp {{ temp_dir }}/archives/catalogSource-redhat-operator-index.yaml {{ temp_dir }}/archives/catalogSource-redhat-operators.yaml"
+    - "sed -i 's/redhat-operator-index/redhat-operators/' {{ temp_dir }}/archives/catalogSource-redhat-operators.yaml"
+    - "oc apply -f {{ temp_dir }}/archives/catalogSource-redhat-operators.yaml"
+  when: internet_type == 'A'
+
+- name: Create all required namespaces
+  shell:
+    cmd: "oc create namespace {{ item }}"
+  with_items:
+    - "openshift-serverless"
+    - "knative-serving"
+    - "knative-eventing"
+    - "{{ cp4s_namespace }}"
+  ignore_errors: true
+
+- name: Configure yaml file serverless operator
+  ansible.builtin.template:
+    src: "cp4s_serveless_sub.j2"
+    dest: "{{ temp_dir }}/yamls/cp4s_serverless_sub.yaml"
+  vars:
+    operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
+
+- name: Deploy serverless operator
+  shell:
+    cmd: "oc apply -f {{ item }}"
+  with_items:
+    - "../funcs/yamls/cp4s_serverless_og.yaml"
+    - "{{ temp_dir }}/yamls/cp4s_serverless_sub.yaml"
+
+- name: Wait for serverless operator
+  shell:
+    cmd: "oc get `oc get pod -n openshift-serverless -oname |grep knative-operator` -n openshift-serverless -ojson|jq .status.containerStatuses[].ready"
+  register: serverless_op
+  until: "serverless_op.stdout == \"true\""
+  retries: 60
+  delay: 10
+
+- name: Instantiate serverless operator
+  shell:
+    cmd: "oc apply -f ../funcs/yamls/cp4s_serverless_knative.yaml"
+
+- name: Wait for knative serving
+  shell:
+    cmd: "oc get knativeserving.operator.knative.dev/knative-serving -n knative-serving -ojson |jq -r '.status.conditions[]|select(.type==\"Ready\")'.status"
+  register: serverless_knative
+  until: "serverless_knative.stdout == \"True\""
+  retries: 60
+  delay: 10
+
+- name: Add secrets 1
+  shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc create secret docker-registry \"ibm-entitlement-key\" -n {{ cp4s_namespace }} \"--docker-server=cp.icr.io\" \"--docker-username=cp\" \"--docker-password={{ ibm_secret }}\""
+  ignore_errors: true
+  when: internet_type != 'A'
+
+- name: Add secrets 2
+  shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "oc create secret generic -n {{ cp4s_namespace }} isc-ingress-default-secret --type=kubernetes.io/tls  --from-file=ca.crt={{ cp4s_ca }} --from-file=tls.crt={{ cp4s_cert }} --from-file=tls.key={{ cp4s_key }}"
+  when: cp4s_ext_ingress == 'Y' and internet_type != 'A'
+  ignore_errors: true
+
+- name: Prepare image content source policy
+  shell:
+    cmd: "sed -i 's#-.*:5000/#- registry.{{ ocp_domain }}:5000/#' {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+  when: internet_type == 'A'
+
+- name: Prepare IBM OLM catalog
+  shell:
+    cmd: "sed -i \"s/image:.*:5000/image: registry.{{ ocp_domain }}:5000/#\" {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
+  with_items:
+    - "catalog-sources.yaml"
+  when: internet_type == 'A' and false
+
+- name: Install CP4S image content source policy and OLM catalog
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/.ibm-pak/data/mirror/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+      #- "catalog-sources.yaml"
+  when: internet_type == 'A'
+
+- name: Install IBM operators catalog
+  shell:
+    cmd: "oc apply -f ../funcs/yamls/ibm_catalog.yaml"
+  when: internet_type != 'A'
+
+- name: Wait for IBM operators catalog
+  shell:
+    cmd: "oc get catalogsource {{ t_catalog }} -n openshift-marketplace -o json|jq -r .status.connectionState.lastObservedState"
+  register: ibm_catalog_state
+  until: "ibm_catalog_state.stdout == \"READY\""
+  retries: 60
+  delay: 10
+  vars:
+    t_catalog: "{{ 'ibm-operator-catalog' if internet_type != 'A' else 'ibm-cp-security-catalog' }}"
+  when: internet_type != 'A'
+
+- name: Unpack case
+  shell:
+    cmd: "tar -xf {{ temp_dir }}/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/ibm-cp-security-{{ cp4s_cases[0] }}.tgz -C {{ temp_dir }}/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}"
+  when: internet_type == 'A'
+
+- name: Configure defaults file
+  ansible.builtin.template:
+    src: "cp4s_values.j2"
+    dest: "{{ temp_dir }}/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}/{{ cp4s_case_name }}/inventory/{{ cp4s_case_inventory_setup }}/files/values.conf"
+  vars:
+    cp4s_backup_size_final: "{{ '' if cp4s_backup_size == '0' else cp4s_backup_size }}"
+    cp4s_option_drc: "{{ 'true' if cp4s_options[0] == 'Y' else false }}"
+    cp4s_option_rm: "{{ 'true' if cp4s_options[1] == 'Y' else false }}"
+    cp4s_option_ti: "{{ 'true' if cp4s_options[2] == 'Y' else false }}"
+  when: internet_type == 'A'
+
+- name: Setup CP4S deployment files
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ temp_dir }}/yamls/{{ item }}.yaml"
+  vars:
+    cp4s_backup_size_final: "{{ '' if cp4s_backup_size == '0' else cp4s_backup_size }}"
+    cp4s_option_drc: "{{ 'true' if cp4s_options[0] == 'Y' else false }}"
+    cp4s_option_rm: "{{ 'true' if cp4s_options[1] == 'Y' else false }}"
+    cp4s_option_ti: "{{ 'true' if cp4s_options[2] == 'Y' else false }}"
+  with_items:
+    - "cp4s_og"
+    - "cp4s_sub"
+    - "cp4s_cr"
+  when: internet_type != 'A'
+
+- name: Deploy CP4S operator
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/{{ item }}"
+  with_items:
+    - cp4s_og.yaml
+    - cp4s_sub.yaml
+  when: internet_type != 'A'
+
+- name: Wait for CP4S operator
+  shell:
+    cmd: "oc get pod -lname=ibm-cp-security-operator -n cp4s -ojson|jq -r '.items[].status.conditions[] | select(.type==\"Ready\").status'"
+  register: cp4s_operator
+  until: "cp4s_operator.stdout == \"True\""
+  retries: 30
+  delay: 10
+  when: internet_type != 'A'
+
+- name: Deploy CP4S online
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/yamls/cp4s_cr.yaml"
+  when: internet_type != 'A'
+
+- name: Deploy CP4S offline
+  shell:
+    cmd: "IBMPAK_HOME={{ temp_dir }} IBMPAK_LAUNCH_SKIP_PREREQ_CHECK=true oc ibm-pak launch {{ cp4s_case_name }} --version {{ cp4s_cases[0] }} --inventory {{ cp4s_case_inventory_setup }} --action install --namespace {{ cp4s_namespace }} --tolerance 1 --args \"--acceptLicense true --inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ cp4s_case_name }}/{{ cp4s_cases[0] }}\""
+  when: internet_type == 'A'
+
+- name: Wait for CR deployment initiation
+  pause:
+    minutes: 5
+
+- name: Wait for CP4S successful deployment
+  shell:
+    cmd: "oc get CP4SThreatManagement threatmgmt -n cp4s -ojson|jq -r .status.conditions[].type"
+  register: cp4s_deployed
+  until: "cp4s_deployed.stdout == \"Success\""
+  retries: 100
+  delay: 60
+
+- name: Download cloud tool
+  get_url:
+    url: "https://github.com/IBM/cloud-pak-cli/releases/latest/download/cloudctl-linux-amd64.tar.gz"
+    dest: "{{ temp_dir }}/downloads"
+    use_proxy: "{{ 'yes' if internet_type == 'P' else 'no' }}"
+  when: internet_type != 'A'
+
+- name: Unpack cloudctl tools
+  shell:
+    cmd: "tar xf {{ temp_dir }}/{{ t_path }}/{{ item.src }} -C /usr/local/bin"
+  with_items:
+    - { src: "cloudctl-linux-amd64.tar.gz" }
+  vars:
+    t_path: "{{ 'downloads' if internet_type != 'A' else 'archives' }}"
+
+- name: Standarize cloudctl name
+  command: mv /usr/local/bin/cloudctl-linux-amd64 /usr/local/bin/cloudctl
+
+- name: Set correct rights for RHCOS tools in /usr/local/bin
+  file:
+    path: "/usr/local/bin/{{ item.file }}"
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - { file: "cloudctl" }
+
+- name: Login to ICS
+  shell:
+    cmd: "cloudctl login -a https://cp-console.apps.{{ ocp_domain }} -u admin -p `oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d` -n kube-system"
+
+- name: Get cp-serviceability pod info
+  shell:
+    cmd: "oc get pod -n {{ cp4s_namespace }} --no-headers -lrun=cp-serviceability | cut -d' ' -f1"
+  register: service_pod
+
+- name: Install cpctl tool
+  shell:
+    cmd: "oc cp {{ service_pod.stdout }}:/opt/bin/linux/cpctl -n {{ cp4s_namespace }} /usr/local/bin/cpctl && chmod +x /usr/local/bin/cpctl"

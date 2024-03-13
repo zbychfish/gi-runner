@@ -1,0 +1,68 @@
+- name: Create all required namespaces
+  shell:
+    cmd: "oc create namespace {{ item }}"
+  with_items:
+    - "{{ edr_namespace }}"
+  ignore_errors: true
+
+- name: Download EDR case file
+  shell:
+    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak get {{ edr_case_name }} --version {{ edr_cases[0] }} --disable-top-level-images-mode"
+  when: internet_type != 'A'
+
+- name: Unpack EDR case
+  shell:
+    cmd: "tar -xf {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/ibm-security-*.tgz -C {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}"
+
+- name: Prepare image content source policy
+  shell:
+    cmd: "sed -i 's#-.*:5000/#- registry.{{ ocp_domain }}:5000/#' {{ temp_dir }}/.ibm-pak/data/mirror/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+  when: internet_type == 'A'
+
+- name: Install image content source policy
+  shell:
+    cmd: "oc apply -f {{ temp_dir }}/.ibm-pak/data/mirror/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ item }}"
+  with_items:
+    - "image-content-source-policy.yaml"
+  when: internet_type == 'A'
+
+- name: Generate EDR values file
+  template:
+    src: edr_values.j2
+    dest: "{{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }}/{{ edr_case_name }}/inventory/{{ edr_case_inventory_setup }}/files/values.conf"
+  vars:
+    air_gap_install: "{{ 'false' if internet_type != 'A' else 'true' }}"
+    is_proxy: "{{ 'true' if internet_type == 'P' else 'false' }}"
+    r_url: "{{ 'cp.icr.io/cp/cp4s' if internet_type != 'A' else 'registry.'+ocp_domain+':5000/cp/cp4s' }}"
+    r_user: "{{ 'cp' if internet_type != 'A' else repo_user }}"
+    r_password: "{{ ibm_secret if internet_type != 'A' else repo_user_password }}"
+
+- name: Add lacking tag for EDR catalog source # BUG in 1.0.2, check for each new version
+  shell:
+    cmd: "{{ item }}"
+  with_items:
+    - "skopeo login registry.{{ ocp_domain }}:5000"
+    - "skopeo copy docker://registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:latest_uat docker://registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:3.12.2.0-amd64"
+  when: internet_type == 'A'
+
+- name: Start EDR deployment
+  shell:
+    cmd: "IBMPAK_HOME={{ temp_dir }} oc ibm-pak launch -t 1 {{ edr_case_name }} --version {{ edr_cases[0] }} --inventory {{ edr_case_inventory_setup }} --namespace {{ edr_namespace }} --action install --args \"--acceptLicense true --inputDir {{ temp_dir }}/.ibm-pak/data/cases/{{ edr_case_name }}/{{ edr_cases[0] }} --cp4sCatalogSourceTag latest\""
+
+- name: Wait for CPFS deployment
+  shell:
+    cmd: "oc get commonservice -n ibm-common-services -o json|jq -r .items[0].status.phase"
+  register: cpfs_depl_status
+  until: "cpfs_depl_status.stdout == \"Succeeded\""
+  retries: 50
+  delay: 10
+  
+- name: Wait for EDR deployment
+  shell:
+    cmd: "oc get IBMSecurityEDR -n {{ edr_namespace }} -o json|jq -r .items[0].status.conditions[0].type"
+  register: edr_depl_status
+  until: "edr_depl_status.stdout == \"Success\""
+  retries: 200
+  delay: 10

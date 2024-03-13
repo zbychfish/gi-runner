@@ -1,0 +1,630 @@
+- hosts: bastion
+  vars:
+    internet_type: "{{ lookup('env','GI_INTERNET_ACCESS') }}"
+    bas_ip: "{{ lookup('env','GI_BASTION_IP') }}"
+    ntp_server: "{{ lookup('env','GI_NTP_SRV') }}"
+    ocp_release: "{{ lookup('env','GI_OCP_RELEASE') }}"
+    ocp_major_release: "{{ ocp_release.split('.')[:-1]|join('.') }}"
+    ocp_minor_release: "{{ ocp_release.split('.')[-1] }}"
+    boot_name: "{{ lookup('env','GI_BOOTSTRAP_NAME') }}"
+    boot_ip: "{{ lookup('env','GI_BOOTSTRAP_IP') }}"
+    boot_mac: "{{ lookup('env','GI_BOOTSTRAP_MAC_ADDRESS') }}"
+    master_ip: "{{ lookup('env', 'GI_MASTER_IP').split(',') }}"
+    master_mac: "{{ lookup('env', 'GI_MASTER_MAC_ADDRESS').split(',') }}"
+    master_name: "{{ lookup('env', 'GI_MASTER_NAME').split(',') }}"
+    is_master_only: "{{ lookup('env','GI_MASTER_ONLY') }}"
+    is_odf_tainted: "{{ lookup('env','GI_OCS_TAINTED') }}"
+    ocp_domain: "{{ lookup('env','GI_DOMAIN') }}"
+    base_domain: "{{ ocp_domain.split('.')[1:] | join('.') }}"
+    cluster_domain: "{{ ocp_domain.split('.')[0] }}"
+    boot_disk: "{{ lookup('env','GI_BOOT_DEVICE') }}"
+    bas_int: "{{ lookup('env','GI_BASTION_INTERFACE') }}"
+    bas_name: "{{ lookup('env','GI_BASTION_NAME') }}"
+      # net_int: "{{ lookup('env','GI_NETWORK_INTERFACE') }}"
+    one_subnet: "{{ lookup('env','GI_ONE_SUBNET') }}"
+    dns_forwarder: "{{ lookup('env','GI_DNS_FORWARDER') }}"
+    install_gi: "{{ lookup('env','GI_INSTALL_GI') }}"
+    cluster_network: "{{ lookup('env','GI_OCP_CIDR') }}"
+    cluster_network_subnet:  "{{ lookup('env','GI_OCP_CIDR_MASK') }}"
+    ocp_cni: "{{ lookup('env','GI_OCP_CNI') }}"
+    ssh_key: "{{ lookup('env','GI_SSH_KEY') }}"
+    ocpadmin: "{{ lookup('env','GI_OCADMIN') }}"
+    ocpadmin_password: "{{ lookup('env','GI_OCADMIN_PWD') }}"
+    ocp_ext_ingress: "{{ lookup('env','GI_OCP_IN') }}"
+    storage_type: "{{ lookup('env','GI_STORAGE_TYPE') }}"
+    storage_device: "{{ lookup('env','GI_STORAGE_DEVICE') }}"
+    storage_device_size: "{{ lookup('env','GI_STORAGE_DEVICE_SIZE') }}"
+    storage_class_rw_many: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' if storage_type == 'O' else 'px-csi-replicated' }}"
+    storage_class_rw_one: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'px-csi-replicated' }}"
+    install_cpfs: "{{ lookup('env','GI_ICS') }}"
+    install_ldap: "{{ lookup('env','GI_INSTALL_LDAP') }}"
+    install_cp4s: "{{ lookup('env','GI_CP4S') }}"
+    install_edr: "{{ lookup('env','GI_EDR') }}"
+    gi_nfs_backup: 'N' # default value
+
+  vars_files:
+    - constants.yaml
+
+  tasks:
+    - name: Check standard configuration parameters
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_INTERNET_ACCESS", value: "{{ internet_type }}" }
+        - { name: "GI_BASTION_IP", value: "{{ bas_ip }}" }
+        - { name: "GI_NTP_SRV", value: "{{ ntp_server }}" }
+        - { name: "GI_OCP_RELEASE", value: "{{ ocp_release }}" }
+        - { name: "GI_BOOTSTRAP_NAME", value: "{{ boot_name }}" }
+        - { name: "GI_BOOTSTRAP_IP", value: "{{ boot_ip }}" }
+        - { name: "GI_BOOTSTRAP_MAC_ADDRESS", value: "{{ boot_mac }}" }
+        - { name: "GI_MASTER_IP", value: "{{ master_ip }}" }
+        - { name: "GI_MASTER_MAC_ADDRESS", value: "{{ master_mac }}" }
+        - { name: "GI_MASTER_NAME", value: "{{ master_name }}" }
+        - { name: "GI_MASTER_ONLY", value: "{{ is_master_only }}" }
+        - { name: "GI_OCS_TAINTED", value: "{{ is_odf_tainted }}" }
+        - { name: "GI_DOMAIN", value: "{{ ocp_domain }}" }
+        - { name: "GI_BOOT_DEVICE", value: "{{ boot_disk }}" }
+        - { name: "GI_BASTION_INTERFACE", value: "{{ bas_int }}" }
+        - { name: "GI_BASTION_NAME", value: "{{ bas_name }}" }
+          # - { name: "GI_NETWORK_INTERFACE", value: "{{ net_int }}" }
+        - { name: "GI_ONE_SUBNET", value: "{{ one_subnet }}" }
+        - { name: "GI_DNS_FORWARDER", value: "{{ dns_forwarder }}" }
+        - { name: "GI_INSTALL_GI", value: "{{ install_gi }}" }
+        - { name: "GI_OCP_CIDR", value: "{{ cluster_network }}" }
+        - { name: "GI_OCP_CIDR_MASK", value: "{{ cluster_network_subnet }}" }
+        - { name: "GI_OCP_CNI", value: "{{ ocp_cni }}" }
+        - { name: "GI_SSH_KEY", value: "{{ ssh_key }}" }
+        - { name: "GI_OCADMIN", value: "{{ ocpadmin }}" }
+        - { name: "GI_OCADMIN_PWD", value: "{{ ocpadmin_password }}" }
+        - { name: "GI_OCP_IN", value: "{{ ocp_ext_ingress }}" }
+        - { name: "GI_STORAGE_TYPE", value: "{{ storage_type }}" }
+        - { name: "GI_STORAGE_DEVICE", value: "{{ storage_device }}" }
+        - { name: "GI_STORAGE_DEVICE_SIZE", value: "{{ storage_device_size }}" }
+        - { name: "GI_ICS", value: "{{ install_cpfs }}" }
+        - { name: "GI_INSTALL_LDAP", value: "{{ install_ldap }}" }
+        - { name: "GI_CP4S", value: "{{ install_cp4s }}" }
+        - { name: "GI_EDR", value: "{{ install_edr }}" }
+      when: item.value == ""
+
+    - name: Set parameters for non air-gapped installation
+      ansible.builtin.set_fact:
+        rhn_secret: "{{ lookup('env','GI_RHN_SECRET') }}"
+      when: internet_type != 'A'
+
+    - name: Check configuration parameters for non air-gapped installation
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      when: internet_type != 'A' and item.value == ""
+      loop:
+        - { name: "GI_RHN_SECRET", value: "{{ rhn_secret }}" }
+
+    - name: Set parameters for installation with proxy
+      ansible.builtin.set_fact:
+        proxy_url: "{{ lookup('env','GI_PROXY_URL') }}"
+        no_proxy_list: "{{ lookup('env','GI_NOPROXY_NET') }}"
+        no_proxy_adds: "{{ lookup('env','GI_NOPROXY_NET_ADDS') }}"
+      when: internet_type == 'P'
+
+    - name: Check configuration parameters for installation with proxy
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_PROXY_URL", value: "{{ proxy_url }}" }
+        - { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
+          #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
+      when: internet_type == 'P' and item.value == ""
+
+    - name: Set parameters for air-gapped installation
+      ansible.builtin.set_fact:
+        archives_dir:  "{{ lookup('env','GI_ARCHIVES_DIR') }}"
+        repo_user:  "{{ lookup('env','GI_REPO_USER') }}"
+        repo_user_password:  "{{ lookup('env','GI_REPO_USER_PWD') }}"
+      when: internet_type == 'A'
+
+    - name: Check configuration parameters for air-gapped installation
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      when: internet_type == 'A' and item.value == ""
+      loop:
+        - { name: "GI_REPO_USER", value: "{{ repo_user }}" }
+        - { name: "GI_REPO_USER_PWD", value: "{{ repo_user_password }}" }
+        - { name: "GI_ARCHIVES_DIR", value: "{{ archives_dir }}" }
+
+    - name: Set parameters for ntp set on bastion
+      ansible.builtin.set_fact:
+        ntp_clients: "{{ lookup('env','GI_NTP_CLIENTS') }}"
+      when: ntp_server == bas_ip
+
+    - name: Check parameters for ntp set on bastion
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_NTP_CLIENTS", value: "{{ ntp_clients }}" }
+      when: ntp_server == bas_ip and item.value == ""
+
+    - name: Set worker nodes array
+      ansible.builtin.set_fact:
+        worker_ip: "{{ lookup('env', 'GI_WORKER_IP').split(',') }}"
+        worker_mac: "{{ lookup('env', 'GI_WORKER_MAC_ADDRESS').split(',') }}"
+        worker_name: "{{ lookup('env', 'GI_WORKER_NAME').split(',') }}"
+      when: is_master_only == 'N'
+
+    - name: Check workers configuration
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_WORKER_IP", value: "{{ worker_ip }}" }
+        - { name: "GI_WORKER_MAC_ADDRESS", value: "{{ worker_mac }}" }
+        - { name: "GI_WORKER_NAME", value: "{{ worker_name }}" }
+      when: is_master_only == 'N' and item.value == ""
+
+    - name: Set parameters for one subnet installation
+      ansible.builtin.set_fact:
+        dhcp_range_start: "{{ lookup('env','GI_DHCP_RANGE_START') }}"
+        dhcp_range_stop: "{{ lookup('env','GI_DHCP_RANGE_STOP') }}"
+        bas_gw: "{{ lookup('env','GI_GATEWAY') }}"
+      when: one_subnet == 'Y'
+
+    - name: Check configuration parameters for one subnet installation
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_DHCP_RANGE_START", value: "{{ dhcp_range_start }}" }
+        - { name: "GI_DHCP_RANGE_STOP", value: "{{ dhcp_range_stop }}" }
+        - { name: "GI_GATEWAY", value: "{{ bas_gw }}" }
+      when: one_subnet == 'Y' and item.value == ""
+
+    - name: Set OCP ingress cert variables
+      ansible.builtin.set_fact:
+        ocp_ca: "{{ lookup('env', 'GI_OCP_IN_CA') }}"
+        ocp_cert: "{{ lookup('env', 'GI_OCP_IN_CERT') }}"
+        ocp_key: "{{ lookup('env', 'GI_OCP_IN_KEY') }}"
+      when: ocp_ext_ingress == 'Y'
+
+    - name: Check OCP ingress cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_OCP_IN_CA", value: "{{ ocp_ca }}" }
+        - { name: "GI_OCP_IN_CERT", value: "{{ ocp_cert }}" }
+        - { name: "GI_OCP_IN_KEY", value: "{{ ocp_key }}" }
+      when: ocp_ext_ingress == 'Y' and item.value == ""
+
+    - name: Set rook-ceph variables
+      ansible.builtin.set_fact:
+        rook_dedicated_nodes: "{{ lookup('env', 'GI_ROOK_NODES').split(',') }}"
+        rook_depl_type: "{{ lookup('env','GI_ROOK_DEPL') }}"
+      when: storage_type == 'R'
+
+    - name: Check rook-ceph variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_ROOK_NODES", value: "{{ rook_dedicated_nodes }}" }
+        - { name: "GI_ROOK_DEPL", value: "{{ rook_depl_type }}" }
+      when: storage_type == 'R' and item.value == ""
+
+    - name: Set ODF tainted nodes array
+      ansible.builtin.set_fact:
+        odf_ip: "{{ lookup('env', 'GI_OCS_IP').split(',') }}"
+        odf_mac: "{{ lookup('env', 'GI_OCS_MAC_ADDRESS').split(',') }}"
+        odf_name: "{{ lookup('env', 'GI_OCS_NAME').split(',') }}"
+      when: storage_type == 'O' and is_odf_tainted == 'Y'
+
+    - name: Check ODF configuration
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_OCS_IP", value: "{{ odf_ip }}" }
+        - { name: "GI_OCS_MAC_ADDRESS", value: "{{ odf_mac }}" }
+        - { name: "GI_OCS_NAME", value: "{{ odf_name }}" }
+      when: storage_type == 'O' and is_odf_tainted == 'Y' and item.value == ""
+
+    - name: Set ODF nodes list
+      ansible.builtin.set_fact:
+        odf_name: "{{ lookup('env', 'GI_OCS_NODES').split(',') }}"
+      when: storage_type == 'O' and is_odf_tainted == 'N'
+
+    - name: Check ODF nodes list
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_OCS_NODES", value: "{{ odf_nodes }}" }
+      when: storage_type == 'O' and is_odf_tainted == 'N' and item.value == ""
+
+    - name: Set Portworx variables
+      ansible.builtin.set_fact:
+        px_id: "{{ lookup('env', 'GI_PX_ID') }}"
+      when: storage_type == 'P'
+
+    - name: Check Portworx variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_PX_ID", value: "{{ px_id }}" }
+      when: storage_type == 'P' and item.value == ""
+
+    - name: Set CPFS installation variables from env
+      ansible.builtin.set_fact:
+        cpfs_ext_ingress: "{{ lookup('env','GI_ICS_IN') }}"
+        cpfs_version_hint: "{{ lookup('env','GI_ICS_VERSION') }}"
+        cpfs_operands: "{{ lookup('env', 'GI_ICS_OPERANDS').split(',') }}"
+        cpfs_dedicated_nodes: "{{ lookup('env', 'GI_ICS_NODES').split(',') }}"
+        cpfs_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+        cpfs_size_hint: "{{ lookup('env','GI_CPFS_SIZE') }}"
+      when: install_cpfs == 'Y'
+
+    - name: Check CPFS variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_ICS_IN", value: "{{ cpfs_ext_ingress }}" }
+        - { name: "GI_ICS_VERSION", value: "{{ cpfs_version_hint }}" }
+        - { name: "GI_ICS_OPERANDS", value: "{{ cpfs_operands }}" }
+        - { name: "GI_ICS_NODES", value: "{{ cpfs_dedicated_nodes }}" }
+        - { name: "GI_ICSADMIN_PWD", value: "{{ cpfs_admin_password }}" }
+        - { name: "GI_CPFS_SIZE", value: "{{ cpfs_size_hint }}" }
+      when: install_cpfs == 'Y' and item.value == ""
+
+    - name: Set CPFS installation variables
+      ansible.builtin.set_fact:
+        cpfs_version: "{{ cpfs_versions[cpfs_version_hint|int] }}"
+        cpfs_case: "{{ cpfs_cases[cpfs_version_hint|int] }}"
+        cpfs_size: "{{ 'small' if cpfs_size_hint == 'S' else 'medium' if cpfs_size_hint == 'M' else 'large' if cpfs_size_hint == 'L' else 'starterset' }}"
+        cpfs_registry: 'icr.io/cpopen'
+      when: install_cpfs == 'Y'
+
+    - name: Set CPFS endpoint cert variables
+      set_fact:
+        cpfs_ca: "{{ lookup('env', 'GI_ICS_IN_CA') }}"
+        cpfs_cert: "{{ lookup('env', 'GI_ICS_IN_CERT') }}"
+        cpfs_key: "{{ lookup('env', 'GI_ICS_IN_KEY') }}"
+      when: install_cpfs == 'Y' and cpfs_ext_ingress == 'Y'
+
+    - name: Check CPFS endpoint cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_ICS_IN_CA", value: "{{ cpfs_ca }}" }
+        - { name: "GI_ICS_IN_CERT", value: "{{ cpfs_cert }}" }
+        - { name: "GI_ICS_IN_KEY", value: "{{ cpfs_key }}" }
+      when: install_cpfs == 'Y' and cpfs_ext_ingress == 'Y' and item.value == ""
+
+    - name: Set LDAP installation variables from env
+      ansible.builtin.set_fact:
+        ldap_domain: "{{ lookup('env','GI_LDAP_DOMAIN') }}"
+        ldap_password: "{{ lookup('env','GI_LDAP_USERS_PWD') }}"
+        ldap_users: "{{ lookup('env','GI_LDAP_USERS').split(',') }}"
+        ldap_users_raw: "{{ lookup('env','GI_LDAP_USERS') }}"
+      when: install_ldap == 'Y'
+
+    - name: Check LDAP variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_LDAP_DOMAIN", value: "{{ ldap_domain }}" }
+        - { name: "GI_LDAP_USERS_PWD", value: "{{ ldap_password }}" }
+        - { name: "GI_LDAP_USERS", value: "{{ ldap_users }}" }
+      when: install_ldap == 'Y' and item.value == ""
+
+    - name: Set GI installation variables from env
+      ansible.builtin.set_fact:
+        gi_nfs_backup: "{{ lookup('env','GI_NFS_BACKUP') }}"
+        gi_namespace: "{{ lookup('env','GI_NAMESPACE_GI') }}"
+        gi_dedicated_nodes: "{{ lookup('env', 'GI_GI_NODES').split(',') }}"
+        gi_version_index:  "{{ lookup('env','GI_VERSION') }}"
+        db2_nodes_array: "{{ lookup('env','GI_DB2_NODES').split(',') }}"
+        db2_tainted: "{{ lookup('env','GI_DB2_TAINTED') }}"
+        gi_ext_ingress: "{{ lookup('env','GI_IN') }}"
+        gi_ssh_host: "{{ lookup('env','GI_SSH_HOST') }}"
+        gi_ssh_port: "{{ lookup('env','GI_SSH_PORT') }}"
+        gi_size:  "{{ lookup('env','GI_SIZE_GI') }}"
+        db2_enc_hint: "{{ lookup('env','GI_DB2_ENCRYPTED') }}"
+        gi_kafka_size: "{{ lookup('env','GI_KAFKA_STORAGE_SIZE') }}"
+        gi_zookeeper_size:  "{{ lookup('env','GI_ZOOKEEPER_STORAGE_SIZE') }}"
+        gi_redis_size:  "{{ lookup('env','GI_REDIS_STORAGE_SIZE') }}"
+        gi_pgsql_size:  "{{ lookup('env','GI_POSTGRES_STORAGE_SIZE') }}"
+        gi_mongo_size: "{{ lookup('env','GI_MONGO_DATA_STORAGE_SIZE') }}"
+        gi_mongo_meta_size:  "{{ lookup('env','GI_MONGO_METADATA_STORAGE_SIZE') }}"
+        gi_ds_size: "{{ lookup('env','GI_DATA_STORAGE_SIZE') }}"
+        gi_meta_size: "{{ lookup('env','GI_METADATA_STORAGE_SIZE') }}"
+        gi_logs_size: "{{ lookup('env','GI_ARCHIVELOGS_STORAGE_SIZE') }}"
+        gi_noobaa_core_size: "{{ lookup('env','GI_NOOBAA_CORE_SIZE') }}"
+        gi_noobaa_backing_size: "{{ lookup('env','GI_NOOBAA_BACKING_SIZE') }}"
+        db2_partition_per_node: "{{ lookup('env','GI_DB2_PARTITION_PER_NODE') }}"
+        stap_supp: "{{ lookup('env','GI_STAP_STREAMING') }}"
+        outliers_demo: "{{ lookup('env', 'GI_OUTLIERS_DEMO') }}"
+      when: install_gi == 'Y'
+
+    - name: Check GI variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_NFS_BACKUP", value: "{{ gi_nfs_backup }}" }
+        - { name: "GI_NAMESPACE_GI", value: "{{ gi_namespace }}" }
+        - { name: "GI_GI_NODES", value: "{{ gi_dedicated_nodes }}" }
+        - { name: "GI_VERSION", value: "{{ gi_version_index }}" }
+        - { name: "GI_DB2_NODES", value: "{{ db2_nodes_array }}" }
+        - { name: "GI_DB2_TAINTED", value: "{{ db2_tainted }}" }
+        - { name: "GI_IN", value: "{{ gi_ext_ingress }}" }
+        - { name: "GI_SSH_HOST", value: "{{ gi_ssh_host }}" }
+        - { name: "GI_SSH_PORT", value: "{{ gi_ssh_port }}" }
+        - { name: "GI_SIZE_GI", value: "{{ gi_size }}" }
+        - { name: "GI_DB2_ENCRYPTED", value: "{{ db2_enc_hint }}" }
+        - { name: "GI_KAFKA_STORAGE_SIZE", value: "{{ gi_kafka_size }}" }
+        - { name: "GI_ZOOKEEPER_STORAGE_SIZE", value: "{{ gi_zookeeper_size }}" }
+        - { name: "GI_REDIS_STORAGE_SIZE", value: "{{ gi_redis_size }}" }
+        - { name: "GI_POSTGRES_STORAGE_SIZE", value: "{{ gi_pgsql_size }}" }
+        - { name: "GI_MONGO_DATA_STORAGE_SIZE", value: "{{ gi_mongo_size }}" }
+        - { name: "GI_MONGO_METADATA_STORAGE_SIZE", value: "{{ gi_mongo_meta_size }}" }
+        - { name: "GI_DATA_STORAGE_SIZE", value: "{{ gi_ds_size }}" }
+        - { name: "GI_METADATA_STORAGE_SIZE", value: "{{ gi_meta_size }}" }
+        - { name: "GI_ARCHIVELOGS_STORAGE_SIZE", value: "{{ gi_logs_size }}" }
+        - { name: "GI_NOOBAA_CORE_SIZE", value: "{{ gi_noobaa_core_size }}" }
+        - { name: "GI_DB2_PARTITION_PER_NODE", value: "{{ gi_noobaa_backing_size }}" }
+        - { name: "GI_DB2_PARTITION_PER_NODE", value: "{{ db2_partition_per_node }}" }
+        - { name: "GI_STAP_STREAMING", value: "{{ stap_supp }}" }
+        - { name: "GI_OUTLIERS_DEMO", value: "{{ outliers_demo }}" }
+      when: install_gi == 'Y' and item.value == ""
+
+    - name: Set GI cert variables
+      ansible.builtin.set_fact:
+        gi_ca: "{{ lookup('env', 'GI_IN_CA') }}"
+        gi_cert: "{{ lookup('env', 'GI_IN_CERT') }}"
+        gi_key: "{{ lookup('env', 'GI_IN_KEY') }}"
+      when: install_gi == 'Y' and gi_ext_ingress == 'Y'
+
+    - name: Check GI cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_IN_CA", value: "{{ gi_ca }}" }
+        - { name: "GI_IN_CERT", value: "{{ gi_cert }}" }
+        - { name: "GI_IN_KEY", value: "{{ gi_key }}" }
+      when: install_gi == 'Y' and gi_ext_ingress == 'Y' and item.value == ""
+
+    - name: Set GI installation variables
+      ansible.builtin.set_fact:
+        gi_version: "{{ gi_versions[gi_version_index|int] }}"
+        gi_case_version: "{{ gi_cases[gi_version_index|int] }}"
+        db2_nodes_list: "{{ db2_nodes_array|product([ocp_domain])|map('join','.')|join(',') }}"
+        gi_add_options1: "{{ ' -t false' if db2_tainted == 'N' else ' -t true' if db2_tainted == 'Y' else '' }}"
+        gi_add_options2: "{{ ' -c '+gi_ca+' -f '+gi_cert+' -k '+gi_key if gi_ext_ingress == 'Y' else '' }}"
+        gi_license: "{{ 'L-TFWF-ZZ5233' if gi_version_index|int > 0 else 'L-GBLK-CDVHGZ' }}"
+        gi_deployment_size: "{{ 'values-xsmall' if gi_size == 'demo' else 'values-small' if gi_size == 'small' else 'values-med' }}"
+        db2_enc: "{{ 'YES' if db2_enc_hint == 'Y' else 'NO' }}"
+        db2_sc_block: "{{ 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'portworx-db2-rwo-sc' if storage_type == 'P' else '' }}"
+        db2_sc_fs: "{{ 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' if storage_type == 'O' else 'portworx-db2-rwx-sc' if storage_type == 'P' else '' }}"
+        nodb2_sc_block: "{{ 'rook-ceph-block-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'portworx-db2-rwo-sc' if storage_type == 'P' else '' }}"
+        nodb2_sc_fs: "{{ 'rook-cephfs-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-cephfs' if storage_type == 'R' else 'ocs-storagecluster-cephfs' if storage_type == 'O' else 'portworx-db2-rwx-sc' if storage_type == 'P' else '' }}"
+      when: install_gi == 'Y'
+
+    - name: Set GI NFS variables
+      ansible.builtin.set_fact:
+        gi_nfs_server: "{{ lookup('env','GI_NFS_SERVER') }}"
+        gi_nfs_path: "{{ lookup('env','GI_NFS_PATH') }}"
+        gi_backup_volume_size: "{{ lookup('env','GI_BACKUP_SIZE') }}"
+      when: install_gi == 'Y' and gi_nfs_backup == 'Y'
+
+    - name: Check GI NFS variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_NFS_SERVER", value: "{{ gi_nfs_server }}" }
+        - { name: "GI_NFS_PATH", value: "{{ gi_nfs_path }}" }
+        - { name: "GI_BACKUP_SIZE", value: "{{ gi_backup_volume_size }}" }
+      when: install_gi == 'Y' and gi_nfs_backup == 'Y' and item.value == ""
+
+    - name: Set CP4S installation variables from env
+      ansible.builtin.set_fact:
+        cp4s_namespace: "{{ lookup('env','GI_CP4S_NS') }}"
+        cp4s_ext_ingress: "{{ lookup('env','GI_CP4S_IN') }}"
+        cp4s_admin: "{{ lookup('env','GI_CP4S_ADMIN') }}"
+        cp4s_sc: "{{ lookup('env','GI_CP4S_SC') }}"
+        cp4s_backup_sc: "{{ lookup('env','GI_CP4S_SC_BACKUP') }}"
+        cp4s_backup_size: "{{ lookup('env','GI_CP4S_BACKUP_SIZE') }}"
+        cp4s_options: "{{ lookup('env','GI_CP4S_OPTS').split(',') }}"
+        cpfs_admin_password: "{{ lookup('env','GI_ICSADMIN_PWD') }}"
+        gi_nfs_backup: 'N'
+      when: install_cp4s == 'Y'
+
+    - name: Check CP4S variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_CP4S_NS", value: "{{ cp4s_namespace }}" }
+        - { name: "GI_CP4S_IN", value: "{{ cp4s_ext_ingress }}" }
+        - { name: "GI_CP4S_ADMIN", value: "{{ cp4s_admin }}" }
+        - { name: "GI_CP4S_SC", value: "{{ cp4s_sc }}" }
+        - { name: "GI_CP4S_SC_BACKUP", value: "{{ cp4s_backup_sc }}" }
+        - { name: "GI_CP4S_BACKUP_SIZE", value: "{{ cp4s_backup_size }}" }
+        - { name: "GI_CP4S_OPTS", value: "{{ cp4s_options }}" }
+        - { name: "GI_ICSADMIN_PWD", value: "{{ cpfs_admin_password }}" }
+      when: install_cp4s == 'Y' and item.value == ""
+
+    - name: Set CP4S cert variables
+      ansible.builtin.set_fact:
+        cp4s_ca: "{{ lookup('env', 'GI_CP4S_CA') }}"
+        cp4s_cert: "{{ lookup('env', 'GI_CP4S_CERT') }}"
+        cp4s_key: "{{ lookup('env', 'GI_CP4S_KEY') }}"
+      when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y'
+
+    - name: Check CP4S cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_CP4S_CA", value: "{{ cp4s_ca }}" }
+        - { name: "GI_CP4S_CERT", value: "{{ cp4s_cert }}" }
+        - { name: "GI_CP4S_KEY", value: "{{ cp4s_key }}" }
+      when: install_cp4s == 'Y' and cp4s_ext_ingress == 'Y' and item.value == ""
+
+    - name: Set EDR installation variables from env
+      ansible.builtin.set_fact:
+        edr_namespace: "{{ lookup('env','GI_EDR_NS') }}"
+        edr_ext_ingress: "{{ lookup('env','GI_EDR_IN') }}"
+        edr_license_short: "{{ lookup('env','GI_EDR_LICENSE') }}"
+      when: install_edr == 'Y'
+
+    - name: Check EDR variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_EDR_NS", value: "{{ edr_namespace }}" }
+        - { name: "GI_EDR_IN", value: "{{ edr_ext_ingress }}" }
+        - { name: "GI_EDR_LICENSE", value: "{{ edr_license_short }}" }
+      when: install_edr == 'Y' and item.value == ""
+
+    - name: Set EDR installation variables
+      ansible.builtin.set_fact:
+        noha_storage_class: "{{ 'rook-ceph-block-nr' if storage_type == 'R' and rook_depl_type|int == 3 else 'rook-ceph-block' if storage_type == 'R' else 'ocs-storagecluster-ceph-rbd' if storage_type == 'O' else 'portworx-db2-rwo-sc' if storage_type == 'P' else '' }}"
+        edr_license: "{{ 'Enterprise' if edr_license_short == 'E' else 'Pro' }}"
+        gi_nfs_backup: 'N'
+      when: install_edr == 'Y'
+
+    - name: Set EDR cert variables
+      ansible.builtin.set_fact:
+        edr_ca: "{{ lookup('env', 'GI_EDR_CA') }}"
+        edr_cert: "{{ lookup('env', 'GI_EDR_CERT') }}"
+        edr_key: "{{ lookup('env', 'GI_EDR_KEY') }}"
+      when: install_edr == 'Y' and edr_ext_ingress == 'Y'
+
+    - name: Check EDR cert variables
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_EDR_CA", value: "{{ edr_ca }}" }
+        - { name: "GI_EDR_CERT", value: "{{ edr_cert }}" }
+        - { name: "GI_EDR_KEY", value: "{{ edr_key }}" }
+      when: install_edr == 'Y' and edr_ext_ingress == 'Y' and item.value == ""
+
+    - name: Set CP4S and EDR proxy settings
+      ansible.builtin.set_fact:
+        proxy_url: "{{ lookup('env','GI_PROXY_URL') }}"
+        no_proxy_list: "{{ lookup('env','GI_NOPROXY_NET') }}"
+        no_proxy_adds: "{{ lookup('env','GI_NOPROXY_NET_ADDS') }}"
+      when: (install_cp4s == 'Y' or install_edr == 'Y') and internet_type == 'A'
+
+    - name: Check CP4S and EDR variables for proxy settings
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_PROXY_URL", value: "{{ proxy_url }}" }
+        - { name: "GI_NOPROXY_NET", value: "{{ no_proxy_list }}" }
+          #- { name: "GI_NOPROXY_NET_ADDS", value: "{{ no_proxy_adds }}" }
+      when: (install_cp4s == 'Y' or install_edr == 'Y') and internet_type == 'A' and item.value == ""
+
+    - name: Set parameters for non air-gapped installation
+      ansible.builtin.set_fact:
+        ibm_secret:  "{{ lookup('env','GI_IBM_SECRET') }}"
+      when: (install_gi == 'Y' or install_cp4s == 'Y' or install_edr == 'Y') and internet_type != 'A'
+
+    - name: Check configuration parameters for non air-gapped installation
+      ansible.builtin.fail: msg="Variable {{ item.name }} is not set"
+      loop:
+        - { name: "GI_IBM_SECRET", value: "{{ ibm_secret }}" }
+      when: internet_type != 'A' and (install_gi == 'Y' or install_cp4s == 'Y' or install_edr == 'Y') and item.value == ""
+
+    - name: Clean downloads directory
+      ansible.builtin.file:
+        path: "{{ temp_dir }}/downloads" 
+        state: absent
+      when: clean_downloads|upper == 'Y'
+
+    - name: Setup bastion
+      ansible.builtin.include_tasks: bastion_setup.yaml
+      when: skip_phase|int < 1
+
+    - ansible.builtin.debug:
+        msg:
+          - "Bastion prepared for OpenShift deployment"
+          - "Start all nodes and confirm that they are correctly booted, then push <ENTER> to continue"
+      when: skip_phase|int < 1
+
+    - ansible.builtin.pause:
+        echo: no
+        prompt: "Press ENTER to continue"
+      when: skip_phase|int < 1
+
+    - name: Deploy OCP
+      ansible.builtin.include_tasks: ocp_install.yaml
+      when: skip_phase|int < 2
+
+    - name: Install rook-ceph
+      ansible.builtin.include_tasks: rook_install.yaml
+      when: skip_phase|int < 3 and storage_type == 'R'
+
+    - name: Install ODF
+      ansible.builtin.include_tasks: odf_install.yaml
+      when: skip_phase|int < 3 and storage_type == 'O'
+
+    - name: Install Portworx Essentials
+      ansible.builtin.include_tasks: px_install.yaml
+      when: skip_phase|int < 3 and storage_type == 'P'
+
+    - name: Setup image registry
+      ansible.builtin.include_tasks: image_registry_setup.yaml
+      when: skip_phase|int < 4
+
+    - name: Deploy CPFS
+      ansible.builtin.include_tasks: cpfs_install.yaml
+      when: skip_phase|int < 5 and install_cpfs == 'Y'
+
+    - name: Install openldap
+      ansible.builtin.include_tasks: ldap_install.yaml
+      when: skip_phase|int < 6 and install_ldap == 'Y' and install_gi == 'Y'
+
+    - name: Install NFS client
+      ansible.builtin.include_tasks: nfs_client_setup.yaml
+      when: skip_phase|int < 7 and install_gi == 'Y' and gi_nfs_backup == 'Y'
+
+    - name: Install GI
+      ansible.builtin.include_tasks: gi_install.yaml
+      when: skip_phase|int < 8 and install_gi == 'Y'
+
+    - name: Install CP4S
+      ansible.builtin.include_tasks: cp4s_install.yaml
+      when: skip_phase|int < 8 and install_cp4s == 'Y'
+
+    - name: Install EDR
+      ansible.builtin.include_tasks: edr_install.yaml
+      when: skip_phase|int < 8 and install_edr == 'Y'
+
+    - name: Install openldap
+      ansible.builtin.include_tasks: ldap_install.yaml
+      when: skip_phase|int < 9 and install_ldap == 'Y' and install_cp4s == 'Y'
+
+    - name: OCP deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "Openshift {{ ocp_release }} has been installed and configured"
+          - "Add to hosts on your web browser workstation this line to login to OCP:"
+          - "{{ bas_ip }} console-openshift-console.apps.{{ ocp_domain }} oauth-openshift.apps.{{ ocp_domain }}"
+          - "Login to OCP console as {{ ocpadmin }} user - https://console-openshift-console.apps.{{ ocp_domain }}"
+
+    - name: CPFS deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "IBM Cloud Pak Foundational Services {{ cpfs_version }} installation finished"
+          - Update the hosts file on your web browser workstation
+          - "{{ bas_ip }} cp-console.apps.{{ ocp_domain }}"
+          - "Login to CPFS console as admin user - https://cp-console.apps.{{ ocp_domain }}"
+          - "{{ 'LDAP instance registered in CPFS with name openldap' if install_ldap == 'Y' else 'You need register external identity provider'}}"
+      when: install_cpfs == 'Y'
+
+    - name: LDAP deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "OpenLDAP installed"
+          - "LDAP instance configured in CPFS with name openldap"
+      when: install_ldap == 'Y'
+
+    - name: GI deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "GI {{ gi_version }} installation finished"
+          - Update the hosts file on your web browser workstation
+          - "{{ bas_ip }} insights.apps.{{ ocp_domain }}"
+          - "Login to GI console as admin - https://insights.apps.{{ ocp_domain }}"
+          - "{{ '' if skip_phase|int > 4 else 'SSH port '+ssh_node_port.stdout+' integration with GDP routed and opened on bastion' }}"
+      when: install_gi == 'Y'
+
+    - name: CP4S deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "CP4S installation finished"
+          - Update the hosts file on your web browser workstation
+          - "{{ bas_ip }} cp4s.apps.{{ ocp_domain }}"
+      when: install_cp4s == 'Y'
+
+    - name: Get EDR users and passwords
+      shell:
+        cmd: "oc get secret reaqta-hive-maia-users-secret -o json -n {{ edr_namespace }} | jq '.data | map_values(@base64d)'"
+      register: edr_users
+      when: install_edr == 'Y'
+
+    - name: EDR deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "EDR installation finished"
+          - Update the hosts file on your web browser workstation
+          - "{{ bas_ip }} edr.apps.{{ ocp_domain }}"
+          - "Login to EDR using:"
+          - "{{ edr_users.stdout }}"
+      when: install_edr == 'Y'

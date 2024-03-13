@@ -1,0 +1,21 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: px-operatorgroup
+  namespace: kube-system
+spec:
+  targetNamespaces:
+  - kube-system
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: px-subscription
+  namespace: kube-system
+spec:
+  channel: {{ px_channel }}
+  name: portworx-essentials
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+
+

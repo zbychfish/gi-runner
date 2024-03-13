@@ -1,0 +1,124 @@
+- name: Configure ODF nodes on workers
+  ansible.builtin.shell:
+    cmd: "oc label nodes {{ item }}.{{ ocp_domain }} cluster.ocs.openshift.io/openshift-storage='' --overwrite=true"
+  with_items: "{{ odf_nodes|list if is_master_only == 'N' else master_name|list }}"
+  when: is_odf_tainted == 'N'
+
+- name: Configure ODF nodes for taint
+  ansible.builtin.shell: |
+    oc label nodes {{ item }}.{{ ocp_domain }} cluster.ocs.openshift.io/openshift-storage='' --overwrite=true
+    oc label nodes {{ item }}.{{ ocp_domain }} node-role.kubernetes.io/infra='' --overwrite=true
+  with_items: "{{ odf_name|list }}"
+  when: is_odf_tainted == 'Y'
+
+- name: Create ODF namespaces
+  ansible.builtin.shell:
+    cmd: "oc create namespace {{ item }} || echo 'Namespace exists'"
+  with_items:
+    - openshift-local-storage
+    - openshift-storage
+
+- name: Deploy local storage operator
+  block:
+  - name: Configure local storage operator
+    ansible.builtin.template:
+      src: "odf_local_storage_op.j2"
+      dest: "{{ temp_dir }}/yamls/odf_local_storage_op.yaml"
+    vars:
+      operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
+
+  - name: Deploy local storage operator
+    ansible.builtin.shell:
+      cmd: "oc apply -f {{ temp_dir }}/yamls/odf_local_storage_op.yaml"
+
+  - name: Wait for local storage operator
+    ansible.builtin.shell:
+      cmd: "oc get csv -n openshift-local-storage --no-headers -o custom-columns=STATUS:.status.phase"
+    register: ls_operator_status
+    until: "ls_operator_status.stdout == \"Succeeded\""
+    retries: 30
+    delay: 10
+
+  - name: Configure local storage deployment file
+    ansible.builtin.template:
+      src: "odf_local_storage_vol.j2"
+      dest: "{{ temp_dir }}/yamls/odf_local_storage_vol.yaml"
+    vars:
+      temp_nodes: "{{ odf_name|list if is_master_only == 'N' else master_name|list }}"
+
+  - name: Deploy local storage
+    ansible.builtin.shell:
+      cmd: "oc apply -f {{ temp_dir }}/yamls/odf_local_storage_vol.yaml"
+
+  - name: Wait for local storage deployment
+    ansible.builtin.shell:
+      cmd: "oc get pv | grep localblock-sc | wc -l"
+    register: ls_status
+    until: "ls_status.stdout|int >= 3"
+    retries: 30
+    delay: 10
+
+- name: ODF deployment
+  block:
+  - name: Configure ODF operator file
+    template:
+      src: "odf_op.j2"
+      dest: "{{ temp_dir }}/yamls/odf_op.yaml"
+    vars:
+      operator_source: "{{ 'redhat-operators' if internet_type != 'A' else 'redhat-operator-index' }}"
+
+  - name: Deploy ODF operator
+    ansible.builtin.shell:
+      cmd: "oc apply -f {{ temp_dir }}/yamls/odf_op.yaml"
+
+  - name: Wait for ODF operators appearance
+    ansible.builtin.shell:
+      cmd: "oc get csv -n openshift-storage --no-headers|wc -l"
+    register: odf_operators
+    until: "odf_operators.stdout|int == 4"
+    retries: 30
+    delay: 10
+
+  - name: Wait for ODF operator availability
+    ansible.builtin.shell:
+      cmd: "oc get csv -n openshift-storage --no-headers -o custom-columns=STATUS:.status.phase|grep -v Succeeded|wc -l"
+    register: odf_operator_status
+    until: "odf_operator_status.stdout|int == 0"
+    retries: 30
+    delay: 10
+
+  - name: Enable ODF console plugin in OCP UI
+    ansible.builtin.shell:
+      cmd: "oc patch console.operator cluster -n openshift-storage --type json -p '[{\"op\": \"add\", \"path\": \"/spec/plugins\", \"value\": [\"odf-console\"]}]'"
+
+  - name: Configure ODF Storage Cluster file
+    template:
+      src: "odf_ss.j2"
+      dest: "{{ temp_dir }}/yamls/odf_ss.yaml"
+
+  - name: Deploy ODF cluster
+    ansible.builtin.shell:
+      cmd: "oc apply -f {{ temp_dir }}/yamls/odf_ss.yaml"
+
+  - name: Wait for ODF cluster deployment
+    ansible.builtin.shell:
+      cmd: "oc get pvc -n openshift-storage --no-headers | grep localblock-sc | grep Bound | wc -l"
+    register: odf_status
+    until: "odf_status.stdout|int >= 3"
+    retries: 100
+    delay: 15
+
+  - name: Wait - ODF installation finalization
+    ansible.builtin.pause:
+      minutes: 5
+
+  - name: Deploy Ceph toolbox
+    ansible.builtin.shell:
+     cmd: "oc patch OCSInitialization ocsinit -n openshift-storage --type json --patch  '[{ \"op\": \"replace\", \"path\": \"/spec/enableCephTools\", \"value\": true }]'"
+
+- name: Configure ODF default storage class
+  ansible.builtin.shell:
+    cmd: "{{ item.cmd }}"
+  with_items:
+    - { cmd: "oc patch storageclass ocs-storagecluster-cephfs -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}'" }
+
