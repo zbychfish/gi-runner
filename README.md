@@ -4,7 +4,7 @@
 <P>Automates CPFS installation for releases: 3.19.18, 3.19.19, 3.19.20, 3.23.12
 <P>Automates GI installation for releases: 3.2.13, 3.3.0, 3.3.1
 <P>Automates CP4S installation for 1.10 channel
-<P>Automates EDR installation ifor release 1.0.2 (online installation because of bug in the images list)
+<P>Automates EDR installation ifor release 1.0.2 (online installation only because of bug in the images list)
 <P>Supports installation with direct access to the Internet, using proxy or air-gapped (restricted) approach
 <P>Supported storage backends: rook-ceph, ODF, Portworx Essentials (only online installation)
 <P>Implemented OCP architectures:
@@ -14,7 +14,7 @@
 <HR>
 Examples of use at this link: <A href=https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/>https://guardiumnotes.wordpress.com/2021/09/09/automation-of-openshift-and-guardium-insights-installation-on-bare-metal/</A>
 <HR>
-This tool install everything from scratch. It does not support installation CPFS or GI on preinstalled OCP.
+This tool installs everything from scratch. It does not support installation CPFS or GI on preinstalled OCP.
 <HR>
 For online installation execute init.sh script to collect installation parameteres. Then shell variables defined in variables.sh file control Ansible playbook - plays/install.yaml to deploy all desired solutions.
 <HR>
