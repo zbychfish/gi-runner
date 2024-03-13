@@ -45,7 +45,7 @@
   with_items:
     - "skopeo login registry.{{ ocp_domain }}:5000"
     - "skopeo copy docker://registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:latest_uat docker://registry.{{ ocp_domain }}:5000/cpopen/ibm-security-edr-catalog:3.12.2.0-amd64"
-  when: internet_type == 'A'
+  when: internet_type == 'A' and false
 
 - name: Start EDR deployment
   shell:

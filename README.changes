@@ -1,3 +1,8 @@
-Uninstall scripts:
+Uninstall plays allow to destroy instance of Cloud Pak, work only with online or proxy installations:
+play/uninstall_gi.yaml - removes GI instance
+play/uninstall_cp4s.yaml - removes CP4S instance, removes Knative and Noobaa as well
+play/uninstall_edr.yaml - removes EDR instance
+play/uninstall_cpfs.yaml - removes CPFS instance, should be used after other uninstall play execution to remove CPFS instance created by Cloud Pak
 
+EDR 1.0.3 support, tested and working online and offline (air-gapped)
 
