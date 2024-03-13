@@ -58,6 +58,6 @@ cp4s_case_name="ibm-cp-security"
 cp4s_case_inventory_setup="ibmSecurityOperatorSetup"
 
 edr_case_name="ibm-security-edr"
-edr_cases=("1.0.2") # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-security-edr/index.yaml
-edr_versions=("1.0.2") 
+edr_cases=("1.0.3") # https://github.com/IBM/cloud-pak/blob/master/repo/case/ibm-security-edr/index.yaml
+edr_versions=("1.0.3") 
 edr_case_inventory_setup="ibmSecurityEdrOperatorSetup"
